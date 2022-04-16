@@ -1,0 +1,1 @@
+The issue templates fall under the provided LICENCE.txt as they are copied from https://github.com/CaffeineMC/sodium-fabric/tree/1.18.x/dev/.github
