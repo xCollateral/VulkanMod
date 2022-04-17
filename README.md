@@ -1,11 +1,11 @@
 # VulkanMod
 
-##Disclaimer
+## Disclaimer
 
 This software is in pre-alpha testing, I am not responsible for any damage that could occur to your hardware and software.
 It is possible that this mod could cause damage to world saves, please be careful.
 
-##Installation
+## Installation
 
 Fabric mod loader is required.\
 Start the game, it will crash, next go to temp folder (Windows Win+R and type %temp%) 
