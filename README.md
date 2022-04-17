@@ -9,7 +9,12 @@ It is possible that this mod could cause damage to world saves, please be carefu
 
 ## Installation
 
-1) Start the game, it may crash. 
- - If it does go to temp folder (Windows Win+R and type `%temp%`, `/tmp/` on MacOS/Linux).
- - Search for lwjgl[username]/3.2.2-SNAPSHOT and copy your OS relative library (Windows lwjgl.dll, Linux liblwjgl.so).
-2) Move VulkanMod.jar inside mods folder of your minecraft instance.
+1) Move VulkanMod.jar inside mods folder of your minecraft instance.
+2) Start the game, it may crash. 
+ - If it does, get your os's `lwjgl` binary.
+   - For Linux get `liblwjgl.so` from [here](https://www.lwjgl.org/browse/release/3.2.2/linux/x64).
+   - For Windows get `lwjgl.dll` from [here](https://www.lwjgl.org/browse/release/3.2.2/windows/x64).
+ - Go to temp folder (Windows Win+R and type `%temp%`, `/tmp/` on Linux).
+ - Find the `lwjgl[username]/3.2.2-SNAPSHOT/` folder.
+ - Place the `lwjgl` binary there.
+ - If you are on linux, open the jar and rename the `windows` folder to `libwindows`.
