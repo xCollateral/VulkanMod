@@ -27,5 +27,5 @@ If the game crash, then follow these steps:
 2) Download the latest version of MoltenVK from the VulkanSDK or from here https://community.pcgamingwiki.com/files/file/2417-moltenvk-modified-with-dxvk-patches-for-macos-libmoltenvkdylib/ and place `libMoltenVK.dylib` on the natives folder
 3) Download https://storage.googleapis.com/shaderc/badges/build_link_macos_clang_release.html  and in the install/lib folder that was downloaded copy `libshaderc_shared.1.dylib` and rename it to `shaderc.dylib` and place it under your `natives/libwindows/x64/org/lwjgl/shaderc/` (create the needed subdirectories)
 4) Place a second copy of `liblwjgl.dylib` under your shaderc folder
-5) Your game should run now, side note, MultiMC deletes the natives folder after the game is done running so I'd reccomend you keep a copy that's setup with the stuff from above
+5) Your game should run now, side note, MultiMC deletes the natives folder after the game is done running so I'd reccomend you keep a copy that's setup with the stuff from above  
 Credit: UnlikePaladin#5813
