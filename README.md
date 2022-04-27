@@ -1,6 +1,7 @@
 # VulkanMod
 
-This is a Fabric mod that re-writes the rendering engine in Vulkan. 
+This is a Fabric mod that re-writes the rendering engine in Vulkan.
+Demonstration video: https://youtu.be/sbr7UxcAmOE
 
 ## Disclaimer
 
