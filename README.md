@@ -1,18 +1,20 @@
-[![Download](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total.svg)](https://github.com/xCollateral/VulkanMod/releases/)
+<div align='center'>
+
+[![Logo](https://media.discordapp.net/attachments/963349566839738369/969920960373334076/Vlogo.png?width=300&height=300)](#)
+
 # VulkanMod
 
-This is a Fabric mod that re-writes the rendering engine in Vulkan.
+This is a fabric mod that rewrites Minecraft OpenGL renderer to use Vulkan.
 
-Demonstration video: https://youtu.be/sbr7UxcAmOE
+[![Download](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total?color=red&logo=github&style=for-the-badge)](https://github.com/xCollateral/VulkanMod/releases/)
 
-## Disclaimer
+[Demostration Video](https://youtu.be/sbr7UxcAmOE)
 
-This software is in pre-alpha testing, I am not responsible for any damage that could occur to your hardware and software.
-It is possible that this mod could cause damage to world saves, please be careful.
+</div>
 
-## Installation (Linux and Windows)
+## Installation (Windows and Linux)
 
-1) Move VulkanMod.jar inside mods folder of your minecraft instance.
+- Move VulkanMod.jar to the Minecraft `mods` folder of your Minecraft Instance.
 
 ## Installation for macOS
 
