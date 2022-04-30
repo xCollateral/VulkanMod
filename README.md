@@ -1,3 +1,4 @@
+[![Download](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total.svg)](https://github.com/xCollateral/VulkanMod/releases/)
 # VulkanMod
 
 This is a Fabric mod that re-writes the rendering engine in Vulkan.
@@ -22,5 +23,3 @@ If the game crash, then follow these steps:
 4) Place a second copy of `liblwjgl.dylib` under your shaderc folder
 5) Your game should run now, side note, MultiMC deletes the natives folder after the game is done running so I'd reccomend you keep a copy that's setup with the stuff from above  
 Credit: UnlikePaladin#5813
-
-[![Download](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total.svg)](https://github.com/xCollateral/VulkanMod/releases/)
