@@ -7,12 +7,12 @@
 This is a fabric mod that rewrites Minecraft OpenGL renderer to use Vulkan.
 
 [![Download](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total?color=red&logo=github&style=for-the-badge)](https://github.com/xCollateral/VulkanMod/releases/)
-
-[Demostration Video](https://youtu.be/sbr7UxcAmOE)
+    
+[![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/FVXg7AYR2Q)
   
-[Discord](https://discord.gg/FVXg7AYR2Q)
-
-</div>
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V7CHHJV)
+  
+[Demostration Video](https://youtu.be/sbr7UxcAmOE)
 
 ## Installation (Windows and Linux)
 
