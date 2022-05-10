@@ -1,0 +1,29 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1-srcalpha"
+    },
+    "vertex": "rendertype_end_portal",
+    "fragment": "rendertype_end_portal",
+    "attributes": [],
+    "samplers": [
+        { "name": "Sampler0" },
+        { "name": "Sampler1" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "GameTime", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "EndPortalLayers", "type": "int", "count": 1, "values": [ 15 ] }
+    ],
+    "UBOs": [
+        { "type":  "vertex", "binding": 0, "fields": [
+            { "name": "MVP", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] }
+        ] },
+        { "type":  "fragment", "binding": 1, "fields": [
+            { "name": "GameTime", "type": "float", "count": 1, "values": [ 0.0 ] },
+            { "name": "EndPortalLayers", "type": "int", "count": 1, "values": [ 15 ] }
+        ] }
+    ]
+}
