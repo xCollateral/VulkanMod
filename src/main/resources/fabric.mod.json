@@ -17,9 +17,7 @@
 
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "net.vulkanmod.Initializer"
-    ]
+    "main": []
   },
   "mixins": [
     "vulkanmod.mixins.json"
