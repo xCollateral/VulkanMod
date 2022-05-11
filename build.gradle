@@ -10,7 +10,7 @@ archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
-project.ext.lwjglVersion = "3.2.2"
+project.ext.lwjglVersion = "3.2.3"
 project.ext.jomlVersion = "1.10.4"
 project.ext.winNatives = "natives-windows"
 project.ext.linuxNatives = "natives-linux"
@@ -23,6 +23,9 @@ dependencies {
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
 
+	include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
 	include(implementation("org.lwjgl:lwjgl-glfw:$lwjglVersion"))
 	include(runtimeOnly("org.lwjgl:lwjgl-glfw:$lwjglVersion:$winNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-glfw:$lwjglVersion:$linuxNatives"))
