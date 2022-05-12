@@ -35,7 +35,9 @@ dependencies {
 	include(runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$winNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$linuxNatives"))
 
-	implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion")
+	include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
 }
 
 repositories {
