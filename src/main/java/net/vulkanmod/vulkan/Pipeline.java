@@ -657,7 +657,7 @@ public class Pipeline {
                     uboDescriptorWrite.dstBinding(ubo.getBinding());
                     uboDescriptorWrite.dstArrayElement(0);
                     uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                    //uboDescriptorWrite.descriptorCount(1);
+                    uboDescriptorWrite.descriptorCount(1);
                     uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
 
                     currentOffset = uniformBuffers.getUsedBytes();
@@ -682,7 +682,7 @@ public class Pipeline {
                     samplerDescriptorWrite.dstBinding(i);
                     samplerDescriptorWrite.dstArrayElement(0);
                     samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                    //samplerDescriptorWrite.descriptorCount(1);
+                    samplerDescriptorWrite.descriptorCount(1);
                     samplerDescriptorWrite.pImageInfo(imageInfos[0]);
 
                     ++i;
@@ -702,7 +702,7 @@ public class Pipeline {
                         samplerDescriptorWrite.dstBinding(i);
                         samplerDescriptorWrite.dstArrayElement(0);
                         samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                        //samplerDescriptorWrite.descriptorCount(1);
+                        samplerDescriptorWrite.descriptorCount(1);
                         samplerDescriptorWrite.pImageInfo(imageInfos[1]);
 
                         ++i;
@@ -722,7 +722,7 @@ public class Pipeline {
                             samplerDescriptorWrite.dstBinding(i);
                             samplerDescriptorWrite.dstArrayElement(0);
                             samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                            //samplerDescriptorWrite.descriptorCount(1);
+                            samplerDescriptorWrite.descriptorCount(1);
                             samplerDescriptorWrite.pImageInfo(imageInfos[2]);
                         }
                     }
