@@ -170,7 +170,7 @@ public abstract class MemoryManager {
     }
 
     public synchronized static void addToFreeable(Buffer buffer) {
-        freeableBuffers2.add(new Pair<>(buffer, 0));
+        freeableBuffers2.add(new Pair<>(buffer, -2));
     }
 
     public synchronized static void freeBuffers() {

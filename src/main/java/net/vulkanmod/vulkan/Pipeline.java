@@ -10,6 +10,7 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -49,7 +50,8 @@ public class Pipeline {
     private VertexFormat vertexFormat;
 
     private final long[] descriptorPools = new long[imagesSize];
-    private List<DescriptorSetsUnit>[] descriptorSetsLists = new List[imagesSize];
+    private int descriptorCount = 500;
+
     private final List<UBO> UBOs = new ArrayList<>();
     private final List<String> samplers = new ArrayList<>();
     private final PushConstant pushConstant = new PushConstant();
@@ -66,12 +68,9 @@ public class Pipeline {
         createPipelineLayout();
         graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE),
                 (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
-        createDescriptorPool();
+        createDescriptorPool(descriptorCount);
         //allocateDescriptorSets();
 
-        for(int i = 0; i < imagesSize; ++i) {
-            descriptorSetsLists[i] = new ArrayList<>();
-        }
     }
 
     private long createGraphicsPipeline(VertexFormat vertexFormat, PipelineState state) {
@@ -335,8 +334,7 @@ public class Pipeline {
         }
     }
 
-    private void createDescriptorPool() {
-        int descriptorCount = 500;
+    private void createDescriptorPool(int descriptorCount) {
 
         try(MemoryStack stack = stackPush()) {
             int size =  UBOs.size() + samplers.size();
@@ -572,8 +570,6 @@ public class Pipeline {
             if(vkResetDescriptorPool(device, descriptorPools[i], 0) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to reset descriptor pool");
             }
-
-            descriptorSetsLists[i].clear();
         };
         return fun;
     }
@@ -593,10 +589,6 @@ public class Pipeline {
     public PushConstant getPushConstant() { return pushConstant; }
 
     public long getLayout() { return pipelineLayout; }
-
-    public long getDescriptorSet(int i) {
-        return descriptorSetsLists[i].get(descriptorSetsLists[i].size() - 1).descriptorSet;
-    }
 
     private class DescriptorSetsUnit {
         private long descriptorSet;
@@ -626,6 +618,16 @@ public class Pipeline {
                 LongBuffer pDescriptorSet = stack.mallocLong(1);
 
                 int result = vkAllocateDescriptorSets(device, allocInfo, pDescriptorSet);
+                if (result == -1000069000) {
+                    descriptorCount *= 2;
+                    createDescriptorPool(descriptorCount);
+                    allocateDescriptorSet(frame);
+
+                    //TODO: free old descriptorPool when its relative cmdBuffer has finished drawing
+
+                    System.out.println("resized DescriptorPool to: " + descriptorCount);
+                    return;
+                }
                 if (result != VK_SUCCESS) {
                     throw new RuntimeException("Failed to allocate descriptor sets. Result:" + result);
                 }

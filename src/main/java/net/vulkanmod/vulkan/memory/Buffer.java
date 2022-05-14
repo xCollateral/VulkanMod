@@ -102,7 +102,7 @@ public abstract class Buffer {
                     StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
                     stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
-                    copyStagingtoLocalBuffer(stagingBuffer.stagingBuffer, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
+                    copyStagingtoLocalBuffer(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
 
                 }
             }
