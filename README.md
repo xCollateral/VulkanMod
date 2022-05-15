@@ -16,7 +16,7 @@ This is a fabric mod that rewrites Minecraft OpenGL renderer to use Vulkan.
 
 ## Installation (Windows and Linux)
 
-- Move VulkanMod.jar to the Minecraft `mods` folder of your Minecraft Instance.
+- Move VulkanMod.jar to `mods` folder of your Minecraft Instance.
 
 ## Installation for macOS
 
