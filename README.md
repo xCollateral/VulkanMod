@@ -4,7 +4,7 @@
 
 # VulkanMod
 
-This is a fabric mod that rewrites Minecraft OpenGL renderer to use Vulkan.
+This is a fabric mod that rewrites Minecraft OpenGL renderer to use Vulkan API.
 
 [![Download](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total?color=red&logo=github&style=for-the-badge)](https://github.com/xCollateral/VulkanMod/releases/)
 
@@ -16,7 +16,7 @@ This is a fabric mod that rewrites Minecraft OpenGL renderer to use Vulkan.
 
 ## Installation (Windows and Linux)
 
-- Move VulkanMod.jar to `mods` folder of your Minecraft Instance.
+- Move `VulkanMod.jar` to `mods` folder of your Minecraft Instance.
 
 ## Installation for macOS
 
