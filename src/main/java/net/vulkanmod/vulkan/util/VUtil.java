@@ -5,6 +5,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -38,20 +39,26 @@ public class VUtil {
 
     public static void memcpy(ByteBuffer dst, ByteBuffer src) {
         //src.limit((int)size);
-        dst.put(src);
+//        dst.put(src);
+
+        MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
     }
 
     public static void memcpy(ByteBuffer dst, ByteBuffer src, long offset) {
         dst.position((int)offset);
-        dst.put(src);
+//        dst.put(src);
+
+        MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
     }
 
     public static void memcpy(ByteBuffer dst, ByteBuffer src, int size, long offset) {
         dst.position((int)offset);
         src.limit(size);
-        dst.put(src);
+//        dst.put(src);
+
+        MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
     }
 

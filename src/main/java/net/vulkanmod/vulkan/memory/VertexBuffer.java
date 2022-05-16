@@ -18,13 +18,14 @@ public class VertexBuffer extends Buffer {
         this.type = type;
         createVertexBuffer(size);
 
-        if(type == Type.HOST_LOCAL) {
-            data = Map(this.allocation);
-        }
     }
 
     private void createVertexBuffer(int size) {
         this.type.createBuffer(this, size);
+
+        if(type == Type.HOST_LOCAL) {
+            data = Map(this.allocation);
+        }
     }
 
     public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {

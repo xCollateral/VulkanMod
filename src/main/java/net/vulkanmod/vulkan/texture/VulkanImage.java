@@ -6,6 +6,7 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -59,10 +60,12 @@ public class VulkanImage {
 
     public static VulkanImage createWhiteTexture() {
         int i = 0xFFFFFFFF;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
+        ByteBuffer buffer = MemoryUtil.memAlloc(4);
         buffer.putInt(0, i);
 
-        return new VulkanImage(1, 1, 4, false, false, buffer);
+        VulkanImage image = new VulkanImage(1, 1, 4, false, false, buffer);
+        MemoryUtil.memFree(buffer);
+        return image;
     }
 
     private void createTextureImage(int miplevel, int width, int height) {

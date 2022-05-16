@@ -3,13 +3,11 @@ package net.vulkanmod.mixin;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import net.minecraft.client.render.*;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderEffect;
 import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.chunk.ChunkBuilder;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
@@ -24,7 +22,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(WorldRenderer.class)
-public class WorldRendererMixin {
+public abstract class WorldRendererMixin {
 
     @Shadow private @Nullable ShaderEffect entityOutlineShader;
 
@@ -209,8 +207,6 @@ public class WorldRendererMixin {
         this.client.getProfiler().pop();
         renderType.endDrawing();
 
-//        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
-//        VRenderSystem.applyProjectionMatrix(RenderSystem.getProjectionMatrix());
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
     }
