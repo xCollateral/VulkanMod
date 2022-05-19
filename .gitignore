@@ -31,3 +31,8 @@ bin/
 # fabric
 
 run/
+
+# avoid bad open
+
+.vs/
+.vc/
