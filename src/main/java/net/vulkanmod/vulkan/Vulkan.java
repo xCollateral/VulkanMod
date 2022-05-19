@@ -435,9 +435,10 @@ public class Vulkan {
             VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo.callocStack(stack);
             allocatorCreateInfo.physicalDevice(physicalDevice);
             allocatorCreateInfo.device(device);
+            allocatorCreateInfo.instance(instance);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
 
-            PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pAllocator = stack.mallocPointer(1);//stack.pointers(VK_NULL_HANDLE);
 
             if (vmaCreateAllocator(allocatorCreateInfo, pAllocator) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
