@@ -26,6 +26,7 @@ public abstract class BufferBuilderM extends FixedColorVertexConsumer implements
     /**
      * @author
      */
+    /*
     @Overwrite
     public VertexConsumer color(int red, int green, int blue, int alpha) {
         VertexFormatElement vertexFormatElement = this.getCurrentElement();
@@ -41,12 +42,12 @@ public abstract class BufferBuilderM extends FixedColorVertexConsumer implements
         this.putFloat(12, alpha / 255.0F);
         this.nextElement();
         return this;
-    }
+    }*/
 
     /**
      * @author
      */
-    @Overwrite
+    /*@Overwrite
     public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
         if (this.colorFixed) {
             throw new IllegalStateException();
@@ -94,5 +95,5 @@ public abstract class BufferBuilderM extends FixedColorVertexConsumer implements
             return;
         }
         super.vertex(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
-    }
+    }*/
 }

@@ -19,10 +19,11 @@ public class VertexFormatsM {
 //        VertexFormats.COLOR_ELEMENT = new VertexFormatElement(0, VertexFormatElement.DataType.FLOAT, VertexFormatElement.Type.COLOR, 4);
 //    }
 
+    /*
     @Inject(method = "<clinit>",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/VertexFormat;<init>(Lcom/google/common/collect/ImmutableMap;)V", ordinal = 0))
     private static void replaceColor(CallbackInfo ci) {
-        COLOR_ELEMENT = new VertexFormatElement(0, VertexFormatElement.DataType.FLOAT, VertexFormatElement.Type.COLOR, 4);
+        COLOR_ELEMENT = new VertexFormatElement(0, VertexFormatElement.DataType.BYTE, VertexFormatElement.Type.COLOR, 4);
 
-    }
+    }*/
 }
