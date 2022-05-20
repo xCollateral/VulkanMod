@@ -429,15 +429,11 @@ public class Pipeline {
             }
             else if (format.getType() == VertexFormatElement.Type.COLOR)
             {
-                if (format.getDataType() == VertexFormatElement.DataType.UBYTE) {
-                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
-                } else
-                {
-                    posDescription.format(VK_FORMAT_R32G32B32A32_SFLOAT);
-                }
+                boolean isByte = format.getDataType() == VertexFormatElement.DataType.UBYTE;
+                posDescription.format(isByte ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R32G32B32A32_SFLOAT);
                 posDescription.offset(offset);
 
-                offset += 16;
+                offset += isByte ? 4 : 16;
             }
             else if (format.getType() == VertexFormatElement.Type.UV)
             {
