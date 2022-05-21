@@ -11,6 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(VertexFormats.class)
 public class VertexFormatsM {
 
+    private static boolean useFloat = false;
+
     @Shadow public static VertexFormatElement COLOR_ELEMENT;
 
 //    static {
@@ -22,7 +24,8 @@ public class VertexFormatsM {
     @Inject(method = "<clinit>",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/VertexFormat;<init>(Lcom/google/common/collect/ImmutableMap;)V", ordinal = 0))
     private static void replaceColor(CallbackInfo ci) {
-        COLOR_ELEMENT = new VertexFormatElement(0, VertexFormatElement.DataType.FLOAT, VertexFormatElement.Type.COLOR, 4);
-
+        if (useFloat) {
+            COLOR_ELEMENT = new VertexFormatElement(0, VertexFormatElement.DataType.FLOAT, VertexFormatElement.Type.COLOR, 4);
+        };
     }
 }

@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderM extends FixedColorVertexConsumer implements BufferVertexConsumer{
-
+    private static boolean useFloat = false;
 
     @Shadow private boolean textured;
 
@@ -32,13 +32,20 @@ public abstract class BufferBuilderM extends FixedColorVertexConsumer implements
         if (vertexFormatElement.getType() != VertexFormatElement.Type.COLOR) {
             return this;
         }
-        if (vertexFormatElement.getDataType() != VertexFormatElement.DataType.FLOAT || vertexFormatElement.getLength() != 4) {
-            throw new IllegalStateException();
+        //if (vertexFormatElement.getDataType() != VertexFormatElement.DataType.FLOAT || vertexFormatElement.getLength() != 4) {
+            //throw new IllegalStateException();
+        //}
+        if (vertexFormatElement.getDataType()  == VertexFormatElement.DataType.FLOAT) {
+            this.putFloat(0, red / 255.0F);
+            this.putFloat(4, green / 255.0F);
+            this.putFloat(8, blue / 255.0F);
+            this.putFloat(12, alpha / 255.0F);
+        } else {
+            this.putByte(0, (byte)red );
+            this.putByte(1, (byte)green);
+            this.putByte(2, (byte)blue);
+            this.putByte(3, (byte)alpha);
         }
-        this.putFloat(0, red / 255.0F);
-        this.putFloat(4, green / 255.0F);
-        this.putFloat(8, blue / 255.0F);
-        this.putFloat(12, alpha / 255.0F);
         this.nextElement();
         return this;
     }
@@ -52,36 +59,32 @@ public abstract class BufferBuilderM extends FixedColorVertexConsumer implements
             throw new IllegalStateException();
         }
         if (this.textured) {
-            int i;
             this.putFloat(0, x);
             this.putFloat(4, y);
             this.putFloat(8, z);
-//            this.putByte(12, (byte)(red * 255.0f));
-//            this.putByte(13, (byte)(green * 255.0f));
-//            this.putByte(14, (byte)(blue * 255.0f));
-//            this.putByte(15, (byte)(alpha * 255.0f));
-//            this.putFloat(16, u);
-//            this.putFloat(20, v);
-//            if (this.hasOverlay) {
-//                this.putShort(24, (short)(overlay & 0xFFFF));
-//                this.putShort(26, (short)(overlay >> 16 & 0xFFFF));
-//                i = 28;
-//            } else {
-//                i = 24;
-//            }
+            int i = 12;
 
-            this.putFloat(12, red);
-            this.putFloat(16, green);
-            this.putFloat(20, blue);
-            this.putFloat(24, alpha);
-            this.putFloat(28, u);
-            this.putFloat(32, v);
-            if (this.hasOverlay) {
-                this.putShort(36, (short)(overlay & '\uffff'));
-                this.putShort(38, (short)(overlay >> 16 & '\uffff'));
-                i = 40;
+            if (useFloat) {
+                this.putFloat(i+0, red);
+                this.putFloat(i+4, green);
+                this.putFloat(i+8, blue);
+                this.putFloat(i+12, alpha);
+                i+=16;
             } else {
-                i = 36;
+                this.putByte(i+0, (byte) (red*255.f));
+                this.putByte(i+1, (byte) (green*255.f));
+                this.putByte(i+2, (byte) (blue*255.f));
+                this.putByte(i+3, (byte) (alpha*255.f));
+                i+=4;
+            }
+            this.putFloat(i, u);
+            this.putFloat(i+4, v);
+            i+=8;
+            if (this.hasOverlay) {
+                this.putShort(i, (short)(overlay & '\uffff'));
+                this.putShort(i+2, (short)(overlay >> 16 & '\uffff'));
+                i+=4;
+            } else {
             }
 
             this.putShort(i + 0, (short)(light & (LightmapTextureManager.MAX_BLOCK_LIGHT_COORDINATE | 0xFF0F)));

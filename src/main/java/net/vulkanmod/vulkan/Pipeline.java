@@ -419,37 +419,38 @@ public class Pipeline {
             VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
             posDescription.binding(0);
             posDescription.location(i);
-
-            if (elements.get(i).getType() == VertexFormatElement.Type.POSITION)
+            VertexFormatElement format = elements.get(i);
+            if (format.getType() == VertexFormatElement.Type.POSITION)
             {
                 posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
                 posDescription.offset(offset);
 
                 offset += 12;
             }
-            else if (elements.get(i).getType() == VertexFormatElement.Type.COLOR)
+            else if (format.getType() == VertexFormatElement.Type.COLOR)
             {
-                posDescription.format(VK_FORMAT_R32G32B32A32_SFLOAT);
+                boolean isByte = format.getDataType() == VertexFormatElement.DataType.UBYTE;
+                posDescription.format(isByte ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R32G32B32A32_SFLOAT);
                 posDescription.offset(offset);
 
-                offset += 16;
+                offset += isByte ? 4 : 16;
             }
-            else if (elements.get(i).getType() == VertexFormatElement.Type.UV)
+            else if (format.getType() == VertexFormatElement.Type.UV)
             {
-                if(elements.get(i).getDataType() == VertexFormatElement.DataType.FLOAT){
+                if(format.getDataType() == VertexFormatElement.DataType.FLOAT){
                     posDescription.format(VK_FORMAT_R32G32_SFLOAT);
                     posDescription.offset(offset);
 
                     offset += 8;
                 }
-                else if(elements.get(i).getDataType() == VertexFormatElement.DataType.SHORT){
+                else if(format.getDataType() == VertexFormatElement.DataType.SHORT){
                     posDescription.format(VK_FORMAT_R16G16_SINT);
                     posDescription.offset(offset);
 
                     offset += 4;
                 }
             }
-            else if (elements.get(i).getType() == VertexFormatElement.Type.NORMAL)
+            else if (format.getType() == VertexFormatElement.Type.NORMAL)
             {
                 posDescription.format(VK_FORMAT_R8G8B8_SNORM);
                 //posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
@@ -457,7 +458,7 @@ public class Pipeline {
 
                 offset += 3;
             }
-            else if (elements.get(i).getType() == VertexFormatElement.Type.PADDING)
+            else if (format.getType() == VertexFormatElement.Type.PADDING)
             {
                 posDescription.format(VK_FORMAT_R8_UNORM);
                 posDescription.offset(offset);
