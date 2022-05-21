@@ -64,6 +64,7 @@ public abstract class BufferBuilderM extends FixedColorVertexConsumer implements
             this.putFloat(8, z);
             int i = 12;
 
+            //TODO: simplify
             if (useFloat) {
                 this.putFloat(i+0, red);
                 this.putFloat(i+4, green);
