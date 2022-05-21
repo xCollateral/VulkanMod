@@ -435,8 +435,10 @@ public class Vulkan {
             VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo.callocStack(stack);
             allocatorCreateInfo.physicalDevice(physicalDevice);
             allocatorCreateInfo.device(device);
-            allocatorCreateInfo.instance(instance);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
+
+            // required for LWJGL 3.3.0
+            allocatorCreateInfo.instance(instance);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
