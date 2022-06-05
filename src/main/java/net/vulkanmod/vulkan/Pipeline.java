@@ -419,38 +419,40 @@ public class Pipeline {
             VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
             posDescription.binding(0);
             posDescription.location(i);
-            VertexFormatElement format = elements.get(i);
-            if (format.getType() == VertexFormatElement.Type.POSITION)
+
+            VertexFormatElement.Type type = elements.get(i).getType();
+            if (type == VertexFormatElement.Type.POSITION)
             {
                 posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
                 posDescription.offset(offset);
 
                 offset += 12;
             }
-            else if (format.getType() == VertexFormatElement.Type.COLOR)
+            else if (type == VertexFormatElement.Type.COLOR)
             {
-                boolean isByte = format.getDataType() == VertexFormatElement.DataType.UBYTE;
-                posDescription.format(isByte ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R32G32B32A32_SFLOAT);
+//                posDescription.format(VK_FORMAT_R32G32B32A32_SFLOAT);
+                posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
                 posDescription.offset(offset);
 
-                offset += isByte ? 4 : 16;
+//                offset += 16;
+                offset += 4;
             }
-            else if (format.getType() == VertexFormatElement.Type.UV)
+            else if (type == VertexFormatElement.Type.UV)
             {
-                if(format.getDataType() == VertexFormatElement.DataType.FLOAT){
+                if(elements.get(i).getDataType() == VertexFormatElement.DataType.FLOAT){
                     posDescription.format(VK_FORMAT_R32G32_SFLOAT);
                     posDescription.offset(offset);
 
                     offset += 8;
                 }
-                else if(format.getDataType() == VertexFormatElement.DataType.SHORT){
+                else if(elements.get(i).getDataType() == VertexFormatElement.DataType.SHORT){
                     posDescription.format(VK_FORMAT_R16G16_SINT);
                     posDescription.offset(offset);
 
                     offset += 4;
                 }
             }
-            else if (format.getType() == VertexFormatElement.Type.NORMAL)
+            else if (type == VertexFormatElement.Type.NORMAL)
             {
                 posDescription.format(VK_FORMAT_R8G8B8_SNORM);
                 //posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
@@ -458,7 +460,7 @@ public class Pipeline {
 
                 offset += 3;
             }
-            else if (format.getType() == VertexFormatElement.Type.PADDING)
+            else if (type == VertexFormatElement.Type.PADDING)
             {
                 posDescription.format(VK_FORMAT_R8_UNORM);
                 posDescription.offset(offset);
@@ -670,6 +672,7 @@ public class Pipeline {
                 VkDescriptorImageInfo.Buffer[] imageInfos = new VkDescriptorImageInfo.Buffer[samplers.size()];
 
                 if(samplers.size() > 0) {
+                    //TODO: make an auxiliary function
                     VulkanImage texture = VTextureSelector.getBoundTexture();
                     texture.readOnlyLayout();
                     //VulkanImage texture = VTextureManager.getCurrentTexture();

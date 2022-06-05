@@ -45,7 +45,7 @@ public abstract class MemoryManager {
 
             int result = vmaCreateBuffer(allocator, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if(result != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create buffer");
+                throw new RuntimeException("Failed to create buffer:" + result);
             }
 
 //            LongBuffer pBufferMem = MemoryUtil.memLongBuffer(MemoryUtil.memAddressSafe(pBufferMemory), 1);

@@ -163,7 +163,7 @@ public class Drawer {
 
             int err = vkBeginCommandBuffer(commandBuffer, beginInfo);
             if (err != VK_SUCCESS) {
-                throw new RuntimeException("Failed to begin recording command buffer");
+                throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
             renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
@@ -187,8 +187,9 @@ public class Drawer {
 
         vkCmdEndRenderPass(commandBuffer);
 
-        if(vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw new RuntimeException("Failed to record command buffer");
+        int result = vkEndCommandBuffer(commandBuffer);
+        if(result != VK_SUCCESS) {
+            throw new RuntimeException("Failed to record command buffer:" + result);
         }
 
         activeCommandBuffers[currentFrame] = false;

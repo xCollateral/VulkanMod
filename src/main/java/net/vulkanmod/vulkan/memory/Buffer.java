@@ -71,6 +71,8 @@ public abstract class Buffer {
 
             void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
                 Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, (int) bufferSize, buffer.getUsedBytes()));
+
+//                MapAndCopy(buffer.allocation, bufferSize, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, (int) bufferSize, buffer.getUsedBytes()));
             }
 
             void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {

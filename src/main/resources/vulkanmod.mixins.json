@@ -12,7 +12,6 @@
     "renderer.BufferRendererM",
     "renderer.VertexBufferM",
     "renderer.VertexFormatsM",
-    "screen.LevelLoadingScreenM",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",

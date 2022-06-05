@@ -55,8 +55,8 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     private static final Set<String> VALIDATION_LAYERS;
     static {
@@ -436,8 +436,6 @@ public class Vulkan {
             allocatorCreateInfo.physicalDevice(physicalDevice);
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
-
-            // required for LWJGL 3.3.0
             allocatorCreateInfo.instance(instance);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
