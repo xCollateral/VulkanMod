@@ -29,24 +29,24 @@ public class Synchronization {
 
         fences.limit(idx);
 
-//        int count = 50;
-//        long[] longs = new long[count];
-//        int i = 0;
-//        for (i = 0; i + count - 1 < idx; i += count) {
-//            fences.position(i);
-//            fences.get(longs, 0, count);
-//            vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
-//        }
-//        if(idx - i > 0) {
-//            longs = new long[idx - i];
-//            fences.position(i);
-//            fences.get(longs, 0, idx - i);
-//            vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
-//        }
+        int count = 50;
+        long[] longs = new long[count];
+        int i;
+        for (i = 0; i + count - 1 < idx; i += count) {
+            fences.position(i);
+            fences.get(longs, 0, count);
+            vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
+        }
+        if(idx - i > 0) {
+            longs = new long[idx - i];
+            fences.position(i);
+            fences.get(longs, 0, idx - i);
+            vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
+        }
 
 //        Profiler profiler = new Profiler("sync");
 //        profiler.start();
-        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
+//        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
 //        profiler.push("wait");
 //        vkResetCommandPool(device, commandPool, 0);
 //        profiler.push("free");

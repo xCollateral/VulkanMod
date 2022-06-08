@@ -410,12 +410,17 @@ public class Pipeline {
 
         ImmutableList<VertexFormatElement> elements = vertexFormat.getElements();
 
+        int size = elements.size();
+        if(elements.stream().anyMatch(vertexFormatElement -> vertexFormatElement.getType() == VertexFormatElement.Type.PADDING)) {
+            size--;
+        }
+
         VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                VkVertexInputAttributeDescription.callocStack(elements.size());
+                VkVertexInputAttributeDescription.calloc(size);
 
         int offset = 0;
 
-        for(int i = 0; i < elements.size(); ++i) {
+        for(int i = 0; i < size; ++i) {
             VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
             posDescription.binding(0);
             posDescription.location(i);
@@ -454,16 +459,16 @@ public class Pipeline {
             }
             else if (type == VertexFormatElement.Type.NORMAL)
             {
-                posDescription.format(VK_FORMAT_R8G8B8_SNORM);
-                //posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
+//                posDescription.format(VK_FORMAT_R8G8B8_UNORM);
+                posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
                 posDescription.offset(offset);
 
                 offset += 3;
             }
             else if (type == VertexFormatElement.Type.PADDING)
             {
-                posDescription.format(VK_FORMAT_R8_UNORM);
-                posDescription.offset(offset);
+//                posDescription.format(VK_FORMAT_R8_UNORM);
+//                posDescription.offset(offset);
 
                 offset += 1;
             }
