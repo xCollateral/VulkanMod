@@ -1,8 +1,20 @@
 package net.vulkanmod;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.renderer.v1.Renderer;
+import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
+import net.fabricmc.fabric.api.renderer.v1.material.MaterialFinder;
+import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
+import net.fabricmc.fabric.api.renderer.v1.mesh.MeshBuilder;
+import net.fabricmc.fabric.impl.renderer.RendererAccessImpl;
+import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+
+import static org.objectweb.asm.Opcodes.*;
 
 public class Initializer implements ModInitializer {
 	public static final Logger LOGGER = LogManager.getLogger("VulkanMod");
@@ -11,5 +23,6 @@ public class Initializer implements ModInitializer {
 	public void onInitialize() {
 
 		LOGGER.info("Hello Fabric world!");
+
 	}
 }

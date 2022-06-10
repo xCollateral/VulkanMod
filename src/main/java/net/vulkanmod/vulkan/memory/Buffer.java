@@ -22,7 +22,7 @@ public abstract class Buffer {
     protected int bufferSize;
     protected int usedBytes;
 
-    protected VertexBuffer.Type type;
+    protected Buffer.Type type;
     protected int usage;
     protected PointerBuffer data;
 
@@ -75,6 +75,12 @@ public abstract class Buffer {
 //                MapAndCopy(buffer.allocation, bufferSize, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, (int) bufferSize, buffer.getUsedBytes()));
             }
 
+            @Override
+            void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
+                Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, byteBuffer.remaining(), 0));
+
+            }
+
             void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
                 Copy(buffer.data, (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, (int) buffer.bufferSize), 0));
             }
@@ -107,6 +113,15 @@ public abstract class Buffer {
                     copyStagingtoLocalBuffer(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
 
                 }
+            }
+
+            @Override
+            void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
+                int bufferSize = byteBuffer.remaining();
+                StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+                stagingBuffer.copyBuffer(bufferSize, byteBuffer);
+
+                copyStagingtoLocalBuffer(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
             }
 
             void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
@@ -144,5 +159,14 @@ public abstract class Buffer {
         void createBuffer(Buffer buffer, int size) {};
         void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {};
         void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {};
+
+        /**
+         * Replace data from byte 0
+         */
+        void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {}
     }
+
+    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type); }
+
+    public record BufferInfo(long id, long allocation, long bufferSize, Buffer.Type type) {}
 }

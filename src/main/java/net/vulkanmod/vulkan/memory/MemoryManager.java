@@ -23,7 +23,7 @@ public abstract class MemoryManager {
     private static final int Frames = Vulkan.getSwapChainImages().size();
 
     private static List<Pair<Pair<Long, Long>, Integer>> freeableBuffers = new ArrayList<>();
-    private static List<Pair<Buffer, Integer>> freeableBuffers2 = new ArrayList<>();
+    private static List<Pair<Buffer.BufferInfo, Integer>> freeableBuffers2 = new ArrayList<>();
 //    private static Map<Long, Boolean[]> buffersInUse = new HashMap<>();
 
     private static int deviceMemory = 0;
@@ -170,7 +170,8 @@ public abstract class MemoryManager {
     }
 
     public synchronized static void addToFreeable(Buffer buffer) {
-        freeableBuffers2.add(new Pair<>(buffer, -2));
+        freeableBuffers2.add(new Pair<>(buffer.getBufferInfo(), 0));
+//        freeableBuffers.add(new Pair<>(new Pair<>(buffer.getId(), buffer.getAllocation()), 0));
     }
 
     public synchronized static void freeBuffers() {
@@ -182,7 +183,6 @@ public abstract class MemoryManager {
             Integer count = pair.second;
             if(count >= waitCount) {
                 freeBuffer(pair.first.first, pair.first.second);
-                //freeableBuffers.remove(pair);
             } else {
                 pair.second = count + 1;
                 newList.add(pair);
@@ -191,20 +191,20 @@ public abstract class MemoryManager {
 
         freeableBuffers = newList;
 
-        List<Pair<Buffer, Integer>> newList2 = new ArrayList<>();
-        for(Pair<Buffer, Integer> pair : freeableBuffers2) {
+        List<Pair<Buffer.BufferInfo, Integer>> newList2 = new ArrayList<>();
+
+        waitCount = Frames + 1;
+        for(Pair<Buffer.BufferInfo, Integer> pair : freeableBuffers2) {
 
             Integer count = pair.second;
             if(count >= waitCount) {
-                Buffer buffer = pair.first;
-                freeBuffer(buffer.getId(), buffer.getAllocation());
+                freeBuffer(pair.first.id(), pair.first.allocation());
 
-                if(buffer.type == Buffer.Type.DEVICE_LOCAL) {
-                    deviceMemory -= buffer.bufferSize;
+                if(pair.first.type() == Buffer.Type.DEVICE_LOCAL) {
+                    deviceMemory -= pair.first.bufferSize();
                 } else {
-                    nativeMemory -= buffer.bufferSize;
+                    nativeMemory -= pair.first.bufferSize();
                 }
-                //freeableBuffers.remove(pair);
             } else {
                 pair.second = count + 1;
                 newList2.add(pair);
