@@ -50,11 +50,21 @@ public class VertexBuffer extends Buffer {
         this.type.copyToBuffer(this, bufferSize, byteBuffer);
     }
 
+    public void uploadWholeBuffer(ByteBuffer byteBuffer) {
+        int bufferSize = (int) (byteBuffer.remaining());
+
+        if(bufferSize > this.bufferSize - this.usedBytes) {
+            resizeBuffer((this.bufferSize + bufferSize) * 2);
+        }
+
+        this.type.uploadBuffer(this, byteBuffer);
+    }
+
     private void resizeBuffer(int newSize) {
-        MemoryManager.addToFreeable(this.id, this.allocation);
+        MemoryManager.addToFreeable(this);
         createVertexBuffer(newSize);
 
-        System.out.println("resized vertexBuffer to: " + newSize);
+//        System.out.println("resized vertexBuffer to: " + newSize);
     }
 
     public long getOffset() { return  offset; }

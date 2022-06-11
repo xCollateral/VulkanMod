@@ -44,6 +44,23 @@ public class IndexBuffer extends Buffer {
         }
     }
 
+    public void uploadWholeBuffer(ByteBuffer byteBuffer) {
+        int bufferSize = (int) (byteBuffer.remaining());
+
+        if(bufferSize > this.bufferSize - this.usedBytes) {
+            resizeBuffer((this.bufferSize + bufferSize) * 2);
+        }
+
+        this.type.uploadBuffer(this, byteBuffer);
+    }
+
+    private void resizeBuffer(int newSize) {
+        MemoryManager.addToFreeable(this);
+        createIndexBuffer(newSize);
+
+        System.out.println("resized vertexBuffer to: " + newSize);
+    }
+
     public long getOffset() { return  offset; }
 
 
