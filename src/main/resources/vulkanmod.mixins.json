@@ -12,6 +12,7 @@
     "renderer.BufferRendererM",
     "renderer.VertexBufferM",
     "renderer.VertexFormatsM",
+    "screen.EnchantmentScreenM",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",

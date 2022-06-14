@@ -28,95 +28,95 @@ public class VBO {
 
     public VBO() {}
 
-    //TODO: delete
-//    public void upload_(BufferBuilder p_85936_) {
-//        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = p_85936_.popData();
-//
-//        //BufferUploader.reset();
-//        BufferBuilder.DrawArrayParameters parameters = pair.getFirst();
-//        ByteBuffer bytebuffer = pair.getSecond();
-//        int i = parameters.getIndexBufferStart();
-//        this.indexCount = parameters.getVertexCount();
-//        this.vertexCount = parameters.getCount();
-//        this.indexType = parameters.getElementFormat();
-//        this.format = parameters.getVertexFormat();
-//        this.mode = parameters.getMode();
-//        this.sequentialIndices = parameters.hasNoIndexBuffer();
-//
-//        if (!parameters.hasNoVertexBuffer() && vertexCount > 0) {
-//            bytebuffer.limit(i);
-//
-//            if(vertexBuffer != null) MemoryManager.addToFreeable(vertexBuffer);
-//            vertexBuffer = new VertexBuffer(i, VertexBuffer.Type.DEVICE_LOCAL);
-//            vertexBuffer.copyToVertexBuffer(format.getVertexSize(), this.vertexCount, bytebuffer);
-//
-//            bytebuffer.position(i);
-//        }
-//
-//        if (!this.sequentialIndices) {
-//
-//            if(parameters.hasNoVertexBuffer()) {
-//
-//                bytebuffer.limit(indexCount * indexType.size);
-//
-//                if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
-//                indexBuffer = new IndexBuffer(bytebuffer.remaining(), IndexBuffer.Type.DEVICE_LOCAL); // Short size
-//                indexBuffer.copyBuffer(bytebuffer);
-//
-//                return;
-//
-//            }
-//
-//            bytebuffer.limit(parameters.getIndexBufferEnd());
-//
-//            if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
-//            indexBuffer = new IndexBuffer(bytebuffer.remaining(), IndexBuffer.Type.DEVICE_LOCAL); // Short size
-//            indexBuffer.copyBuffer(bytebuffer);
-//
-//            bytebuffer.position(0);
-//        } else {
-//
-//            if (vertexCount <= 0) {
-//                return;
-//            }
-//
-//            AutoIndexBuffer autoIndexBuffer;
-//            if(this.mode != VertexFormat.DrawMode.TRIANGLE_FAN) {
-//                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
-//            } else {
-//                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
-//                this.indexCount = (vertexCount - 2) * 3;
-//            }
-//            autoIndexBuffer.checkCapacity(vertexCount);
-//            indexBuffer = autoIndexBuffer.getIndexBuffer();
-//            this.autoIndexed = true;
-//
-//            bytebuffer.limit(i);
-//            bytebuffer.position(0);
-//        }
-//
-//    }
-
-    public void upload_(BufferBuilder bufferBuilder) {
-        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = bufferBuilder.popData();
+    //TODO
+    public void upload_(BufferBuilder p_85936_) {
+        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = p_85936_.popData();
 
         //BufferUploader.reset();
         BufferBuilder.DrawArrayParameters parameters = pair.getFirst();
         ByteBuffer bytebuffer = pair.getSecond();
-
-        this.offset = parameters.getIndexBufferStart();
+        int i = parameters.getIndexBufferStart();
         this.indexCount = parameters.getVertexCount();
         this.vertexCount = parameters.getCount();
         this.indexType = parameters.getElementFormat();
+        this.format = parameters.getVertexFormat();
         this.mode = parameters.getMode();
         this.sequentialIndices = parameters.hasNoIndexBuffer();
 
-        this.configureVertexBuffer(parameters, bytebuffer);
-        this.configureIndexBuffer(parameters, bytebuffer);
+        if (!parameters.hasNoVertexBuffer() && vertexCount > 0) {
+            bytebuffer.limit(i);
 
-        bytebuffer.position(0);
+            if(vertexBuffer != null) MemoryManager.addToFreeable(vertexBuffer);
+            vertexBuffer = new VertexBuffer(i, VertexBuffer.Type.DEVICE_LOCAL);
+            vertexBuffer.copyToVertexBuffer(format.getVertexSize(), this.vertexCount, bytebuffer);
+
+            bytebuffer.position(i);
+        }
+
+        if (!this.sequentialIndices) {
+
+            if(parameters.hasNoVertexBuffer()) {
+
+                bytebuffer.limit(indexCount * indexType.size);
+
+                if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
+                indexBuffer = new IndexBuffer(bytebuffer.remaining(), IndexBuffer.Type.DEVICE_LOCAL); // Short size
+                indexBuffer.copyBuffer(bytebuffer);
+
+                return;
+
+            }
+
+            bytebuffer.limit(parameters.getIndexBufferEnd());
+
+            if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
+            indexBuffer = new IndexBuffer(bytebuffer.remaining(), IndexBuffer.Type.DEVICE_LOCAL); // Short size
+            indexBuffer.copyBuffer(bytebuffer);
+
+            bytebuffer.position(0);
+        } else {
+
+            if (vertexCount <= 0) {
+                return;
+            }
+
+            AutoIndexBuffer autoIndexBuffer;
+            if(this.mode != VertexFormat.DrawMode.TRIANGLE_FAN) {
+                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
+            } else {
+                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
+                this.indexCount = (vertexCount - 2) * 3;
+            }
+            autoIndexBuffer.checkCapacity(vertexCount);
+            indexBuffer = autoIndexBuffer.getIndexBuffer();
+            this.autoIndexed = true;
+
+            bytebuffer.limit(i);
+            bytebuffer.position(0);
+        }
 
     }
+
+//    public void upload_(BufferBuilder bufferBuilder) {
+//        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = bufferBuilder.popData();
+//
+//        //BufferUploader.reset();
+//        BufferBuilder.DrawArrayParameters parameters = pair.getFirst();
+//        ByteBuffer bytebuffer = pair.getSecond();
+//
+//        this.offset = parameters.getIndexBufferStart();
+//        this.indexCount = parameters.getVertexCount();
+//        this.vertexCount = parameters.getCount();
+//        this.indexType = parameters.getElementFormat();
+//        this.mode = parameters.getMode();
+//        this.sequentialIndices = parameters.hasNoIndexBuffer();
+//
+//        this.configureVertexBuffer(parameters, bytebuffer);
+//        this.configureIndexBuffer(parameters, bytebuffer);
+//
+//        bytebuffer.position(0);
+//
+//    }
 
     private VertexFormat configureVertexBuffer(BufferBuilder.DrawArrayParameters parameters, ByteBuffer data) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);

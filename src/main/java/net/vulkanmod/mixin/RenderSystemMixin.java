@@ -456,5 +456,6 @@ public abstract class RenderSystemMixin {
         projectionMatrix = savedProjectionMatrix;
         //Vulkan
         VRenderSystem.applyProjectionMatrix(projectionMatrix);
+        VRenderSystem.calculateMVP();
     }
 }

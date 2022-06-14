@@ -460,7 +460,7 @@ public class Pipeline {
             else if (type == VertexFormatElement.Type.NORMAL)
             {
 //                posDescription.format(VK_FORMAT_R8G8B8_UNORM);
-                posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
+                posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
                 posDescription.offset(offset);
 
                 offset += 3;
