@@ -220,7 +220,9 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite
-    public static void colorMask(boolean red, boolean green, boolean blue, boolean alpha) {}
+    public static void colorMask(boolean red, boolean green, boolean blue, boolean alpha) {
+        VRenderSystem.colorMask(red, green, blue, alpha);
+    }
 
     /**
      * @author
@@ -458,4 +460,6 @@ public abstract class RenderSystemMixin {
         VRenderSystem.applyProjectionMatrix(projectionMatrix);
         VRenderSystem.calculateMVP();
     }
+
+
 }

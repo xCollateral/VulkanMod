@@ -54,6 +54,7 @@ public class Drawer {
     public static Pipeline.BlendState currentBlendState = Pipeline.DEFAULT_BLEND_STATE;
     public static Pipeline.DepthState currentDepthState = Pipeline.DEFAULT_DEPTH_STATE;
     public static Pipeline.LogicOpState currentLogicOpState = Pipeline.DEFAULT_LOGICOP_STATE;
+    public static Pipeline.ColorMask currentColorMask = Pipeline.DEFAULT_COLORMASK;
 
     private static Matrix4f projectionMatrix = new Matrix4f();
     private static Matrix4f modelViewMatrix = new Matrix4f();
@@ -446,7 +447,8 @@ public class Drawer {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         currentDepthState = VRenderSystem.getDepthState();
-        Pipeline.PipelineState currentState = new Pipeline.PipelineState(currentBlendState, currentDepthState, currentLogicOpState);
+        currentColorMask = new Pipeline.ColorMask(VRenderSystem.getColorMask());
+        Pipeline.PipelineState currentState = new Pipeline.PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 
         usedPipelines.add(pipeline);

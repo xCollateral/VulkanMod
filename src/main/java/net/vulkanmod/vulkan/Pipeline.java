@@ -37,6 +37,7 @@ public class Pipeline {
     public static final BlendState DEFAULT_BLEND_STATE = defaultBlend();
     public static final DepthState DEFAULT_DEPTH_STATE = defaultDepthState();
     public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
+    public static final ColorMask DEFAULT_COLORMASK = new ColorMask(true, true, true, true);
     public static final BlendState NO_BLEND_STATE = new BlendState(false, 0, 0, 0, 0);
 
     private static final VkDevice device = Vulkan.getDevice();
@@ -66,7 +67,7 @@ public class Pipeline {
 
         createDescriptorSetLayout(path);
         createPipelineLayout();
-        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE),
+        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
                 (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
         createDescriptorPool(descriptorCount);
         //allocateDescriptorSets();
@@ -171,7 +172,7 @@ public class Pipeline {
             // ===> COLOR BLENDING <===
 
             VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.callocStack(1, stack);
-            colorBlendAttachment.colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+            colorBlendAttachment.colorWriteMask(state.colorMask.colorMask);
 
             if(state.blendState.enabled) {
                 colorBlendAttachment.blendEnable(true);
@@ -768,16 +769,20 @@ public class Pipeline {
         return new DepthState(true, true, 515);
     }
 
+    public static ColorMask defaultColorMask() { return new ColorMask(true, true, true, true); }
+
     public static class PipelineState {
         final BlendState blendState;
         final DepthState depthState;
+        final ColorMask colorMask;
         final LogicOpState logicOpState;
         final boolean cullState;
 
-        public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState) {
+        public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask) {
             this.blendState = blendState;
             this.depthState = depthState;
             this.logicOpState = logicOpState;
+            this.colorMask = colorMask;
             this.cullState = VRenderSystem.cull;
         }
 
@@ -786,7 +791,7 @@ public class Pipeline {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             PipelineState that = (PipelineState) o;
-            return blendState.equals(that.blendState) && depthState.equals(that.depthState) && logicOpState.equals(that.logicOpState) && (cullState == that.cullState);
+            return blendState.equals(that.blendState) && depthState.equals(that.depthState) && logicOpState.equals(that.logicOpState) && (cullState == that.cullState) && colorMask.equals(that.colorMask);
         }
 
         @Override
@@ -905,6 +910,30 @@ public class Pipeline {
 
         public int hashCode() {
             return Objects.hash(enabled, logicOp);
+        }
+    }
+
+    public static class ColorMask {
+        public final int colorMask;
+
+        public ColorMask(boolean r, boolean g, boolean b, boolean a) {
+            this.colorMask = (r ? VK_COLOR_COMPONENT_R_BIT : 0) | (g ? VK_COLOR_COMPONENT_G_BIT : 0) | (b ? VK_COLOR_COMPONENT_B_BIT : 0) | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
+        }
+
+        public ColorMask(int mask) {
+            this.colorMask = mask;
+        }
+
+        public static int getColorMask(boolean r, boolean g, boolean b, boolean a) {
+            return (r ? VK_COLOR_COMPONENT_R_BIT : 0) | (g ? VK_COLOR_COMPONENT_G_BIT : 0) | (b ? VK_COLOR_COMPONENT_B_BIT : 0) | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ColorMask colorMask = (ColorMask) o;
+            return this.colorMask == colorMask.colorMask;
         }
     }
 

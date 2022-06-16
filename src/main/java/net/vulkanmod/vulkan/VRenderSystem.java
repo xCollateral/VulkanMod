@@ -25,6 +25,8 @@ public class VRenderSystem {
     public static boolean depthMask = true;
     public static int depthFun = 515;
 
+    public static int colorMask = Pipeline.ColorMask.getColorMask(true, true, true, true);
+
     public static boolean cull = true;
 
     public static float clearDepth = 1.0f;
@@ -225,6 +227,14 @@ public class VRenderSystem {
 
     public static Pipeline.DepthState getDepthState() {
         return new Pipeline.DepthState(depthTest, depthMask, depthFun);
+    }
+
+    public static void colorMask(boolean b, boolean b1, boolean b2, boolean b3) {
+        colorMask = Pipeline.ColorMask.getColorMask(b, b1, b2, b3);
+    }
+
+    public static int getColorMask() {
+        return colorMask;
     }
 
     public static void enableDepthTest() {

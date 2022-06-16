@@ -78,8 +78,9 @@ public class EnchantmentScreenM extends HandledScreen<EnchantmentScreenHandler> 
 //        matrices.translate(0, 3.3f, 1984.0);
 
         //TODO: make a proper transformation
-        matrices.translate(k * 0.5f, 3.3f - k * 0.2f, 1984.0);
-        float f = 5.0f - 0.1f * k ;
+        matrices.translate((this.width - 320) * 0.5f * 0.01f * k, 3.3f, 1984.0);
+        float f = 5.0f;
+//        float f = (this.width) * k * 0.005f;
         matrices.scale(f, f, f);
         matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180.0f));
         matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(20.0f));
