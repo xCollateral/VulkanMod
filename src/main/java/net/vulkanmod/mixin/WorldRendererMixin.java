@@ -1,7 +1,6 @@
 package net.vulkanmod.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.render.*;
@@ -234,8 +233,8 @@ public abstract class WorldRendererMixin {
      * @param frustum
      * @param info
      */
-    @Inject(at = @At("HEAD"), method = "applyFrustum", cancellable = true)
-    private void applyFrustum(Frustum frustum, CallbackInfo info) {
+    @Overwrite
+    private void applyFrustum(Frustum frustum) {
         if(lastFrustum != null && !chunkInfos.isEmpty() && this.field_34817.get().field_34819.size() == potentialChunks) {
             Vector4f viewVector = new Vector4f(frustum.field_34821.getX(), frustum.field_34821.getY(), frustum.field_34821.getZ(), frustum.field_34821.getW());
             viewVector.normalize();
@@ -248,7 +247,6 @@ public abstract class WorldRendererMixin {
                 skip = false;
             }
             if(skip) {
-                info.cancel();
                 return;
             }
         }
@@ -263,7 +261,6 @@ public abstract class WorldRendererMixin {
         lastFrustum = frustum;
         lastFrustum.field_34821.normalize();
         potentialChunks = this.field_34817.get().field_34819.size();
-        info.cancel();
     }
     
 }
