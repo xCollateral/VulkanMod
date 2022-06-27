@@ -346,7 +346,7 @@ public abstract class RenderSystemMixin {
         VRenderSystem.lightDirection0.putFloat(4, p_157174_.getY());
         VRenderSystem.lightDirection0.putFloat(8, p_157174_.getZ());
 
-        VRenderSystem.lightDirection1.putFloat(0, p_157175_.getY());
+        VRenderSystem.lightDirection1.putFloat(0, p_157175_.getX());
         VRenderSystem.lightDirection1.putFloat(4, p_157175_.getY());
         VRenderSystem.lightDirection1.putFloat(8, p_157175_.getZ());
     }
