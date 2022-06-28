@@ -46,16 +46,6 @@ public class VRenderSystem {
 
     private static final float[] depthBias = new float[2];
 
-//    static {
-//        MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
-//        MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix) + 4, 4);
-//
-//        float[] floats = new float[16];
-//        floats[0] = modelViewMatrix.asFloatBuffer().get(0);
-//        floats[1] = modelViewMatrix.asFloatBuffer().get(1);
-//        floats[1] = modelViewMatrix.asFloatBuffer().get(1);
-//    }
-
     public static void initRenderer()
     {
         RenderSystem.assertInInitPhase();
