@@ -16,6 +16,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3f;
+import net.vulkanmod.vulkan.Drawer;
 import org.joml.Matrix4d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -67,6 +68,8 @@ public class EnchantmentScreenM extends HandledScreen<EnchantmentScreenHandler> 
         this.drawTexture(matrices, i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
         int k = (int)this.client.getWindow().getScaleFactor();
         RenderSystem.viewport((this.width - 320) / 2 * k, (this.height - 240) / 2 * k, 320 * k, 240 * k);
+        Drawer.setViewport((this.width - 320) / 2 * k, (this.height - 240) / 2 * k, 320 * k, 240 * k);
+
         Matrix4f matrix4f = Matrix4f.translate(-0.34f, 0.23f, 0.0f);
         matrix4f.multiply(Matrix4f.viewboxMatrix(90.0, 1.3333334f, 9.0f, 80.0f));
         RenderSystem.backupProjectionMatrix();
@@ -75,12 +78,10 @@ public class EnchantmentScreenM extends HandledScreen<EnchantmentScreenHandler> 
         MatrixStack.Entry entry = matrices.peek();
         entry.getPositionMatrix().loadIdentity();
         entry.getNormalMatrix().loadIdentity();
-//        matrices.translate(0, 3.3f, 1984.0);
+        matrices.translate(0, 3.3f, 1984.0);
 
         //TODO: make a proper transformation
-        matrices.translate((this.width - 320) * 0.5f * 0.01f * k, 3.3f, 1984.0);
         float f = 5.0f;
-//        float f = (this.width) * k * 0.005f;
         matrices.scale(f, f, f);
         matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180.0f));
         matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(20.0f));
@@ -112,6 +113,8 @@ public class EnchantmentScreenM extends HandledScreen<EnchantmentScreenHandler> 
         immediate.draw();
         matrices.pop();
         RenderSystem.viewport(0, 0, this.client.getWindow().getFramebufferWidth(), this.client.getWindow().getFramebufferHeight());
+        Drawer.setViewport(0, 0, this.client.getWindow().getFramebufferWidth(), this.client.getWindow().getFramebufferHeight());
+
         RenderSystem.restoreProjectionMatrix();
         DiffuseLighting.enableGuiDepthLighting();
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);

@@ -527,6 +527,22 @@ public class Drawer {
         }
     }
 
+    public static void setViewport(int x, int y, int width, int height) {
+
+        try(MemoryStack stack = stackPush()) {
+            VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+            viewport.x(x);
+            viewport.y(height + y);
+            viewport.width(width);
+            viewport.height(-height);
+            viewport.minDepth(0.0f);
+            viewport.maxDepth(1.0f);
+
+            vkCmdSetViewport(commandBuffers.get(currentFrame), 0, viewport);
+        }
+
+    }
+
     public static void pushDebugSection(String s) {
 //        VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 //
