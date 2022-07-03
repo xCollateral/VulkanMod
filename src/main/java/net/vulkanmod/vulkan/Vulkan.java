@@ -268,7 +268,6 @@ public class Vulkan {
             createInfo.pApplicationInfo(appInfo);
             // enabledExtensionCount is implicitly set when you call ppEnabledExtensionNames
             createInfo.ppEnabledExtensionNames(getRequiredExtensions());
-
             if(ENABLE_VALIDATION_LAYERS) {
 
                 createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
@@ -351,7 +350,7 @@ public class Vulkan {
 
             VkPhysicalDevice device = null;
 
-            for(int i = 0; i < ppPhysicalDevices.capacity();i++) {
+            for(int i = 0; i < ppPhysicalDevices.capacity(); i++) {
 
                 device = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
 
@@ -359,15 +358,18 @@ public class Vulkan {
                 vkGetPhysicalDeviceProperties(device, deviceProperties);
 
                 if(isDeviceSuitable(device) && deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+                    physicalDevice = device;
                     break;
                 }
+                if(isDeviceSuitable(device) && (deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU || deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU)) {
+                    physicalDevice = device;
+                }
+
             }
 
             if(device == null) {
                 throw new RuntimeException("Failed to find a suitable GPU");
             }
-
-            physicalDevice = device;
         }
     }
 
