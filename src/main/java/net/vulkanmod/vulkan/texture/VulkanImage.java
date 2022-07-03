@@ -182,7 +182,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -227,7 +227,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             barrier.newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -274,7 +274,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.callocStack(stack);
+            VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack);
             samplerInfo.sType(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
 
             if(blur) {
@@ -337,7 +337,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
             region.bufferRowLength(bufferRowLenght);   // Tightly packed
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
@@ -346,7 +346,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
             vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
 
@@ -361,7 +361,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
             region.bufferRowLength(bufferRowLenght);   // Tightly packed
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
@@ -370,7 +370,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
             vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
@@ -382,7 +382,7 @@ public class VulkanImage {
 
             TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
             region.bufferRowLength(bufferRowLenght);   // Tightly packed
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
@@ -391,7 +391,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
 
@@ -405,7 +405,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(oldLayout);
             barrier.newLayout(newLayout);

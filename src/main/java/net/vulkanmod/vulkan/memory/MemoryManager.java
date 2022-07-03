@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -33,13 +34,13 @@ public abstract class MemoryManager {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.callocStack(stack);
+            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack);
             bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
             bufferInfo.size(size);
             bufferInfo.usage(usage);
             //bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 //
-            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
+            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.calloc(stack);
             //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
             allocationInfo.requiredFlags(properties);
 
@@ -54,10 +55,10 @@ public abstract class MemoryManager {
 //                throw new RuntimeException("Failed to create vertex buffer");
 //            }
 //
-//            VkMemoryRequirements memRequirements = VkMemoryRequirements.mallocStack(stack);
+//            VkMemoryRequirements memRequirements = VkMemoryRequirements.malloc(stack);
 //            vkGetBufferMemoryRequirements(device, pBuffer.get(0), memRequirements);
 //
-//            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.callocStack(stack);
+//            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack);
 //            allocInfo.sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
 //            allocInfo.allocationSize(memRequirements.size());
 //            allocInfo.memoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits(), properties));
@@ -81,7 +82,7 @@ public abstract class MemoryManager {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageCreateInfo imageInfo = VkImageCreateInfo.callocStack(stack);
+            VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack);
             imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
             imageInfo.imageType(VK_IMAGE_TYPE_2D);
             imageInfo.extent().width(width);
@@ -97,7 +98,7 @@ public abstract class MemoryManager {
             imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
             imageInfo.pQueueFamilyIndices(stack.ints(0,1));
 
-            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
+            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.calloc(stack);
             //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
             allocationInfo.requiredFlags(memProperties);
 
@@ -107,10 +108,10 @@ public abstract class MemoryManager {
 //                throw new RuntimeException("Failed to create image");
 //            }
 //
-//            VkMemoryRequirements memRequirements = VkMemoryRequirements.mallocStack(stack);
+//            VkMemoryRequirements memRequirements = VkMemoryRequirements.malloc(stack);
 //            vkGetImageMemoryRequirements(device, pTextureImage.get(0), memRequirements);
 //
-//            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.callocStack(stack);
+//            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack);
 //            allocInfo.sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
 //            allocInfo.allocationSize(memRequirements.size());
 //            allocInfo.memoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits(), memProperties));
@@ -216,7 +217,7 @@ public abstract class MemoryManager {
 
     public static int findMemoryType(int typeFilter, int properties) {
 
-        VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.mallocStack();
+        VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.malloc(stackGet());
         vkGetPhysicalDeviceMemoryProperties(Vulkan.getDevice().getPhysicalDevice(), memProperties);
 
         for(int i = 0;i < memProperties.memoryTypeCount();i++) {
