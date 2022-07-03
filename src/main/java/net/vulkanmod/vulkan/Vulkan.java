@@ -364,7 +364,7 @@ public class Vulkan {
                 }
             }
 
-            if(device == null || deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_CPU) {
+            if(device == null || physicalDevice == null) {
                 throw new RuntimeException("Failed to find a suitable GPU");
             }
         }
