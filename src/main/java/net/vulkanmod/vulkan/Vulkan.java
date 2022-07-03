@@ -954,7 +954,7 @@ public class Vulkan {
 
         boolean anisotropicFilterSuppoted = false;
         try(MemoryStack stack = stackPush()) {
-            VkPhysicalDeviceFeatures supportedFeatures = VkPhysicalDeviceFeatures.mallocStack(stack);
+            VkPhysicalDeviceFeatures supportedFeatures = VkPhysicalDeviceFeatures.malloc(stack);
             vkGetPhysicalDeviceFeatures(device, supportedFeatures);
             anisotropicFilterSuppoted = supportedFeatures.samplerAnisotropy();
         }
@@ -971,7 +971,7 @@ public class Vulkan {
 
             vkEnumerateDeviceExtensionProperties(device, (String)null, extensionCount, null);
 
-            VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.mallocStack(extensionCount.get(0), stack);
+            VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(extensionCount.get(0), stack);
 
             vkEnumerateDeviceExtensionProperties(device, (String)null, extensionCount, availableExtensions);
 
