@@ -349,12 +349,10 @@ public class Vulkan {
             vkEnumeratePhysicalDevices(instance, deviceCount, ppPhysicalDevices);
 
             VkPhysicalDevice device = null;
-
+            VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
             for(int i = 0; i < ppPhysicalDevices.capacity(); i++) {
 
                 device = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
-
-                VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
                 vkGetPhysicalDeviceProperties(device, deviceProperties);
 
                 if(isDeviceSuitable(device) && deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
@@ -364,10 +362,9 @@ public class Vulkan {
                 if(isDeviceSuitable(device) && (deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU || deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU)) {
                     physicalDevice = device;
                 }
-
             }
 
-            if(device == null) {
+            if(device == null && deviceProperties.deviceType() != VK_PHYSICAL_DEVICE_TYPE_CPU) {
                 throw new RuntimeException("Failed to find a suitable GPU");
             }
         }
