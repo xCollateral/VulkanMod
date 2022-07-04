@@ -215,6 +215,8 @@ public class Vulkan {
             }
         }
 
+        Synchronization.waitFences();
+
         vkDeviceWaitIdle(device);
 
         swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
