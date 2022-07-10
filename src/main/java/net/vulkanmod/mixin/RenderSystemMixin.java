@@ -270,6 +270,14 @@ public abstract class RenderSystemMixin {
     /**
      * @author
      */
+    @Overwrite
+    public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
+        Drawer.currentBlendState = new Pipeline.BlendState(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
+    }
+
+    /**
+     * @author
+     */
     @Overwrite(remap = false)
     public static void enableCull() {
         assertOnGameThread();

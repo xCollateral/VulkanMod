@@ -821,6 +821,10 @@ public class Pipeline {
             this(true, srcRgb, dstRgb, srcAlpha, dstAlpha);
         }
 
+        public BlendState(int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
+            this(true, srcRgb, dstRgb, srcAlpha, dstAlpha);
+        }
+
         protected BlendState(boolean enabled, int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
             this.enabled = enabled;
             this.srcRgbFactor = srcRgb;

@@ -29,6 +29,7 @@
     "FramebufferMixin",
     "GameRendererMixin",
     "GlProgramManagerMixin",
+    "GlStateManagerM",
     "IntTypeMixin",
     "MinecraftClientMixin",
     "ModelLoaderM",
