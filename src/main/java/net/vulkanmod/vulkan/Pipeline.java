@@ -417,7 +417,7 @@ public class Pipeline {
         }
 
         VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                VkVertexInputAttributeDescription.calloc(size);
+                VkVertexInputAttributeDescription.callocStack(size);
 
         int offset = 0;
 

@@ -357,7 +357,7 @@ public class Vulkan {
 
                 device = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
 
-                VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
+                VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.callocStack(stack);
                 vkGetPhysicalDeviceProperties(device, deviceProperties);
 
                 if(isDeviceSuitable(device) && deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
