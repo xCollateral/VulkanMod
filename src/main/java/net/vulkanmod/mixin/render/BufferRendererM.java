@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.renderer;
+package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.BufferRenderer;
