@@ -30,7 +30,7 @@ public class TransferQueue {
 
         try(MemoryStack stack = stackPush()) {
 
-            findQueueFamilies(device.getPhysicalDevice());
+//            findQueueFamilies(device.getPhysicalDevice());
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);

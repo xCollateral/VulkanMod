@@ -79,7 +79,7 @@ public class Vulkan {
         System.out.println("Checks Enabled -->" + Boolean.FALSE.equals(Configuration.DISABLE_CHECKS.get()));
         System.out.println("Debug Enabled -->" + Checks.DEBUG);
 
-        System.setProperty("joml.fastmath", "true");
+//        System.setProperty("joml.fastmath", "true"); //Do not know of a good way to evaluate FMA3 support during runtime
         System.setProperty("joml.useMathFma", "true");
         System.setProperty("joml.forceUnsafe", "true");
         System.setProperty("joml.sinLookup.bits", "8");
@@ -393,7 +393,7 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            findQueueFamilies(physicalDevice);
+//            findQueueFamilies(physicalDevice);
 
             int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
