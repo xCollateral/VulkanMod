@@ -4,6 +4,7 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Options;
+import org.joml.Runtime;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.Checks;
 import org.lwjgl.system.Configuration;
@@ -64,6 +65,17 @@ public class Vulkan {
 
     private static final Set<String> VALIDATION_LAYERS=
             (ENABLE_VALIDATION_LAYERS)? new HashSet<>(Collections.singleton("VK_LAYER_KHRONOS_validation")) : null;
+
+    //From org.joml.Runtime
+    private static boolean hasMathFma() {
+        try {
+            Math.class.getDeclaredMethod("fma", float.class, float.class, float.class);
+            return true;
+
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
     static
     {
         Configuration.DISABLE_CHECKS.set(!checks);
@@ -78,13 +90,13 @@ public class Vulkan {
 //        Configuration.VULKAN_EXPLICIT_INIT.set(true);
         System.out.println("Checks Enabled -->" + Boolean.FALSE.equals(Configuration.DISABLE_CHECKS.get()));
         System.out.println("Debug Enabled -->" + Checks.DEBUG);
-
-//        System.setProperty("joml.fastmath", "true"); //Do not know of a good way to evaluate FMA3 support during runtime
-        System.setProperty("joml.useMathFma", "true");
+        String isFMA3Enabled= String.valueOf(hasMathFma());
+        System.setProperty("joml.fastmath", "true");
+        System.setProperty("joml.useMathFma", isFMA3Enabled); //Do not know of a good way to evaluate FMA3 support during runtime:
         System.setProperty("joml.forceUnsafe", "true");
         System.setProperty("joml.sinLookup.bits", "8");
         System.setProperty("joml.sinLookup", "true");
-        System.out.println("Using FMA -->" + Options.USE_MATH_FMA);
+        System.out.println("Using FMA -->" + isFMA3Enabled);
 
     }
 
@@ -591,8 +603,8 @@ public class Vulkan {
             colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
             colorAttachment.loadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
             colorAttachment.storeOp(VK13.VK_ATTACHMENT_STORE_OP_NONE); //Change to VK_ATTACHMENT_STORE_OP_STORE_DONT_CARE for some interesting Graphical bugs (Can't confirm if driver specific but occurs on Vulkan Developer driver 473.64 via Nvidia)
-            colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            colorAttachment.stencilLoadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
+            colorAttachment.stencilStoreOp(VK13.VK_ATTACHMENT_STORE_OP_NONE);
             colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             colorAttachment.finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -609,8 +621,8 @@ public class Vulkan {
             depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
             depthAttachment.loadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
             depthAttachment.storeOp(VK13.VK_ATTACHMENT_STORE_OP_NONE);
-            depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.stencilLoadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
+            depthAttachment.stencilStoreOp(VK13.VK_ATTACHMENT_STORE_OP_NONE);
             depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             depthAttachment.finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 

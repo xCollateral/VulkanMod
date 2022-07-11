@@ -32,13 +32,13 @@ public class Drawer {
     private static VkDevice device;
     private static List<VkCommandBuffer> commandBuffers;
 
-    private static Set<Pipeline> usedPipelines = new HashSet<>();
+    private static final Set<Pipeline> usedPipelines = new HashSet<>();
 
-    private VertexBuffer[] vertexBuffers;
-    private AutoIndexBuffer quadsIndexBuffer;
-    private AutoIndexBuffer triangleFanIndexBuffer;
-    private AutoIndexBuffer triangleStripIndexBuffer;
-    private UniformBuffers uniformBuffers;
+    private final VertexBuffer[] vertexBuffers;
+    private final AutoIndexBuffer quadsIndexBuffer;
+    private final AutoIndexBuffer triangleFanIndexBuffer;
+    private final AutoIndexBuffer triangleStripIndexBuffer;
+    private final UniformBuffers uniformBuffers;
 
     private static int MAX_FRAMES_IN_FLIGHT;
     private static ArrayList<Long> imageAvailableSemaphores;
@@ -47,7 +47,7 @@ public class Drawer {
 
     private static int currentFrame = 0;
     private final int commandBuffersCount = getSwapChainImages().size();
-    private static boolean[] activeCommandBuffers = new boolean[getSwapChainImages().size()];
+    private static final boolean[] activeCommandBuffers = new boolean[getSwapChainImages().size()];
 
     private static int currentIndex = 0;
 
@@ -395,10 +395,11 @@ public class Drawer {
 
         uploadAndBindUBOs(boundPipeline);
 
-        int indexCount;
-        if(drawMode == 7) indexCount = vertexCount * 3 / 2;
-        else if(drawMode == 6 || drawMode == 5) indexCount = (vertexCount - 2) * 3;
-        else throw new RuntimeException("unknown drawMode: " + drawMode);
+        int indexCount = switch (drawMode) {
+            case 7 -> vertexCount * 3 / 2;
+            case 6, 5 -> (vertexCount - 2) * 3;
+            default -> throw new RuntimeException("unknown drawMode: " + drawMode);
+        };
 
         drawIndexed(vertexBuffer, indexBuffer, indexCount);
     }
@@ -470,37 +471,40 @@ public class Drawer {
 
             int attachmentsCount;
             VkClearAttachment.Buffer pAttachments;
-            if (v == 0x100) {
-                attachmentsCount = 1;
+            switch (v) {
+                case 0x100 -> {
+                    attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
 
-                VkClearAttachment clearDepth = pAttachments.get(0);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else if (v == 0x4000) {
-                attachmentsCount = 1;
+                    VkClearAttachment clearDepth = pAttachments.get(0);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                case 0x4000 -> {
+                    attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
 
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.colorAttachment(0);
-                clearColor.clearValue(colorValue);
-            } else if (v == 0x4100) {
-                attachmentsCount = 2;
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.colorAttachment(0);
+                    clearColor.clearValue(colorValue);
+                }
+                case 0x4100 -> {
+                    attachmentsCount = 2;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
 
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.clearValue(colorValue);
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.clearValue(colorValue);
 
-                VkClearAttachment clearDepth = pAttachments.get(1);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else {
-                throw new RuntimeException("unexpected value");
+                    VkClearAttachment clearDepth = pAttachments.get(1);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                default -> throw new RuntimeException("unexpected value");
             }
 
             //Rect to clear
