@@ -54,7 +54,7 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 //    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     private static final Set<String> VALIDATION_LAYERS;
@@ -156,11 +156,11 @@ public class Vulkan {
     private static int swapChainImageFormat;
     private static VkExtent2D swapChainExtent;
     private static List<Long> swapChainImageViews;
-    private static List<Long> swapChainFramebuffers;
+    private static long swapChainFramebuffer;
 
     private static long depthImage;
     private static long depthImageMemory;
-    private static long depthImageView;
+    static long depthImageView;
 
     private static long renderPass;
 
@@ -219,7 +219,7 @@ public class Vulkan {
 
         vkDeviceWaitIdle(device);
 
-        swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
+        vkDestroyFramebuffer(device, swapChainFramebuffer, null);
 
         swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 
@@ -262,7 +262,7 @@ public class Vulkan {
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
             appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_1);
+            appInfo.apiVersion(VK12.VK_API_VERSION_1_2);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -390,17 +390,34 @@ public class Vulkan {
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
 
-            VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
-            deviceFeatures.samplerAnisotropy(true);
+//            VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
+//            deviceFeatures.samplerAnisotropy(true);
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack)
+                    .sType(VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+//                    .pNext                           (&vk13F)
+                    .descriptorBindingPartiallyBound (true)
+                    .imagelessFramebuffer            (true);
+
+
+
+
+
+            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc()
+                    .sType(VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
+                    .pNext(deviceVulkan12Features.address());
+            /* .features = deviceFeatures */
+
+            deviceFeatures2.features().samplerAnisotropy(true);
+            VK11.vkGetPhysicalDeviceFeatures2( physicalDevice, deviceFeatures2 );
+//            vkGetPhysicalDeviceFeatures(physicalDevice, deviceFeatures2.features());
+            deviceFeatures2.features().samplerAnisotropy();
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+            createInfo.pNext(deviceFeatures2.address());
             createInfo.pQueueCreateInfos(queueCreateInfos);
             // queueCreateInfoCount is automatically set
-
-            createInfo.pEnabledFeatures(deviceFeatures);
-
             createInfo.ppEnabledExtensionNames(asPointerBuffer(DEVICE_EXTENSIONS));
 
             if(ENABLE_VALIDATION_LAYERS) {
@@ -565,8 +582,8 @@ public class Vulkan {
             VkAttachmentDescription colorAttachment = attachments.get(0);
             colorAttachment.format(swapChainImageFormat);
             colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
+            colorAttachment.loadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
+            colorAttachment.storeOp(VK13.VK_ATTACHMENT_STORE_OP_NONE);
             colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
@@ -583,8 +600,8 @@ public class Vulkan {
             VkAttachmentDescription depthAttachment = attachments.get(1);
             depthAttachment.format(findDepthFormat());
             depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.loadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
+            depthAttachment.storeOp(VK13.VK_ATTACHMENT_STORE_OP_NONE);
             depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
@@ -600,13 +617,13 @@ public class Vulkan {
             subpass.pColorAttachments(VkAttachmentReference.callocStack(1, stack).put(0, colorAttachmentRef));
             subpass.pDepthStencilAttachment(depthAttachmentRef);
 
-            VkSubpassDependency.Buffer dependency = VkSubpassDependency.callocStack(1, stack);
-            dependency.srcSubpass(VK_SUBPASS_EXTERNAL);
-            dependency.dstSubpass(0);
-            dependency.srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
-            dependency.srcAccessMask(0);
-            dependency.dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
-            dependency.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+//            VkSubpassDependency.Buffer dependency = VkSubpassDependency.callocStack(1, stack);
+//            dependency.srcSubpass(VK_SUBPASS_EXTERNAL);
+//            dependency.dstSubpass(0);
+//            dependency.srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
+//            dependency.srcAccessMask(0);
+//            dependency.dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
+//            dependency.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 
             VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.callocStack(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
@@ -795,7 +812,6 @@ public class Vulkan {
 
     private static void createFramebuffers() {
 
-        swapChainFramebuffers = new ArrayList<>(swapChainImageViews.size());
 
         try(MemoryStack stack = stackPush()) {
 
@@ -803,27 +819,51 @@ public class Vulkan {
             //attachments = stack.mallocLong(1);
             LongBuffer pFramebuffer = stack.mallocLong(1);
 
-            // Lets allocate the create info struct once and just update the pAttachments field each iteration
-            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack);
-            framebufferInfo.sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-            framebufferInfo.renderPass(renderPass);
-            framebufferInfo.width(swapChainExtent.width());
-            framebufferInfo.height(swapChainExtent.height());
-            framebufferInfo.layers(1);
 
-            for(long imageView : swapChainImageViews) {
+        VkFramebufferAttachmentImageInfo.Buffer FramebufferAttachmentImage = VkFramebufferAttachmentImageInfo.calloc(2, stack);
 
-                attachments.put(0, imageView);
+        FramebufferAttachmentImage.get(0).sType$Default()
+                .pViewFormats(stack.ints(swapChainImageFormat))
+                .height( swapChainExtent.height())
+                .layerCount(1)
+                .width( swapChainExtent.width())
+                .usage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT+1); //Odd BUG with older Vulkan 1.3 versions where the usage is set to 11 instead of 10
 
-                framebufferInfo.pAttachments(attachments);
+        FramebufferAttachmentImage.get(1).sType$Default()
+                .pViewFormats(stack.ints(VK_FORMAT_D32_SFLOAT))
+                .height( swapChainExtent.height())
+                .layerCount(1)
+                .width( swapChainExtent.width())
+                .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-                if(vkCreateFramebuffer(device, framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
-                    throw new RuntimeException("Failed to create framebuffer");
-                }
 
-                swapChainFramebuffers.add(pFramebuffer.get(0));
-            }
+        VkFramebufferAttachmentsCreateInfo FramebufferAttachments = VkFramebufferAttachmentsCreateInfo.calloc(stack)
+                .sType$Default()
+                .pAttachmentImageInfos(FramebufferAttachmentImage);
+
+        // Lets allocate the create info struct once and just update the pAttachments field each iteration
+        VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
+                .sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
+                .pNext(FramebufferAttachments.address())
+                .flags( KHRImagelessFramebuffer.VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR)
+                .renderPass(renderPass)
+                .width(swapChainExtent.width())
+                .height(swapChainExtent.height())
+                .layers(1)
+                .attachmentCount(2);
+
+//            for(long imageView : swapChainImageViews) {
+
+//                attachments.put(0, imageView);
+
+//                framebufferInfo.pAttachments(attachments);
+
+        if(vkCreateFramebuffer(device, framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
+            throw new RuntimeException("Failed to create framebuffer");
         }
+
+        swapChainFramebuffer =((pFramebuffer.get(0)));
+            }
     }
 
 
@@ -1090,9 +1130,14 @@ public class Vulkan {
         return renderPass;
     }
 
-    public static List<Long> getSwapChainFramebuffers()
+    public static List<Long> getSwapChainImageViews()
     {
-        return swapChainFramebuffers;
+        return swapChainImageViews;
+    }
+
+    public static long getSwapChainFramebuffer()
+    {
+        return swapChainFramebuffer;
     }
 
     public static long getCommandPool()

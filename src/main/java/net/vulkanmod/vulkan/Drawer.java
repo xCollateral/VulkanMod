@@ -46,8 +46,8 @@ public class Drawer {
     private static ArrayList<Long> inFlightFences;
 
     private static int currentFrame = 0;
-    private final int commandBuffersCount = getSwapChainFramebuffers().size();
-    private static boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
+    private final int commandBuffersCount = getSwapChainImages().size();
+    private static boolean[] activeCommandBuffers = new boolean[getSwapChainImages().size()];
 
     private static int currentIndex = 0;
 
@@ -138,36 +138,37 @@ public class Drawer {
 
         resetDescriptors();
 
-        vkResetCommandBuffer(commandBuffers.get(currentFrame), 0);
+        //todo: Explicit reset not needed as VKBeginCommandBuffer implies an implicit automatic reset if VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT is specified
+
+        //vkResetCommandBuffer(commandBuffers.get(currentFrame), 0);
 
         try(MemoryStack stack = stackPush()) {
 
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+            //            memPutAddress(RenderPassAttachments.address() + VkRenderPassAttachmentBeginInfo.PATTACHMENTS, getSwapChainImageViews().get(currentFrame));
 
-            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
-            renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+            VkRect2D renderArea = VkRect2D.calloc(stack)
+                    .offset(VkOffset2D.calloc(stack).set(0, 0))
+                    .extent(getSwapchainExtent());
 
-            renderPassInfo.renderPass(getRenderPass());
+//            VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
+//            clearValues.get(0).color().float32(stack.floats(0.0f, 0.0f, 0.0f, 1.0f));
+//            clearValues.get(1).depthStencil().set(1.0f, 0);
 
-            VkRect2D renderArea = VkRect2D.callocStack(stack);
-            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
-            renderArea.extent(getSwapchainExtent());
-            renderPassInfo.renderArea(renderArea);
-
-            VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
-            clearValues.get(0).color().float32(stack.floats(0.0f, 0.0f, 0.0f, 1.0f));
-            clearValues.get(1).depthStencil().set(1.0f, 0);
-            renderPassInfo.pClearValues(clearValues);
+            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack)
+                    .sType$Default()
+                    .pNext(VkRenderPassAttachmentBeginInfo.calloc(stack).sType$Default().pAttachments(stack.longs(getSwapChainImageViews().get(currentFrame), depthImageView)).address())
+                    .renderPass(getRenderPass())
+                    .renderArea(renderArea)
+                    .framebuffer(getSwapChainFramebuffer());
+//                    .pClearValues(clearValues);
 
             VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-            int err = vkBeginCommandBuffer(commandBuffer, beginInfo);
+            int err = vkBeginCommandBuffer(commandBuffer, VkCommandBufferBeginInfo.calloc(stack).sType$Default());
             if (err != VK_SUCCESS) {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
 
             vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -182,7 +183,6 @@ public class Drawer {
             activeCommandBuffers[currentFrame] = true;
         }
     }
-
     public void endRenderPass() {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
