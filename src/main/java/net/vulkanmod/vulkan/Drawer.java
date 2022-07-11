@@ -290,25 +290,17 @@ public class Drawer {
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
-                framebufferResize = false;
                 recreateSwapChain();
-                return;
+//                return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image");
             }
 
-            final int imageIndex = pImageIndex.get(0);
-
-            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-
-            submitInfo.waitSemaphoreCount(1);
-            submitInfo.pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
-
-            submitInfo.pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
-
-            submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(imageIndex)));
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .waitSemaphoreCount(1).pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame))).pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT))
+                    .pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)))
+                    .pCommandBuffers(stack.pointers(commandBuffers.get(pImageIndex.get(0))));
 
             vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
 
@@ -319,22 +311,18 @@ public class Drawer {
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
-            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack);
-            presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-
-            presentInfo.pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
-
-            presentInfo.swapchainCount(1);
-            presentInfo.pSwapchains(stack.longs(getSwapChain()));
-
-            presentInfo.pImageIndices(pImageIndex);
+            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack)
+                    .sType$Default()
+                    .pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)))
+                    .swapchainCount(1)
+                    .pSwapchains(stack.longs(getSwapChain()))
+                    .pImageIndices(pImageIndex);
 
             vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
-                framebufferResize = false;
                 recreateSwapChain();
-                return;
+//                return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Failed to present swap chain image");
             }
@@ -344,6 +332,7 @@ public class Drawer {
     }
 
     private static void recreateSwapChain() {
+        framebufferResize = false;
         for(Long fence : inFlightFences) {
             vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
         }
