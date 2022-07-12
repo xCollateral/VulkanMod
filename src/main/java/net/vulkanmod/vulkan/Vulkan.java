@@ -547,8 +547,8 @@ public class Vulkan {
                     .imageArrayLayers(1)
                     .imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 
-                    .imageSharingMode((QueueFamilyIndices.graphicsFamily.equals(QueueFamilyIndices.presentFamily))?VK_SHARING_MODE_CONCURRENT:VK_SHARING_MODE_EXCLUSIVE)
-                    .pQueueFamilyIndices((QueueFamilyIndices.graphicsFamily.equals(QueueFamilyIndices.presentFamily)) ?stack.ints(QueueFamilyIndices.graphicsFamily, QueueFamilyIndices.presentFamily):null)
+                    .imageSharingMode(!(QueueFamilyIndices.graphicsFamily.equals(QueueFamilyIndices.presentFamily))?VK_SHARING_MODE_CONCURRENT:VK_SHARING_MODE_EXCLUSIVE)
+                    .pQueueFamilyIndices(!(QueueFamilyIndices.graphicsFamily.equals(QueueFamilyIndices.presentFamily)) ?stack.ints(QueueFamilyIndices.graphicsFamily, QueueFamilyIndices.presentFamily):null)
 
                     .preTransform(SwapChainSupportDetails.capabilities.currentTransform())
                     .compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
