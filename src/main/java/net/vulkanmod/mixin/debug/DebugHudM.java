@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 
+import static net.vulkanmod.Initializer.getVersion;
+
 @Mixin(DebugHud.class)
 public abstract class DebugHudM {
 
@@ -39,7 +41,7 @@ public abstract class DebugHudM {
         strings.add("NativeMemory: " + MemoryManager.getNativeMemory() / (1024 * 1024) + "MB");
         strings.add("DeviceMemory: " + MemoryManager.getDeviceMemory() / (1024 * 1024) + "MB");
         strings.add("");
-        strings.add("VulkanMod");
+        strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
         strings.add("GPU: " + DeviceInfo.deviceName);
         strings.add("Driver: " + DeviceInfo.driverVersion);

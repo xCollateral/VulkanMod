@@ -94,4 +94,12 @@ public class VUtil {
         return r == 0 ? num : num + align - r;
     }
 
+    public static Matrix4f convert(net.minecraft.util.math.Matrix4f src) {
+        try(MemoryStack stack = stackPush()) {
+            FloatBuffer fb = stack.mallocFloat(16);
+            src.writeColumnMajor(fb);
+            Matrix4f dst = new Matrix4f(fb);
+            return dst;
+        }
+    }
 }

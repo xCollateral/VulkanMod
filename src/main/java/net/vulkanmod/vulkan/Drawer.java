@@ -78,7 +78,7 @@ public class Drawer {
         MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
         vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-            vertexBuffers[i] = new VertexBuffer(VBOSize, VertexBuffer.Type.HOST_LOCAL);
+            vertexBuffers[i] = new VertexBuffer(VBOSize, MemoryTypes.HOST_MEM);
         }
 
         uniformBuffers = new UniformBuffers(UBOSize);
@@ -289,12 +289,12 @@ public class Drawer {
             int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR) {
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
                 framebufferResize = false;
                 recreateSwapChain();
                 return;
             } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image");
+                throw new RuntimeException("Cannot get image: " + vkResult);
             }
 
             final int imageIndex = pImageIndex.get(0);
@@ -530,7 +530,7 @@ public class Drawer {
     public static void setViewport(int x, int y, int width, int height) {
 
         try(MemoryStack stack = stackPush()) {
-            VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+            VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
             viewport.x(x);
             viewport.y(height + y);
             viewport.width(width);

@@ -7,22 +7,20 @@ import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
 public class IndexBuffer extends Buffer {
 
-    private long offset;
-
     public IndexType indexType = IndexType.SHORT;
 
     public IndexBuffer(int size) {
-        this(size, Type.HOST_LOCAL);
+        this(size, MemoryTypes.HOST_MEM);
     }
 
-    public IndexBuffer(int size, Type type) {
-        super(VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-        this.type = type;
+    public IndexBuffer(int size, MemoryType type) {
+        super(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, type);
         createIndexBuffer(size);
     }
 
+    //TODO: use createBuffer instead
     private void createIndexBuffer(int size) {
-        this.type.createBuffer(this, size);
+        this.createBuffer(size);
     }
 
     public void copyBuffer(ByteBuffer buffer) {

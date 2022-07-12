@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.renderer;
+package net.vulkanmod.mixin.render;
 
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.BufferBuilder;

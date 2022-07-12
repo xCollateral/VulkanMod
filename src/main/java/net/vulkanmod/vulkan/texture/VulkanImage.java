@@ -1,5 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
+import it.unimi.dsi.fastutil.bytes.Byte2LongMap;
+import it.unimi.dsi.fastutil.bytes.Byte2LongOpenHashMap;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
@@ -24,6 +26,8 @@ public class VulkanImage {
     private long textureImageMemory;
     private long allocation;
     private long textureImageView;
+
+    private Byte2LongMap samplers;
     private long textureSampler;
 
     private int mipLevels;
@@ -44,6 +48,8 @@ public class VulkanImage {
         this.width = width;
         this.height = height;
         this.formatSize = formatSize;
+
+        this.samplers = new Byte2LongOpenHashMap(8);
 
         createTextureImage(mipLevels, width, height);
         createTextureImageView(mipLevels);
@@ -303,11 +309,15 @@ public class VulkanImage {
             samplerInfo.compareEnable(false);
             samplerInfo.compareOp(VK_COMPARE_OP_ALWAYS);
 
-            samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
-            samplerInfo.maxLod(mipLevels - 1);
-            //samplerInfo.maxLod(0.0F);
-            samplerInfo.minLod(0.0F);
-            samplerInfo.mipLodBias(0.0F);
+            if(mipmap) {
+                samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
+                samplerInfo.maxLod(mipLevels);
+                samplerInfo.minLod(0.0F);
+            } else {
+                samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
+                samplerInfo.maxLod(0.0F);
+                samplerInfo.minLod(0.0F);
+            }
 
             LongBuffer pTextureSampler = stack.mallocLong(1);
 
@@ -316,13 +326,18 @@ public class VulkanImage {
             }
 
             textureSampler = pTextureSampler.get(0);
+
+            byte mask = (byte) ((blur ? 1 : 0) | (mipmap ? 2 : 0));
+            samplers.put(mask, textureSampler);
         }
     }
 
     public void updateTextureSampler(boolean blur, boolean clamp, boolean mipmap) {
-        vkDestroySampler(device, textureSampler, null);
+        byte mask = (byte) ((blur ? 1 : 0) | (mipmap ? 2 : 0));
+        long sampler = this.samplers.get(mask);
 
-        createTextureSampler(blur, clamp, mipmap);
+        if(sampler == 0L) createTextureSampler(blur, clamp, mipmap);
+        else this.textureSampler = sampler;
     }
 
     private void copyBufferToImage(long buffer, long image, int mipLevel, int width, int height) {

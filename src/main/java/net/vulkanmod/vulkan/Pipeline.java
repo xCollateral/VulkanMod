@@ -417,7 +417,7 @@ public class Pipeline {
         }
 
         VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                VkVertexInputAttributeDescription.calloc(size);
+                VkVertexInputAttributeDescription.callocStack(size);
 
         int offset = 0;
 
@@ -651,7 +651,7 @@ public class Pipeline {
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(UBOs.size() + samplers.size(), stack);
                 VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[UBOs.size()];
 
-                long currentOffset = uniformBuffers.getUsedBytes();
+                int currentOffset = uniformBuffers.getUsedBytes();
 
                 int i = 0;
                 for(UBO ubo : UBOs) {
@@ -818,6 +818,10 @@ public class Pipeline {
         }
 
         public BlendState(GlStateManager.SrcFactor srcRgb, GlStateManager.DstFactor dstRgb, GlStateManager.SrcFactor srcAlpha, GlStateManager.DstFactor dstAlpha) {
+            this(true, srcRgb, dstRgb, srcAlpha, dstAlpha);
+        }
+
+        public BlendState(int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
             this(true, srcRgb, dstRgb, srcAlpha, dstAlpha);
         }
 
