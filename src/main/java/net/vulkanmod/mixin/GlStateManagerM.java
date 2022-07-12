@@ -12,18 +12,18 @@ public class GlStateManagerM {
     /**
      * @author
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static void _disableScissorTest() {}
 
     /**
      * @author
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static void _enableScissorTest() {}
 
     /**
      * @author
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static void _scissorBox(int x, int y, int width, int height) {} //TODO: scissor
 }

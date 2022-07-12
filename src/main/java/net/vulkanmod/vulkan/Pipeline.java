@@ -651,7 +651,7 @@ public class Pipeline {
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(UBOs.size() + samplers.size(), stack);
                 VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[UBOs.size()];
 
-                long currentOffset = uniformBuffers.getUsedBytes();
+                int currentOffset = uniformBuffers.getUsedBytes();
 
                 int i = 0;
                 for(UBO ubo : UBOs) {
