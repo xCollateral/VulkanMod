@@ -13,25 +13,17 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class StagingBuffer extends Buffer{
 
-    long offset;
-
-    private PointerBuffer mappedAddress;
-
     public StagingBuffer(int bufferSize) {
-        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
         this.usedBytes = 0;
         this.offset = 0;
 
-        this.type = Type.HOST_LOCAL;
         this.createStagingBuffer(bufferSize);
     }
 
+    //TODO: use createBuffer instead
     private void createStagingBuffer(int bufferSize) {
-        this.type.createBuffer(this, bufferSize);
-
-        this.bufferSize = bufferSize;
-        this.map();
-
+        this.createBuffer(bufferSize);
     }
 
     public void copyBuffer(int size, ByteBuffer byteBuffer) {
@@ -40,7 +32,7 @@ public class StagingBuffer extends Buffer{
             resizeBuffer((int)(this.bufferSize + size) * 2);
         }
 
-        Copy(this.mappedAddress,
+        Copy(this.data,
                 (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) this.bufferSize), byteBuffer, this.usedBytes)
         );
 
@@ -57,10 +49,6 @@ public class StagingBuffer extends Buffer{
         createStagingBuffer(newSize);
 
         System.out.println("resized staging buffer to: " + newSize);
-    }
-
-    private void map() {
-        mappedAddress = Map(allocation);
     }
 
     public void reset() {

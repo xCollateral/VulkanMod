@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -147,6 +148,7 @@ public class Vulkan {
     private static VkDevice device;
 
     public static VkPhysicalDeviceProperties deviceProperties;
+    public static VkPhysicalDeviceMemoryProperties memoryProperties;
 
     private static VkQueue graphicsQueue;
     private static VkQueue presentQueue;
@@ -180,8 +182,8 @@ public class Vulkan {
         createSurface(window);
         pickPhysicalDevice();
         createLogicalDevice();
-        retrieveProperties();
         createVma();
+        MemoryTypes.createMemoryTypes();
         createCommandPool();
         allocateImmediateCmdBuffer();
 
@@ -422,12 +424,16 @@ public class Vulkan {
 
             vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
             presentQueue = new VkQueue(pQueue.get(0), device);
-        }
-    }
 
-    private static  void retrieveProperties() {
-        deviceProperties = VkPhysicalDeviceProperties.malloc();
-        vkGetPhysicalDeviceProperties(physicalDevice, deviceProperties);
+            //Get device properties
+
+            deviceProperties = VkPhysicalDeviceProperties.malloc();
+            vkGetPhysicalDeviceProperties(physicalDevice, deviceProperties);
+
+            memoryProperties = VkPhysicalDeviceMemoryProperties.malloc();
+            vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
+
+        }
     }
 
     private static void createVma() {

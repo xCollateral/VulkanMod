@@ -200,7 +200,7 @@ public abstract class MemoryManager {
             if(count >= waitCount) {
                 freeBuffer(pair.first.id(), pair.first.allocation());
 
-                if(pair.first.type() == Buffer.Type.DEVICE_LOCAL) {
+                if(pair.first.type() == MemoryType.Type.DEVICE_LOCAL) {
                     deviceMemory -= pair.first.bufferSize();
                 } else {
                     nativeMemory -= pair.first.bufferSize();

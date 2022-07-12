@@ -78,7 +78,7 @@ public class Drawer {
         MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
         vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-            vertexBuffers[i] = new VertexBuffer(VBOSize, VertexBuffer.Type.HOST_LOCAL);
+            vertexBuffers[i] = new VertexBuffer(VBOSize, MemoryTypes.HOST_MEM);
         }
 
         uniformBuffers = new UniformBuffers(UBOSize);
@@ -294,7 +294,7 @@ public class Drawer {
                 recreateSwapChain();
                 return;
             } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image");
+                throw new RuntimeException("Cannot get image: " + vkResult);
             }
 
             final int imageIndex = pImageIndex.get(0);

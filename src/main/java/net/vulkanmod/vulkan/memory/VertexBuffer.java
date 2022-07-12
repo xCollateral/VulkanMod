@@ -7,25 +7,20 @@ import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class VertexBuffer extends Buffer {
-    private int offset;
 
     public VertexBuffer(int size) {
-        this(size, Type.HOST_LOCAL);
+        this(size, MemoryTypes.HOST_MEM);
     }
 
-    public VertexBuffer(int size, Type type) {
-        super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        this.type = type;
+    public VertexBuffer(int size, MemoryType type) {
+        super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, type);
         createVertexBuffer(size);
 
     }
 
+    //TODO: use createBuffer instead
     private void createVertexBuffer(int size) {
-        this.type.createBuffer(this, size);
-
-        if(type == Type.HOST_LOCAL) {
-            data = Map(this.allocation);
-        }
+        this.createBuffer(size);
     }
 
     public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {

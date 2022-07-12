@@ -47,7 +47,7 @@ public class VBO {
             bytebuffer.limit(i);
 
             if(vertexBuffer != null) MemoryManager.addToFreeable(vertexBuffer);
-            vertexBuffer = new VertexBuffer(i, VertexBuffer.Type.DEVICE_LOCAL);
+            vertexBuffer = new VertexBuffer(i, MemoryTypes.GPU_MEM);
             vertexBuffer.copyToVertexBuffer(format.getVertexSize(), this.vertexCount, bytebuffer);
 
             bytebuffer.position(i);
@@ -60,7 +60,7 @@ public class VBO {
                 bytebuffer.limit(indexCount * indexType.size);
 
                 if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
-                indexBuffer = new IndexBuffer(bytebuffer.remaining(), IndexBuffer.Type.DEVICE_LOCAL); // Short size
+                indexBuffer = new IndexBuffer(bytebuffer.remaining(), MemoryTypes.GPU_MEM); // Short size
                 indexBuffer.copyBuffer(bytebuffer);
 
                 return;
@@ -70,7 +70,7 @@ public class VBO {
             bytebuffer.limit(parameters.getIndexBufferEnd());
 
             if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
-            indexBuffer = new IndexBuffer(bytebuffer.remaining(), IndexBuffer.Type.DEVICE_LOCAL); // Short size
+            indexBuffer = new IndexBuffer(bytebuffer.remaining(), MemoryTypes.GPU_MEM); // Short size
             indexBuffer.copyBuffer(bytebuffer);
 
             bytebuffer.position(0);
@@ -123,7 +123,7 @@ public class VBO {
         if (!parameters.hasNoVertexBuffer() && vertexCount > 0) {
             data.limit(offset);
 
-            if(vertexBuffer == null) vertexBuffer = new VertexBuffer(data.remaining(), Buffer.Type.DEVICE_LOCAL);
+            if(vertexBuffer == null) vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
             vertexBuffer.uploadWholeBuffer(data);
 
             data.position(offset);
@@ -152,7 +152,7 @@ public class VBO {
 
         data.limit(parameters.getIndexBufferEnd());
 
-        if(indexBuffer == null) indexBuffer = new IndexBuffer(data.remaining(), Buffer.Type.DEVICE_LOCAL);
+        if(indexBuffer == null) indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
         indexBuffer.uploadWholeBuffer(data);
     }
 
