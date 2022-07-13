@@ -32,6 +32,7 @@ import static net.vulkanmod.vulkan.ShaderSPIRVUtils.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK11.VK_ERROR_OUT_OF_POOL_MEMORY;
 
 public class Pipeline {
     public static final BlendState DEFAULT_BLEND_STATE = defaultBlend();
@@ -627,7 +628,7 @@ public class Pipeline {
                 LongBuffer pDescriptorSet = stack.mallocLong(1);
 
                 int result = vkAllocateDescriptorSets(device, allocInfo, pDescriptorSet);
-                if (result == -1000069000) {
+                if (result == VK_ERROR_OUT_OF_POOL_MEMORY) {
                     descriptorCount *= 2;
                     createDescriptorPool(descriptorCount);
                     allocateDescriptorSet(frame);

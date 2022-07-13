@@ -118,7 +118,7 @@ public class VulkanImage {
     public void uploadSubTexture(int mipLevel, int width, int height, int xOffset, int yOffset, int formatSize, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         try(MemoryStack stack = stackPush()) {
 
-            long imageSize = buffer.limit();
+            int imageSize = buffer.limit();
 
             transferDstLayout();
 
