@@ -43,8 +43,8 @@ public class UniformBuffers {
     public void uploadUBO(ByteBuffer buffer, int offset, int frame)  {
         int size = buffer.remaining();
         int alignedSize = align(size, minOffset);
-        if (alignedSize > this.bufferSize - this.usedBytes) {
-            resizeBuffer((this.bufferSize + alignedSize));
+        if (alignedSize > this.uniformBuffers.get(frame).bufferSize - this.usedBytes) {
+            this.uniformBuffers.get(frame).resizeBuffer(bufferSize+alignedSize); ;
         } else {
             uploadUBORaw(buffer, offset, frame);
             usedBytes += alignedSize;
