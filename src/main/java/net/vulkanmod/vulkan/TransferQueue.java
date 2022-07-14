@@ -97,11 +97,11 @@ public class TransferQueue {
                 fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
                 fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
-                PointerBuffer pFence = getPointerBuffer(size, fenceInfo);
+                long pFence = getPointerBuffer(fenceInfo);
 
                 for(int i = 0; i < size; ++i) {
-                    fences.add(pFence.get(0));
-                    commandBuffer.fence = pFence.get(0);
+                    fences.add(pFence);
+                    commandBuffer.fence = pFence;
                 }
 
             }

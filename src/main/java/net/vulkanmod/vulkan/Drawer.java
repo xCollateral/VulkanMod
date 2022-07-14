@@ -21,13 +21,10 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.memory.MemoryManager.doBufferAlloc;
 import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
-import static net.vulkanmod.vulkan.memory.MemoryManager.Extracted;
-import static org.lwjgl.system.Checks.check;
-import static org.lwjgl.system.JNI.callPPPI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -210,12 +207,12 @@ public class Drawer {
         try(MemoryStack stack = stackPush()) {
 
             VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
+                    .sType$Default()
                     .commandPool(getCommandPool())
                     .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY)
                     .commandBufferCount(commandBuffersCount);
 
-            PointerBuffer pCommandBuffers = Extracted(allocInfo, commandBuffersCount);
+            PointerBuffer pCommandBuffers = doBufferAlloc(allocInfo, commandBuffersCount);
 
             for (int i = 0; i < commandBuffersCount; i++) {
                 commandBuffers.add(new VkCommandBuffer(pCommandBuffers.get(i), device));

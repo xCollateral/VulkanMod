@@ -312,13 +312,7 @@ public class VulkanImage {
                 samplerInfo.minLod(0.0F);
             }
 
-            LongBuffer pTextureSampler = stack.mallocLong(1);
-
-            if(vkCreateSampler(getDevice(), samplerInfo, null, pTextureSampler) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create texture sampler");
-            }
-
-            textureSampler = pTextureSampler.get(0);
+            textureSampler = doPointerAllocSafe3(samplerInfo, device.getCapabilities().vkCreateSampler);
 
             byte mask = (byte) ((blur ? 1 : 0) | (mipmap ? 2 : 0));
             samplers.put(mask, textureSampler);

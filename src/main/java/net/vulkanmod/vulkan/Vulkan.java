@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
+import static net.vulkanmod.vulkan.memory.MemoryManager.getLongBuffer;
 import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.glfw.GLFW.glfwWaitEvents;
@@ -103,9 +104,9 @@ public class Vulkan {
 
     private static class SwapChainSupportDetails {
 
-        private VkSurfaceCapabilitiesKHR capabilities;
-        private VkSurfaceFormatKHR.Buffer formats;
-        private IntBuffer presentModes;
+        static private VkSurfaceCapabilitiesKHR capabilities;
+        static private VkSurfaceFormatKHR.Buffer formats;
+        static private IntBuffer presentModes;
 
     }
 
@@ -440,13 +441,8 @@ public class Vulkan {
             poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-            LongBuffer pCommandPool = stack.mallocLong(1);
 
-            if (vkCreateCommandPool(device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create command pool");
-            }
-
-            commandPool = pCommandPool.get(0);
+            commandPool = doPointerAllocSafe3(poolInfo, device.getCapabilities().vkCreateCommandPool);;
         }
     }
 
@@ -454,16 +450,16 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, stack);
+            querySwapChainSupport(physicalDevice, stack);
 
-            VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-            int presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-            VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+            VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(SwapChainSupportDetails.formats);
+            int presentMode = chooseSwapPresentMode(SwapChainSupportDetails.presentModes);
+            VkExtent2D extent = chooseSwapExtent(SwapChainSupportDetails.capabilities);
 
-            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), 2));
+            IntBuffer imageCount = stack.ints(Math.max(SwapChainSupportDetails.capabilities.minImageCount(), 2));
 
-            if(swapChainSupport.capabilities.maxImageCount() > 0 && imageCount.get(0) > swapChainSupport.capabilities.maxImageCount()) {
-                imageCount.put(0, swapChainSupport.capabilities.maxImageCount());
+            if(SwapChainSupportDetails.capabilities.maxImageCount() > 0 && imageCount.get(0) > SwapChainSupportDetails.capabilities.maxImageCount()) {
+                imageCount.put(0, SwapChainSupportDetails.capabilities.maxImageCount());
             }
 
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
@@ -492,22 +488,18 @@ public class Vulkan {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
 
-            createInfo.preTransform(swapChainSupport.capabilities.currentTransform());
+            createInfo.preTransform(SwapChainSupportDetails.capabilities.currentTransform());
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
+            MemoryManager.Frames=imageCount.get(0);
 
             //long oldSwapchain = swapChain != NULL ? swapChain : VK_NULL_HANDLE;
             createInfo.oldSwapchain(VK_NULL_HANDLE);
 
-            LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
-            if(vkCreateSwapchainKHR(device, createInfo, null, pSwapChain) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create swap chain");
-            }
-
-            swapChain = pSwapChain.get(0);
-
+            swapChain =  getLongBuffer(createInfo);
+            assert (swapChain!=NULL);
             vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
 
             LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
@@ -593,7 +585,6 @@ public class Vulkan {
 
 
             renderPass = doPointerAllocSafe3(renderPassInfo, device.getCapabilities().vkCreateRenderPass);
-            ;
         }
     }
 
@@ -691,8 +682,8 @@ public class Vulkan {
 //            }
 //        }
 //
-//        return VK_PRESENT_MODE_FIFO_KHR;
-        return VK_PRESENT_MODE_IMMEDIATE_KHR;
+        return VK_PRESENT_MODE_FIFO_KHR;
+//        return VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
 
     private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {
@@ -841,9 +832,9 @@ public class Vulkan {
             vkAllocateCommandBuffers(device, allocInfo, pCommandBuffer);
             immediateCmdBuffer = new VkCommandBuffer(pCommandBuffer.get(0), device);
 
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack);
-            fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack)
+                    .sType$Default()
+                    .flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
             LongBuffer pFence = stack.mallocLong(1);
             vkCreateFence(device, fenceInfo, null, pFence);
@@ -852,6 +843,7 @@ public class Vulkan {
             immediateFence = pFence.get(0);
         }
     }
+
 
     public static VkCommandBuffer beginImmediateCmd() {
         try (MemoryStack stack = stackPush()) {
@@ -922,8 +914,8 @@ public class Vulkan {
 
         if(extensionsSupported) {
             try(MemoryStack stack = stackPush()) {
-                SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, stack);
-                swapChainAdequate = swapChainSupport.formats.hasRemaining() && swapChainSupport.presentModes.hasRemaining() ;
+                querySwapChainSupport(device, stack);
+                swapChainAdequate = SwapChainSupportDetails.formats.hasRemaining() && SwapChainSupportDetails.presentModes.hasRemaining() ;
             }
         }
 
@@ -957,30 +949,27 @@ public class Vulkan {
         }
     }
 
-    private static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, MemoryStack stack) {
+    private static void querySwapChainSupport(VkPhysicalDevice device, MemoryStack stack) {
 
-        SwapChainSupportDetails details = new SwapChainSupportDetails();
-
-        details.capabilities = VkSurfaceCapabilitiesKHR.mallocStack(stack);
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, details.capabilities);
+        SwapChainSupportDetails.capabilities = VkSurfaceCapabilitiesKHR.mallocStack(stack);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, SwapChainSupportDetails.capabilities);
 
         IntBuffer count = stack.ints(0);
 
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, null);
 
         if(count.get(0) != 0) {
-            details.formats = VkSurfaceFormatKHR.mallocStack(count.get(0), stack);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, details.formats);
+            SwapChainSupportDetails.formats = VkSurfaceFormatKHR.mallocStack(count.get(0), stack);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, SwapChainSupportDetails.formats);
         }
 
         vkGetPhysicalDeviceSurfacePresentModesKHR(device,surface, count, null);
 
         if(count.get(0) != 0) {
-            details.presentModes = stack.mallocInt(count.get(0));
-            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, details.presentModes);
+            SwapChainSupportDetails.presentModes = stack.mallocInt(count.get(0));
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, SwapChainSupportDetails.presentModes);
         }
 
-        return details;
     }
 
     public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {

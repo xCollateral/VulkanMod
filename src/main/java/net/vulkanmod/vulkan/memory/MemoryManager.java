@@ -12,7 +12,6 @@ import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -21,15 +20,14 @@ import static org.lwjgl.system.JNI.callPPPI;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.system.MemoryUtil.memGetLong;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class MemoryManager {
     private static final VkDevice device = Vulkan.getDevice();
     private static final long allocator = Vulkan.getAllocator();
-    private static final int Frames = Vulkan.getSwapChainImages().size();
+    public static int Frames;// = Vulkan.getSwapChainImages().size();
 
     private static List<Pair<Pair<Long, Long>, Integer>> freeableBuffers = new ArrayList<>();
     private static List<Pair<Buffer.BufferInfo, Integer>> freeableBuffers2 = new ArrayList<>();
@@ -166,17 +164,31 @@ public abstract class MemoryManager {
 
         vmaDestroyBuffer(allocator, buffer, allocation);
     }
-    public static @NotNull <Type extends Pointer> PointerBuffer Extracted(Type allocInfo, int pCommandBuffers) {
+    public static @NotNull <Type extends Pointer> PointerBuffer doBufferAlloc(Type allocInfo, int pCommandBuffers) {
         PointerBuffer mx = PointerBuffer.create(stackGet().nmalloc(Pointer.POINTER_SIZE, pCommandBuffers << Pointer.POINTER_SHIFT), pCommandBuffers);
         checkCall(callPPPI(device.address(), allocInfo.address(), mx.address0(), device.getCapabilities().vkAllocateCommandBuffers));
         return mx;
     }
-    @NotNull
-    public static PointerBuffer getPointerBuffer(int size, VkFenceCreateInfo fenceInfo) {
-        PointerBuffer pFence = stackGet().mallocPointer(size);
+//    @NotNull
+//    public static PointerBuffer getPointerBuffer(int size, VkFenceCreateInfo fenceInfo) {
+//        PointerBuffer pFence = stackGet().mallocPointer(size);
+//
+//        checkCall(callPPPPI(device.address(), fenceInfo.address(), NULL, pFence.address0(), device.getCapabilities().vkCreateFence));
+//        return pFence;
+//    }
 
+    public static long getLongBuffer(VkSwapchainCreateInfoKHR createInfo) {
+        LongBuffer pSwapChain = stackGet().longs(VK_NULL_HANDLE);
+
+        Checks.check(memAddress(pSwapChain));
+        callPPPPI(device.address(), createInfo.address(), NULL, memAddress(pSwapChain), device.getCapabilities().vkCreateSwapchainKHR);
+        Checks.check(pSwapChain.get(0));
+        return pSwapChain.get(0);
+    }
+    public static long getPointerBuffer(VkFenceCreateInfo fenceInfo) {
+        PointerBuffer pFence = stackGet().mallocPointer(1);
         checkCall(callPPPPI(device.address(), fenceInfo.address(), NULL, pFence.address0(), device.getCapabilities().vkCreateFence));
-        return pFence;
+        return pFence.get(0);
     }
     public static <Type extends Pointer> long doPointerAllocSafe3(Type allocateInfo, long x)
     {
