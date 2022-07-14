@@ -576,12 +576,11 @@ public class Pipeline {
     }
 
     private Consumer<Integer> defaultResetDPFun() {
-        Consumer<Integer> fun = (i) -> {
+        return (i) -> {
             if(vkResetDescriptorPool(device, descriptorPools[i], 0) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to reset descriptor pool");
             }
         };
-        return fun;
     }
 
     public void resetDescriptorPool(int i) {

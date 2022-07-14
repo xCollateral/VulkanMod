@@ -45,7 +45,7 @@ public class Drawer {
     private static int MAX_FRAMES_IN_FLIGHT;
     private static ArrayList<Long> imageAvailableSemaphores;
     private static ArrayList<Long> renderFinishedSemaphores;
-    private static ArrayList<Long> inFlightFences;
+    private static LongBuffer inFlightFences;
 
     private static int currentFrame = 0;
     private final int commandBuffersCount = getSwapChainFramebuffers().size();
@@ -133,14 +133,14 @@ public class Drawer {
     public void initiateRenderPass() {
 
 
-        vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
-        vkDeviceWaitIdle(device);
+        vkWaitForFences(device, inFlightFences.get(currentFrame), false, VUtil.UINT64_MAX);
+//        vkQueueWaitIdle(getPresentQueue());
         CompletableFuture.runAsync(MemoryManager::freeBuffers);
 //        MemoryManager.freeBuffers();
 
         resetDescriptors();
 
-        vkResetCommandBuffer(commandBuffers.get(currentFrame), 0);
+//        vkResetCommandBuffer(commandBuffers.get(currentFrame), 0);
 
         try(MemoryStack stack = stackPush()) {
 
@@ -238,15 +238,15 @@ public class Drawer {
 
         imageAvailableSemaphores = new ArrayList<>(frameNum);
         renderFinishedSemaphores = new ArrayList<>(frameNum);
-        inFlightFences = new ArrayList<>(frameNum);
+        inFlightFences = LongBuffer.allocate(frameNum);
 
         try(MemoryStack stack = stackPush()) {
 
             VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.callocStack(stack)
-                    .sType$Default();
+                    .sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 
             VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack)
-                    .sType$Default()
+                    .sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO)
                     .flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
             for(int i = 0;i < frameNum;i++) {
@@ -254,7 +254,7 @@ public class Drawer {
 
                 imageAvailableSemaphores.add(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
                 renderFinishedSemaphores.add(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
-                inFlightFences.add(doPointerAllocSafe3(fenceInfo, device.getCapabilities().vkCreateFence));
+                inFlightFences.put(doPointerAllocSafe3(fenceInfo, device.getCapabilities().vkCreateFence));
 
             }
 
@@ -290,13 +290,13 @@ public class Drawer {
 
             submitInfo.waitSemaphoreCount(1);
             submitInfo.pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT));
 
             submitInfo.pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
 
             submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(imageIndex)));
 
-            vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, (inFlightFences.get(pImageIndex.get(0))));
 
             Synchronization.waitFences();
 
@@ -308,14 +308,14 @@ public class Drawer {
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
 
-            presentInfo.pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
+            presentInfo.pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(pImageIndex.get(0))));
 
             presentInfo.swapchainCount(1);
             presentInfo.pSwapchains(stack.longs(getSwapChain()));
 
             presentInfo.pImageIndices(pImageIndex);
 
-            vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
+            vkResult = vkQueuePresentKHR(getGraphicsQueue(), presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
                 framebufferResize = false;
@@ -330,9 +330,9 @@ public class Drawer {
     }
 
     private static void recreateSwapChain() {
-        for(Long fence : inFlightFences) {
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
-        }
+//        for(Long fence : inFlightFences) {
+            vkWaitForFences(device, inFlightFences, true, VUtil.UINT64_MAX);
+//        }
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
             vkDestroyFence(device, inFlightFences.get(i), null);

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.vulkan.Vulkan.findQueueFamilies;
+import static net.vulkanmod.vulkan.Vulkan.getTransferQueue;
 import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
 import static net.vulkanmod.vulkan.memory.MemoryManager.getPointerBuffer;
 import static org.lwjgl.system.Checks.check;
@@ -40,7 +41,7 @@ public class TransferQueue {
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack)
                     .sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
-                    .queueFamilyIndex(queueFamilyIndices.graphicsFamily)
+                    .queueFamilyIndex(queueFamilyIndices.transferFamily)
                     .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 //            LongBuffer pCommandPool = stack.mallocLong(1);
@@ -133,8 +134,8 @@ public class TransferQueue {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(Vulkan.getGraphicsQueue(), submitInfo, fence);
-            //vkQueueWaitIdle(graphicsQueue);
+            vkQueueSubmit(Vulkan.getTransferQueue(), submitInfo, fence);
+            vkQueueWaitIdle(getTransferQueue());
 
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
             return fence;

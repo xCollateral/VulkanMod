@@ -4,10 +4,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.Checks;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.Pointer;
+import org.lwjgl.system.*;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
@@ -190,13 +187,26 @@ public abstract class MemoryManager {
         checkCall(callPPPPI(device.address(), fenceInfo.address(), NULL, pFence.address0(), device.getCapabilities().vkCreateFence));
         return pFence.get(0);
     }
-    public static <Type extends Pointer> long doPointerAllocSafe3(Type allocateInfo, long x)
+    public static <Type extends Struct> long doPointerAllocSafe3(Type allocateInfo, long x)
     {
-        System.out.print("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
+//        System.out.println("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
+//        System.out.print("-->");
         Checks.check(x);
         checkCall(callPPPI(device.address(), allocateInfo.address(), NULL, x));
         Checks.check(memGetLong(allocateInfo.address()));
         return memGetLong(allocateInfo.address());
+    }
+
+    private static final long[] pDummyPointerAlloc = {0};
+    public static <Type extends Struct> long doPointerAllocSafe3X(Type allocateInfo, long x)
+    {
+        System.out.println("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
+        System.out.print("-->");
+        Checks.check(x);
+        PointerBuffer a = stackGet().mallocPointer(1);
+        checkCall(callPPPPI(device.address(), allocateInfo.address(), NULL, a.address0(), x));
+        Checks.check(memGetLong(a.address()));
+        return memGetLong(a.address());
     }
 
     public static void freeImage(long image, long allocation) {
@@ -209,7 +219,8 @@ public abstract class MemoryManager {
     {
         switch (callPPPPI)
         {
-            case VK_SUCCESS -> System.out.println("OK!");
+            case VK_SUCCESS -> {
+            }
             case VK_NOT_READY -> Throw("Not ready!");
             case VK_TIMEOUT -> Throw("Bad TimeOut!");
             case VK_INCOMPLETE -> Throw("Incomplete!");

@@ -59,7 +59,7 @@ public class UniformBuffers {
 
         createUniformBuffers(newSize);
 
-        System.out.println("resized UniformBuffer to: " + newSize);
+        System.out.println("resized "+ uniformBuffers.size()+ "UniformBuffers to " + newSize);
     }
 
     public void uploadUBORaw(ByteBuffer buffer, int offset, int frame) {

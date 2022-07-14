@@ -4,7 +4,9 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.joml.Options;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
@@ -17,8 +19,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
-import static net.vulkanmod.vulkan.memory.MemoryManager.getLongBuffer;
+import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.glfw.GLFW.glfwWaitEvents;
@@ -31,6 +32,7 @@ import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
+import static org.lwjgl.vulkan.KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
 
@@ -40,15 +42,33 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     private static final Set<String> VALIDATION_LAYERS = ENABLE_VALIDATION_LAYERS ? new HashSet<>(Collections.singleton("VK_LAYER_KHRONOS_validation")) : null;
 
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .collect(toSet());
 
+    private static final boolean Checks = false;
+    private static final boolean Debug = false;
 
+    static
+    {
+        Configuration.DISABLE_CHECKS.set(!Checks);
+        Configuration.DISABLE_FUNCTION_CHECKS.set(!Checks);
+        Configuration.DEBUG.set(Debug);
+        Configuration.DEBUG_MEMORY_ALLOCATOR.set(Debug);
+        Configuration.DEBUG_MEMORY_ALLOCATOR_INTERNAL.set(Debug);
+
+        System.setProperty("joml.debug", String.valueOf(Debug));
+        System.setProperty("joml.useMathFma", "true");
+        System.setProperty("joml.fastMath", "true");
+        System.setProperty("joml.nounsafe", "false");
+        System.setProperty("joml.forceUnsafe", "true");
+        System.setProperty("joml.sinLookup.bits", "8");
+
+    }
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
 
@@ -83,22 +103,25 @@ public class Vulkan {
         return allocator;
     }
 
+    public static VkQueue getTransferQueue() {
+        return transferQueue;
+    }
+
     static class QueueFamilyIndices {
 
         // We use Integer to use null as the empty value
         Integer graphicsFamily;
-        Integer presentFamily;
+//        Integer presentFamily;
+        Integer transferFamily;
 
-        private boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null;
-        }
+        private boolean isComplete() { return graphicsFamily != null && transferFamily!=null; }
 
         public int[] unique() {
-            return IntStream.of(graphicsFamily, presentFamily).distinct().toArray();
+            return IntStream.of(graphicsFamily, transferFamily).distinct().toArray();
         }
 
         public int[] array() {
-            return new int[] {graphicsFamily, presentFamily};
+            return new int[] {graphicsFamily};
         }
     }
 
@@ -123,7 +146,9 @@ public class Vulkan {
     public static VkPhysicalDeviceMemoryProperties memoryProperties;
 
     private static VkQueue graphicsQueue;
-    private static VkQueue presentQueue;
+//    private static VkQueue presentQueue;
+
+    private static VkQueue transferQueue;
 
     private static long swapChain;
     private static List<Long> swapChainImages;
@@ -363,6 +388,7 @@ public class Vulkan {
                 queueCreateInfo.queueFamilyIndex(uniqueQueueFamilies[i]);
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
+            System.out.println("Queue Families: "+Arrays.toString(uniqueQueueFamilies));
 
             VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
             deviceFeatures.samplerAnisotropy(true);
@@ -394,8 +420,11 @@ public class Vulkan {
             vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
 
-            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
-            presentQueue = new VkQueue(pQueue.get(0), device);
+//            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
+//            presentQueue = new VkQueue(pQueue.get(0), device);
+
+            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
+            transferQueue = new VkQueue(pQueue.get(0), device);
 
             //Get device properties
 
@@ -481,9 +510,9 @@ public class Vulkan {
 
             QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-            if(!indices.graphicsFamily.equals(indices.presentFamily)) {
+            if(!indices.graphicsFamily.equals(indices.transferFamily)) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.transferFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
@@ -763,12 +792,12 @@ public class Vulkan {
             //attachments = stack.mallocLong(1);
 
             // Lets allocate the create info struct once and just update the pAttachments field each iteration
-            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack);
-            framebufferInfo.sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-            framebufferInfo.renderPass(renderPass);
-            framebufferInfo.width(swapChainExtent.width());
-            framebufferInfo.height(swapChainExtent.height());
-            framebufferInfo.layers(1);
+            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
+                    .renderPass(renderPass)
+                    .width(swapChainExtent.width())
+                    .height(swapChainExtent.height())
+                    .layers(1);
 
             for(long imageView : swapChainImageViews) {
 
@@ -976,7 +1005,7 @@ public class Vulkan {
 
         QueueFamilyIndices indices = new QueueFamilyIndices();
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             IntBuffer queueFamilyCount = stack.ints(0);
 
@@ -987,25 +1016,38 @@ public class Vulkan {
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
 
             IntBuffer presentSupport = stack.ints(VK_FALSE);
+            //Need to cheks if this orks/handles devcies with very low queue counts properly
+            for (int i = 0; i < queueFamilies.capacity() || !indices.isComplete(); i++) {
 
-            for(int i = 0;i < queueFamilies.capacity() || !indices.isComplete();i++) {
-
-                if((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
+                if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
                     indices.graphicsFamily = i;
+                    continue;
                 }
 
-                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, presentSupport);
 
-                if(presentSupport.get(0) == VK_TRUE) {
-                    indices.presentFamily = i;
+//                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, presentSupport);
+//
+//                if(presentSupport.get(0) == VK_TRUE) {
+//                    indices.presentFamily = i;
+//                    continue;
+//                }
+
+                // Check that Video Tranfer Queues are not Accidentally selected if the Vulkan beta Drivers from Nvidia are used
+
+                if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_TRANSFER_BIT) != 0)
+                    indices.transferFamily = i;
+
+
+                if (indices.isComplete()) {
+                    break;
                 }
 
-                if(indices.isComplete()) break;
             }
 
             return indices;
         }
     }
+
 
     private static boolean checkValidationLayerSupport() {
 
@@ -1027,7 +1069,7 @@ public class Vulkan {
         }
     }
 
-    public static VkQueue getPresentQueue() { return presentQueue; }
+//    public static VkQueue getPresentQueue() { return presentQueue; }
 
     public static VkQueue getGraphicsQueue() { return graphicsQueue; }
 
