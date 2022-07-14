@@ -110,13 +110,13 @@ public class Vulkan {
     static class QueueFamilyIndices {
 
         // We use Integer to use null as the empty value
-        Integer graphicsFamily;
+        static Integer graphicsFamily;
 //        Integer presentFamily;
-        Integer transferFamily;
+        static Integer transferFamily;
 
-        private boolean isComplete() { return graphicsFamily != null && transferFamily!=null; }
+        private static boolean isComplete() { return graphicsFamily != null && transferFamily!=null; }
 
-        public int[] unique() {
+        public static int[] unique() {
             return IntStream.of(graphicsFamily, transferFamily).distinct().toArray();
         }
 
@@ -376,9 +376,9 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+            findQueueFamilies(physicalDevice);
 
-            int[] uniqueQueueFamilies = indices.unique();
+            int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.callocStack(uniqueQueueFamilies.length, stack);
 
@@ -417,13 +417,13 @@ public class Vulkan {
 
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 
-            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
+            vkGetDeviceQueue(device, QueueFamilyIndices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
 
 //            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
 //            presentQueue = new VkQueue(pQueue.get(0), device);
 
-            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
+            vkGetDeviceQueue(device, QueueFamilyIndices.transferFamily, 0, pQueue);
             transferQueue = new VkQueue(pQueue.get(0), device);
 
             //Get device properties
@@ -463,15 +463,15 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+//            findQueueFamilies(physicalDevice);
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
+            poolInfo.queueFamilyIndex(QueueFamilyIndices.graphicsFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 
-            commandPool = doPointerAllocSafe3(poolInfo, device.getCapabilities().vkCreateCommandPool);;
+            commandPool = doPointerAllocSafe3(poolInfo, device.getCapabilities().vkCreateCommandPool);
         }
     }
 
@@ -508,11 +508,11 @@ public class Vulkan {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-            QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+//            findQueueFamilies(physicalDevice);
 
-            if(!indices.graphicsFamily.equals(indices.transferFamily)) {
+            if(!QueueFamilyIndices.graphicsFamily.equals(QueueFamilyIndices.transferFamily)) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.transferFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(QueueFamilyIndices.graphicsFamily, QueueFamilyIndices.transferFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
@@ -936,7 +936,7 @@ public class Vulkan {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        QueueFamilyIndices indices = findQueueFamilies(device);
+        findQueueFamilies(device);
 
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
         boolean swapChainAdequate = false;
@@ -956,7 +956,7 @@ public class Vulkan {
         }
 
 
-        return indices.isComplete() && extensionsSupported && swapChainAdequate && anisotropicFilterSuppoted;
+        return QueueFamilyIndices.isComplete() && extensionsSupported && swapChainAdequate && anisotropicFilterSuppoted;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -1001,9 +1001,7 @@ public class Vulkan {
 
     }
 
-    public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-
-        QueueFamilyIndices indices = new QueueFamilyIndices();
+    public static void findQueueFamilies(VkPhysicalDevice device) {
 
         try (MemoryStack stack = stackPush()) {
 
@@ -1016,11 +1014,16 @@ public class Vulkan {
             vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
 
             IntBuffer presentSupport = stack.ints(VK_FALSE);
+
+            //Abort Queue Enumeration if the device supports only one Queue
+            if (queueFamilies.capacity()==1) QueueFamilyIndices.transferFamily = QueueFamilyIndices.graphicsFamily = 0;
+
+
             //Need to cheks if this orks/handles devcies with very low queue counts properly
-            for (int i = 0; i < queueFamilies.capacity() || !indices.isComplete(); i++) {
+            for (int i = 0; i < queueFamilies.capacity() || !QueueFamilyIndices.isComplete(); i++) {
 
                 if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
-                    indices.graphicsFamily = i;
+                    QueueFamilyIndices.graphicsFamily = i;
                     continue;
                 }
 
@@ -1035,16 +1038,14 @@ public class Vulkan {
                 // Check that Video Tranfer Queues are not Accidentally selected if the Vulkan beta Drivers from Nvidia are used
 
                 if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_TRANSFER_BIT) != 0)
-                    indices.transferFamily = i;
+                    QueueFamilyIndices.transferFamily = i;
 
 
-                if (indices.isComplete()) {
+                if (QueueFamilyIndices.isComplete()) {
                     break;
                 }
 
             }
-
-            return indices;
         }
     }
 

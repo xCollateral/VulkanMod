@@ -197,18 +197,6 @@ public abstract class MemoryManager {
         return memGetLong(allocateInfo.address());
     }
 
-    private static final long[] pDummyPointerAlloc = {0};
-    public static <Type extends Struct> long doPointerAllocSafe3X(Type allocateInfo, long x)
-    {
-        System.out.println("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
-        System.out.print("-->");
-        Checks.check(x);
-        PointerBuffer a = stackGet().mallocPointer(1);
-        checkCall(callPPPPI(device.address(), allocateInfo.address(), NULL, a.address0(), x));
-        Checks.check(memGetLong(a.address()));
-        return memGetLong(a.address());
-    }
-
     public static void freeImage(long image, long allocation) {
 //        vkFreeMemory(device, allocation, null);
 //        vkDestroyBuffer(device, buffer, null);

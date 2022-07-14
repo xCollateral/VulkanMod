@@ -37,11 +37,11 @@ public class TransferQueue {
 
         try(MemoryStack stack = stackPush()) {
 
-            Vulkan.QueueFamilyIndices queueFamilyIndices = findQueueFamilies(device.getPhysicalDevice());
+            findQueueFamilies(device.getPhysicalDevice());
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack)
-                    .sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
-                    .queueFamilyIndex(queueFamilyIndices.transferFamily)
+                    .sType$Default()
+                    .queueFamilyIndex(Vulkan.QueueFamilyIndices.transferFamily)
                     .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 //            LongBuffer pCommandPool = stack.mallocLong(1);

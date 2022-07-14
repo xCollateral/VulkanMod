@@ -25,6 +25,7 @@ import static net.vulkanmod.vulkan.memory.MemoryManager.doBufferAlloc;
 import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -43,8 +44,8 @@ public class Drawer {
     private final UniformBuffers uniformBuffers;
 
     private static int MAX_FRAMES_IN_FLIGHT;
-    private static ArrayList<Long> imageAvailableSemaphores;
-    private static ArrayList<Long> renderFinishedSemaphores;
+    private static LongBuffer imageAvailableSemaphores;
+    private static LongBuffer renderFinishedSemaphores;
     private static LongBuffer inFlightFences;
 
     private static int currentFrame = 0;
@@ -236,8 +237,8 @@ public class Drawer {
 
         final int frameNum = getSwapChainImages().size();
 
-        imageAvailableSemaphores = new ArrayList<>(frameNum);
-        renderFinishedSemaphores = new ArrayList<>(frameNum);
+        imageAvailableSemaphores = LongBuffer.allocate(frameNum);
+        renderFinishedSemaphores = LongBuffer.allocate(frameNum);
         inFlightFences = LongBuffer.allocate(frameNum);
 
         try(MemoryStack stack = stackPush()) {
@@ -252,8 +253,8 @@ public class Drawer {
             for(int i = 0;i < frameNum;i++) {
 
 
-                imageAvailableSemaphores.add(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
-                renderFinishedSemaphores.add(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
+                imageAvailableSemaphores.put(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
+                renderFinishedSemaphores.put(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
                 inFlightFences.put(doPointerAllocSafe3(fenceInfo, device.getCapabilities().vkCreateFence));
 
             }
@@ -314,7 +315,7 @@ public class Drawer {
             presentInfo.pSwapchains(stack.longs(getSwapChain()));
 
             presentInfo.pImageIndices(pImageIndex);
-
+            //Many Vulkan Applications do not typcially use a dedicated present queue anymore as apparently preent onyl becomes a bottleneck at extreme framerates (e.g. 10K FPS or more) and in all conceivable likelyhood the game;client will never get remotely close to rendering that quickely anyway
             vkResult = vkQueuePresentKHR(getGraphicsQueue(), presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
