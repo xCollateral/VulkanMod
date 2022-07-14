@@ -3,17 +3,22 @@ package net.vulkanmod.vulkan.memory;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.Pair;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.Checks;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Pointer;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 import static org.lwjgl.system.JNI.callPPPI;
+import static org.lwjgl.system.JNI.callPPPPI;
+import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memGetLong;
@@ -160,17 +165,47 @@ public abstract class MemoryManager {
 
         vmaDestroyBuffer(allocator, buffer, allocation);
     }
+    public static PointerBuffer Extracted(VkCommandBufferAllocateInfo allocInfo, int pCommandBuffers) {
+        PointerBuffer mx = PointerBuffer.create(stackGet().nmalloc(Pointer.POINTER_SIZE, pCommandBuffers << Pointer.POINTER_SHIFT), pCommandBuffers);
+        checkCall(callPPPI(device.address(), allocInfo.address(), mx.address0(), device.getCapabilities().vkAllocateCommandBuffers));
+        return mx;
+    }
     public static long doPointerAllocSafe3(long allocateInfo, long x)
     {
-        System.out.println("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2]);
-        callPPPI(device.address(), allocateInfo, NULL, x);
+        System.out.print("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
+        Checks.check(x);
+        checkCall(callPPPI(device.address(), allocateInfo, NULL, x));
+        Checks.check(memGetLong(allocateInfo));
         return memGetLong(allocateInfo);
     }
+
     public static void freeImage(long image, long allocation) {
 //        vkFreeMemory(device, allocation, null);
 //        vkDestroyBuffer(device, buffer, null);
 
         vmaDestroyImage(allocator, image, allocation);
+    }
+    private static void checkCall(int callPPPPI)
+    {
+        switch (callPPPPI)
+        {
+            case VK_SUCCESS -> System.out.println("OK!");
+            case VK_NOT_READY -> Throw("Not ready!");
+            case VK_TIMEOUT -> Throw("Bad TimeOut!");
+            case VK_INCOMPLETE -> Throw("Incomplete!");
+            case VK_ERROR_INITIALIZATION_FAILED -> Throw("Error: bad Initialisation!");
+            case VK_ERROR_FRAGMENTED_POOL -> Throw("Error: bad Mem Alloc");
+            case VK_ERROR_OUT_OF_HOST_MEMORY -> Throw("No Host Memory");
+            case VK_ERROR_OUT_OF_DEVICE_MEMORY -> Throw("No Device Memory");
+            default -> Throw("Unknown Error!");
+        }
+    }
+
+    private static void Throw(String message) {
+        final RuntimeException a= new RuntimeException(message);
+        a.getStackTrace();
+        a.getCause();
+        throw a;
     }
 
     public synchronized static void addToFreeable(long buffer, long allocation) {

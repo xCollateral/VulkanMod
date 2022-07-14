@@ -20,20 +20,16 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
-    private static VkDevice device = Vulkan.getDevice();
+    private static final VkDevice device = Vulkan.getDevice();
 
     private long id;
     private long textureImageMemory;
-    private long allocation;
     private long textureImageView;
 
-    private Byte2LongMap samplers;
+    private final Byte2LongMap samplers;
     private long textureSampler;
 
-    private int mipLevels;
-    private int width;
-    private int height;
-    private int formatSize;
+    private final int mipLevels;
 
     private int currentLayout;
     private TransferQueue.CommandBuffer commandBuffer;
@@ -45,9 +41,6 @@ public class VulkanImage {
 
     public VulkanImage(int mipLevels, int width, int height, int formatSize, boolean blur, boolean clamp) {
         this.mipLevels = mipLevels;
-        this.width = width;
-        this.height = height;
-        this.formatSize = formatSize;
 
         this.samplers = new Byte2LongOpenHashMap(8);
 
@@ -90,7 +83,7 @@ public class VulkanImage {
                     pAllocation);
 
             id = pTextureImage.get(0);
-            allocation = pAllocation.get(0);
+            long allocation = pAllocation.get(0);
 
 
 
@@ -132,7 +125,7 @@ public class VulkanImage {
                     pStagingAllocation);
 
             MapAndCopy(pStagingAllocation.get(0), imageSize,
-                    (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), buffer, imageSize)
+                    (data) -> VUtil.memcpy(data.getByteBuffer(0, imageSize), buffer, imageSize)
             );
 
             copyBufferToImage(pStagingBuffer.get(0), id, mipLevel, width, height, xOffset, yOffset, (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4, unpackRowLength, height);
@@ -162,7 +155,7 @@ public class VulkanImage {
 
     public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
         try(MemoryStack stack = stackPush()) {
-            long imageSize = width * height * formatSize;
+            int imageSize = width * height * formatSize;
 
             LongBuffer pStagingBuffer = stack.mallocLong(1);
             PointerBuffer pStagingAllocation = stack.pointers(0L);
@@ -175,7 +168,7 @@ public class VulkanImage {
             copyImageToBuffer(pStagingBuffer.get(0), image, 0, width, height, 0, 0, 0, 0, 0);
 
             MapAndCopy(pStagingAllocation.get(0), imageSize,
-                    (data) -> VUtil.memcpy(buffer, data.getByteBuffer(0, (int)imageSize))
+                    (data) -> VUtil.memcpy(buffer, data.getByteBuffer(0, imageSize))
             );
 
             MemoryManager.addToFreeable(pStagingBuffer.get(0), pStagingAllocation.get(0));

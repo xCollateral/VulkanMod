@@ -9,7 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.vulkan.Vulkan.findQueueFamilies;
+import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class TransferQueue {
@@ -32,18 +36,16 @@ public class TransferQueue {
 
             Vulkan.QueueFamilyIndices queueFamilyIndices = findQueueFamilies(device.getPhysicalDevice());
 
-            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
-            poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
-            poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack)
+                    .sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
+                    .queueFamilyIndex(queueFamilyIndices.graphicsFamily)
+                    .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-            LongBuffer pCommandPool = stack.mallocLong(1);
+//            LongBuffer pCommandPool = stack.mallocLong(1);
+//
+//            callPPPPI(device.address(), poolInfo.address(), NULL, memAddress0(pCommandPool), device.getCapabilities().vkCreateCommandPool);
 
-            if (vkCreateCommandPool(device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create command pool");
-            }
-
-            commandPool = pCommandPool.get(0);
+            commandPool = doPointerAllocSafe3(poolInfo.address(), device.getCapabilities().vkCreateCommandPool);
         }
     }
 

@@ -21,8 +21,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
+import static net.vulkanmod.vulkan.memory.MemoryManager.Extracted;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPPI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -32,13 +37,13 @@ public class Drawer {
     private static VkDevice device;
     private static List<VkCommandBuffer> commandBuffers;
 
-    private static Set<Pipeline> usedPipelines = new HashSet<>();
+    private static final Set<Pipeline> usedPipelines = new HashSet<>();
 
-    private VertexBuffer[] vertexBuffers;
-    private AutoIndexBuffer quadsIndexBuffer;
-    private AutoIndexBuffer triangleFanIndexBuffer;
-    private AutoIndexBuffer triangleStripIndexBuffer;
-    private UniformBuffers uniformBuffers;
+    private final VertexBuffer[] vertexBuffers;
+    private final AutoIndexBuffer quadsIndexBuffer;
+    private final AutoIndexBuffer triangleFanIndexBuffer;
+    private final AutoIndexBuffer triangleStripIndexBuffer;
+    private final UniformBuffers uniformBuffers;
 
     private static int MAX_FRAMES_IN_FLIGHT;
     private static ArrayList<Long> imageAvailableSemaphores;
@@ -47,7 +52,7 @@ public class Drawer {
 
     private static int currentFrame = 0;
     private final int commandBuffersCount = getSwapChainFramebuffers().size();
-    private static boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
+    private static final boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
 
     private static int currentIndex = 0;
 
@@ -132,7 +137,7 @@ public class Drawer {
 
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
-
+        vkDeviceWaitIdle(device);
         CompletableFuture.runAsync(MemoryManager::freeBuffers);
 //        MemoryManager.freeBuffers();
 
@@ -163,9 +168,7 @@ public class Drawer {
             VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
             int err = vkBeginCommandBuffer(commandBuffer, beginInfo);
-            if (err != VK_SUCCESS) {
-                throw new RuntimeException("Failed to begin recording command buffer:" + err);
-            }
+            assert err == VK_SUCCESS : "Failed to begin recording command buffer:" + err;
 
             renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
 
@@ -206,17 +209,13 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack);
-            allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-            allocInfo.commandPool(getCommandPool());
-            allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-            allocInfo.commandBufferCount(commandBuffersCount);
+            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
+                    .commandPool(getCommandPool())
+                    .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+                    .commandBufferCount(commandBuffersCount);
 
-            PointerBuffer pCommandBuffers = stack.mallocPointer(commandBuffersCount);
-
-            if (vkAllocateCommandBuffers(device, allocInfo, pCommandBuffers) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to allocate command buffers");
-            }
+            PointerBuffer pCommandBuffers = Extracted(allocInfo, commandBuffersCount);
 
             for (int i = 0; i < commandBuffersCount; i++) {
                 commandBuffers.add(new VkCommandBuffer(pCommandBuffers.get(i), device));
@@ -233,7 +232,7 @@ public class Drawer {
     }
 
     private static void assertCommandBufferState() {
-        if(activeCommandBuffers[currentFrame] == false) throw new RuntimeException("CommandBuffer not active.");
+        if(!activeCommandBuffers[currentFrame]) throw new RuntimeException("CommandBuffer not active.");
     }
 
     private static void createSyncObjects() {
@@ -246,29 +245,19 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.callocStack(stack);
-            semaphoreInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.callocStack(stack)
+                    .sType$Default();
 
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack);
-            fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
-            LongBuffer pImageAvailableSemaphore = stack.mallocLong(1);
-            LongBuffer pRenderFinishedSemaphore = stack.mallocLong(1);
-            LongBuffer pFence = stack.mallocLong(1);
+            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack)
+                    .sType$Default()
+                    .flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
             for(int i = 0;i < frameNum;i++) {
 
-                if(vkCreateSemaphore(device, semaphoreInfo, null, pImageAvailableSemaphore) != VK_SUCCESS
-                        || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS
-                        || vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
 
-                    throw new RuntimeException("Failed to create synchronization objects for the frame " + i);
-                }
-
-                imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
-                renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
-                inFlightFences.add(pFence.get(0));
+                imageAvailableSemaphores.add(doPointerAllocSafe3(semaphoreInfo.address(), device.getCapabilities().vkCreateSemaphore));
+                renderFinishedSemaphores.add(doPointerAllocSafe3(semaphoreInfo.address(), device.getCapabilities().vkCreateSemaphore));
+                inFlightFences.add(doPointerAllocSafe3(fenceInfo.address(), device.getCapabilities().vkCreateFence));
 
             }
 
@@ -481,37 +470,40 @@ public class Drawer {
 
             int attachmentsCount;
             VkClearAttachment.Buffer pAttachments;
-            if (v == 0x100) {
-                attachmentsCount = 1;
+            switch (v) {
+                case 0x100 -> {
+                    attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
 
-                VkClearAttachment clearDepth = pAttachments.get(0);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else if (v == 0x4000) {
-                attachmentsCount = 1;
+                    VkClearAttachment clearDepth = pAttachments.get(0);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                case 0x4000 -> {
+                    attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
 
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.colorAttachment(0);
-                clearColor.clearValue(colorValue);
-            } else if (v == 0x4100) {
-                attachmentsCount = 2;
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.colorAttachment(0);
+                    clearColor.clearValue(colorValue);
+                }
+                case 0x4100 -> {
+                    attachmentsCount = 2;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
 
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.clearValue(colorValue);
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.clearValue(colorValue);
 
-                VkClearAttachment clearDepth = pAttachments.get(1);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else {
-                throw new RuntimeException("unexpected value");
+                    VkClearAttachment clearDepth = pAttachments.get(1);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                default -> throw new RuntimeException("unexpected value");
             }
 
             //Rect to clear

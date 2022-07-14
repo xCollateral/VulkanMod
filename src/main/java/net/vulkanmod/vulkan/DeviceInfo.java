@@ -34,7 +34,7 @@ public class DeviceInfo {
 //        deviceName = new String(bytes, StandardCharsets.UTF_8);
             deviceName = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes)).toString();
             driverVersion = String.valueOf(Vulkan.deviceProperties.driverVersion());
-            int aa =Vulkan.deviceProperties.apiVersion();
+            final int aa =Vulkan.deviceProperties.apiVersion();
             VkVersion = VK_VERSION_MAJOR(aa) + "." + VK_VERSION_MINOR(aa) + "." + VK_VERSION_PATCH(aa);
         }
         else {
