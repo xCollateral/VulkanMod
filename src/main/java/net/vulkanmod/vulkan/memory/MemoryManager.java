@@ -13,7 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.lwjgl.system.JNI.callPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.memGetLong;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -157,7 +160,12 @@ public abstract class MemoryManager {
 
         vmaDestroyBuffer(allocator, buffer, allocation);
     }
-
+    public static long doPointerAllocSafe3(long allocateInfo, long x)
+    {
+        System.out.println("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2]);
+        callPPPI(device.address(), allocateInfo, NULL, x);
+        return memGetLong(allocateInfo);
+    }
     public static void freeImage(long image, long allocation) {
 //        vkFreeMemory(device, allocation, null);
 //        vkDestroyBuffer(device, buffer, null);

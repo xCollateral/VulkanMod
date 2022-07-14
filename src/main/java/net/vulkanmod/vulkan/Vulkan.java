@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
+import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
 import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
@@ -23,6 +24,7 @@ import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.memGetLong;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
@@ -769,13 +771,9 @@ public class Vulkan {
             viewInfo.subresourceRange().baseArrayLayer(0);
             viewInfo.subresourceRange().layerCount(1);
 
-            LongBuffer pImageView = stack.mallocLong(1);
 
-            if(vkCreateImageView(device, viewInfo, null, pImageView) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create texture image view");
-            }
 
-            return pImageView.get(0);
+            return (doPointerAllocSafe3(viewInfo.address(), device.getCapabilities().vkCreateImageView));
         }
     }
 
@@ -807,7 +805,6 @@ public class Vulkan {
 
             LongBuffer attachments = stack.longs(VK_NULL_HANDLE, depthImageView);
             //attachments = stack.mallocLong(1);
-            LongBuffer pFramebuffer = stack.mallocLong(1);
 
             // Lets allocate the create info struct once and just update the pAttachments field each iteration
             VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack);
@@ -823,11 +820,9 @@ public class Vulkan {
 
                 framebufferInfo.pAttachments(attachments);
 
-                if(vkCreateFramebuffer(device, framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
-                    throw new RuntimeException("Failed to create framebuffer");
-                }
 
-                swapChainFramebuffers.add(pFramebuffer.get(0));
+
+                swapChainFramebuffers.add((doPointerAllocSafe3(framebufferInfo.address(), device.getCapabilities().vkCreateFramebuffer)));
             }
         }
     }
