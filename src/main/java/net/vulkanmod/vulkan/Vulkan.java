@@ -18,6 +18,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
+import static net.vulkanmod.vulkan.Drawer.inFlightFences;
 import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
 import static net.vulkanmod.vulkan.memory.MemoryManager.getLongBuffer;
 import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
@@ -51,6 +52,7 @@ public class Vulkan {
 
     private static final boolean Checks = false;
     private static final boolean Debug = false;
+    private static boolean vSyncState = false;
 
     static
     {
@@ -104,6 +106,13 @@ public class Vulkan {
 
     public static VkQueue getTransferQueue() {
         return transferQueue;
+    }
+
+    public static void setvSyncState(boolean vSyncState) {
+        Vulkan.vSyncState = vSyncState;
+        if(getSwapChainFramebuffers()!=null) {
+            Drawer.recreateSwapChain();
+        }
     }
 
     static class QueueFamilyIndices {
@@ -212,19 +221,21 @@ public class Vulkan {
                 glfwWaitEvents();
             }
         }
-
         Synchronization.waitFences();
-
         vkDeviceWaitIdle(device);
+        if(Drawer.framebufferResize) //Skip SwapChain and ImageView destruction if Resize is not needed to speed up Vsync Changing/toggling
+        {
 
-        swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
 
-        swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+            swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
 
-        MemoryManager.freeImage(depthImage, depthImageMemory);
-        vkDestroyImageView(device, depthImageView, null);
+            swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 
-        vkDestroySwapchainKHR(device, swapChain, null);
+            MemoryManager.freeImage(depthImage, depthImageMemory);
+            vkDestroyImageView(device, depthImageView, null);
+
+            vkDestroySwapchainKHR(device, swapChain, null);
+        }
 
         createSwapChain();
         createImageViews();
@@ -711,7 +722,7 @@ public class Vulkan {
 //        }
 //
 //        return VK_PRESENT_MODE_FIFO_KHR;
-        return VK_PRESENT_MODE_IMMEDIATE_KHR;
+        return vSyncState?VK_PRESENT_MODE_FIFO_KHR:VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
 
     private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {

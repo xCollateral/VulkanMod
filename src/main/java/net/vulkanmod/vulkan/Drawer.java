@@ -46,7 +46,7 @@ public class Drawer {
     private static int MAX_FRAMES_IN_FLIGHT;
     private static LongBuffer imageAvailableSemaphores;
     private static LongBuffer renderFinishedSemaphores;
-    private static LongBuffer inFlightFences;
+    public static LongBuffer inFlightFences;
 
     private static int currentFrame = 0;
     private final int commandBuffersCount = getSwapChainFramebuffers().size();
@@ -330,7 +330,7 @@ public class Drawer {
         }
     }
 
-    private static void recreateSwapChain() {
+    public static void recreateSwapChain() {
 //        for(Long fence : inFlightFences) {
             vkWaitForFences(device, inFlightFences, true, VUtil.UINT64_MAX);
 //        }
