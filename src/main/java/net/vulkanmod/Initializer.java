@@ -32,7 +32,7 @@ public class Initializer implements ModInitializer {
 				.getMetadata()
 				.getVersion().getFriendlyString();
 
-		LOGGER.info("Initializing VulkanMod!");
+		LOGGER.info("Initializing VulkanMod Version " + VERSION + "!");
 	}
 
 	public static String getVersion() {
