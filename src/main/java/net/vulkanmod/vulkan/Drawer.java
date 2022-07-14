@@ -255,9 +255,9 @@ public class Drawer {
             for(int i = 0;i < frameNum;i++) {
 
 
-                imageAvailableSemaphores.add(doPointerAllocSafe3(semaphoreInfo.address(), device.getCapabilities().vkCreateSemaphore));
-                renderFinishedSemaphores.add(doPointerAllocSafe3(semaphoreInfo.address(), device.getCapabilities().vkCreateSemaphore));
-                inFlightFences.add(doPointerAllocSafe3(fenceInfo.address(), device.getCapabilities().vkCreateFence));
+                imageAvailableSemaphores.add(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
+                renderFinishedSemaphores.add(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
+                inFlightFences.add(doPointerAllocSafe3(fenceInfo, device.getCapabilities().vkCreateFence));
 
             }
 

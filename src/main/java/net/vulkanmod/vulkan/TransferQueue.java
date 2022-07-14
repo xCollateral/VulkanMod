@@ -1,17 +1,19 @@
 package net.vulkanmod.vulkan;
 
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
-import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.vulkan.Vulkan.findQueueFamilies;
 import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
+import static net.vulkanmod.vulkan.memory.MemoryManager.getPointerBuffer;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
+import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -45,7 +47,7 @@ public class TransferQueue {
 //
 //            callPPPPI(device.address(), poolInfo.address(), NULL, memAddress0(pCommandPool), device.getCapabilities().vkCreateCommandPool);
 
-            commandPool = doPointerAllocSafe3(poolInfo.address(), device.getCapabilities().vkCreateCommandPool);
+            commandPool = doPointerAllocSafe3(poolInfo, device.getCapabilities().vkCreateCommandPool);
         }
     }
 
@@ -60,19 +62,11 @@ public class TransferQueue {
     }
 
     public static CommandBuffer getCommandBuffer() {
-        if (currentCmdBuffer != null) {
-            return currentCmdBuffer;
-        } else {
-            return beginCommands();
-        }
+        return currentCmdBuffer != null ? currentCmdBuffer : beginCommands();
     }
 
     public static long endIfNeeded(CommandBuffer commandBuffer) {
-        if (currentCmdBuffer != null) {
-            return -1;
-        } else {
-            return endCommands(commandBuffer);
-        }
+        return currentCmdBuffer != null ? -1 : endCommands(commandBuffer);
     }
 
     public synchronized static CommandBuffer beginCommands() {
@@ -103,8 +97,7 @@ public class TransferQueue {
                 fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
                 fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
-                LongBuffer pFence = stack.mallocLong(size);
-                vkCreateFence(device, fenceInfo, null, pFence);
+                PointerBuffer pFence = getPointerBuffer(size, fenceInfo);
 
                 for(int i = 0; i < size; ++i) {
                     fences.add(pFence.get(0));

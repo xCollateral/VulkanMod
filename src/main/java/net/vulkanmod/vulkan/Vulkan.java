@@ -592,7 +592,7 @@ public class Vulkan {
             //renderPassInfo.pDependencies(dependency);
 
 
-            renderPass = doPointerAllocSafe3(renderPassInfo.address(), device.getCapabilities().vkCreateRenderPass);
+            renderPass = doPointerAllocSafe3(renderPassInfo, device.getCapabilities().vkCreateRenderPass);
             ;
         }
     }
@@ -738,7 +738,7 @@ public class Vulkan {
 
 
 
-            return (doPointerAllocSafe3(viewInfo.address(), device.getCapabilities().vkCreateImageView));
+            return (doPointerAllocSafe3(viewInfo, device.getCapabilities().vkCreateImageView));
         }
     }
 
@@ -787,7 +787,7 @@ public class Vulkan {
 
 
 
-                swapChainFramebuffers.add((doPointerAllocSafe3(framebufferInfo.address(), device.getCapabilities().vkCreateFramebuffer)));
+                swapChainFramebuffers.add((doPointerAllocSafe3(framebufferInfo, device.getCapabilities().vkCreateFramebuffer)));
             }
         }
     }

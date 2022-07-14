@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.Checks;
 import org.lwjgl.system.MemoryStack;
@@ -165,18 +166,25 @@ public abstract class MemoryManager {
 
         vmaDestroyBuffer(allocator, buffer, allocation);
     }
-    public static PointerBuffer Extracted(VkCommandBufferAllocateInfo allocInfo, int pCommandBuffers) {
+    public static @NotNull <Type extends Pointer> PointerBuffer Extracted(Type allocInfo, int pCommandBuffers) {
         PointerBuffer mx = PointerBuffer.create(stackGet().nmalloc(Pointer.POINTER_SIZE, pCommandBuffers << Pointer.POINTER_SHIFT), pCommandBuffers);
         checkCall(callPPPI(device.address(), allocInfo.address(), mx.address0(), device.getCapabilities().vkAllocateCommandBuffers));
         return mx;
     }
-    public static long doPointerAllocSafe3(long allocateInfo, long x)
+    @NotNull
+    public static PointerBuffer getPointerBuffer(int size, VkFenceCreateInfo fenceInfo) {
+        PointerBuffer pFence = stackGet().mallocPointer(size);
+
+        checkCall(callPPPPI(device.address(), fenceInfo.address(), NULL, pFence.address0(), device.getCapabilities().vkCreateFence));
+        return pFence;
+    }
+    public static <Type extends Pointer> long doPointerAllocSafe3(Type allocateInfo, long x)
     {
         System.out.print("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
         Checks.check(x);
-        checkCall(callPPPI(device.address(), allocateInfo, NULL, x));
-        Checks.check(memGetLong(allocateInfo));
-        return memGetLong(allocateInfo);
+        checkCall(callPPPI(device.address(), allocateInfo.address(), NULL, x));
+        Checks.check(memGetLong(allocateInfo.address()));
+        return memGetLong(allocateInfo.address());
     }
 
     public static void freeImage(long image, long allocation) {
