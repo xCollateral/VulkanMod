@@ -79,11 +79,11 @@ public class TransferQueue {
 
             if(current >= commandBuffers.size()) {
 
-                VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack);
-                allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-                allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-                allocInfo.commandPool(commandPool);
-                allocInfo.commandBufferCount(size);
+                VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack)
+                        .sType$Default()
+                        .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+                        .commandPool(commandPool)
+                        .commandBufferCount(size);
 
                 PointerBuffer pCommandBuffer = stack.mallocPointer(size);
                 vkAllocateCommandBuffers(device, allocInfo, pCommandBuffer);
@@ -94,9 +94,9 @@ public class TransferQueue {
                 }
 
 
-                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack);
-                fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-                fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack)
+                        .sType$Default()
+                        .flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
                 long pFence = getPointerBuffer(fenceInfo);
 
@@ -109,9 +109,9 @@ public class TransferQueue {
 
             commandBuffer = commandBuffers.get(current);
 
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack)
+                    .sType$Default()
+                    .flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             vkBeginCommandBuffer(commandBuffer.handle, beginInfo);
 
@@ -130,12 +130,12 @@ public class TransferQueue {
 
             vkResetFences(device, commandBuffer.fence);
 
-            VkSubmitInfo.Buffer submitInfo = VkSubmitInfo.callocStack(1, stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
+            VkSubmitInfo.Buffer submitInfo = VkSubmitInfo.callocStack(1, stack)
+                    .sType$Default()
+                    .pCommandBuffers(stack.pointers(commandBuffer.handle));
 
             vkQueueSubmit(Vulkan.getTransferQueue(), submitInfo, fence);
-            vkQueueWaitIdle(getTransferQueue());
+//            vkQueueWaitIdle(getTransferQueue());
 
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
             return fence;
