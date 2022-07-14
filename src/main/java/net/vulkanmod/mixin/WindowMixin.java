@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static net.vulkanmod.vulkan.Vulkan.setvSyncState;
 import static org.lwjgl.glfw.GLFW.GLFW_CLIENT_API;
 import static org.lwjgl.glfw.GLFW.GLFW_NO_API;
 
@@ -48,6 +49,10 @@ public class WindowMixin {
      * @author
      */
     @Overwrite
-    public void setVsync(boolean vsync) {
+    public void setVsync(boolean vsync)
+    {
+//        RenderSystem.assertOnRenderThreadOrInit();
+        System.out.println("VSYNC: "+vsync);
+        setvSyncState(vsync);
     }
 }

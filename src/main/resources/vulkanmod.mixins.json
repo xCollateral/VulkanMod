@@ -7,7 +7,6 @@
   ],
   "client": [
     "FramebufferMixin",
-    "GameOptionsHook",
     "GameRendererMixin",
     "GlProgramManagerMixin",
     "GlStateManagerM",
