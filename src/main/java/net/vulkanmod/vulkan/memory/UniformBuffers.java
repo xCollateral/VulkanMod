@@ -14,7 +14,6 @@ import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
 public class UniformBuffers {
 
-
     private int bufferSize;
     private int usedBytes;
 
@@ -42,10 +41,10 @@ public class UniformBuffers {
         int alignedSize = align(size, minOffset);
         if (alignedSize > this.bufferSize - this.usedBytes) {
             resizeBuffer((int) ((this.bufferSize + alignedSize) * 2));
-        } else {
-            uniformBuffers.get(frame).uploadUBO(buffer, offset);
-            usedBytes += alignedSize;
         }
+
+        uniformBuffers.get(frame).uploadUBO(buffer, offset);
+        usedBytes += alignedSize;
     }
 
     private void resizeBuffer(int newSize) {
@@ -53,6 +52,8 @@ public class UniformBuffers {
         for (UniformBuffer uniformBuffer : uniformBuffers) {
             uniformBuffer.resizeBuffer(newSize);
         }
+
+        this.bufferSize = newSize;
 
         System.out.println("resized UniformBuffer to: " + newSize);
     }
