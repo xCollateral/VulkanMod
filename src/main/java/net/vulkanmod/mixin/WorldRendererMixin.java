@@ -194,7 +194,10 @@ public abstract class WorldRendererMixin {
 //      if (uniform != null) {
 //         uniform.set(Vector3f.ZERO);
 //      }
+
+        //Need to reset push constant in case the pipeline will still be used for rendering
         VRenderSystem.setChunkOffset(0, 0, 0);
+        drawer.pushConstants(pipeline);
 
 //      shaderinstance.clear();
 //      if (flag1) {
