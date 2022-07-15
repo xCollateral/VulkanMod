@@ -229,8 +229,6 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void enableBlend() {
-        assertOnGameThread();
-        //GlStateManager._enableBlend();
         Drawer.currentBlendState = Pipeline.DEFAULT_BLEND_STATE;
     }
 
@@ -239,9 +237,6 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void disableBlend() {
-        assertOnGameThread();
-        //GlStateManager._disableBlend();
-        //Vulkan
         Drawer.currentBlendState = Pipeline.NO_BLEND_STATE;
     }
 
@@ -250,9 +245,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite
     public static void blendFunc(GlStateManager.SrcFactor p_69409_, GlStateManager.DstFactor p_69410_) {
-        assertOnGameThread();
-        //GlStateManager._blendFunc(p_69409_.value, p_69410_.value);
-        //Vulkan
+
         Drawer.currentBlendState = new Pipeline.BlendState(p_69409_, p_69410_, p_69409_, p_69410_);
     }
 
@@ -260,10 +253,15 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite
+    public static void blendFunc(int srcFactor, int dstFactor) {
+        Drawer.currentBlendState = new Pipeline.BlendState(srcFactor, dstFactor, srcFactor, dstFactor);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite
     public static void blendFuncSeparate(GlStateManager.SrcFactor p_69417_, GlStateManager.DstFactor p_69418_, GlStateManager.SrcFactor p_69419_, GlStateManager.DstFactor p_69420_) {
-        assertOnGameThread();
-        //GlStateManager._blendFuncSeparate(p_69417_.value, p_69418_.value, p_69419_.value, p_69420_.value);
-        //Vulkan
         Drawer.currentBlendState = new Pipeline.BlendState(p_69417_, p_69418_, p_69419_, p_69420_);
     }
 
