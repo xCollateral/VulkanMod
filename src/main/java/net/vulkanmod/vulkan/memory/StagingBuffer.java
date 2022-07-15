@@ -1,15 +1,11 @@
 package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.util.VUtil;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
 
-import static net.vulkanmod.vulkan.memory.MemoryManager.*;
-import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.*;
+import static net.vulkanmod.vulkan.memory.MemoryManager.Copy;
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
 public class StagingBuffer extends Buffer{
 

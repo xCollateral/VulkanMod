@@ -1,19 +1,8 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkDevice;
 
-import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
-
-import static net.vulkanmod.vulkan.Vulkan.copyStagingtoLocalBuffer;
-import static net.vulkanmod.vulkan.memory.MemoryManager.*;
-import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.*;
+import static net.vulkanmod.vulkan.memory.MemoryManager.Map;
 
 public abstract class Buffer {
     protected long id;
