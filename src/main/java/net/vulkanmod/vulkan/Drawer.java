@@ -22,10 +22,9 @@ import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.memory.MemoryManager.doBufferAlloc;
-import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
+import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAlloc;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -207,7 +206,7 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack)
+            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack)
                     .sType$Default()
                     .commandPool(getCommandPool())
                     .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY)
@@ -253,9 +252,9 @@ public class Drawer {
             for(int i = 0;i < frameNum;i++) {
 
 
-                imageAvailableSemaphores.put(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
-                renderFinishedSemaphores.put(doPointerAllocSafe3(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
-                inFlightFences.put(doPointerAllocSafe3(fenceInfo, device.getCapabilities().vkCreateFence));
+                imageAvailableSemaphores.put(doPointerAlloc(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
+                renderFinishedSemaphores.put(doPointerAlloc(semaphoreInfo, device.getCapabilities().vkCreateSemaphore));
+                inFlightFences.put(doPointerAlloc(fenceInfo, device.getCapabilities().vkCreateFence));
 
             }
 
@@ -315,7 +314,7 @@ public class Drawer {
             presentInfo.pSwapchains(stack.longs(getSwapChain()));
 
             presentInfo.pImageIndices(pImageIndex);
-            //Many Vulkan Applications do not typcially use a dedicated present queue anymore as apparently preent onyl becomes a bottleneck at extreme framerates (e.g. 10K FPS or more) and in all conceivable likelyhood the game;client will never get remotely close to rendering that quickely anyway
+
             vkResult = vkQueuePresentKHR(getGraphicsQueue(), presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {

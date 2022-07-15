@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static net.vulkanmod.vulkan.Vulkan.instance;
 import static org.lwjgl.system.JNI.callPPPI;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -161,37 +162,36 @@ public abstract class MemoryManager {
 
         vmaDestroyBuffer(allocator, buffer, allocation);
     }
+
+    //These are some experimental functions that exploit loaded function pointers to slightly reduce the CPU/Latency overhead of specific API calls:
+    //these are not essential in any way so they can be completely removed if needed
     public static @NotNull <Type extends Pointer> PointerBuffer doBufferAlloc(Type allocInfo, int pCommandBuffers) {
         PointerBuffer mx = PointerBuffer.create(stackGet().nmalloc(Pointer.POINTER_SIZE, pCommandBuffers << Pointer.POINTER_SHIFT), pCommandBuffers);
+        Checks.checkSafe(mx, 1);
         checkCall(callPPPI(device.address(), allocInfo.address(), mx.address0(), device.getCapabilities().vkAllocateCommandBuffers));
+        Checks.checkSafe(mx, 1);
         return mx;
     }
-//    @NotNull
-//    public static PointerBuffer getPointerBuffer(int size, VkFenceCreateInfo fenceInfo) {
-//        PointerBuffer pFence = stackGet().mallocPointer(size);
-//
-//        checkCall(callPPPPI(device.address(), fenceInfo.address(), NULL, pFence.address0(), device.getCapabilities().vkCreateFence));
-//        return pFence;
-//    }
 
-    public static long getLongBuffer(VkSwapchainCreateInfoKHR createInfo) {
-        LongBuffer pSwapChain = stackGet().longs(VK_NULL_HANDLE);
-
-        Checks.check(memAddress(pSwapChain));
-        callPPPPI(device.address(), createInfo.address(), NULL, memAddress(pSwapChain), device.getCapabilities().vkCreateSwapchainKHR);
-        Checks.check(pSwapChain.get(0));
-        return pSwapChain.get(0);
-    }
-    public static long getPointerBuffer(VkFenceCreateInfo fenceInfo) {
-        PointerBuffer pFence = stackGet().mallocPointer(1);
-        checkCall(callPPPPI(device.address(), fenceInfo.address(), NULL, pFence.address0(), device.getCapabilities().vkCreateFence));
+    public static long doPointerAllocX(Pointer fenceInfo, long fnPtr) {
+        LongBuffer pFence = stackGet().longs(VK_NULL_HANDLE);
+        Checks.checkSafe(pFence, 1);
+        checkCall(callPPPPI(device.address(), fenceInfo.address(), NULL, memAddressSafe(pFence), fnPtr));
+        Checks.checkSafe(pFence, 1);
         return pFence.get(0);
     }
-    public static <Type extends Struct> long doPointerAllocSafe3(Type allocateInfo, long x)
+    public static long doPointerAllocI(Pointer allocateInfo, long x)
     {
 //        System.out.println("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
-//        System.out.print("-->");
-        Checks.check(x);
+        Checks.check(allocateInfo.address());
+        checkCall(callPPPI(instance.address(), allocateInfo.address(), NULL, x));
+        Checks.check(memGetLong(allocateInfo.address()));
+        return memGetLong(allocateInfo.address());
+    }
+    public static <Type extends Pointer.Default> long doPointerAlloc(Type allocateInfo, long x)
+    {
+//        System.out.println("Attempting to CallS: ->"+allocateInfo+"-->"+Thread.currentThread().getStackTrace()[2] + "-->");
+        Checks.check(allocateInfo.address());
         checkCall(callPPPI(device.address(), allocateInfo.address(), NULL, x));
         Checks.check(memGetLong(allocateInfo.address()));
         return memGetLong(allocateInfo.address());
@@ -207,8 +207,6 @@ public abstract class MemoryManager {
     {
         switch (callPPPPI)
         {
-            case VK_SUCCESS -> {
-            }
             case VK_NOT_READY -> Throw("Not ready!");
             case VK_TIMEOUT -> Throw("Bad TimeOut!");
             case VK_INCOMPLETE -> Throw("Incomplete!");
@@ -216,7 +214,8 @@ public abstract class MemoryManager {
             case VK_ERROR_FRAGMENTED_POOL -> Throw("Error: bad Mem Alloc");
             case VK_ERROR_OUT_OF_HOST_MEMORY -> Throw("No Host Memory");
             case VK_ERROR_OUT_OF_DEVICE_MEMORY -> Throw("No Device Memory");
-            default -> Throw("Unknown Error!");
+            case VK_ERROR_UNKNOWN -> Throw("Unknown Error!");
+            default -> {}
         }
     }
 

@@ -312,7 +312,7 @@ public class VulkanImage {
                 samplerInfo.minLod(0.0F);
             }
 
-            textureSampler = doPointerAllocSafe3(samplerInfo, device.getCapabilities().vkCreateSampler);
+            textureSampler = doPointerAlloc(samplerInfo, device.getCapabilities().vkCreateSampler);
 
             byte mask = (byte) ((blur ? 1 : 0) | (mipmap ? 2 : 0));
             samplers.put(mask, textureSampler);

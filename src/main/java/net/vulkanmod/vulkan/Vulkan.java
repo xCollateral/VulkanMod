@@ -5,6 +5,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.glfw.GLFWVulkan;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
@@ -18,9 +19,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.Drawer.inFlightFences;
-import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
-import static net.vulkanmod.vulkan.memory.MemoryManager.getLongBuffer;
+import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.glfw.GLFW.glfwWaitEvents;
@@ -143,7 +142,7 @@ public class Vulkan {
 
     public static long window;
 
-    private static VkInstance instance;
+    public static VkInstance instance;
     private static long debugMessenger;
     private static long surface;
 
@@ -319,13 +318,8 @@ public class Vulkan {
 
             populateDebugMessengerCreateInfo(createInfo);
 
-            LongBuffer pDebugMessenger = stack.longs(VK_NULL_HANDLE);
 
-            if(createDebugUtilsMessengerEXT(instance, createInfo, null, pDebugMessenger) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to set up debug messenger");
-            }
-
-            debugMessenger = pDebugMessenger.get(0);
+            debugMessenger = doPointerAllocI(createInfo, instance.getCapabilities().vkCreateDebugUtilsMessengerEXT);
         }
     }
 
@@ -473,15 +467,13 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-//            findQueueFamilies(physicalDevice);
-
-            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
-            poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(QueueFamilyIndices.graphicsFamily);
-            poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack)
+                    .sType$Default()
+                    .queueFamilyIndex(QueueFamilyIndices.graphicsFamily)
+                    .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 
-            commandPool = doPointerAllocSafe3(poolInfo, device.getCapabilities().vkCreateCommandPool);
+            commandPool = doPointerAlloc(poolInfo, device.getCapabilities().vkCreateCommandPool);
         }
     }
 
@@ -537,8 +529,8 @@ public class Vulkan {
             createInfo.oldSwapchain(VK_NULL_HANDLE);
 
 
-            swapChain =  getLongBuffer(createInfo);
-            assert (swapChain!=NULL);
+            swapChain =  doPointerAllocX(createInfo, device.getCapabilities().vkCreateSwapchainKHR);
+
             vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
 
             LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
@@ -569,16 +561,24 @@ public class Vulkan {
             VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(2, stack);
             VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(2, stack);
 
+            //Attempt to use Load/Store Op None if Supported
+
+            boolean b = VK_VERSION_MINOR(deviceProperties.apiVersion()) > 2;
+            System.out.println("Using EXTLoadStoreOpNone:"+b);
+
+            final int defLoadOp = (b) ? EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            final int defStoreOp = (b) ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_STORE;
+
             // Color attachments
-            VkAttachmentDescription colorAttachment = attachments.get(0);
-            colorAttachment.format(swapChainImageFormat);
-            colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
-            colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-            colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            colorAttachment.finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+            attachments.get(0)
+                    .format(swapChainImageFormat)
+                    .samples(VK_SAMPLE_COUNT_1_BIT)
+                    .loadOp(defLoadOp)
+                    .storeOp(defStoreOp)
+                    .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                    .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                    .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                    .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
             int y = attachments.get(0).samples();
 
@@ -588,15 +588,15 @@ public class Vulkan {
 
             // Depth-Stencil attachments
 
-            VkAttachmentDescription depthAttachment = attachments.get(1);
-            depthAttachment.format(findDepthFormat());
-            depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-            depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-            depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            depthAttachment.finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            attachments.get(1)
+                    .format(findDepthFormat())
+                    .samples(VK_SAMPLE_COUNT_1_BIT)
+                    .loadOp(defLoadOp)
+                    .storeOp(defStoreOp)
+                    .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                    .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                    .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                    .finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
             VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1);
             depthAttachmentRef.attachment(1);
@@ -623,7 +623,7 @@ public class Vulkan {
             //renderPassInfo.pDependencies(dependency);
 
 
-            renderPass = doPointerAllocSafe3(renderPassInfo, device.getCapabilities().vkCreateRenderPass);
+            renderPass = doPointerAlloc(renderPassInfo, device.getCapabilities().vkCreateRenderPass);
         }
     }
 
@@ -714,14 +714,8 @@ public class Vulkan {
 
     private static int chooseSwapPresentMode(IntBuffer availablePresentModes) {
 
-        //TODO: vsync
-//        for(int i = 0;i < availablePresentModes.capacity();i++) {
-//            if(availablePresentModes.get(i) == VK_PRESENT_MODE_MAILBOX_KHR) {
-//                return availablePresentModes.get(i);
-//            }
-//        }
-//
-//        return VK_PRESENT_MODE_FIFO_KHR;
+
+        //Lazy Present Mode toggle: will need to be replaced with a more robust enumeration later
         return vSyncState?VK_PRESENT_MODE_FIFO_KHR:VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
 
@@ -768,28 +762,26 @@ public class Vulkan {
 
 
 
-            return (doPointerAllocSafe3(viewInfo, device.getCapabilities().vkCreateImageView));
+            return (doPointerAlloc(viewInfo, device.getCapabilities().vkCreateImageView));
         }
     }
 
     public static VkViewport.Buffer viewport(MemoryStack stack) {
-        VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
-        viewport.x(0.0f);
-        viewport.y(swapChainExtent.height());
-        viewport.width(swapChainExtent.width());
-        viewport.height(-swapChainExtent.height());
-        viewport.minDepth(0.0f);
-        viewport.maxDepth(1.0f);
 
-        return viewport;
+        return VkViewport.callocStack(1, stack)
+                .x(0.0f)
+                .y(swapChainExtent.height())
+                .width(swapChainExtent.width())
+                .height(-swapChainExtent.height())
+                .minDepth(0.0f)
+                .maxDepth(1.0f);
     }
 
     public static VkRect2D.Buffer scissor(MemoryStack stack) {
-        VkRect2D.Buffer scissor = VkRect2D.callocStack(1, stack);
-        scissor.offset(VkOffset2D.callocStack(stack).set(0, 0));
-        scissor.extent(swapChainExtent);
 
-        return scissor;
+        return VkRect2D.callocStack(1, stack)
+                .offset(VkOffset2D.callocStack(stack).set(0, 0))
+                .extent(swapChainExtent);
     }
 
     private static void createFramebuffers() {
@@ -802,8 +794,8 @@ public class Vulkan {
             //attachments = stack.mallocLong(1);
 
             // Lets allocate the create info struct once and just update the pAttachments field each iteration
-            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
+            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack)
+                    .sType$Default()
                     .renderPass(renderPass)
                     .width(swapChainExtent.width())
                     .height(swapChainExtent.height())
@@ -817,7 +809,7 @@ public class Vulkan {
 
 
 
-                swapChainFramebuffers.add((doPointerAllocSafe3(framebufferInfo, device.getCapabilities().vkCreateFramebuffer)));
+                swapChainFramebuffers.add((doPointerAlloc(framebufferInfo, device.getCapabilities().vkCreateFramebuffer)));
             }
         }
     }
@@ -1029,7 +1021,7 @@ public class Vulkan {
             if (queueFamilies.capacity()==1) QueueFamilyIndices.transferFamily = QueueFamilyIndices.graphicsFamily = 0;
 
 
-            //Need to cheks if this orks/handles devcies with very low queue counts properly
+            //Need to checks if this works/handles devices with very low queue counts properly
             for (int i = 0; i < queueFamilies.capacity() || !QueueFamilyIndices.isComplete(); i++) {
 
                 if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
@@ -1037,15 +1029,7 @@ public class Vulkan {
                     continue;
                 }
 
-
-//                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, presentSupport);
-//
-//                if(presentSupport.get(0) == VK_TRUE) {
-//                    indices.presentFamily = i;
-//                    continue;
-//                }
-
-                // Check that Video Tranfer Queues are not Accidentally selected if the Vulkan beta Drivers from Nvidia are used
+                // Check that Video Transfer Queues are not Accidentally selected if the Vulkan beta Drivers from Nvidia are used
 
                 if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_TRANSFER_BIT) != 0)
                     QueueFamilyIndices.transferFamily = i;

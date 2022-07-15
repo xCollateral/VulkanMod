@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan;
 
-import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -9,14 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.vulkan.Vulkan.findQueueFamilies;
-import static net.vulkanmod.vulkan.Vulkan.getTransferQueue;
-import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocSafe3;
-import static net.vulkanmod.vulkan.memory.MemoryManager.getPointerBuffer;
+import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAlloc;
+import static net.vulkanmod.vulkan.memory.MemoryManager.doPointerAllocX;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
-import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class TransferQueue {
@@ -44,11 +40,7 @@ public class TransferQueue {
                     .queueFamilyIndex(Vulkan.QueueFamilyIndices.transferFamily)
                     .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-//            LongBuffer pCommandPool = stack.mallocLong(1);
-//
-//            callPPPPI(device.address(), poolInfo.address(), NULL, memAddress0(pCommandPool), device.getCapabilities().vkCreateCommandPool);
-
-            commandPool = doPointerAllocSafe3(poolInfo, device.getCapabilities().vkCreateCommandPool);
+            commandPool = doPointerAlloc(poolInfo, device.getCapabilities().vkCreateCommandPool);
         }
     }
 
@@ -98,7 +90,7 @@ public class TransferQueue {
                         .sType$Default()
                         .flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
-                long pFence = getPointerBuffer(fenceInfo);
+                long pFence = doPointerAllocX(fenceInfo, device.getCapabilities().vkCreateFence);
 
                 for(int i = 0; i < size; ++i) {
                     fences.add(pFence);
