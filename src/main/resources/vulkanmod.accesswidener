@@ -2,3 +2,8 @@ accessWidener	v1	named
 #Accessible class net/minecraft/client/render/WorldRenderer$ChunkInfo
 Accessible field net/minecraft/client/render/WorldRenderer$ChunkInfo chunk Lnet/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk;
 Mutable field net/minecraft/client/render/VertexFormats COLOR_ELEMENT Lnet/minecraft/client/render/VertexFormatElement;
+Accessible class net/minecraft/client/render/WorldRenderer$class_6600
+accessible field net/minecraft/client/render/Frustum field_34821 Lnet/minecraft/util/math/Vector4f;
+accessible field net/minecraft/client/render/Frustum x D
+accessible field net/minecraft/client/render/Frustum y D
+accessible field net/minecraft/client/render/Frustum z D
