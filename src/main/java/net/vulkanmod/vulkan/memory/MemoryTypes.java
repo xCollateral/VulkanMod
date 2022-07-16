@@ -191,7 +191,7 @@ public class MemoryTypes {
                     return true;
                 }
             };
-            return;
+            if(GPU_MEM != null) return;
         }
 
         for(int i = 0; i < Vulkan.memoryProperties.memoryTypeCount(); ++i) {
@@ -240,6 +240,7 @@ public class MemoryTypes {
                     }
 
                 };
+                return;
             }
         }
 
