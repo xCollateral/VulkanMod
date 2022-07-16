@@ -32,7 +32,7 @@ public class TransferQueue {
 
             Vulkan.QueueFamilyIndices queueFamilyIndices = findQueueFamilies(device.getPhysicalDevice());
 
-            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
+            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
             poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
@@ -82,7 +82,7 @@ public class TransferQueue {
 
             if(current >= commandBuffers.size()) {
 
-                VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack);
+                VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
                 allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
                 allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
                 allocInfo.commandPool(commandPool);
@@ -97,7 +97,7 @@ public class TransferQueue {
                 }
 
 
-                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack);
+                VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
                 fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
                 fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
@@ -113,7 +113,7 @@ public class TransferQueue {
 
             commandBuffer = commandBuffers.get(current);
 
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
@@ -134,7 +134,7 @@ public class TransferQueue {
 
             vkResetFences(device, commandBuffer.fence);
 
-            VkSubmitInfo.Buffer submitInfo = VkSubmitInfo.callocStack(1, stack);
+            VkSubmitInfo.Buffer submitInfo = VkSubmitInfo.calloc(1, stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 

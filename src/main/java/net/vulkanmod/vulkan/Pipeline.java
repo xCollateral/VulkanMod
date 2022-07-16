@@ -97,7 +97,7 @@ public class Pipeline {
 
             ByteBuffer entryPoint = stack.UTF8("main");
 
-            VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.callocStack(2, stack);
+            VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
 
             VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
 
@@ -115,21 +115,21 @@ public class Pipeline {
 
             // ===> VERTEX STAGE <===
 
-            VkPipelineVertexInputStateCreateInfo vertexInputInfo = VkPipelineVertexInputStateCreateInfo.callocStack(stack);
+            VkPipelineVertexInputStateCreateInfo vertexInputInfo = VkPipelineVertexInputStateCreateInfo.calloc(stack);
             vertexInputInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
             vertexInputInfo.pVertexBindingDescriptions(getBindingDescription(vertexFormat));
             vertexInputInfo.pVertexAttributeDescriptions(getAttributeDescriptions(vertexFormat));
 
             // ===> ASSEMBLY STAGE <===
 
-            VkPipelineInputAssemblyStateCreateInfo inputAssembly = VkPipelineInputAssemblyStateCreateInfo.callocStack(stack);
+            VkPipelineInputAssemblyStateCreateInfo inputAssembly = VkPipelineInputAssemblyStateCreateInfo.calloc(stack);
             inputAssembly.sType(VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
             inputAssembly.topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
             inputAssembly.primitiveRestartEnable(false);
 
             // ===> VIEWPORT & SCISSOR
 
-            VkPipelineViewportStateCreateInfo viewportState = VkPipelineViewportStateCreateInfo.callocStack(stack);
+            VkPipelineViewportStateCreateInfo viewportState = VkPipelineViewportStateCreateInfo.calloc(stack);
             viewportState.sType(VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
 
             viewportState.viewportCount(1);
@@ -137,7 +137,7 @@ public class Pipeline {
 
             // ===> RASTERIZATION STAGE <===
 
-            VkPipelineRasterizationStateCreateInfo rasterizer = VkPipelineRasterizationStateCreateInfo.callocStack(stack);
+            VkPipelineRasterizationStateCreateInfo rasterizer = VkPipelineRasterizationStateCreateInfo.calloc(stack);
             rasterizer.sType(VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
             rasterizer.depthClampEnable(false);
             rasterizer.rasterizerDiscardEnable(false);
@@ -152,14 +152,14 @@ public class Pipeline {
 
             // ===> MULTISAMPLING <===
 
-            VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.callocStack(stack);
+            VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.calloc(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
             multisampling.sampleShadingEnable(false);
             multisampling.rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
 
             // ===> DEPTH TEST <===
 
-            VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.callocStack(stack);
+            VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc(stack);
             depthStencil.sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
             depthStencil.depthTestEnable(state.depthState.depthTest);
             depthStencil.depthWriteEnable(state.depthState.depthMask);
@@ -171,7 +171,7 @@ public class Pipeline {
 
             // ===> COLOR BLENDING <===
 
-            VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.callocStack(1, stack);
+            VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.calloc(1, stack);
             colorBlendAttachment.colorWriteMask(state.colorMask.colorMask);
 
             if(state.blendState.enabled) {
@@ -187,7 +187,7 @@ public class Pipeline {
                 colorBlendAttachment.blendEnable(false);
             }
 
-            VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.callocStack(stack);
+            VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.calloc(stack);
             colorBlending.sType(VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
             colorBlending.logicOpEnable(state.logicOpState.enabled);
             colorBlending.logicOp(state.logicOpState.getLogicOp());
@@ -196,11 +196,11 @@ public class Pipeline {
 
             // ===> DYNAMIC STATES <===
 
-            VkPipelineDynamicStateCreateInfo dynamicStates = VkPipelineDynamicStateCreateInfo.callocStack(stack);
+            VkPipelineDynamicStateCreateInfo dynamicStates = VkPipelineDynamicStateCreateInfo.calloc(stack);
             dynamicStates.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
             dynamicStates.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
 
-            VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.callocStack(1, stack);
+            VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.calloc(1, stack);
             pipelineInfo.sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
             pipelineInfo.pStages(shaderStages);
             pipelineInfo.pVertexInputState(vertexInputInfo);
@@ -268,7 +268,7 @@ public class Pipeline {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.callocStack(bindingsSize, stack);
+            VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
 
             int i = 0;
             for(UBO ubo : this.UBOs) {
@@ -295,7 +295,7 @@ public class Pipeline {
 
 
 
-            VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.callocStack(stack);
+            VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.calloc(stack);
             layoutInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
             layoutInfo.pBindings(bindings);
 
@@ -312,12 +312,12 @@ public class Pipeline {
         try(MemoryStack stack = stackPush()) {
             // ===> PIPELINE LAYOUT CREATION <===
 
-            VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.callocStack(stack);
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
             pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout));
 
             if(pushConstant.getSize() > 0) {
-                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
+                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);
                 pushConstantRange.size(pushConstant.getSize());
                 pushConstantRange.offset(0);
                 pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
@@ -340,7 +340,7 @@ public class Pipeline {
         try(MemoryStack stack = stackPush()) {
             int size =  UBOs.size() + samplers.size();
 
-            VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.callocStack(size, stack);
+            VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(size, stack);
 
             int i;
             for(i = 0; i < UBOs.size(); ++i) {
@@ -355,7 +355,7 @@ public class Pipeline {
                 textureSamplerPoolSize.descriptorCount(descriptorCount);
             }
 
-            VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.callocStack(stack);
+            VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
             poolInfo.pPoolSizes(poolSizes);
             poolInfo.maxSets(descriptorCount);
@@ -398,7 +398,7 @@ public class Pipeline {
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
 
         VkVertexInputBindingDescription.Buffer bindingDescription =
-                VkVertexInputBindingDescription.callocStack(1);
+                VkVertexInputBindingDescription.calloc(1);
 
         bindingDescription.binding(0);
         bindingDescription.stride(vertexFormat.getVertexSize());
@@ -543,7 +543,7 @@ public class Pipeline {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
+            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.calloc(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
             createInfo.pCode(spirvCode);
@@ -561,7 +561,7 @@ public class Pipeline {
     private static long createPipelineCache() {
         try(MemoryStack stack = stackPush()) {
 
-            VkPipelineCacheCreateInfo cacheCreateInfo = VkPipelineCacheCreateInfo.callocStack(stack);
+            VkPipelineCacheCreateInfo cacheCreateInfo = VkPipelineCacheCreateInfo.calloc(stack);
             cacheCreateInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
 
             LongBuffer pPipelineCache = stack.mallocLong(1);
@@ -619,7 +619,7 @@ public class Pipeline {
                     layouts.put(i, descriptorSetLayout);
                 }
 
-                VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.callocStack(stack);
+                VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.calloc(stack);
                 allocInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
                 allocInfo.descriptorPool(descriptorPools[frame]);
                 allocInfo.pSetLayouts(layouts);
@@ -648,7 +648,7 @@ public class Pipeline {
         private void updateDescriptorSet(VkCommandBuffer commandBuffer, int frame, UniformBuffers uniformBuffers) {
             try(MemoryStack stack = stackPush()) {
 
-                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(UBOs.size() + samplers.size(), stack);
+                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(UBOs.size() + samplers.size(), stack);
                 VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[UBOs.size()];
 
                 int currentOffset = uniformBuffers.getUsedBytes();
@@ -659,7 +659,7 @@ public class Pipeline {
                     ubo.update();
                     uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
 
-                    bufferInfos[i] = VkDescriptorBufferInfo.callocStack(1, stack);
+                    bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
                     bufferInfos[i].offset(currentOffset);
                     bufferInfos[i].range(ubo.getSize());
 
@@ -683,7 +683,7 @@ public class Pipeline {
                     texture.readOnlyLayout();
                     //VulkanImage texture = VTextureManager.getCurrentTexture();
 
-                    imageInfos[0] = VkDescriptorImageInfo.callocStack(1, stack);
+                    imageInfos[0] = VkDescriptorImageInfo.calloc(1, stack);
                     imageInfos[0].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
                     imageInfos[0].imageView(texture.getTextureImageView());
@@ -703,7 +703,7 @@ public class Pipeline {
                         texture = VTextureSelector.getLightTexture();
                         texture.readOnlyLayout();
 
-                        imageInfos[1] = VkDescriptorImageInfo.callocStack(1, stack);
+                        imageInfos[1] = VkDescriptorImageInfo.calloc(1, stack);
                         imageInfos[1].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
                         imageInfos[1].imageView(texture.getTextureImageView());
@@ -723,7 +723,7 @@ public class Pipeline {
                             texture = VTextureSelector.getOverlayTexture();
                             texture.readOnlyLayout();
 
-                            imageInfos[2] = VkDescriptorImageInfo.callocStack(1, stack);
+                            imageInfos[2] = VkDescriptorImageInfo.calloc(1, stack);
                             imageInfos[2].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
                             imageInfos[2].imageView(texture.getTextureImageView());

@@ -32,8 +32,7 @@ public class Initializer implements ModInitializer {
 				.getMetadata()
 				.getVersion().getFriendlyString();
 
-		LOGGER.info("Hello Fabric world!");
-
+		LOGGER.info("Initializing VulkanMod Version " + VERSION + "!");
 	}
 
 	public static String getVersion() {

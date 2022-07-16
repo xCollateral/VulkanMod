@@ -142,20 +142,20 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
-            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
+            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 
             renderPassInfo.renderPass(getRenderPass());
 
-            VkRect2D renderArea = VkRect2D.callocStack(stack);
-            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
+            VkRect2D renderArea = VkRect2D.calloc(stack);
+            renderArea.offset(VkOffset2D.calloc(stack).set(0, 0));
             renderArea.extent(getSwapchainExtent());
             renderPassInfo.renderArea(renderArea);
 
-            VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
+            VkClearValue.Buffer clearValues = VkClearValue.calloc(2, stack);
             clearValues.get(0).color().float32(stack.floats(0.0f, 0.0f, 0.0f, 1.0f));
             clearValues.get(1).depthStencil().set(1.0f, 0);
             renderPassInfo.pClearValues(clearValues);
@@ -206,7 +206,7 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack);
+            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
             allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
             allocInfo.commandPool(getCommandPool());
             allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -246,10 +246,10 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.callocStack(stack);
+            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack);
             semaphoreInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack);
+            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
             fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
             fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
@@ -299,7 +299,7 @@ public class Drawer {
 
             final int imageIndex = pImageIndex.get(0);
 
-            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
             submitInfo.waitSemaphoreCount(1);
@@ -319,7 +319,7 @@ public class Drawer {
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
-            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack);
+            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
 
             presentInfo.pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
@@ -473,10 +473,10 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear, it seems it works like a buffer: color and depth attributes override themselves
-            VkClearValue colorValue = VkClearValue.callocStack(stack);
+            VkClearValue colorValue = VkClearValue.calloc(stack);
             colorValue.color().float32(VRenderSystem.clearColor);
 
-            VkClearValue depthValue = VkClearValue.callocStack(stack);
+            VkClearValue depthValue = VkClearValue.calloc(stack);
             depthValue.depthStencil().depth(VRenderSystem.clearDepth);
 
             int attachmentsCount;
@@ -484,7 +484,7 @@ public class Drawer {
             if (v == 0x100) {
                 attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
 
                 VkClearAttachment clearDepth = pAttachments.get(0);
                 clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -492,7 +492,7 @@ public class Drawer {
             } else if (v == 0x4000) {
                 attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
 
                 VkClearAttachment clearColor = pAttachments.get(0);
                 clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -501,7 +501,7 @@ public class Drawer {
             } else if (v == 0x4100) {
                 attachmentsCount = 2;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
 
                 VkClearAttachment clearColor = pAttachments.get(0);
                 clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -515,11 +515,11 @@ public class Drawer {
             }
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.callocStack(stack);
-            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
+            VkRect2D renderArea = VkRect2D.calloc(stack);
+            renderArea.offset(VkOffset2D.calloc(stack).set(0, 0));
             renderArea.extent(getSwapchainExtent());
 
-            VkClearRect.Buffer pRect = VkClearRect.callocStack(1, stack);
+            VkClearRect.Buffer pRect = VkClearRect.calloc(1, stack);
             pRect.get(0).rect(renderArea);
             pRect.get(0).layerCount(1);
 
@@ -547,7 +547,7 @@ public class Drawer {
 //        VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 //
 //        try(MemoryStack stack = stackPush()) {
-//            VkDebugUtilsLabelEXT markerInfo = VkDebugUtilsLabelEXT.callocStack(stack);
+//            VkDebugUtilsLabelEXT markerInfo = VkDebugUtilsLabelEXT.calloc(stack);
 //            markerInfo.sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT);
 //            ByteBuffer string = stack.UTF8(s);
 //            markerInfo.pLabelName(string);
