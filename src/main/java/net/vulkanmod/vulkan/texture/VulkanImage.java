@@ -252,10 +252,10 @@ public class VulkanImage {
             int destinationStage;
 
             barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-            barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+            barrier.dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
 
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
             vkCmdPipelineBarrier(commandBuffer.getHandle(),
                     sourceStage, destinationStage,

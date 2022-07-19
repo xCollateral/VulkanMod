@@ -58,21 +58,11 @@ public class Vulkan {
     private static final boolean ENABLE_VALIDATION_LAYERS = false;
 //    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
-    private static final Set<String> VALIDATION_LAYERS;
-    static {
-        if(ENABLE_VALIDATION_LAYERS) {
-            VALIDATION_LAYERS = new HashSet<>();
-            VALIDATION_LAYERS.add("VK_LAYER_KHRONOS_validation");
-
-        } else {
-            // We are not going to use it, so we don't create it
-            VALIDATION_LAYERS = null;
-        }
-    }
+    private static final Set<String> VALIDATION_LAYERS = (ENABLE_VALIDATION_LAYERS) ? new HashSet<>(Collections.singleton("VK_LAYER_KHRONOS_validation")) : null;
 
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .collect(toSet());
-
+    private static boolean vSyncState;
 
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -115,18 +105,18 @@ public class Vulkan {
 
         // We use Integer to use null as the empty value
         Integer graphicsFamily;
-        Integer presentFamily;
+        Integer transferFamily;
 
         private boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null;
+            return graphicsFamily != null && transferFamily != null;
         }
 
         public int[] unique() {
-            return IntStream.of(graphicsFamily, presentFamily).distinct().toArray();
+            return IntStream.of(graphicsFamily, transferFamily).distinct().toArray();
         }
 
         public int[] array() {
-            return new int[] {graphicsFamily, presentFamily};
+            return new int[] {graphicsFamily, transferFamily};
         }
     }
 
@@ -383,6 +373,8 @@ public class Vulkan {
 
             int[] uniqueQueueFamilies = indices.unique();
 
+            System.out.println(uniqueQueueFamilies);
+
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.callocStack(uniqueQueueFamilies.length, stack);
 
             for(int i = 0;i < uniqueQueueFamilies.length;i++) {
@@ -422,7 +414,7 @@ public class Vulkan {
             vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
 
-            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
+            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
             presentQueue = new VkQueue(pQueue.get(0), device);
 
             //Get device properties
@@ -514,9 +506,9 @@ public class Vulkan {
 
             QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-            if(!indices.graphicsFamily.equals(indices.presentFamily)) {
+            if(!indices.graphicsFamily.equals(indices.transferFamily)) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.transferFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
@@ -693,7 +685,12 @@ public class Vulkan {
                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
 
-
+    public static void setvSyncState(boolean vSyncState) {
+        Vulkan.vSyncState = vSyncState;
+        if(getSwapChainFramebuffers()!=null) {
+            Drawer.recreateSwapChain();
+        }
+    }
 
     private static VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR.Buffer availableFormats) {
         List<VkSurfaceFormatKHR> list = availableFormats.stream().toList();
@@ -724,8 +721,8 @@ public class Vulkan {
 //            }
 //        }
 //
-//        return VK_PRESENT_MODE_FIFO_KHR;
-        return VK_PRESENT_MODE_IMMEDIATE_KHR;
+        //Lazy Present Mode toggle: will need to be replaced with a more robust enumeration later
+        return vSyncState? KHRSurface.VK_PRESENT_MODE_FIFO_KHR:VK_PRESENT_MODE_IMMEDIATE_KHR;//        return VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
 
     private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {
@@ -1039,17 +1036,22 @@ public class Vulkan {
 
             IntBuffer presentSupport = stack.ints(VK_FALSE);
 
+            //Abort Queue Enumeration if the device supports only one Queue Family
+            if (queueFamilies.capacity()==1) {indices.transferFamily = indices.graphicsFamily = 0; return indices;}
+
             for(int i = 0;i < queueFamilies.capacity() || !indices.isComplete();i++) {
 
                 if((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
                     indices.graphicsFamily = i;
+                    continue;
                 }
 
                 vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, presentSupport);
 
-                if(presentSupport.get(0) == VK_TRUE) {
-                    indices.presentFamily = i;
-                }
+                // Check that Video Transfer Queues are not Accidentally selected if the Vulkan beta Drivers from Nvidia are used
+
+                if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_TRANSFER_BIT) != 0)
+                    indices.transferFamily = i;
 
                 if(indices.isComplete()) break;
             }
@@ -1078,7 +1080,7 @@ public class Vulkan {
         }
     }
 
-    public static VkQueue getPresentQueue() { return presentQueue; }
+    public static VkQueue getTransferQueue() { return presentQueue; }
 
     public static VkQueue getGraphicsQueue() { return graphicsQueue; }
 
