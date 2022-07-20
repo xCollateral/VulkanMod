@@ -22,7 +22,7 @@ import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
@@ -47,7 +47,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.vkCreateSwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkDestroySwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkGetSwapchainImagesKHR;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
@@ -63,6 +63,17 @@ public class Vulkan {
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .collect(toSet());
     private static boolean vSyncState;
+    public static final int vkRawVersion;
+
+    static
+    {
+
+        IntBuffer va = stackGet().mallocInt(1);
+        vkEnumerateInstanceVersion(va);
+        vkRawVersion=memGetInt(memAddress0(va));
+        System.out.println(vkRawVersion);
+
+    }
 
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -242,7 +253,7 @@ public class Vulkan {
         if(ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport()) {
             throw new RuntimeException("Validation requested but not supported");
         }
-
+        System.out.println("Using: "+VK_VERSION_MAJOR(vkRawVersion)+"."+VK_VERSION_MINOR(vkRawVersion)+"."+VK_VERSION_PATCH(vkRawVersion));
         try(MemoryStack stack = stackPush()) {
 
             // Use calloc to initialize the structs with 0s. Otherwise, the program can crash due to random values
@@ -253,8 +264,8 @@ public class Vulkan {
             appInfo.pApplicationName(stack.UTF8Safe("VulkanMod"));
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
-            appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_1);
+            appInfo.engineVersion(VK_MAKE_VERSION(1, VK_VERSION_MINOR(vkRawVersion), VK_VERSION_PATCH(vkRawVersion)));
+            appInfo.apiVersion(VK_MAKE_API_VERSION(0, VK_VERSION_MAJOR(vkRawVersion), VK_VERSION_MINOR(vkRawVersion), VK_VERSION_PATCH(vkRawVersion)));
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 

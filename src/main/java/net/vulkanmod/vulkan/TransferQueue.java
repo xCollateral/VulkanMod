@@ -15,7 +15,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class TransferQueue {
     private static final VkDevice device = Vulkan.getDevice();
 
-    private static long commandPool;
+    private static final long commandPool;
     private static final List<CommandBuffer> commandBuffers = new ArrayList<>();
     private static final List<Long> fences = new ArrayList<>();
     private static int current = 0;
@@ -23,10 +23,10 @@ public class TransferQueue {
     private static CommandBuffer currentCmdBuffer;
 
     static {
-        createCommandPool();
+        commandPool=createCommandPool();
     }
 
-    private static void createCommandPool() {
+    private static long createCommandPool() {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -43,7 +43,7 @@ public class TransferQueue {
                 throw new RuntimeException("Failed to create command pool");
             }
 
-            commandPool = pCommandPool.get(0);
+            return pCommandPool.get(0);
         }
     }
 
