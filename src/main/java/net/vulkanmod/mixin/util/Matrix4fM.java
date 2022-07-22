@@ -7,21 +7,25 @@ import org.spongepowered.asm.mixin.Overwrite;
 
 import java.nio.FloatBuffer;
 
+import static org.joml.Math.fma;
+import static org.lwjgl.system.MemoryStack.stackGet;
+
 @Mixin(Matrix4f.class)
 public class Matrix4fM {
+    private static final double v = 0.008726646259971648D;
+    private static final FloatBuffer fb = stackGet().mallocFloat(16);
 
     /**
      * @author
      */
     @Overwrite
     public static Matrix4f viewboxMatrix(double fovy, float aspect, float zNear, float zFar) {
-        float f = (float)(1.0D / Math.tan(fovy * (double)((float)Math.PI / 180F) / 2.0D));
+        float f = (float)(1.0D / Math.tan((fovy* v)));
         Matrix4f matrix4f = new Matrix4f();
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
             org.joml.Matrix4f mat4f = new org.joml.Matrix4f();
 //            mat4f.setPerspective((float) fovy, aspect, zNear, zFar, true);
-            FloatBuffer fb = stack.mallocFloat(16);
+
 
             mat4f.m00(f / aspect);
             mat4f.m11(f);
@@ -34,7 +38,7 @@ public class Matrix4fM {
             mat4f.get(fb);
 //            matrix4f.readColumnMajor(fb);
             matrix4f.readRowMajor(fb);
-        }
+
 
 
 //        matrix4f.a00 = f / aspect;

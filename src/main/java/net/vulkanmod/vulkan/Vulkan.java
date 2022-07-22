@@ -5,8 +5,11 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.Checks;
+import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.vma.*;
+import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
+import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
@@ -17,37 +20,22 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
-import static org.lwjgl.glfw.GLFW.*;
+import static org.joml.Options.*;
+import static org.joml.Runtime.HAS_Math_fma;
+import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.glfw.GLFW.glfwWaitEvents;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.memGetInt;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-import static org.lwjgl.vulkan.EXTDebugUtils.vkCreateDebugUtilsMessengerEXT;
-import static org.lwjgl.vulkan.EXTDebugUtils.vkDestroyDebugUtilsMessengerEXT;
-import static org.lwjgl.vulkan.KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-import static org.lwjgl.vulkan.KHRSurface.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-import static org.lwjgl.vulkan.KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-import static org.lwjgl.vulkan.KHRSwapchain.vkCreateSwapchainKHR;
-import static org.lwjgl.vulkan.KHRSwapchain.vkDestroySwapchainKHR;
-import static org.lwjgl.vulkan.KHRSwapchain.vkGetSwapchainImagesKHR;
+import static org.lwjgl.vulkan.EXTDebugUtils.*;
+import static org.lwjgl.vulkan.KHRSurface.*;
+import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
+import static org.lwjgl.vulkan.VK11.nvkEnumerateInstanceVersion;
 
 public class Vulkan {
 
@@ -65,13 +53,46 @@ public class Vulkan {
     private static boolean vSyncState;
     public static final int vkRawVersion;
 
+    private static final boolean Debug = false;
+
     static
     {
 
-        IntBuffer va = stackGet().mallocInt(1);
-        vkEnumerateInstanceVersion(va);
-        vkRawVersion=memGetInt(memAddress0(va));
+        System.setProperty("org.lwjgl.util.NoChecks", String.valueOf(!Debug));
+        System.setProperty("org.lwjgl.util.NoFunctionChecks", String.valueOf(!Debug));
+        System.setProperty("org.lwjgl.util.Debug", String.valueOf(Debug));
+        Configuration.DISABLE_CHECKS.set(true);
+        Configuration.DEBUG_MEMORY_ALLOCATOR.set(false);
+        Configuration.DEBUG_MEMORY_ALLOCATOR_INTERNAL.set(false);
+        Configuration.DEBUG_STACK.set(false);
+        Configuration.DEBUG_FUNCTIONS.set(false);
+        System.out.println("Allocator: "+System.getProperty("org.lwjgl.system.allocator"));
+        System.out.println("Allocator: "+Configuration.MEMORY_ALLOCATOR.get());
+        System.out.println("Debug: "+Checks.DEBUG);
+        System.out.println("Checks: "+ System.getProperty("org.lwjgl.util.NoChecks"));
+        System.out.println("DEBUG_MEMORY_ALLOCATOR: "+  Configuration.DEBUG_MEMORY_ALLOCATOR.get());
+        System.out.println("DEBUG_MEMORY_ALLOCATOR_INTERNAL: "+  Configuration.DEBUG_MEMORY_ALLOCATOR_INTERNAL.get());
+
+        System.setProperty("joml.useMathFma", "true");
+        System.setProperty("joml.fastmath", "true");
+        System.setProperty("joml.forceUnsafe", "true");
+        System.setProperty("joml.debug", String.valueOf(!Debug));
+        System.setProperty("joml.sinLookup", String.valueOf(!Debug));
+        System.setProperty("joml.sinLookup.bits", String.valueOf(!Debug ? 8 : 14));
+
+        System.out.println("FMA: "+HAS_Math_fma);
+        System.out.println("FMA: "+System.getProperty("joml.useMathFma"));
+        System.out.println("fastmath: "+FASTMATH);
+        System.out.println("FORCE_UNSAFE: "+FORCE_UNSAFE);
+        System.out.println("SIN_LOOKUP: "+SIN_LOOKUP);
+        System.out.println("SIN_LOOKUP_BITS: "+ SIN_LOOKUP_BITS);
+
+        long va = stackGet().nmalloc(4);
+        nvkEnumerateInstanceVersion(va);
+        vkRawVersion=memGetInt((va));
         System.out.println(vkRawVersion);
+
+
 
     }
 

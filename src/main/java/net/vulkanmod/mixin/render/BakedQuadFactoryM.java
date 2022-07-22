@@ -5,13 +5,22 @@ import net.minecraft.client.render.model.CubeFace;
 import net.minecraft.client.render.model.json.ModelElementTexture;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.*;
+
+import org.joml.Math;
+
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+
+import static java.lang.Math.floorMod;
+import static org.joml.Math.*;
 
 @Mixin(BakedQuadFactory.class)
 public class BakedQuadFactoryM {
 
     private static final float d = 1.0f / 16.0f;
+    private static final float v = 57.295784f;
+
 
     /**
      * @author
@@ -64,11 +73,11 @@ public class BakedQuadFactoryM {
             p = m;
             q = i;
         }
-        float r = (float)Math.toRadians(texture.rotation);
-        Vec3f vec3f = new Vec3f(MathHelper.cos(r), MathHelper.sin(r), 0.0f);
-        Matrix3f matrix3f = new Matrix3f(matrix4f);
-        vec3f.transform(matrix3f);
-        int s = Math.floorMod(-((int)Math.round(Math.toDegrees(Math.atan2(vec3f.getY(), vec3f.getX())) / 90.0)) * 90, 360);
-        return new ModelElementTexture(new float[]{n, p, o, q}, s);
+        float r = Math.toRadians(texture.rotation);
+        float sin = sin(r);
+        Vec3f vec3f = new Vec3f(cosFromSin(sin, r), sin, 0.0f);
+        vec3f.transform(new Matrix3f(matrix4f));
+        int mod = round(atan2(vec3f.getY(), vec3f.getX()) * v) & 360;
+        return new ModelElementTexture(new float[]{n, p, o, q}, mod);
     }
 }
