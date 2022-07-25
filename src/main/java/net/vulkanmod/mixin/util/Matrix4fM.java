@@ -180,7 +180,7 @@ public class Matrix4fM {
         float a301 = memGetFloat(ad+48);
         float a311 = memGetFloat(ad+52);
         float a321 = memGetFloat(ad+56);
-//        float a331 = memGetFloat(ad+60);
+        float a331 = memGetFloat(ad+60);
         float f = fma(a00, a001, fma(a01, a101, fma(a02, a201, a03 * a301)));
         float g = fma(a00, a011, fma(a01, a111, fma(a02, a211, a03 * a311)));
         float h = fma(a00, a021, fma(a01, a121, fma(a02, a221, a03 * a321)));
@@ -196,7 +196,7 @@ public class Matrix4fM {
         float r = fma(a30, a001, fma(a31, a101, fma(a32, a201, a33 * a301)));
         float s = fma(a30, a011, fma(a31, a111, fma(a32, a211, a33 * a311)));
         float t = fma(a30, a021, fma(a31, a121, fma(a32, a221, a33 * a321)));
-        float u = fma(a30, a031, fma(a31, a131, fma(a32, a231, a33)));
+        float u = fma(a30, a031, fma(a31, a131, fma(a32, a231, a33 * a331)));
 
 
         this.a00 = f;
