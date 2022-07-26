@@ -12,6 +12,7 @@ import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
@@ -26,9 +27,10 @@ import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.glfw.GLFW.glfwWaitEvents;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
+import static org.lwjgl.system.Checks.*;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.system.MemoryUtil.memGetInt;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
@@ -54,6 +56,7 @@ public class Vulkan {
     public static final int vkRawVersion;
 
     private static final boolean Debug = false;
+    private static final ArrayList<String> exts = new ArrayList<>(64);
 
     static
     {
@@ -96,7 +99,29 @@ public class Vulkan {
 
     }
 
+    private static void genExt()
+    {
+        try (MemoryStack stack = stackPush())
+        {
+            final long ext = stack.nmalloc(Integer.BYTES);
 
+            nvkEnumerateDeviceExtensionProperties(physicalDevice, NULL, (ext), NULL);
+
+            final int capacity = memGetInt(ext);
+            exts.ensureCapacity(capacity);
+            final long ext2 = stack.nmalloc(VkExtensionProperties.ALIGNOF, VkExtensionProperties.SIZEOF*capacity);
+            VkExtensionProperties.Buffer vkExtensionProperties = VkExtensionProperties.createSafe(ext2, capacity);
+            nvkEnumerateDeviceExtensionProperties(physicalDevice,NULL, ext, vkExtensionProperties.address0());
+//            ByteBuffer aa = stack.malloc(vkExtensionProperties.sizeof());
+            for (int i =0; i<vkExtensionProperties.capacity();i++)
+            {
+//                 aa.put(vkExtensionProperties.get(i).extensionName());
+                exts.add((vkExtensionProperties.get(i).extensionNameString()));
+            }
+            System.out.println(exts);
+
+        }
+    }
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
 
         VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
@@ -203,6 +228,7 @@ public class Vulkan {
         setupDebugMessenger();
         createSurface(window);
         pickPhysicalDevice();
+        genExt();
         createLogicalDevice();
         createVma();
         MemoryTypes.createMemoryTypes();
@@ -591,12 +617,28 @@ public class Vulkan {
             VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(2, stack);
             VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(2, stack);
 
+            final int defStoreOp;
+            final int defLoadOp;
+            if(device.getCapabilities().Vulkan13 && enumVkExt(EXTLoadStoreOpNone.VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME))
+            {
+                System.out.println("VK_EXT_load_store_op_none Enabled");
+                defLoadOp= EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT;
+                defStoreOp= VK13.VK_ATTACHMENT_STORE_OP_NONE;
+            }
+            else {
+                System.out.println("VK_EXT_load_store_op_none Disabled");
+                defLoadOp= VK_ATTACHMENT_LOAD_OP_CLEAR;
+                defStoreOp= VK_ATTACHMENT_STORE_OP_STORE;
+
+            }
+
+
             // Color attachments
             VkAttachmentDescription colorAttachment = attachments.get(0);
             colorAttachment.format(swapChainImageFormat);
             colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
+            colorAttachment.loadOp(defLoadOp);
+            colorAttachment.storeOp(device.getCapabilities().Vulkan13 ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_DONT_CARE);
             colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
@@ -613,8 +655,8 @@ public class Vulkan {
             VkAttachmentDescription depthAttachment = attachments.get(1);
             depthAttachment.format(findDepthFormat());
             depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.loadOp(defLoadOp);
+            depthAttachment.storeOp(defStoreOp);
             depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
@@ -652,6 +694,16 @@ public class Vulkan {
 
             renderPass = pRenderPass.get(0);
         }
+    }
+
+    private static boolean enumVkExt(String vkExtLoadStoreOpNoneExtensionName) {
+        boolean a=false;
+        for (String ext : exts) {
+//                 aa.put(vkExtensionProperties.get(i).extensionName());
+            a = ext.equals(vkExtLoadStoreOpNoneExtensionName) | a;
+        }
+        return a;
+
     }
 
     private static void createDepthResources() {
