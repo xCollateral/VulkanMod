@@ -6,8 +6,6 @@ import oshi.hardware.CentralProcessor;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import static org.lwjgl.system.MemoryUtil.memAddress0;
-import static org.lwjgl.system.MemoryUtil.memGetInt;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DeviceInfo {
@@ -35,7 +33,7 @@ public class DeviceInfo {
 
 //        deviceName = new String(bytes, StandardCharsets.UTF_8);
             deviceName = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes)).toString();
-            driverVersion = String.valueOf(Vulkan.deviceProperties.driverVersion());
+            driverVersion = decodeDvrVersion(Vulkan.deviceProperties.driverVersion(), Vulkan.deviceProperties.vendorID());
             vkVersion= (VK_VERSION_MAJOR(Vulkan.vkRawVersion)+"."+VK_VERSION_MINOR(Vulkan.vkRawVersion)+"."+VK_VERSION_PATCH(Vulkan.vkRawVersion));
         }
         else {
@@ -45,5 +43,10 @@ public class DeviceInfo {
         }
 
     }
-
+    //Source: https://old.reddit.com/r/vulkan/comments/fmift4/how_to_decode_driverversion_field_of/fl4mx0t/
+    //0x10DE = Nvidia: https://pcisig.com/membership/member-companies?combine=Nvidia
+    //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPhysicalDeviceProperties.html
+    private static String decodeDvrVersion(int v, int i) {
+        return i == 0x10DE ? ((v >>> 22) & 0x3FF) + "." + ((v >>> 14) & 0xff) + "." + ((v >>> 6) & 0xff) + "." + ((v) & 0xf) : ((v >>> 22) & 0x3FF) + "." + ((v >>> 12) & 0xff) + "." + ((v & 0xfff));
+    }
 }
