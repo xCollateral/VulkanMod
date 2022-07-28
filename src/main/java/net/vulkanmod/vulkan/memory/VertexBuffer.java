@@ -41,12 +41,12 @@ public class VertexBuffer extends Buffer {
 
     }
 
-    private void copyToVertexBuffer(long bufferSize, ByteBuffer byteBuffer) {
+    private void copyToVertexBuffer(int bufferSize, ByteBuffer byteBuffer) {
         this.type.copyToBuffer(this, bufferSize, byteBuffer);
     }
 
     public void uploadWholeBuffer(ByteBuffer byteBuffer) {
-        int bufferSize = (int) (byteBuffer.remaining());
+        int bufferSize = byteBuffer.remaining();
 
         if(bufferSize > this.bufferSize - this.usedBytes) {
             resizeBuffer((this.bufferSize + bufferSize) * 2);

@@ -49,15 +49,15 @@ public class MemoryTypes {
                     }
 
                     @Override
-                    void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
+                    void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
                         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-                        stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
+                        stagingBuffer.copyBuffer(bufferSize, byteBuffer);
 
                         copyStagingtoLocalBuffer(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
                     }
 
                     @Override
-                    void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
+                    void copyFromBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
                         try(MemoryStack stack = stackPush()) {
 
                             VkDevice device = Vulkan.getDevice();
@@ -77,7 +77,7 @@ public class MemoryTypes {
                             copyStagingtoLocalBuffer(buffer.getId(), stagingBuffer, 0, buffer.bufferSize);
 
                             MapAndCopy(stagingAllocation, bufferSize,
-                                    (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, (int) buffer.bufferSize), 0)
+                                    (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, buffer.bufferSize), 0)
                             );
 
                             MemoryManager.freeBuffer(stagingBuffer, stagingAllocation);
@@ -125,18 +125,18 @@ public class MemoryTypes {
                     }
 
                     @Override
-                    void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, (int) bufferSize, buffer.getUsedBytes()));
+                    void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
+                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, buffer.bufferSize), byteBuffer, bufferSize, buffer.getUsedBytes()));
                     }
 
                     @Override
-                    void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-                        Copy(buffer.data, (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, (int) buffer.bufferSize), 0));
+                    void copyFromBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
+                        Copy(buffer.data, (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, buffer.bufferSize), 0));
                     }
 
                     @Override
                     void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
-                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, byteBuffer.remaining(), 0));
+                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, buffer.bufferSize), byteBuffer, byteBuffer.remaining(), 0));
                     }
 
                     @Override
@@ -172,18 +172,18 @@ public class MemoryTypes {
                 }
 
                 @Override
-                void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-                    Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, (int) bufferSize, buffer.getUsedBytes()));
+                void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
+                    Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, buffer.bufferSize), byteBuffer, bufferSize, buffer.getUsedBytes()));
                 }
 
                 @Override
-                void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-                    Copy(buffer.data, (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, (int) buffer.bufferSize), 0));
+                void copyFromBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
+                    Copy(buffer.data, (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, buffer.bufferSize), 0));
                 }
 
                 @Override
                 void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
-                    Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, byteBuffer.remaining(), 0));
+                    Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, buffer.bufferSize), byteBuffer, byteBuffer.remaining(), 0));
                 }
 
                 @Override
@@ -220,18 +220,18 @@ public class MemoryTypes {
                     }
 
                     @Override
-                    void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, (int) bufferSize, buffer.getUsedBytes()));
+                    void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
+                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, buffer.bufferSize), byteBuffer, bufferSize, buffer.getUsedBytes()));
                     }
 
                     @Override
-                    void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-                        Copy(buffer.data, (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, (int) buffer.bufferSize), 0));
+                    void copyFromBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer) {
+                        Copy(buffer.data, (data) -> VUtil.memcpy(byteBuffer, data.getByteBuffer(0, buffer.bufferSize), 0));
                     }
 
                     @Override
                     void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
-                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer, byteBuffer.remaining(), 0));
+                        Copy(buffer.data, (data) -> VUtil.memcpy(data.getByteBuffer(0, buffer.bufferSize), byteBuffer, byteBuffer.remaining(), 0));
                     }
 
                     @Override

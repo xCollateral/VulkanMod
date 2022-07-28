@@ -43,7 +43,7 @@ public class IndexBuffer extends Buffer {
     }
 
     public void uploadWholeBuffer(ByteBuffer byteBuffer) {
-        int bufferSize = (int) (byteBuffer.remaining());
+        int bufferSize = byteBuffer.remaining();
 
         if(bufferSize > this.bufferSize - this.usedBytes) {
             resizeBuffer((this.bufferSize + bufferSize) * 2);

@@ -13,21 +13,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class MemoryManager {
-    private static final VkDevice device = Vulkan.getDevice();
+    private static final PointerBuffer data = stackGet().mallocPointer(Long.BYTES);
     private static final long allocator = Vulkan.getAllocator();
     private static final int Frames = Vulkan.getSwapChainImages().size();
-
+    private static int deviceMemory = 0;
+    private static int nativeMemory = 0;
     private static List<Pair<Pair<Long, Long>, Integer>> freeableBuffers = new ArrayList<>();
     private static List<Pair<Buffer.BufferInfo, Integer>> freeableBuffers2 = new ArrayList<>();
 //    private static Map<Long, Boolean[]> buffersInUse = new HashMap<>();
 
-    private static int deviceMemory = 0;
-    private static int nativeMemory = 0;
 
     public static void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
 
@@ -37,7 +37,7 @@ public abstract class MemoryManager {
             bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
             bufferInfo.size(size);
             bufferInfo.usage(usage);
-            //bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 //
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
             //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
@@ -125,8 +125,8 @@ public abstract class MemoryManager {
 
     public static void MapAndCopy(long allocation, long bufferSize, Consumer<PointerBuffer> consumer){
 
-        try(MemoryStack stack = stackPush()) {
-            PointerBuffer data = stack.mallocPointer(1);
+
+
 
 //            vkMapMemory(Vulkan.getDevice(), allocation, 0, bufferSize, 0, data);
 //            consumer.accept(data);
@@ -137,7 +137,7 @@ public abstract class MemoryManager {
             vmaUnmapMemory(allocator, allocation);
         }
 
-    }
+
 
     public static PointerBuffer Map(long allocation) {
         PointerBuffer data = MemoryUtil.memAllocPointer(1);
@@ -170,6 +170,13 @@ public abstract class MemoryManager {
     }
 
     public synchronized static void addToFreeable(Buffer buffer) {
+
+        if(buffer.Freeable)
+        {
+            System.out.println("Aborting Bad/Redundant DOuble Free!: "+buffer);
+            return;
+        }
+        buffer.Freeable=true;
         freeableBuffers2.add(new Pair<>(buffer.getBufferInfo(), 0));
 //        freeableBuffers.add(new Pair<>(new Pair<>(buffer.getId(), buffer.getAllocation()), 0));
     }
