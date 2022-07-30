@@ -329,7 +329,7 @@ public class Drawer {
 
             presentInfo.pImageIndices(pImageIndex);
 
-            vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
+            vkResult = vkQueuePresentKHR(getGraphicsQueue(), presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
                 framebufferResize = false;
@@ -343,7 +343,7 @@ public class Drawer {
         }
     }
 
-    private static void recreateSwapChain() {
+    static void recreateSwapChain() {
         for(Long fence : inFlightFences) {
             vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
         }
