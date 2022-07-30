@@ -45,12 +45,15 @@ public class WindowMixin {
         VRenderSystem.setWindow(this.handle);
     }
 
+    @Shadow private boolean vsync;
+
     /**
      * @author
      */
     @Overwrite
     public void setVsync(boolean vsync) {
         System.out.println("VSYNC: "+vsync);
+        this.vsync=vsync;
         setvSyncState(vsync);
     }
 }
