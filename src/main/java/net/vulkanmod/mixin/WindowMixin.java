@@ -40,8 +40,6 @@ public class WindowMixin {
         GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     }
 
-    @Shadow private boolean vsync;
-
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void getHandle(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings, String videoMode, String title, CallbackInfo ci) {
         VRenderSystem.setWindow(this.handle);
@@ -53,7 +51,6 @@ public class WindowMixin {
     @Overwrite
     public void setVsync(boolean vsync) {
         System.out.println("VSYNC: "+vsync);
-        this.vsync=vsync;
         setvSyncState(vsync);
     }
 }

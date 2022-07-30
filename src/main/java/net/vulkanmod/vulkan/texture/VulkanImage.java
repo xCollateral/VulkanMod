@@ -20,20 +20,20 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
-    private static final VkDevice device = Vulkan.getDevice();
+    private static VkDevice device = Vulkan.getDevice();
 
     private long id;
     private long textureImageMemory;
     private long allocation;
     private long textureImageView;
 
-    private final Byte2LongMap samplers;
+    private Byte2LongMap samplers;
     private long textureSampler;
 
-    private final int mipLevels;
-    private final int width;
-    private final int height;
-    private final int formatSize;
+    private int mipLevels;
+    private int width;
+    private int height;
+    private int formatSize;
 
     private int currentLayout;
     private TransferQueue.CommandBuffer commandBuffer;
@@ -100,23 +100,25 @@ public class VulkanImage {
     }
 
     private void uploadTexture(int width, int height, int formatSize, ByteBuffer buffer) {
-            int imageSize = width * height * formatSize;
+        try(MemoryStack stack = stackPush()) {
+            long imageSize = width * height * formatSize;
 
             commandBuffer = TransferQueue.beginCommands();
             transferDstLayout();
 
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
 
-            stagingBuffer.copyBuffer(imageSize, buffer);
+            stagingBuffer.copyBuffer((int)imageSize, buffer);
 
-            copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, stagingBuffer.getOffset(), 0, 0);
+            copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, (int)stagingBuffer.getOffset(), 0, 0);
+        }
 
     }
 
     public void uploadSubTexture(int mipLevel, int width, int height, int xOffset, int yOffset, int formatSize, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         try(MemoryStack stack = stackPush()) {
 
-            int imageSize = buffer.limit();
+            long imageSize = buffer.limit();
 
             transferDstLayout();
 
@@ -130,7 +132,7 @@ public class VulkanImage {
                     pStagingAllocation);
 
             MapAndCopy(pStagingAllocation.get(0), imageSize,
-                    (data) -> VUtil.memcpy(data.getByteBuffer(0, imageSize), buffer, imageSize)
+                    (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), buffer, imageSize)
             );
 
             copyBufferToImage(pStagingBuffer.get(0), id, mipLevel, width, height, xOffset, yOffset, (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4, unpackRowLength, height);
@@ -142,17 +144,17 @@ public class VulkanImage {
     }
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int formatSize, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
-        int imageSize = buffer.limit();
+        long imageSize = buffer.limit();
 
         commandBuffer = TransferQueue.getCommandBuffer();
         transferDstLayout();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
 
-        stagingBuffer.copyBuffer(imageSize, buffer);
+        stagingBuffer.copyBuffer((int)imageSize, buffer);
 
         copyBufferToImageAsync(stagingBuffer.getBufferId(), id, mipLevel, width, height, xOffset, yOffset,
-                stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4, unpackRowLength, height);
+                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4), unpackRowLength, height);
 
         long fence = TransferQueue.endIfNeeded(commandBuffer);
         if (fence != -1) Synchronization.addFence(fence);
@@ -160,7 +162,7 @@ public class VulkanImage {
 
     public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
         try(MemoryStack stack = stackPush()) {
-            int imageSize = width * height * formatSize;
+            long imageSize = width * height * formatSize;
 
             LongBuffer pStagingBuffer = stack.mallocLong(1);
             PointerBuffer pStagingAllocation = stack.pointers(0L);
@@ -173,7 +175,7 @@ public class VulkanImage {
             copyImageToBuffer(pStagingBuffer.get(0), image, 0, width, height, 0, 0, 0, 0, 0);
 
             MapAndCopy(pStagingAllocation.get(0), imageSize,
-                    (data) -> VUtil.memcpy(buffer, data.getByteBuffer(0, imageSize))
+                    (data) -> VUtil.memcpy(buffer, data.getByteBuffer(0, (int)imageSize))
             );
 
             MemoryManager.addToFreeable(pStagingBuffer.get(0), pStagingAllocation.get(0));
@@ -418,17 +420,18 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack)
-                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
-                    .oldLayout(oldLayout)
-                    .newLayout(newLayout)
-                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .image(image);
-            barrier.subresourceRange().baseMipLevel(0)
-                   .levelCount(mipLevels)
-                   .baseArrayLayer(0)
-                   .layerCount(1);
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+            barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+            barrier.oldLayout(oldLayout);
+            barrier.newLayout(newLayout);
+            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.image(image);
+
+            barrier.subresourceRange().baseMipLevel(0);
+            barrier.subresourceRange().levelCount(mipLevels);
+            barrier.subresourceRange().baseArrayLayer(0);
+            barrier.subresourceRange().layerCount(1);
 
             if(newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
 
@@ -445,30 +448,33 @@ public class VulkanImage {
 
             int sourceStage;
             int destinationStage;
-            switch (oldLayout + newLayout) {
-                case (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_UNDEFINED) -> {
-                    barrier.srcAccessMask(0);
-                    barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
 
-                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                }
-                case (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) -> {
-                    barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 
-                    barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                barrier.srcAccessMask(0);
+                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
 
-                    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                }
-                case (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL + VK_IMAGE_LAYOUT_UNDEFINED) -> {
-                    barrier.srcAccessMask(0);
-                    barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-                }
-                default -> throw new IllegalArgumentException("Unsupported layout transition");
+            } else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+
+                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+
+                sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+            } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+
+                barrier.srcAccessMask(0);
+                barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+
+                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+            } else {
+                throw new IllegalArgumentException("Unsupported layout transition");
             }
 
             vkCmdPipelineBarrier(commandBuffer,

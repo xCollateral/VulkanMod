@@ -24,11 +24,9 @@ public abstract class Buffer {
     protected int offset;
 
 //    protected Buffer.Type type;
-    protected final MemoryType type;
-    protected final int usage;
+    protected MemoryType type;
+    protected int usage;
     protected PointerBuffer data;
-
-    boolean Freeable= false;
 
     protected Buffer(int usage, MemoryType type) {
         //TODO: check usage
@@ -53,7 +51,7 @@ public abstract class Buffer {
 
     public long getAllocation() { return allocation; }
 
-    public int getUsedBytes() { return usedBytes; }
+    public long getUsedBytes() { return usedBytes; }
 
     public long getId() {return id; }
 

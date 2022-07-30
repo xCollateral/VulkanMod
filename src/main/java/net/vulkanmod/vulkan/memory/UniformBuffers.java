@@ -40,7 +40,7 @@ public class UniformBuffers {
         int size = buffer.remaining();
         int alignedSize = align(size, minOffset);
         if (alignedSize > this.bufferSize - this.usedBytes) {
-            resizeBuffer((this.bufferSize + alignedSize) * 2);
+            resizeBuffer((int) ((this.bufferSize + alignedSize) * 2));
         }
 
         uniformBuffers.get(frame).uploadUBO(buffer, offset);
@@ -78,7 +78,7 @@ public class UniformBuffers {
         }
 
         public void uploadUBO(ByteBuffer buffer, int offset) {
-            Copy(this.data ,(data) -> VUtil.memcpy(data.getByteBuffer(0, bufferSize), buffer, offset));
+            Copy(this.data ,(data) -> VUtil.memcpy(data.getByteBuffer(0, (int) bufferSize), buffer, offset));
         }
 
         private void resizeBuffer(int newSize) {

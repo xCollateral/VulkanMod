@@ -76,7 +76,7 @@ public abstract class SplashOverlayM {
             if (this.client.currentScreen != null && g < 1.0f) {
                 this.client.currentScreen.render(matrices, mouseX, mouseY, delta);
             }
-            k = MathHelper.ceil(MathHelper.clamp(g, 0.15, 1.0) * 255.0);
+            k = MathHelper.ceil(MathHelper.clamp((double)g, 0.15, 1.0) * 255.0);
             SplashOverlay.fill(matrices, 0, 0, i, j, withAlpha(BRAND_ARGB.getAsInt(), k));
             h = MathHelper.clamp(g, 0.0f, 1.0f);
         } else {
@@ -94,7 +94,7 @@ public abstract class SplashOverlayM {
         }
         k = (int)((double)this.client.getWindow().getScaledWidth() * 0.5);
         int m = (int)((double)this.client.getWindow().getScaledHeight() * 0.5);
-        double n = Math.min((double)this.client.getWindow().getScaledWidth() * 0.75, this.client.getWindow().getScaledHeight()) * 0.25;
+        double n = Math.min((double)this.client.getWindow().getScaledWidth() * 0.75, (double)this.client.getWindow().getScaledHeight()) * 0.25;
         int p = (int)(n * 0.5);
         double d = n * 4.0;
         int q = (int)(d * 0.5);

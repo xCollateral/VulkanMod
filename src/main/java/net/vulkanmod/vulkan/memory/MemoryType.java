@@ -6,8 +6,8 @@ public abstract class MemoryType {
     protected Type type;
 
     abstract void createBuffer(Buffer buffer, int size);
-    abstract void copyToBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer);
-    abstract void copyFromBuffer(Buffer buffer, int bufferSize, ByteBuffer byteBuffer);
+    abstract void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
+    abstract void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
 
     /**
      * Replace data from byte 0

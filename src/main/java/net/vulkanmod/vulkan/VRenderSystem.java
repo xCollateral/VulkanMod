@@ -75,17 +75,17 @@ public class VRenderSystem {
         bufferbuilder.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
         if (p_69349_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).next();
-            bufferbuilder.vertex(p_69348_, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).next();
+            bufferbuilder.vertex((double)p_69348_, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).next();
         }
 
         if (p_69350_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).next();
-            bufferbuilder.vertex(0.0D, p_69348_, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).next();
+            bufferbuilder.vertex(0.0D, (double)p_69348_, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).next();
         }
 
         if (p_69351_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).next();
-            bufferbuilder.vertex(0.0D, 0.0D, p_69348_).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).next();
+            bufferbuilder.vertex(0.0D, 0.0D, (double)p_69348_).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).next();
         }
 
         tesselator.draw();
@@ -93,17 +93,17 @@ public class VRenderSystem {
         bufferbuilder.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
         if (p_69349_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).next();
-            bufferbuilder.vertex(p_69348_, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).next();
+            bufferbuilder.vertex((double)p_69348_, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).next();
         }
 
         if (p_69350_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).next();
-            bufferbuilder.vertex(0.0D, p_69348_, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).next();
+            bufferbuilder.vertex(0.0D, (double)p_69348_, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).next();
         }
 
         if (p_69351_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).next();
-            bufferbuilder.vertex(0.0D, 0.0D, p_69348_).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).next();
+            bufferbuilder.vertex(0.0D, 0.0D, (double)p_69348_).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).next();
         }
 
         tesselator.draw();

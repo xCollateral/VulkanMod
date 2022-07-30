@@ -45,7 +45,6 @@ public abstract class DebugHudM {
         strings.add("CPU: " + DeviceInfo.cpuInfo);
         strings.add("GPU: " + DeviceInfo.deviceName);
         strings.add("Driver: " + DeviceInfo.driverVersion);
-        strings.add("Vulkan Version: " + DeviceInfo.vkVersion);
         strings.add("");
 
         return strings;

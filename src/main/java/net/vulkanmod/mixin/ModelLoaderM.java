@@ -57,13 +57,13 @@ public abstract class ModelLoaderM {
         this.modelsToBake.keySet().forEach(identifier -> {
             BakedModel bakedModel = null;
             try {
-                bakedModel = this.bake(identifier, ModelRotation.X0_Y0);
+                bakedModel = this.bake((Identifier)identifier, ModelRotation.X0_Y0);
             }
             catch (Exception exception) {
-                LOGGER.warn("Unable to bake model: '{}': {}", identifier, exception);
+                LOGGER.warn("Unable to bake model: '{}': {}", identifier, (Object)exception);
             }
             if (bakedModel != null) {
-                this.bakedModels.put(identifier, bakedModel);
+                this.bakedModels.put((Identifier)identifier, bakedModel);
             }
         });
         profiler.pop();

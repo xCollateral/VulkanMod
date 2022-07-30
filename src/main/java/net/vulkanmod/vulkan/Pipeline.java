@@ -239,9 +239,9 @@ public class Pipeline {
 //        if(stream == null) throw new RuntimeException("no such file: " + "shaders/" + path);
         jsonObject = JsonHelper.deserialize(new InputStreamReader(stream, StandardCharsets.UTF_8));
 
-        JsonArray jsonUbos = JsonHelper.getArray(jsonObject, "UBOs", null);
-        JsonArray jsonSamplers = JsonHelper.getArray(jsonObject, "samplers", null);
-        JsonArray jsonPushConstants = JsonHelper.getArray(jsonObject, "PushConstants", null);
+        JsonArray jsonUbos = JsonHelper.getArray(jsonObject, "UBOs", (JsonArray)null);
+        JsonArray jsonSamplers = JsonHelper.getArray(jsonObject, "samplers", (JsonArray)null);
+        JsonArray jsonPushConstants = JsonHelper.getArray(jsonObject, "PushConstants", (JsonArray)null);
 
         int bindingsSize = 0; //UBOs + sampler
 

@@ -29,11 +29,11 @@ public class StagingBuffer extends Buffer{
     public void copyBuffer(int size, ByteBuffer byteBuffer) {
 
         if(size > this.bufferSize - this.usedBytes) {
-            resizeBuffer((this.bufferSize + size) * 2);
+            resizeBuffer((int)(this.bufferSize + size) * 2);
         }
 
         Copy(this.data,
-                (data) -> VUtil.memcpy(data.getByteBuffer(0, this.bufferSize), byteBuffer, this.usedBytes)
+                (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) this.bufferSize), byteBuffer, this.usedBytes)
         );
 
         offset = usedBytes;
@@ -55,7 +55,7 @@ public class StagingBuffer extends Buffer{
         usedBytes = 0;
     }
 
-    public int getOffset() {
+    public long getOffset() {
         return offset;
     }
 
