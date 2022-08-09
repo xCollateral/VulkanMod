@@ -4,7 +4,7 @@ import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Shader;
 import net.minecraft.util.math.Matrix4f;
-import net.vulkanmod.vulkan.VBO;
+import net.vulkanmod.render.VBO;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;

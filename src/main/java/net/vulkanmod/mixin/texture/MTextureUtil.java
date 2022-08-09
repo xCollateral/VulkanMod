@@ -22,6 +22,6 @@ public class MTextureUtil {
     /**
      * @author
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static int generateTextureId() { return -1; }
 }

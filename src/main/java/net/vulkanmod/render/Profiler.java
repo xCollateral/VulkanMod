@@ -1,4 +1,4 @@
-package net.vulkanmod.vulkan;
+package net.vulkanmod.render;
 
 import oshi.util.tuples.Pair;
 
