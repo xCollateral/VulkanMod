@@ -8,6 +8,8 @@
   "client": [
     "debug.DebugHudM",
     "debug.GlDebugInfoM",
+    "gui.ChatHudM",
+    "gui.InGameHudM",
     "render.BakedQuadFactoryM",
     "render.BufferBuilderM",
     "render.BufferRendererM",
@@ -23,6 +25,7 @@
     "texture.MSimpleTexture",
     "texture.MSpriteAtlasTexture",
     "texture.MTextureManager",
+    "texture.MTextureUtil",
     "texture.VNativeImage",
     "util.Matrix4fM",
     "util.ScreenshotRecorderM",
