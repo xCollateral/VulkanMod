@@ -33,13 +33,7 @@ import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 import static org.lwjgl.vulkan.EXTDebugUtils.vkCreateDebugUtilsMessengerEXT;
 import static org.lwjgl.vulkan.EXTDebugUtils.vkDestroyDebugUtilsMessengerEXT;
-import static org.lwjgl.vulkan.KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-import static org.lwjgl.vulkan.KHRSurface.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-import static org.lwjgl.vulkan.KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR;
-import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
+import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -172,7 +166,7 @@ public class Vulkan {
 
     private static long allocator;
 
-    boolean framebufferResize;
+    private static boolean vsync = false;
 
     private static StagingBuffer[] stagingBuffers;
 
@@ -717,7 +711,8 @@ public class Vulkan {
 
     private static int chooseSwapPresentMode(IntBuffer availablePresentModes) {
 
-        //TODO: vsync
+        //TODO: check if immediate mode is supported
+        //fifo mode is the only mode that has to be supported
 //        for(int i = 0;i < availablePresentModes.capacity();i++) {
 //            if(availablePresentModes.get(i) == VK_PRESENT_MODE_MAILBOX_KHR) {
 //                return availablePresentModes.get(i);
@@ -725,7 +720,7 @@ public class Vulkan {
 //        }
 //
 //        return VK_PRESENT_MODE_FIFO_KHR;
-        return VK_PRESENT_MODE_IMMEDIATE_KHR;
+        return vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
 
     private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {
@@ -1075,6 +1070,13 @@ public class Vulkan {
                     .collect(toSet());
 
             return availableLayerNames.containsAll(VALIDATION_LAYERS);
+        }
+    }
+
+    public static void setVsync(boolean b) {
+        if(vsync != b) {
+            Drawer.shouldRecreate = true;
+            vsync = b;
         }
     }
 

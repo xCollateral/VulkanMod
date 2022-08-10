@@ -59,7 +59,7 @@ public class Drawer {
     private static Matrix4f projectionMatrix = new Matrix4f();
     private static Matrix4f modelViewMatrix = new Matrix4f();
 
-    public static boolean framebufferResize = false;
+    public static boolean shouldRecreate = false;
 
 
     static {
@@ -289,8 +289,8 @@ public class Drawer {
             int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
-                framebufferResize = false;
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
+                shouldRecreate = false;
                 recreateSwapChain();
                 return;
             } else if(vkResult != VK_SUCCESS) {
@@ -331,8 +331,8 @@ public class Drawer {
 
             vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || framebufferResize) {
-                framebufferResize = false;
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
+                shouldRecreate = false;
                 recreateSwapChain();
                 return;
             } else if(vkResult != VK_SUCCESS) {

@@ -5,6 +5,7 @@ import net.minecraft.client.WindowSettings;
 import net.minecraft.client.util.MonitorTracker;
 import net.minecraft.client.util.Window;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GLCapabilities;
 import org.spongepowered.asm.mixin.Final;
@@ -49,5 +50,6 @@ public class WindowMixin {
      */
     @Overwrite
     public void setVsync(boolean vsync) {
+        Vulkan.setVsync(vsync);
     }
 }

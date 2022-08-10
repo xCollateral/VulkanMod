@@ -112,6 +112,6 @@ public class MinecraftClientMixin {
 
     @Inject(method = "onResolutionChanged", at = @At("HEAD"))
     public void onResolutionChanged(CallbackInfo ci) {
-        Drawer.framebufferResize = true;
+        Drawer.shouldRecreate = true;
     }
 }
