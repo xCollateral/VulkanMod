@@ -24,6 +24,8 @@ import static org.lwjgl.glfw.GLFW.GLFW_NO_API;
 public class WindowMixin {
     @Final @Shadow private long handle;
 
+    @Shadow private boolean vsync;
+
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V"))
     private void redirect(int hint, int value) { }
 
