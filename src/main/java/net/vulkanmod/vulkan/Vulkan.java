@@ -73,6 +73,7 @@ public class Vulkan {
 
         VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
 
+//        System.err.println("Stack dump:");
 //        Thread.dumpStack();
         System.err.println("Validation layer: " + callbackData.pMessageString());
 
@@ -440,7 +441,7 @@ public class Vulkan {
             allocatorCreateInfo.physicalDevice(physicalDevice);
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
-            allocatorCreateInfo.instance(instance);
+//            allocatorCreateInfo.instance(instance);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
