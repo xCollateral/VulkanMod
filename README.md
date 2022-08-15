@@ -18,7 +18,10 @@ Demostration Video:
 
 ## Installation
 
-[![CurseForge](https://cf.way2muchnoise.eu/full_635429_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
+### Download
+[![CurseForge](https://cf.way2muchnoise.eu/title/635429_Get_Mod.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
+
+[![CurseForge](https://cf.way2muchnoise.eu/full_635429_downloads.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
 
 - Fabric mod loader is needed.
 - Move `VulkanMod.jar` to `mods` folder of your Minecraft Instance.
