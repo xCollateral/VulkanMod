@@ -31,102 +31,105 @@ public class VBO {
     public VBO() {}
 
     //TODO
-    public void upload_(BufferBuilder p_85936_) {
-        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = p_85936_.popData();
-
-        //BufferUploader.reset();
-        BufferBuilder.DrawArrayParameters parameters = pair.getFirst();
-        ByteBuffer bytebuffer = pair.getSecond();
-        int i = parameters.getIndexBufferStart();
-        this.indexCount = parameters.getVertexCount();
-        this.vertexCount = parameters.getCount();
-        this.indexType = parameters.getElementFormat();
-        this.format = parameters.getVertexFormat();
-        this.mode = parameters.getMode();
-        this.sequentialIndices = parameters.hasNoIndexBuffer();
-
-        if (!parameters.hasNoVertexBuffer() && vertexCount > 0) {
-            bytebuffer.limit(i);
-
-            if(vertexBuffer != null) MemoryManager.addToFreeable(vertexBuffer);
-            vertexBuffer = new VertexBuffer(i, MemoryTypes.GPU_MEM);
-            vertexBuffer.copyToVertexBuffer(format.getVertexSize(), this.vertexCount, bytebuffer);
-
-            bytebuffer.position(i);
-        }
-
-        if (!this.sequentialIndices) {
-
-            if(parameters.hasNoVertexBuffer()) {
-
-                bytebuffer.limit(indexCount * indexType.size);
-
-                if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
-                indexBuffer = new IndexBuffer(bytebuffer.remaining(), MemoryTypes.GPU_MEM); // Short size
-                indexBuffer.copyBuffer(bytebuffer);
-
-                return;
-
-            }
-
-            bytebuffer.limit(parameters.getIndexBufferEnd());
-
-            if(indexBuffer != null) MemoryManager.addToFreeable(indexBuffer);
-            indexBuffer = new IndexBuffer(bytebuffer.remaining(), MemoryTypes.GPU_MEM); // Short size
-            indexBuffer.copyBuffer(bytebuffer);
-
-            bytebuffer.position(0);
-        } else {
-
-            if (vertexCount <= 0) {
-                return;
-            }
-
-            AutoIndexBuffer autoIndexBuffer;
-            if(this.mode != VertexFormat.DrawMode.TRIANGLE_FAN) {
-                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
-            } else {
-                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
-                this.indexCount = (vertexCount - 2) * 3;
-            }
-            autoIndexBuffer.checkCapacity(vertexCount);
-            indexBuffer = autoIndexBuffer.getIndexBuffer();
-            this.autoIndexed = true;
-
-            bytebuffer.limit(i);
-            bytebuffer.position(0);
-        }
-
-    }
-
-//    public void upload_(BufferBuilder bufferBuilder) {
-//        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = bufferBuilder.popData();
+//    public void upload_(BufferBuilder p_85936_) {
+//        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = p_85936_.popData();
 //
 //        //BufferUploader.reset();
 //        BufferBuilder.DrawArrayParameters parameters = pair.getFirst();
 //        ByteBuffer bytebuffer = pair.getSecond();
-//
-//        this.offset = parameters.getIndexBufferStart();
+//        int i = parameters.getIndexBufferStart();
 //        this.indexCount = parameters.getVertexCount();
 //        this.vertexCount = parameters.getCount();
 //        this.indexType = parameters.getElementFormat();
+//        this.format = parameters.getVertexFormat();
 //        this.mode = parameters.getMode();
 //        this.sequentialIndices = parameters.hasNoIndexBuffer();
 //
-//        this.configureVertexBuffer(parameters, bytebuffer);
-//        this.configureIndexBuffer(parameters, bytebuffer);
+//        if (!parameters.hasNoVertexBuffer() && vertexCount > 0) {
+//            bytebuffer.limit(i);
 //
-//        bytebuffer.position(0);
+//            if(vertexBuffer != null) vertexBuffer.freeBuffer();
+//            vertexBuffer = new VertexBuffer(i, MemoryTypes.GPU_MEM);
+//            vertexBuffer.copyToVertexBuffer(format.getVertexSize(), this.vertexCount, bytebuffer);
+//
+//            bytebuffer.position(i);
+//        }
+//
+//        if (!this.sequentialIndices) {
+//
+//            if(parameters.hasNoVertexBuffer()) {
+//
+//                bytebuffer.limit(indexCount * indexType.size);
+//
+//                if(indexBuffer != null) indexBuffer.freeBuffer();
+//                indexBuffer = new IndexBuffer(bytebuffer.remaining(), MemoryTypes.GPU_MEM); // Short size
+//                indexBuffer.copyBuffer(bytebuffer);
+//
+//                return;
+//
+//            }
+//
+//            bytebuffer.limit(parameters.getIndexBufferEnd());
+//
+//            if(indexBuffer != null) indexBuffer.freeBuffer();
+//            indexBuffer = new IndexBuffer(bytebuffer.remaining(), MemoryTypes.GPU_MEM); // Short size
+//            indexBuffer.copyBuffer(bytebuffer);
+//
+//            bytebuffer.position(0);
+//        } else {
+//
+//            if (vertexCount <= 0) {
+//                return;
+//            }
+//
+//            AutoIndexBuffer autoIndexBuffer;
+//            if(this.mode != VertexFormat.DrawMode.TRIANGLE_FAN) {
+//                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
+//            } else {
+//                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
+//                this.indexCount = (vertexCount - 2) * 3;
+//            }
+//            autoIndexBuffer.checkCapacity(vertexCount);
+//            indexBuffer = autoIndexBuffer.getIndexBuffer();
+//            this.autoIndexed = true;
+//
+//            bytebuffer.limit(i);
+//            bytebuffer.position(0);
+//        }
 //
 //    }
+
+    public void upload_(BufferBuilder bufferBuilder) {
+        Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = bufferBuilder.popData();
+
+        //BufferUploader.reset();
+        BufferBuilder.DrawArrayParameters parameters = pair.getFirst();
+        ByteBuffer bytebuffer = pair.getSecond();
+
+        this.offset = parameters.getIndexBufferStart();
+        this.indexCount = parameters.getVertexCount();
+        this.vertexCount = parameters.getCount();
+        this.indexType = parameters.getElementFormat();
+        this.mode = parameters.getMode();
+        this.sequentialIndices = parameters.hasNoIndexBuffer();
+
+        this.format = parameters.getVertexFormat();
+
+        this.configureVertexBuffer(parameters, bytebuffer);
+        this.configureIndexBuffer(parameters, bytebuffer);
+
+        bytebuffer.position(0);
+
+    }
 
     private VertexFormat configureVertexBuffer(BufferBuilder.DrawArrayParameters parameters, ByteBuffer data) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         if (!parameters.hasNoVertexBuffer() && vertexCount > 0) {
             data.limit(offset);
 
-            if(vertexBuffer == null) vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            vertexBuffer.uploadWholeBuffer(data);
+            if(vertexBuffer != null) vertexBuffer.freeBuffer();
+            vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            vertexBuffer.copyToVertexBuffer(this.format.getVertexSize(), this.vertexCount, data);
 
             data.position(offset);
         }
@@ -135,6 +138,11 @@ public class VBO {
 
     private void configureIndexBuffer(BufferBuilder.DrawArrayParameters parameters, ByteBuffer data) {
         if (parameters.hasNoIndexBuffer()) {
+
+            if (vertexCount <= 0) {
+                return;
+            }
+
             AutoIndexBuffer autoIndexBuffer;
             if(this.mode != VertexFormat.DrawMode.TRIANGLE_FAN) {
                 autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
@@ -149,13 +157,14 @@ public class VBO {
             indexBuffer = autoIndexBuffer.getIndexBuffer();
             this.autoIndexed = true;
 
-            return;
         }
+        else {
+            data.limit(parameters.getIndexBufferEnd());
 
-        data.limit(parameters.getIndexBufferEnd());
-
-        if(indexBuffer == null) indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-        indexBuffer.uploadWholeBuffer(data);
+            if(indexBuffer != null) indexBuffer.freeBuffer();
+            indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            indexBuffer.copyBuffer(data);
+        }
     }
 
     public void _drawWithShader(Matrix4f MV, Matrix4f P, Shader shader) {
@@ -185,7 +194,11 @@ public class VBO {
     public void close() {
         if(vertexCount <= 0) return;
         vertexBuffer.freeBuffer();
-        if(!autoIndexed) indexBuffer.freeBuffer();
+        vertexBuffer = null;
+        if(!autoIndexed) {
+            indexBuffer.freeBuffer();
+            indexBuffer = null;
+        }
     }
 
     public VertexFormat getFormat() {
