@@ -44,8 +44,7 @@ public class StagingBuffer extends Buffer{
 
     private void resizeBuffer(int newSize) {
         //TODO
-//        MemoryManager.addToFreeable(this);
-        MemoryManager.addToFreeable(this.id, this.allocation);
+        MemoryManager.addToFreeable(this);
         createStagingBuffer(newSize);
 
         System.out.println("resized staging buffer to: " + newSize);

@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.memory;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.Pair;
 import org.lwjgl.PointerBuffer;
@@ -25,6 +26,8 @@ public abstract class MemoryManager {
     private static List<Pair<Pair<Long, Long>, Integer>> freeableBuffers = new ArrayList<>();
     private static List<Pair<Buffer.BufferInfo, Integer>> freeableBuffers2 = new ArrayList<>();
 //    private static Map<Long, Boolean[]> buffersInUse = new HashMap<>();
+
+    private static LongOpenHashSet buffers = new LongOpenHashSet();
 
     private static int deviceMemory = 0;
     private static int nativeMemory = 0;
@@ -73,6 +76,8 @@ public abstract class MemoryManager {
             } else {
                 nativeMemory += size;
             }
+
+            buffers.add(pBuffer.get(0));
         }
     }
 
@@ -152,10 +157,11 @@ public abstract class MemoryManager {
     }
 
     public static void freeBuffer(long buffer, long allocation) {
-//        vkFreeMemory(device, allocation, null);
-//        vkDestroyBuffer(device, buffer, null);
+//            vkFreeMemory(device, allocation, null);
+//            vkDestroyBuffer(device, buffer, null);
 
         vmaDestroyBuffer(allocator, buffer, allocation);
+
     }
 
     public static void freeImage(long image, long allocation) {
@@ -170,8 +176,18 @@ public abstract class MemoryManager {
     }
 
     public synchronized static void addToFreeable(Buffer buffer) {
-        freeableBuffers2.add(new Pair<>(buffer.getBufferInfo(), 0));
-//        freeableBuffers.add(new Pair<>(new Pair<>(buffer.getId(), buffer.getAllocation()), 0));
+        Buffer.BufferInfo bufferInfo = buffer.getBufferInfo();
+
+        if(buffers.contains(bufferInfo.id())){
+            freeableBuffers2.add(new Pair<>(buffer.getBufferInfo(), 0));
+
+            buffers.remove(bufferInfo.id());
+        }
+        else {
+            System.err.println("trying to free not present buffer");
+//            Thread.dumpStack();
+        }
+
     }
 
     public synchronized static void freeBuffers() {
