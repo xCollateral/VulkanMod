@@ -52,6 +52,7 @@ public class WindowMixin {
      */
     @Overwrite
     public void setVsync(boolean vsync) {
+        this.vsync = vsync;
         Vulkan.setVsync(vsync);
     }
 }
