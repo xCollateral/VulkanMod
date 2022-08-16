@@ -53,6 +53,9 @@ public class Vulkan {
 //    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     private static final Set<String> VALIDATION_LAYERS;
+
+    static boolean nvidiaWorkaround; // Initialized in Drawer
+
     static {
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
@@ -199,6 +202,9 @@ public class Vulkan {
         }
     }
 
+    /**
+     * Called from {@link Drawer#recreateSwapChain()}
+     */
     public static void recreateSwapChain() {
 
         try (MemoryStack stack = stackPush()) {
@@ -214,7 +220,12 @@ public class Vulkan {
 
         Synchronization.waitFences();
 
-        vkDeviceWaitIdle(device);
+        // vkDeviceWaitIdle is called earlier when using Linux Nvidia driver
+        // Because calling vkDeviceWaitIdle here can cause deadlock.
+        // See Drawer.recreateSwapChain() for more info.
+        if (!nvidiaWorkaround) {
+            vkDeviceWaitIdle(device);
+        }
 
         swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
 

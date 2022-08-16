@@ -17,6 +17,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -87,6 +88,11 @@ public class Drawer {
         triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
 
         this.allocateCommandBuffers();
+        // For some reason the unix nvidia driver have deadlocking issues.
+        // This completely freeze the game when resizing the game window.
+        // This issue doesn't seem to appear everywhere else.
+        nvidiaWorkaround = DeviceInfo.deviceName.toLowerCase(Locale.ROOT).contains("nvidia") &&
+                !System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
     }
 
     public void draw(ByteBuffer buffer, int drawMode, VertexFormat vertexFormat, int vertexCount)
@@ -130,8 +136,18 @@ public class Drawer {
 
     public void initiateRenderPass() {
 
-
-        vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+        if (nvidiaWorkaround) {
+            long time = System.currentTimeMillis();
+            // Linux Nvidia Driver can deadlock on vkWaitForFences, waiting 500ms
+            // in case vkWaitForFences doesn't deadlock seems a good compromise.
+            vkWaitForFences(device, inFlightFences.get(currentFrame), true, 500L);
+            if (System.currentTimeMillis() - time >= 500L) {
+                vkQueueWaitIdle(getGraphicsQueue());
+                vkQueueWaitIdle(getPresentQueue());
+            }
+        } else {
+            vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+        }
 
         CompletableFuture.runAsync(MemoryManager::freeBuffers);
 //        MemoryManager.freeBuffers();
@@ -344,8 +360,15 @@ public class Drawer {
     }
 
     private static void recreateSwapChain() {
-        for(Long fence : inFlightFences) {
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+        // Linux Nvidia Driver can deadlock on vkWaitForFences,
+        // also vkDeviceWaitIdle can deadlock if called after vkDestroy* calls.
+        // vkDeviceWaitIdle is called later when not using Linux Nvidia driver
+        if (nvidiaWorkaround) {
+            vkDeviceWaitIdle(device);
+        } else {
+            for(Long fence : inFlightFences) {
+                vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+            }
         }
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
