@@ -344,9 +344,11 @@ public class Drawer {
     }
 
     private static void recreateSwapChain() {
-        for(Long fence : inFlightFences) {
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
-        }
+//        for(Long fence : inFlightFences) {
+//            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+//        }
+
+        vkDeviceWaitIdle(device);
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
             vkDestroyFence(device, inFlightFences.get(i), null);

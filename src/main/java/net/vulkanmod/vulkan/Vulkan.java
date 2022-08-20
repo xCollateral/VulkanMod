@@ -214,18 +214,19 @@ public class Vulkan {
 
         Synchronization.waitFences();
 
-        vkDeviceWaitIdle(device);
+//        vkDeviceWaitIdle(device);
+        createSwapChain();
 
         swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
 
-        swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+//        swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 
         MemoryManager.freeImage(depthImage, depthImageMemory);
         vkDestroyImageView(device, depthImageView, null);
 
-        vkDestroySwapchainKHR(device, swapChain, null);
+//        vkDestroySwapchainKHR(device, swapChain, null);
 
-        createSwapChain();
+//        createSwapChain();
         createImageViews();
         createDepthResources();
         createFramebuffers();
@@ -478,6 +479,8 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
+            long oldSwapchain = swapChain != 0L ? swapChain : VK_NULL_HANDLE;
+
             SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, stack);
 
             VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -522,12 +525,17 @@ public class Vulkan {
             createInfo.clipped(true);
 
             //long oldSwapchain = swapChain != NULL ? swapChain : VK_NULL_HANDLE;
-            createInfo.oldSwapchain(VK_NULL_HANDLE);
+            createInfo.oldSwapchain(oldSwapchain);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
             if(vkCreateSwapchainKHR(device, createInfo, null, pSwapChain) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create swap chain");
+            }
+
+            if(oldSwapchain != VK_NULL_HANDLE) {
+                swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+                vkDestroySwapchainKHR(device, swapChain, null);
             }
 
             swapChain = pSwapChain.get(0);
