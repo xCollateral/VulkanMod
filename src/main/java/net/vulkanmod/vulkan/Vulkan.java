@@ -23,6 +23,7 @@ import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.memGetInt;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
@@ -52,21 +53,26 @@ public class Vulkan {
     private static final boolean ENABLE_VALIDATION_LAYERS = false;
 //    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
-    private static final Set<String> VALIDATION_LAYERS;
-    static {
-        if(ENABLE_VALIDATION_LAYERS) {
-            VALIDATION_LAYERS = new HashSet<>();
-            VALIDATION_LAYERS.add("VK_LAYER_KHRONOS_validation");
-
-        } else {
-            // We are not going to use it, so we don't create it
-            VALIDATION_LAYERS = null;
-        }
-    }
-
+    private static final Set<String> VALIDATION_LAYERS = (ENABLE_VALIDATION_LAYERS) ? new HashSet<>(Collections.singleton(("VK_LAYER_KHRONOS_validation"))) : null;
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .collect(toSet());
 
+    private static final int vkRawVersion;
+
+    private static final boolean vk13;
+    private static final boolean vk12;
+    private static final boolean vk11;
+
+    static
+    {
+        long va = stackGet().nmalloc(4);
+        VK11.nvkEnumerateInstanceVersion(va);
+        vkRawVersion=memGetInt((va));
+        System.out.println(vkRawVersion);
+        vk13 = VK_VERSION_MINOR(vkRawVersion) >= 3; //Device.capabilities.Vulkan13/12/11/10() is only added in LWJGL 3.3.0 so its functionality is emulated here
+        vk12 = VK_VERSION_MINOR(vkRawVersion) >= 2;
+        vk11 = VK_VERSION_MINOR(vkRawVersion) >= 1;
+    }
 
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -257,10 +263,10 @@ public class Vulkan {
 
             appInfo.sType(VK_STRUCTURE_TYPE_APPLICATION_INFO);
             appInfo.pApplicationName(stack.UTF8Safe("VulkanMod"));
-            appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
+            appInfo.applicationVersion(vkRawVersion);
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
-            appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_1);
+            appInfo.engineVersion(vkRawVersion);
+            appInfo.apiVersion(vkRawVersion); //try to use the actual version supported/used by the driver
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -286,6 +292,11 @@ public class Vulkan {
             }
 
             instance = new VkInstance(instancePtr.get(0), createInfo);
+
+            System.out.println("Vulkan 1.3 Supported?: "+ vk13);
+            System.out.println("Vulkan 1.2 Supported?: "+ vk12);
+            System.out.println("Vulkan 1.1 Supported?: "+ vk11);
+
         }
     }
 
