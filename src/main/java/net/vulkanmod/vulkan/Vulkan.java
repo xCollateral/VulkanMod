@@ -6,6 +6,7 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.Pointer;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
 
@@ -42,7 +43,6 @@ import static org.lwjgl.vulkan.KHRSwapchain.vkCreateSwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkDestroySwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkGetSwapchainImagesKHR;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
 
 public class Vulkan {
 
@@ -50,8 +50,8 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     private static final Set<String> VALIDATION_LAYERS = (ENABLE_VALIDATION_LAYERS) ? new HashSet<>(Collections.singleton(("VK_LAYER_KHRONOS_validation"))) : null;
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
@@ -181,7 +181,7 @@ public class Vulkan {
 
     public static void initVulkan(long window) {
         createInstance();
-        setupDebugMessenger();
+//        setupDebugMessenger();
         createSurface(window);
         pickPhysicalDevice();
         createLogicalDevice();
@@ -261,30 +261,23 @@ public class Vulkan {
 
             // Use calloc to initialize the structs with 0s. Otherwise, the program can crash due to random values
 
-            VkApplicationInfo appInfo = VkApplicationInfo.callocStack(stack);
+            VkApplicationInfo appInfo = VkApplicationInfo.callocStack(stack)
+                    .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
+                    .pApplicationName(stack.UTF8Safe("VulkanMod"))
+                    .applicationVersion(vkRawVersion)
+                    .pEngineName(stack.UTF8Safe("No Engine"))
+                    .engineVersion(vkRawVersion)
+                    .apiVersion(vkRawVersion); //try to use the actual version supported/used by the driver
 
-            appInfo.sType(VK_STRUCTURE_TYPE_APPLICATION_INFO);
-            appInfo.pApplicationName(stack.UTF8Safe("VulkanMod"));
-            appInfo.applicationVersion(vkRawVersion);
-            appInfo.pEngineName(stack.UTF8Safe("No Engine"));
-            appInfo.engineVersion(vkRawVersion);
-            appInfo.apiVersion(vkRawVersion); //try to use the actual version supported/used by the driver
+            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = ENABLE_VALIDATION_LAYERS ? populateDebugMessengerCreateInfo() : null;
 
-            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
-
-            createInfo.sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
-            createInfo.pApplicationInfo(appInfo);
+            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack)
+                    .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
+                    .pApplicationInfo(appInfo)
             // enabledExtensionCount is implicitly set when you call ppEnabledExtensionNames
-            createInfo.ppEnabledExtensionNames(getRequiredExtensions());
-
-            if(ENABLE_VALIDATION_LAYERS) {
-
-                createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
-
-                VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.callocStack(stack);
-                populateDebugMessengerCreateInfo(debugCreateInfo);
-                createInfo.pNext(debugCreateInfo.address());
-            }
+                    .ppEnabledExtensionNames(getRequiredExtensions())
+                    .ppEnabledLayerNames(ENABLE_VALIDATION_LAYERS ? asPointerBuffer(VALIDATION_LAYERS) : null)
+                    .pNext(ENABLE_VALIDATION_LAYERS ? debugCreateInfo.address() : NULL);
 
             // We need to retrieve the pointer of the created instance
             PointerBuffer instancePtr = stack.mallocPointer(1);
@@ -294,6 +287,8 @@ public class Vulkan {
             }
 
             instance = new VkInstance(instancePtr.get(0), createInfo);
+            
+            setupDebugMessenger(debugCreateInfo);
 
             System.out.println("Vulkan 1.3 Supported?: "+ vk13);
             System.out.println("Vulkan 1.2 Supported?: "+ vk12);
@@ -302,14 +297,15 @@ public class Vulkan {
         }
     }
 
-    private static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo) {
-        debugCreateInfo.sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
-        debugCreateInfo.messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
-        debugCreateInfo.messageType(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
-        debugCreateInfo.pfnUserCallback(Vulkan::debugCallback);
+    private static VkDebugUtilsMessengerCreateInfoEXT populateDebugMessengerCreateInfo() {
+        return VkDebugUtilsMessengerCreateInfoEXT.callocStack(stackGet())
+                .sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT)
+                .messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+                .messageType(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+                .pfnUserCallback(Vulkan::debugCallback);
     }
 
-    private static void setupDebugMessenger() {
+    private static void setupDebugMessenger(VkDebugUtilsMessengerCreateInfoEXT createInfo) {
 
         if(!ENABLE_VALIDATION_LAYERS) {
             return;
@@ -317,9 +313,9 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkDebugUtilsMessengerCreateInfoEXT createInfo = VkDebugUtilsMessengerCreateInfoEXT.callocStack(stack);
+//            VkDebugUtilsMessengerCreateInfoEXT createInfo = VkDebugUtilsMessengerCreateInfoEXT.callocStack(stack);
 
-            populateDebugMessengerCreateInfo(createInfo);
+
 
             LongBuffer pDebugMessenger = stack.longs(VK_NULL_HANDLE);
 
