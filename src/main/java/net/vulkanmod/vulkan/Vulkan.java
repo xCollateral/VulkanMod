@@ -57,7 +57,7 @@ public class Vulkan {
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .collect(toSet());
 
-    private static final int vkRawVersion;
+    static final int vkRawVersion;
 
     private static final boolean vk13;
     private static final boolean vk12;
@@ -72,6 +72,8 @@ public class Vulkan {
         vk13 = VK_VERSION_MINOR(vkRawVersion) >= 3; //Device.capabilities.Vulkan13/12/11/10() is only added in LWJGL 3.3.0 so its functionality is emulated here
         vk12 = VK_VERSION_MINOR(vkRawVersion) >= 2;
         vk11 = VK_VERSION_MINOR(vkRawVersion) >= 1;
+
+        System.out.println("Using Vulkan: "+VK_VERSION_MAJOR(vkRawVersion) + "." + VK_VERSION_MINOR(vkRawVersion) + "." + VK_VERSION_PATCH(vkRawVersion));
     }
 
 
