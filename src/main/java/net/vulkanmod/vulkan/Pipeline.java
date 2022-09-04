@@ -10,7 +10,6 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -31,6 +30,7 @@ import java.util.function.Consumer;
 import static net.vulkanmod.vulkan.ShaderSPIRVUtils.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -546,7 +546,9 @@ public class Pipeline {
             VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            createInfo.pCode(spirvCode);
+            long struct = createInfo.address();
+            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE, memAddress0(spirvCode));
+            VkShaderModuleCreateInfo.ncodeSize(struct, spirvCode.remaining());
 
             LongBuffer pShaderModule = stack.mallocLong(1);
 

@@ -104,3 +104,21 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+var Stage = "frag" //Overrides File Extension
+//Indealy would add Mu;toTherad Invoke/Compile but will keep things simple for now
+final String glslc = "assets/vulkanmod/glslc.exe"
+task:PrecompShaders(type: exec, File, String)
+		{
+			exec {glslc "-fshader-stage=vert blit_screen.frag -c -mfmt=c -finvert-y  -fshader-stage=Stage --target-env=vulkan1.3 -O -o -"}
+		}
+
+task generateJava(type: Copy) {
+	var paths = fileTree('assets/vulkanmod/shaders/core')
+	String Stage = "Fragment"
+	for(String path : paths)
+	{
+		PrecompShaders(path, stage)
+	}
+	into "$buildDir/generated/java"
+	filter(ReplaceTokens, tokens: [someToken: 'someReplacement'])
+}
