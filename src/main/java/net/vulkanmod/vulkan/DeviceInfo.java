@@ -48,6 +48,7 @@ public class DeviceInfo {
 
     }
 
+    //Should Work with AMD: https://gpuopen.com/learn/decoding-radeon-vulkan-versions/
     @NotNull
     private static String decDefVersion(int v) {
         return VK_VERSION_MAJOR(v) + "." + VK_VERSION_MINOR(v) + "." + VK_VERSION_PATCH(v);
@@ -59,7 +60,24 @@ public class DeviceInfo {
 
     //todo: this should work with Nvidia + AMD but is not guaranteed to work with intel drivers in Windows and more obscure/Exotic Drivers/vendors
     private static String decodeDvrVersion(int v, int i) {
-        return i == (0x10DE) ? decodeNvidia(v) : decDefVersion(v);
+        return switch (i) {
+            case (0x10DE) -> decodeNvidia(v); //Nvidia
+            case (0x1022) -> decDefVersion(v); //AMD
+            case (0x5143) -> decQualCommVersion(v); //Qualcomm
+            case (0x8086) -> decIntelVersion(v); //Intel
+            default -> decDefVersion(v); //Either AMD or Unknown Driver version/vendor and.or Encoding Scheme
+        };
+    }
+
+    private static String decQualCommVersion(int v) {
+        return null;
+    }
+
+    //Source: https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
+    //Won't Work with older Drivers (15.45 And.or older)
+    //Extremely unlikely to work as this uses Guess work+Assumptions
+    private static String decIntelVersion(int v) {
+        return (v >>> 30) + "." + (v >>> 27 & 0x7) + "." + (v & 0xF);
     }
 
     @NotNull
