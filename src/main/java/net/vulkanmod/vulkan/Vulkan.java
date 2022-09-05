@@ -6,7 +6,6 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.Pointer;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
 
@@ -80,7 +79,7 @@ public class Vulkan {
 
         debugCreateInfo = ENABLE_VALIDATION_LAYERS ? populateDebugMessengerCreateInfo() : null;
         instance = createInstance();
-        if(ENABLE_VALIDATION_LAYERS) setupDebugMessenger(debugCreateInfo);
+        if(ENABLE_VALIDATION_LAYERS) setupDebugMessenger();
     }
 
 
@@ -305,7 +304,7 @@ public class Vulkan {
                 .pfnUserCallback(Vulkan::debugCallback);
     }
 
-    private static void setupDebugMessenger(VkDebugUtilsMessengerCreateInfoEXT createInfo) {
+    private static void setupDebugMessenger() {
 
         if(!ENABLE_VALIDATION_LAYERS) {
             return;
@@ -319,7 +318,7 @@ public class Vulkan {
 
             LongBuffer pDebugMessenger = stack.longs(VK_NULL_HANDLE);
 
-            if(createDebugUtilsMessengerEXT(instance, createInfo, null, pDebugMessenger) != VK_SUCCESS) {
+            if(createDebugUtilsMessengerEXT(instance, Vulkan.debugCreateInfo, null, pDebugMessenger) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to set up debug messenger");
             }
 
