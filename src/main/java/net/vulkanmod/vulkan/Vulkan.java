@@ -23,8 +23,7 @@ import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.system.MemoryUtil.memGetInt;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
@@ -50,8 +49,9 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+    private static final VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
 
     private static final Set<String> VALIDATION_LAYERS = (ENABLE_VALIDATION_LAYERS) ? new HashSet<>(Collections.singleton(("VK_LAYER_KHRONOS_validation"))) : null;
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
@@ -63,17 +63,24 @@ public class Vulkan {
     private static final boolean vk12;
     private static final boolean vk11;
 
-    static
-    {
+    static {
         long va = stackGet().nmalloc(4);
         VK11.nvkEnumerateInstanceVersion(va);
-        vkRawVersion=memGetInt((va));
+        vkRawVersion = memGetInt((va));
         System.out.println(vkRawVersion);
         vk13 = VK_VERSION_MINOR(vkRawVersion) >= 3; //Device.capabilities.Vulkan13/12/11/10() is only added in LWJGL 3.3.0 so its functionality is emulated here
         vk12 = VK_VERSION_MINOR(vkRawVersion) >= 2;
         vk11 = VK_VERSION_MINOR(vkRawVersion) >= 1;
 
-        System.out.println("Using Vulkan: "+VK_VERSION_MAJOR(vkRawVersion) + "." + VK_VERSION_MINOR(vkRawVersion) + "." + VK_VERSION_PATCH(vkRawVersion));
+        System.out.println("Using Vulkan: " + VK_VERSION_MAJOR(vkRawVersion) + "." + VK_VERSION_MINOR(vkRawVersion) + "." + VK_VERSION_PATCH(vkRawVersion));
+
+        System.out.println("Vulkan 1.3 Supported?: "+ vk13);
+        System.out.println("Vulkan 1.2 Supported?: "+ vk12);
+        System.out.println("Vulkan 1.1 Supported?: "+ vk11);
+
+        debugCreateInfo = ENABLE_VALIDATION_LAYERS ? populateDebugMessengerCreateInfo() : null;
+        instance = createInstance();
+        if(ENABLE_VALIDATION_LAYERS) setupDebugMessenger(debugCreateInfo);
     }
 
 
@@ -143,7 +150,7 @@ public class Vulkan {
 
     public static long window;
 
-    private static VkInstance instance;
+    private static final VkInstance instance;
     private static long debugMessenger;
     private static long surface;
 
@@ -180,7 +187,7 @@ public class Vulkan {
     private static StagingBuffer[] stagingBuffers;
 
     public static void initVulkan(long window) {
-        createInstance();
+//        createInstance();
 //        setupDebugMessenger();
         createSurface(window);
         pickPhysicalDevice();
@@ -251,7 +258,7 @@ public class Vulkan {
         vkDestroyInstance(instance, null);
     }
 
-    private static void createInstance() {
+    private static VkInstance createInstance() {
 
         if(ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport()) {
             throw new RuntimeException("Validation requested but not supported");
@@ -261,7 +268,7 @@ public class Vulkan {
 
             // Use calloc to initialize the structs with 0s. Otherwise, the program can crash due to random values
 
-            VkApplicationInfo appInfo = VkApplicationInfo.callocStack(stack)
+            final VkApplicationInfo appInfo = VkApplicationInfo.callocStack(stack)
                     .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
                     .pApplicationName(stack.UTF8Safe("VulkanMod"))
                     .applicationVersion(vkRawVersion)
@@ -269,9 +276,7 @@ public class Vulkan {
                     .engineVersion(vkRawVersion)
                     .apiVersion(vkRawVersion); //try to use the actual version supported/used by the driver
 
-            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = ENABLE_VALIDATION_LAYERS ? populateDebugMessengerCreateInfo() : null;
-
-            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack)
+            final VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack)
                     .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
                     .pApplicationInfo(appInfo)
             // enabledExtensionCount is implicitly set when you call ppEnabledExtensionNames
@@ -286,13 +291,8 @@ public class Vulkan {
                 throw new RuntimeException("Failed to create instance");
             }
 
-            instance = new VkInstance(instancePtr.get(0), createInfo);
-            
-            setupDebugMessenger(debugCreateInfo);
+            return new VkInstance(instancePtr.get(0), createInfo);
 
-            System.out.println("Vulkan 1.3 Supported?: "+ vk13);
-            System.out.println("Vulkan 1.2 Supported?: "+ vk12);
-            System.out.println("Vulkan 1.1 Supported?: "+ vk11);
 
         }
     }
