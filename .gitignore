@@ -31,3 +31,4 @@ bin/
 # fabric
 
 run/
+temDir/*

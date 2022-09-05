@@ -104,21 +104,59 @@ publishing {
 		// retrieving dependencies.
 	}
 }
-var Stage = "frag" //Overrides File Extension
+/*var Stage = "frag" //Overrides File Extension
 //Indealy would add Mu;toTherad Invoke/Compile but will keep things simple for now
 final String glslc = "assets/vulkanmod/glslc.exe"
 task:PrecompShaders(type: exec, File, String)
 		{
 			exec {glslc "-fshader-stage=vert blit_screen.frag -c -mfmt=c -finvert-y  -fshader-stage=Stage --target-env=vulkan1.3 -O -o -"}
-		}
+		}*/
 
-task generateJava(type: Copy) {
-	var paths = fileTree('assets/vulkanmod/shaders/core')
-	String Stage = "Fragment"
-	for(String path : paths)
-	{
-		PrecompShaders(path, stage)
-	}
-	into "$buildDir/generated/java"
-	filter(ReplaceTokens, tokens: [someToken: 'someReplacement'])
+task a(type:Exec) {
+	workingDir "temDir"
+
+	//on windows:
+//	commandLine 'cmd', '/c', 'stop.bat'
+//	logging.captureStandardOutput LogLevel.INFO
+//	standardInput = new ByteArrayInputStream()
+//	file = new File().canExecute(true, true);
+//	standardOutput = new ByteArrayOutputStream()
+	executable('glslc')
+	commandLine(executable, '-fshader-stage=frag', 'rendertype_entity_translucent.fsh', '-c', '-mfmt=c', '-finvert-y', '--target-env=vulkan1.3', '-O', '-o', '-').standardOutputCapture
+	ignoreExitValue(true)
+			executionResult
+	//on linux
+//	commandLine './stop.sh'
+//	System.out.println(executionResult)
+//	System.out.println(commandLine)
+//	System.out.println(errorOutput)
+//	//store the output instead of printing to the console:
+//	System.out.println(standardOutput.toString())
+//
+//	//extension method stopTomcat.output() can be used to obtain the output:
+/*		standardOutput = new ByteArrayOutputStream()
+	ext.output = {
+		return standardOutput.toByteArray();
+	}*/
+}
+
+task genFiles(type: Copy) {
+//	var paths = fileTree('assets/vulkanmod/shaders/core')
+	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+				into 'temDir/Fragger'
+				include '**/*.fsh'
+				exclude '**/*.vsh'
+//	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+//				into 'temDir/Vertxs'
+//				include '**/*.vsh'
+//				exclude '**/*.fsh'
+	System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
+
+//	String Stage = "Fragment"
+//	for(String path : paths)
+//	{
+//		PrecompShaders(path, stage)
+//	}
+//
+//	filter(ReplaceTokens, tokens: [someToken: 'someReplacement'])
 }
