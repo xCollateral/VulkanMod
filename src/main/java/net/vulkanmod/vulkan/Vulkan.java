@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
@@ -125,11 +126,15 @@ public class Vulkan {
         }
     }
 
-    private static class SwapChainSupportDetails {
+    public static class SwapChainSupportDetails {
 
         private VkSurfaceCapabilitiesKHR capabilities;
         private VkSurfaceFormatKHR.Buffer formats;
         private IntBuffer presentModes;
+
+        public VkSurfaceCapabilitiesKHR getCapabilities() {
+            return capabilities;
+        }
 
     }
 
@@ -144,6 +149,8 @@ public class Vulkan {
 
     public static VkPhysicalDeviceProperties deviceProperties;
     public static VkPhysicalDeviceMemoryProperties memoryProperties;
+
+    public static SwapChainSupportDetails swapChainSupport;
 
     private static VkQueue graphicsQueue;
     private static VkQueue presentQueue;
@@ -481,13 +488,14 @@ public class Vulkan {
 
             long oldSwapchain = swapChain != 0L ? swapChain : VK_NULL_HANDLE;
 
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, stack);
+//            if(swapChainSupport == null) swapChainSupport = querySwapChainSupport()
 
             VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
             int presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
             VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), 2));
+//            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), 2));
+            IntBuffer imageCount = stack.ints(Initializer.CONFIG.frameQueueSize);
 
             if(swapChainSupport.capabilities.maxImageCount() > 0 && imageCount.get(0) > swapChainSupport.capabilities.maxImageCount()) {
                 imageCount.put(0, swapChainSupport.capabilities.maxImageCount());
@@ -966,7 +974,7 @@ public class Vulkan {
 
         if(extensionsSupported) {
             try(MemoryStack stack = stackPush()) {
-                SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, stack);
+                swapChainSupport = querySwapChainSupport(device, stack);
                 swapChainAdequate = swapChainSupport.formats.hasRemaining() && swapChainSupport.presentModes.hasRemaining() ;
             }
         }
@@ -1005,7 +1013,7 @@ public class Vulkan {
 
         SwapChainSupportDetails details = new SwapChainSupportDetails();
 
-        details.capabilities = VkSurfaceCapabilitiesKHR.mallocStack(stack);
+        details.capabilities = VkSurfaceCapabilitiesKHR.malloc();
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, details.capabilities);
 
         IntBuffer count = stack.ints(0);
@@ -1013,7 +1021,7 @@ public class Vulkan {
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, null);
 
         if(count.get(0) != 0) {
-            details.formats = VkSurfaceFormatKHR.mallocStack(count.get(0), stack);
+            details.formats = VkSurfaceFormatKHR.malloc(count.get(0));
             vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, details.formats);
         }
 
