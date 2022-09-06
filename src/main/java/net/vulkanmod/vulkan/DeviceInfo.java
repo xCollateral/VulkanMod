@@ -47,7 +47,7 @@ public class DeviceInfo {
         }
 
         this.device = device;
-        this.vendorId = graphicsCard.getDeviceId();
+        this.vendorId = String.valueOf(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = String.valueOf(properties.driverVersion());
     }

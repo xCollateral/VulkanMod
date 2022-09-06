@@ -5,8 +5,10 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
 
@@ -507,8 +509,7 @@ public class Vulkan {
 
             long oldSwapchain = swapChain != 0L ? swapChain : VK_NULL_HANDLE;
 
-//            if(swapChainSupport == null)
-                swapChainSupport = querySwapChainSupport(physicalDevice, stack);
+            if(swapChainSupport == null) swapChainSupport = querySwapChainSupport(physicalDevice, null);
 
             VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
             int presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -1034,28 +1035,51 @@ public class Vulkan {
         }
     }
 
-    public static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, MemoryStack stack) {
+    public static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, @Nullable MemoryStack stack) {
 
         SwapChainSupportDetails details = new SwapChainSupportDetails();
 
-        details.capabilities = VkSurfaceCapabilitiesKHR.mallocStack();
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, details.capabilities);
+        if(stack != null) {
+            details.capabilities = VkSurfaceCapabilitiesKHR.mallocStack();
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, details.capabilities);
 
-        IntBuffer count = stack.ints(0);
+            IntBuffer count = stack.ints(0);
 
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, null);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, null);
 
-        if(count.get(0) != 0) {
-            details.formats = VkSurfaceFormatKHR.mallocStack(count.get(0));
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, details.formats);
+            if(count.get(0) != 0) {
+                details.formats = VkSurfaceFormatKHR.mallocStack(count.get(0));
+                vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, details.formats);
+            }
+
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device,surface, count, null);
+
+            if(count.get(0) != 0) {
+                details.presentModes = stack.mallocInt(count.get(0));
+                vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, details.presentModes);
+            }
+        }
+        else {
+            details.capabilities = VkSurfaceCapabilitiesKHR.malloc();
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, details.capabilities);
+
+            IntBuffer count = MemoryStack.stackInts(0);
+
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, null);
+
+            if(count.get(0) != 0) {
+                details.formats = VkSurfaceFormatKHR.malloc(count.get(0));
+                vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, details.formats);
+            }
+
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device,surface, count, null);
+
+            if(count.get(0) != 0) {
+                details.presentModes = MemoryUtil.memAllocInt(count.get(0));
+                vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, details.presentModes);
+            }
         }
 
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device,surface, count, null);
-
-        if(count.get(0) != 0) {
-            details.presentModes = stack.mallocInt(count.get(0));
-            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, details.presentModes);
-        }
 
         return details;
     }
