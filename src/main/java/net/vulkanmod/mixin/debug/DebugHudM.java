@@ -9,6 +9,7 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.DeviceInfo;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -57,8 +58,8 @@ public abstract class DebugHudM {
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
-        strings.add("GPU: " + DeviceInfo.deviceName);
-        strings.add("Driver: " + DeviceInfo.driverVersion);
+        strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
+        strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
 
         return strings;
