@@ -33,10 +33,10 @@ public class DeviceInfo {
 
     public static final String cpuInfo;
 
-    public static final String vendorId;
-    public static final String deviceName;
-    public static final String driverVersion;
-    public static final String vkVersion;
+    public final String vendorId;
+    public final String deviceName;
+    public final String driverVersion;
+    public final String vkVersion;
 
     public static final List<GraphicsCard> graphicsCards;
 
@@ -61,22 +61,11 @@ public class DeviceInfo {
         this.device = device;
         this.vendorId = String.valueOf(properties.vendorID());
         this.deviceName = properties.deviceNameString();
-        this.driverVersion = String.valueOf(properties.driverVersion());
+        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
+        this.vkVersion = decDefVersion(Vulkan.vkRawVersion);
     }
 
     private String unsupportedExtensions(Set<String> requiredExtensions) {
-
-
-//        deviceName = new String(bytes, StandardCharsets.UTF_8);
-            deviceName = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes)).toString();
-            driverVersion = decodeDvrVersion(Vulkan.deviceProperties.driverVersion(), Vulkan.deviceProperties.vendorID());
-            vkVersion= decDefVersion(Vulkan.vkRawVersion);
-        }
-        else {
-            vendorId = "n/a";
-            deviceName = "n/a";
-            driverVersion = "n/a";
-            vkVersion = "n/a";
 
         try(MemoryStack stack = stackPush()) {
 
@@ -95,9 +84,11 @@ public class DeviceInfo {
             requiredExtensions.removeAll(extensions);
 
             return "Unsupported extensions: " + Arrays.toString(requiredExtensions.toArray());
-
         }
     }
+
+
+//
 
     public static String debugString(PointerBuffer ppPhysicalDevices, Set<String> requiredExtensions, VkInstance instance) {
         try (MemoryStack stack = stackPush()) {

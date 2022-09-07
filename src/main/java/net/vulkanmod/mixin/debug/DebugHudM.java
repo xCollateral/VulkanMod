@@ -58,9 +58,9 @@ public abstract class DebugHudM {
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
-        strings.add("GPU: " + DeviceInfo.deviceName);
-        strings.add("Driver: " + DeviceInfo.driverVersion);
-        strings.add("Vulkan Version: " + DeviceInfo.vkVersion);
+        strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
+        strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
+        strings.add("Vulkan Version: " + Vulkan.getDeviceInfo().vkVersion);
 
         strings.add("");
 
