@@ -2,6 +2,7 @@ package net.vulkanmod.mixin.debug;
 
 import com.mojang.blaze3d.platform.GlDebugInfo;
 import net.vulkanmod.vulkan.DeviceInfo;
+import net.vulkanmod.vulkan.Vulkan;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -13,7 +14,7 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getVendor() {
-        return DeviceInfo.vendorId;
+        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().vendorId : "n/a";
     }
 
     /**
@@ -21,7 +22,7 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getRenderer() {
-        return DeviceInfo.deviceName;
+        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().deviceName : "n/a";
     }
 
     /**
@@ -29,7 +30,7 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getVersion() {
-        return DeviceInfo.driverVersion;
+        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().driverVersion : "n/a";
     }
 
     /**
