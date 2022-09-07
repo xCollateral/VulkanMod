@@ -81,9 +81,8 @@ public class DeviceInfo {
     }
 
     @NotNull
-    /**Major -> 000 - Minor -> 00 - Patch -> 00*/
     private static String decodeNvidia(int v) {
-        return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff);
+        return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff) + "." + (v >>> 6 & 0xff) + (v & 0xff);
     }
 
 }

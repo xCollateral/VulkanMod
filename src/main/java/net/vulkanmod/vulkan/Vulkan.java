@@ -5,6 +5,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
@@ -267,7 +268,7 @@ public class Vulkan {
 
             // Use calloc to initialize the structs with 0s. Otherwise, the program can crash due to random values
 
-            final VkApplicationInfo appInfo = VkApplicationInfo.callocStack(stack)
+            final VkApplicationInfo appInfo = VkApplicationInfo.mallocStack(stack)
                     .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
                     .pApplicationName(stack.UTF8Safe("VulkanMod"))
                     .applicationVersion(vkRawVersion)
@@ -275,7 +276,7 @@ public class Vulkan {
                     .engineVersion(vkRawVersion)
                     .apiVersion(vkRawVersion); //try to use the actual version supported/used by the driver
 
-            final VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack)
+            final VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.mallocStack(stack)
                     .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
                     .pApplicationInfo(appInfo)
             // enabledExtensionCount is implicitly set when you call ppEnabledExtensionNames
