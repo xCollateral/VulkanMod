@@ -212,17 +212,6 @@ public class Vulkan {
 
     public static void recreateSwapChain() {
 
-        try (MemoryStack stack = stackPush()) {
-
-            IntBuffer width = stack.ints(0);
-            IntBuffer height = stack.ints(0);
-
-            while (width.get(0) == 0 && height.get(0) == 0) {
-                glfwGetFramebufferSize(window, width, height);
-                glfwWaitEvents();
-            }
-        }
-
         Synchronization.waitFences();
 
 //        vkDeviceWaitIdle(device);
@@ -509,7 +498,7 @@ public class Vulkan {
 
             long oldSwapchain = swapChain != 0L ? swapChain : VK_NULL_HANDLE;
 
-            if(swapChainSupport == null) swapChainSupport = querySwapChainSupport(physicalDevice, null);
+            swapChainSupport = querySwapChainSupport(physicalDevice, null);
 
             VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
             int presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
