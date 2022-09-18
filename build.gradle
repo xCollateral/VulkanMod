@@ -1,7 +1,10 @@
 plugins {
 	id 'fabric-loom' version '0.11-SNAPSHOT'
 	id 'maven-publish'
+	id 'com.github.gmazzo.buildconfig' version '3.1.0'
 }
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
@@ -111,41 +114,32 @@ task:PrecompShaders(type: exec, File, String)
 		{
 			exec {glslc "-fshader-stage=vert blit_screen.frag -c -mfmt=c -finvert-y  -fshader-stage=Stage --target-env=vulkan1.3 -O -o -"}
 		}*/
-
-task a(type:Exec) {
-	workingDir "temDir"
-
-	//on windows:
-//	commandLine 'cmd', '/c', 'stop.bat'
-//	logging.captureStandardOutput LogLevel.INFO
-//	standardInput = new ByteArrayInputStream()
-//	file = new File().canExecute(true, true);
-//	standardOutput = new ByteArrayOutputStream()
-	executable('glslc')
-	commandLine(executable, '-fshader-stage=frag', 'rendertype_entity_translucent.fsh', '-c', '-mfmt=c', '-finvert-y', '--target-env=vulkan1.3', '-O', '-o', '-').standardOutputCapture
-	ignoreExitValue(true)
-			executionResult
-	//on linux
-//	commandLine './stop.sh'
-//	System.out.println(executionResult)
-//	System.out.println(commandLine)
-//	System.out.println(errorOutput)
-//	//store the output instead of printing to the console:
-//	System.out.println(standardOutput.toString())
-//
-//	//extension method stopTomcat.output() can be used to obtain the output:
-/*		standardOutput = new ByteArrayOutputStream()
-	ext.output = {
-		return standardOutput.toByteArray();
-	}*/
+task gitMsg(type:Exec){
+	dependsOn tasks.generateBuildConfig
+	commandLine 'git', 'log', '-1', '--oneline'
+	standardOutput = new ByteArrayOutputStream()
+	doLast {
+		System.out.println(standardOutput.toString())
+	}
 }
-
+var names = []
 task genFiles(type: Copy) {
 //	var paths = fileTree('assets/vulkanmod/shaders/core')
+
+	fileTree("temDir").visit { FileVisitDetails details ->
+		names << details.file.name.substring(0,details.file.name.indexOf("."))
+	}
+	System.out.println(names);
+	/*for(String name : names)
+	{
+		nameAbs=name
+	}*/
+
+
 	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-				into 'temDir/Fragger'
-				include '**/*.fsh'
-				exclude '**/*.vsh'
+	into 'temDir'
+	include '**/*.fsh'
+	exclude '**/*.vsh'
 //	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
 //				into 'temDir/Vertxs'
 //				include '**/*.vsh'
@@ -159,4 +153,118 @@ task genFiles(type: Copy) {
 //	}
 //
 //	filter(ReplaceTokens, tokens: [someToken: 'someReplacement'])
+}
+
+class tstA
+{
+	static int i =1
+	static String aa="";
+	var namesFrag = []
+	var namesvert = []
+}
+task a(type:Exec) {
+	workingDir "temDir"
+	dependsOn tasks.genFiles
+	//on windows:
+//	commandLine 'cmd', '/c', 'stop.bat'
+//	logging.captureStandardOutput LogLevel.INFO
+//	standardInput = new ByteArrayInputStream()
+//	file = new File().canExecute(true, true);
+//	standardOutput = new ByteArrayOutputStream()
+
+
+	var file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\a.java")
+//	ArrayList<Integer> buf= []
+	String cl="package net.vulkanmod.sdrs;\n" +
+			"\n" +
+			"import java.nio.IntBuffer;\n" +
+			"\n" +
+			"final class a\n{\n"
+	file.write(cl.getBytes())
+
+	task call(type:Exec)
+	{
+		executable('glslc')
+		workingDir "temDir"
+		dependsOn tasks.genFiles
+		commandLine(executable, '-fshader-stage=frag', "Fragger/blit_screen.fsh", '-c', '-mfmt=c', '-finvert-y', '--target-env=vulkan1.3', '-O', '-o', '-').executionResult
+		ignoreExitValue(true)
+//		standardOutput = new ByteArrayOutputStream()
+		tarArtifactTask(standardOutput.toString())
+	}
+
+	final var String aaa= "});\n"
+	for(;tstA.i<names.size();tstA.i++)
+	{
+		new ByteArrayOutputStream().withStream{ os ->
+			exec {
+				workingDir "temDir"
+				executable = 'glslc'
+				commandLine(executable, '-fshader-stage=frag', names[tstA.i]+".fsh", '-c', '-mfmt=num', '-finvert-y', '--target-env=vulkan1.3', '-O', '-o', '-')
+				standardOutput = os
+				ignoreExitValue(true)
+			}
+
+				tstA.aa = "static final IntBuffer " + names[tstA.i] + "= IntBuffer.wrap(new int[]{"
+				file.write(tstA.aa.getBytes())
+				file.write(os.toByteArray())
+				file.write(aaa.getBytes())
+
+
+
+		}
+	}
+	file.flush()
+	String cltr="\n};"
+	file.write(cltr.getBytes())
+
+
+
+
+
+//	commandLine './stop.sh'
+//	System.out.println(executionResult)
+//	System.out.println(commandLine)
+//	System.out.println(errorOutput)
+//	//store the output instead of printing to the console:
+//	System.out.println(standardOutput.toString())
+
+
+
+
+
+//	//extension method stopTomcat.output() can be used to obtain the output:
+/*		standardOutput = new ByteArrayOutputStream()
+	ext.output = {
+		return standardOutput.toByteArray();
+	}*/
+}
+def tarArtifactTask(String ext) {
+	println ext
+
+}
+String Tst()
+{
+	return a.outputs
+}
+
+task gitRev(type: Exec) {
+	commandLine 'git', 'log', '-1', '--format=%H'
+	standardOutput = new ByteArrayOutputStream()
+	ext.variable = {
+		standardOutput.toString('UTF-8')
+	}
+}
+
+var aa= a.outputs
+buildConfig {
+	buildConfigField('String', 'APP_NAME', "\"${project.name}\"")
+	buildConfigField('String', 'APP_VERSION', provider { "\"${project.version}\"" })
+	buildConfigField('String', 'APP_SECRET', "\"Z3JhZGxlLWphdmEtYnVpbGRjb25maWctcGx1Z2lu\"")
+	buildConfigField('long', 'BUILD_TIME', "${System.currentTimeMillis()}L")
+	buildConfigField('boolean', 'FEATURE_ENABLED', "${true}")
+//	buildConfigField('int[]', 'MAGIC_NUMBERS', '{1, 2, 3, 4}')
+	buildConfigField('byte[]', 'MAGIC_NUMBERS', Tst())
+	buildConfigField("com.github.gmazzo.SomeData", "MY_DATA", "new SomeData(\"a\",1)")
+	useJavaOutput()
 }

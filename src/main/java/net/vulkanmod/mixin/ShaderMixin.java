@@ -26,6 +26,7 @@ public class ShaderMixin implements ShaderMixed {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void create(ResourceFactory factory, String name, VertexFormat format, CallbackInfo ci) {
         String path = "core/" + name;
+        //todo: match Var Args.String.CharRaw name to Fields...
         pipeline = new Pipeline(format, path);
     }
 
