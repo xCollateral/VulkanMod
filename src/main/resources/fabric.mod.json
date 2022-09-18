@@ -31,7 +31,15 @@
     "minecraft": "1.18.x",
     "java": ">=17"
   },
-  "suggests": {
-    "another-mod": "*"
+
+  "breaks": {
+    "dashloader": "*",
+    "indium": "*",
+    "iris": "*",
+    "reeses-sodium-options": "*",
+    "skiptransitions": "*",
+    "sodium": "*",
+    "sodium-extra": "*",
+    "tiefix": "*"
   }
 }
