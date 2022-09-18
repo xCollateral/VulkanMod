@@ -10,6 +10,8 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.vulkanmod.sdrs.a;
+import net.vulkanmod.sdrs.b;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -27,10 +29,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static net.vulkanmod.vulkan.ShaderSPIRVUtils.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -43,6 +47,8 @@ public class Pipeline {
     private static final VkDevice device = Vulkan.getDevice();
     private static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
+    private final long vertShaderSPIRV;
+    private final long fragShaderSPIRV;
 
     private String path;
     private long descriptorSetLayout;
@@ -62,8 +68,9 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, String path) {
-        this.path = path;
+    public Pipeline(VertexFormat vertexFormat, String path, String name) {
+        this.vertShaderSPIRV = b.getFunc(name);
+        this.fragShaderSPIRV = a.getFunc(name);
 
         createDescriptorSetLayout(path);
         createPipelineLayout();
@@ -86,11 +93,11 @@ public class Pipeline {
 //                SPIRV vertShaderSPIRV = compileShader(path + ".vsh", "vertex");
 //                SPIRV fragShaderSPIRV = compileShader(path + ".fsh", "fragment");
 
-                SPIRV vertShaderSPIRV = compileShaderFile(path + ".vsh", ShaderKind.VERTEX_SHADER);
-                SPIRV fragShaderSPIRV = compileShaderFile(path + ".fsh", ShaderKind.FRAGMENT_SHADER);
+//                SPIRV vertShaderSPIRV = compileShaderFile(path + ".vsh", ShaderKind.VERTEX_SHADER);
+//                SPIRV fragShaderSPIRV = compileShaderFile(path + ".fsh", ShaderKind.FRAGMENT_SHADER);
 
-                vertShaderModule = createShaderModule(vertShaderSPIRV.bytecode());
-                fragShaderModule = createShaderModule(fragShaderSPIRV.bytecode());
+                vertShaderModule = createShaderModule(vertShaderSPIRV, b.currentSize);
+                fragShaderModule = createShaderModule(fragShaderSPIRV, a.currentSize);
             }
 
 
@@ -219,7 +226,8 @@ public class Pipeline {
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
-            if(vkCreateGraphicsPipelines(device, pipelineCache, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
+            int i = vkCreateGraphicsPipelines(device, pipelineCache, pipelineInfo, null, pGraphicsPipeline);
+            if(i != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create graphics pipeline");
             }
 
@@ -539,20 +547,20 @@ public class Pipeline {
         };
     }
 
-    private static long createShaderModule(ByteBuffer spirvCode) {
+    private static long createShaderModule(long spirvCode, int a) {
 
         try(MemoryStack stack = stackPush()) {
-
-            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
-
-            createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            long struct = createInfo.address();
-            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE, memAddress0(spirvCode));
-            VkShaderModuleCreateInfo.ncodeSize(struct, spirvCode.remaining());
+//            ByteBuffer aa = ByteBuffer.allocateDirect(spirvCode.capacity()*4);
+//            aa.asIntBuffer().put(spirvCode).rewind();
+            VkShaderModuleCreateInfo vkShaderModuleCreateInfo = VkShaderModuleCreateInfo.callocStack(stack)
+                    .sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
+            long struct = vkShaderModuleCreateInfo.address();
+            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE, spirvCode);
+            VkShaderModuleCreateInfo.ncodeSize(struct, a);
 
             LongBuffer pShaderModule = stack.mallocLong(1);
 
-            if(vkCreateShaderModule(device, createInfo, null, pShaderModule) != VK_SUCCESS) {
+            if(vkCreateShaderModule(device, vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
 
@@ -716,7 +724,7 @@ public class Pipeline {
                         samplerDescriptorWrite.dstBinding(i);
                         samplerDescriptorWrite.dstArrayElement(0);
                         samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                        samplerDescriptorWrite.descriptorCount(1);
+//                        samplerDescriptorWrite.descriptorCount(1);
                         samplerDescriptorWrite.pImageInfo(imageInfos[1]);
 
                         ++i;
