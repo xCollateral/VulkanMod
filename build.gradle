@@ -122,30 +122,54 @@ task gitMsg(type:Exec){
 		System.out.println(standardOutput.toString())
 	}
 }
-var names = []
+
+class tstA
+{
+	static int i =1
+	static String aa="";
+	static var namesFrag = []
+	static var namesvert = []
+}
 task genFiles(type: Copy) {
 //	var paths = fileTree('assets/vulkanmod/shaders/core')
 
-	fileTree("temDir").visit { FileVisitDetails details ->
-		names << details.file.name.substring(0,details.file.name.indexOf("."))
-	}
-	System.out.println(names);
+
 	/*for(String name : names)
 	{
 		nameAbs=name
 	}*/
 
 
-	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-	into 'temDir'
-	include '**/*.fsh'
-	exclude '**/*.vsh'
+	copy {
+		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+		into 'temDir/Fragger'
+		include '**/*.fsh'
+		exclude '**/*.vsh'
 //	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
 //				into 'temDir/Vertxs'
 //				include '**/*.vsh'
 //				exclude '**/*.fsh'
-	System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
-
+		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
+		fileTree("temDir/Fragger").visit { FileVisitDetails details ->
+			tstA.namesFrag << details.file.name.substring(0, details.file.name.indexOf("."))
+		}
+		System.out.println(tstA.namesFrag);
+	}
+	copy {
+		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+		into 'temDir/Vertxs'
+		include '**/*.vsh'
+		exclude '**/*.fsh'
+//	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+//				into 'temDir/Vertxs'
+//				include '**/*.vsh'
+//				exclude '**/*.fsh'
+		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
+		fileTree("temDir/Vertxs").visit { FileVisitDetails details2 ->
+			tstA.namesvert << details2.file.name.substring(0, details2.file.name.indexOf("."))
+		}
+		System.out.println(tstA.namesvert);
+	}
 //	String Stage = "Fragment"
 //	for(String path : paths)
 //	{
@@ -155,15 +179,8 @@ task genFiles(type: Copy) {
 //	filter(ReplaceTokens, tokens: [someToken: 'someReplacement'])
 }
 
-class tstA
-{
-	static int i =1
-	static String aa="";
-	var namesFrag = []
-	var namesvert = []
-}
 task a(type:Exec) {
-	workingDir "temDir"
+	workingDir "temDir/Fragger"
 	dependsOn tasks.genFiles
 	//on windows:
 //	commandLine 'cmd', '/c', 'stop.bat'
@@ -194,18 +211,84 @@ task a(type:Exec) {
 	}
 
 	final var String aaa= "});\n"
-	for(;tstA.i<names.size();tstA.i++)
+	for(int i=0;i<tstA.namesFrag.size();i++)
 	{
 		new ByteArrayOutputStream().withStream{ os ->
 			exec {
-				workingDir "temDir"
+				workingDir "temDir/Fragger"
 				executable = 'glslc'
-				commandLine(executable, '-fshader-stage=frag', names[tstA.i]+".fsh", '-c', '-mfmt=num', '-finvert-y', '--target-env=vulkan1.3', '-O', '-o', '-')
+				commandLine(executable, '-fshader-stage=frag', tstA.namesFrag[i]+".fsh", '-c', '-mfmt=num', '-finvert-y', '--target-env=vulkan1.3', '-O', '-o', '-')
 				standardOutput = os
 				ignoreExitValue(true)
 			}
 
-				tstA.aa = "static final IntBuffer " + names[tstA.i] + "= IntBuffer.wrap(new int[]{"
+				tstA.aa = "static final IntBuffer " + tstA.namesFrag[i] +"_frag" + "= IntBuffer.wrap(new int[]{"
+				file.write(tstA.aa.getBytes())
+				file.write(os.toByteArray())
+				file.write(aaa.getBytes())
+
+
+
+		}
+	}
+	file.flush()
+	String cltr="\n};"
+	file.write(cltr.getBytes())
+
+
+
+
+
+//	commandLine './stop.sh'
+//	System.out.println(executionResult)
+//	System.out.println(commandLine)
+//	System.out.println(errorOutput)
+//	//store the output instead of printing to the console:
+//	System.out.println(standardOutput.toString())
+
+
+
+
+
+//	//extension method stopTomcat.output() can be used to obtain the output:
+/*		standardOutput = new ByteArrayOutputStream()
+	ext.output = {
+		return standardOutput.toByteArray();
+	}*/
+}
+task b(type:Exec) {
+	workingDir "temDir/Vertxs"
+	dependsOn tasks.genFiles
+	//on windows:
+//	commandLine 'cmd', '/c', 'stop.bat'
+//	logging.captureStandardOutput LogLevel.INFO
+//	standardInput = new ByteArrayInputStream()
+//	file = new File().canExecute(true, true);
+//	standardOutput = new ByteArrayOutputStream()
+
+	var file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\b.java")
+//	ArrayList<Integer> buf= []
+	String cl="package net.vulkanmod.sdrs;\n" +
+			"\n" +
+			"import java.nio.IntBuffer;\n" +
+			"\n" +
+			"final class b\n{\n"
+	file.write(cl.getBytes())
+
+
+	final var String aaa= "});\n"
+	for(int i=0;i<tstA.namesvert.size();i++)
+	{
+		new ByteArrayOutputStream().withStream{ os ->
+			exec {
+				workingDir "temDir/Vertxs"
+				executable = 'glslc'
+				commandLine(executable, '-fshader-stage=vert', tstA.namesvert[i]+".vsh", '-c', '-mfmt=num', '-finvert-y', '--target-env=vulkan1.3', '-O', '-o', '-')
+				standardOutput = os
+				ignoreExitValue(true)
+			}
+
+				tstA.aa = "static final IntBuffer " + tstA.namesvert[i] + "_vert" + "= IntBuffer.wrap(new int[]{"
 				file.write(tstA.aa.getBytes())
 				file.write(os.toByteArray())
 				file.write(aaa.getBytes())
