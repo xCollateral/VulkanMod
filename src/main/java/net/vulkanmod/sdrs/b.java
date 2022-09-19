@@ -3,9 +3,7 @@ package net.vulkanmod.sdrs;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.system.MemoryUtil.memAddress0;
-
 public class  b
 {
  public static int currentSize;
@@ -336,15 +334,11 @@ private static int[] position_color()
 0x000100fd,0x00010038
 }));
 }
-private static int[] position_color_lightmap()
+private static int[] position_color_lightmap ()
  { 
- return ((new int[]{}));
-}
-private static int[] position_color_normal()
+ return null;}private static int[] position_color_normal ()
  { 
- return ((new int[]{}));
-}
-private static int[] position_color_tex()
+ return null;}private static int[] position_color_tex()
  { 
  return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000002d,
 0x00000000,0x00020011,0x00000001,0x0006000b,
@@ -419,11 +413,9 @@ private static int[] position_color_tex()
 0x0000002c,0x000100fd,0x00010038
 }));
 }
-private static int[] position_color_tex_lightmap()
+private static int[] position_color_tex_lightmap ()
  { 
- return ((new int[]{}));
-}
-private static int[] position_tex()
+ return null;}private static int[] position_tex()
  { 
  return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000029,
 0x00000000,0x00020011,0x00000001,0x0006000b,
@@ -5527,61 +5519,60 @@ private static int[] rendertype_water_mask()
 }
 public static long getFunc(String aa)
  { 
-	 int[] ax = switch(aa)
+	 int[]ax = switch(aa) 
  { 
-	case "blit_screen" ->blit_screen();
-	case "particle" ->particle();
-	case "position" ->position();
-	case "position_color" ->position_color();
-	case "position_color_lightmap" ->position_color_lightmap();
-	case "position_color_normal" ->position_color_normal();
-	case "position_color_tex" ->position_color_tex();
-	case "position_color_tex_lightmap" ->position_color_tex_lightmap();
-	case "position_tex" ->position_tex();
-	case "position_tex_color" ->position_tex_color();
-	case "position_tex_color_normal" ->position_tex_color_normal();
-	case "rendertype_armor_cutout_no_cull" ->rendertype_armor_cutout_no_cull();
-	case "rendertype_armor_entity_glint" ->rendertype_armor_entity_glint();
-	case "rendertype_armor_glint" ->rendertype_armor_glint();
-	case "rendertype_beacon_beam" ->rendertype_beacon_beam();
-	case "rendertype_crumbling" ->rendertype_crumbling();
-	case "rendertype_cutout" ->rendertype_cutout();
-	case "rendertype_cutout_mipped" ->rendertype_cutout_mipped();
-	case "rendertype_end_portal" ->rendertype_end_portal();
-	case "rendertype_energy_swirl" ->rendertype_energy_swirl();
-	case "rendertype_entity_alpha" ->rendertype_entity_alpha();
-	case "rendertype_entity_cutout" ->rendertype_entity_cutout();
-	case "rendertype_entity_cutout_no_cull" ->rendertype_entity_cutout_no_cull();
-	case "rendertype_entity_cutout_no_cull_z_offset" ->rendertype_entity_cutout_no_cull_z_offset();
-	case "rendertype_entity_decal" ->rendertype_entity_decal();
-	case "rendertype_entity_glint" ->rendertype_entity_glint();
-	case "rendertype_entity_glint_direct" ->rendertype_entity_glint_direct();
-	case "rendertype_entity_no_outline" ->rendertype_entity_no_outline();
-	case "rendertype_entity_shadow" ->rendertype_entity_shadow();
-	case "rendertype_entity_smooth_cutout" ->rendertype_entity_smooth_cutout();
-	case "rendertype_entity_solid" ->rendertype_entity_solid();
-	case "rendertype_entity_translucent" ->rendertype_entity_translucent();
-	case "rendertype_entity_translucent_cull" ->rendertype_entity_translucent_cull();
-	case "rendertype_eyes" ->rendertype_eyes();
-	case "rendertype_glint" ->rendertype_glint();
-	case "rendertype_glint_direct" ->rendertype_glint_direct();
-	case "rendertype_glint_translucent" ->rendertype_glint_translucent();
-	case "rendertype_item_entity_translucent_cull" ->rendertype_item_entity_translucent_cull();
-	case "rendertype_leash" ->rendertype_leash();
-	case "rendertype_lightning" ->rendertype_lightning();
-	case "rendertype_lines" ->rendertype_lines();
-	case "rendertype_outline" ->rendertype_outline();
-	case "rendertype_solid" ->rendertype_solid();
-	case "rendertype_text" ->rendertype_text();
-	case "rendertype_text_see_through" ->rendertype_text_see_through();
-	case "rendertype_translucent" ->rendertype_translucent();
-	case "rendertype_translucent_moving_block" ->rendertype_translucent_moving_block();
-	case "rendertype_translucent_no_crumbling" ->rendertype_translucent_no_crumbling();
-	case "rendertype_tripwire" ->rendertype_tripwire();
-	case "rendertype_water_mask" ->rendertype_water_mask();
+	case"blit_screen" ->blit_screen();
+	case"particle" ->particle();
+	case"position" ->position();
+	case"position_color" ->position_color();
+	case"position_color_lightmap" ->position_color_lightmap();
+	case"position_color_normal" ->position_color_normal();
+	case"position_color_tex" ->position_color_tex();
+	case"position_color_tex_lightmap" ->position_color_tex_lightmap();
+	case"position_tex" ->position_tex();
+	case"position_tex_color" ->position_tex_color();
+	case"position_tex_color_normal" ->position_tex_color_normal();
+	case"rendertype_armor_cutout_no_cull" ->rendertype_armor_cutout_no_cull();
+	case"rendertype_armor_entity_glint" ->rendertype_armor_entity_glint();
+	case"rendertype_armor_glint" ->rendertype_armor_glint();
+	case"rendertype_beacon_beam" ->rendertype_beacon_beam();
+	case"rendertype_crumbling" ->rendertype_crumbling();
+	case"rendertype_cutout" ->rendertype_cutout();
+	case"rendertype_cutout_mipped" ->rendertype_cutout_mipped();
+	case"rendertype_end_portal" ->rendertype_end_portal();
+	case"rendertype_energy_swirl" ->rendertype_energy_swirl();
+	case"rendertype_entity_alpha" ->rendertype_entity_alpha();
+	case"rendertype_entity_cutout" ->rendertype_entity_cutout();
+	case"rendertype_entity_cutout_no_cull" ->rendertype_entity_cutout_no_cull();
+	case"rendertype_entity_cutout_no_cull_z_offset" ->rendertype_entity_cutout_no_cull_z_offset();
+	case"rendertype_entity_decal" ->rendertype_entity_decal();
+	case"rendertype_entity_glint" ->rendertype_entity_glint();
+	case"rendertype_entity_glint_direct" ->rendertype_entity_glint_direct();
+	case"rendertype_entity_no_outline" ->rendertype_entity_no_outline();
+	case"rendertype_entity_shadow" ->rendertype_entity_shadow();
+	case"rendertype_entity_smooth_cutout" ->rendertype_entity_smooth_cutout();
+	case"rendertype_entity_solid" ->rendertype_entity_solid();
+	case"rendertype_entity_translucent" ->rendertype_entity_translucent();
+	case"rendertype_entity_translucent_cull" ->rendertype_entity_translucent_cull();
+	case"rendertype_eyes" ->rendertype_eyes();
+	case"rendertype_glint" ->rendertype_glint();
+	case"rendertype_glint_direct" ->rendertype_glint_direct();
+	case"rendertype_glint_translucent" ->rendertype_glint_translucent();
+	case"rendertype_item_entity_translucent_cull" ->rendertype_item_entity_translucent_cull();
+	case"rendertype_leash" ->rendertype_leash();
+	case"rendertype_lightning" ->rendertype_lightning();
+	case"rendertype_lines" ->rendertype_lines();
+	case"rendertype_outline" ->rendertype_outline();
+	case"rendertype_solid" ->rendertype_solid();
+	case"rendertype_text" ->rendertype_text();
+	case"rendertype_text_see_through" ->rendertype_text_see_through();
+	case"rendertype_translucent" ->rendertype_translucent();
+	case"rendertype_translucent_moving_block" ->rendertype_translucent_moving_block();
+	case"rendertype_translucent_no_crumbling" ->rendertype_translucent_no_crumbling();
+	case"rendertype_tripwire" ->rendertype_tripwire();
+	case"rendertype_water_mask" ->rendertype_water_mask();
 	default -> throw new RuntimeException("Fail!: Invalid Shader File!");
-};
-  ByteBuffer axl = ByteBuffer.allocateDirect(ax.length*4).order(ByteOrder.LITTLE_ENDIAN);
+};ByteBuffer axl = ByteBuffer.allocateDirect(ax.length*4).order(ByteOrder.LITTLE_ENDIAN);
   axl.asIntBuffer().put(ax);
   currentSize=axl.remaining();
 return memAddress0(axl);

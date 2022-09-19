@@ -2,6 +2,10 @@ plugins {
 	id 'fabric-loom' version '0.11-SNAPSHOT'
 	id 'maven-publish'
 }
+
+import org.gradle.work.Incremental
+import org.gradle.work.InputChanges
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -36,10 +40,6 @@ dependencies {
 	include(runtimeOnly("org.lwjgl:lwjgl-openal:$lwjglVersion:$linuxNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$winNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$linuxNatives"))
-
-	include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
 }
 
 repositories {
@@ -81,6 +81,9 @@ java {
 	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
 	// if it is present.
 	// If you remove this line, sources will not be generated.
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
 	withSourcesJar()
 }
 
@@ -106,6 +109,29 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+
+abstract class IncrementalReverseTask extends DefaultTask {
+	@Incremental
+	@InputDirectory
+	abstract DirectoryProperty getInputDir()
+
+	@OutputDirectory
+	abstract DirectoryProperty getOutputDir()
+
+	@TaskAction
+	void execute(InputChanges inputChanges) {
+		inputChanges.getFileChanges(inputDir).each { change ->
+			if (change.fileType == FileType.DIRECTORY) return
+
+			def targetFile = outputDir.file(change.normalizedPath).get().asFile
+			if (change.changeType == ChangeType.REMOVED) {
+				targetFile.delete()
+			} else {
+				targetFile.text = change.file.text.reverse()
+			}
+		}
+	}
+}
 /*var Stage = "frag" //Overrides File Extension
 //Indealy would add Mu;toTherad Invoke/Compile but will keep things simple for now
 final String glslc = "assets/vulkanmod/glslc.exe"
@@ -113,233 +139,170 @@ task:PrecompShaders(type: exec, File, String)
 		{
 			exec {glslc "-fshader-stage=vert blit_screen.frag -c -mfmt=c -finvert-y  -fshader-stage=Stage --target-env=vulkan1.3 -O -o -"}
 		}*/
-//var namesFrag = []
-//var namesvert = []
-//class tstA
-//{
-//	static int i =1
-//	static String aa="";
-//
-//}
-//
-//task genFraggerFiles(type: Copy) {
-//
-//		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-//		into 'temDir/Fragger'
-//		include '**/*.fsh'
-//		exclude '**/*.vsh'
-////	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-////				into 'temDir/Vertxs'
-////				include '**/*.vsh'
-////				exclude '**/*.fsh'
-//		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
-//		fileTree("temDir/Fragger").visit { FileVisitDetails details ->
-//			namesFrag << details.file.name.substring(0, details.file.name.indexOf("."))
-//		}
-//		System.out.println(namesFrag);
-//}
-//
-//task genVertxsFiles(type: Copy)
-//{
-//		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-//		into 'temDir/Vertxs'
-//		include '**/*.vsh'
-//		exclude '**/*.fsh'
-////	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-////				into 'temDir/Vertxs'
-////				include '**/*.vsh'
-////				exclude '**/*.fsh'
-//		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
-//		fileTree("temDir/Vertxs").visit { FileVisitDetails details2 ->
-//			namesvert << details2.file.name.substring(0, details2.file.name.indexOf("."))
-//		}
-//		System.out.println(namesvert);
-////	String Stage = "Fragment"
-////	for(String path : paths)
-////	{
-////		PrecompShaders(path, stage)
-////	}
-////
-////	filter(ReplaceTokens, tokens: [someToken: 'someReplacement'])
-//}
-//task a(type:Exec) {
-//	workingDir "temDir/Fragger"
-//	dependsOn tasks.genFraggerFiles
-//	//on windows:
-////	commandLine 'cmd', '/c', 'stop.bat'
-////	logging.captureStandardOutput LogLevel.INFO
-////	standardInput = new ByteArrayInputStream()
-////	file = new File().canExecute(true, true);
-////	standardOutput = new ByteArrayOutputStream()
-//
-//
-//	var file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\a.java")
-////	ArrayList<Integer> buf= []
-//	String cl="package net.vulkanmod.sdrs;\n" +
-//			"\n" +
-//			"import java.nio.IntBuffer;\n" +
-//			"import static org.lwjgl.system.MemoryUtil.memAddress;\n" +
-//			"\n" +
-//			"public class  a\n{\n public static int currentSize;\n"
-//	file.write(cl.getBytes())
-//
-////	for(int i=0;i<namesFrag.size();i++)
-////	{
-////		file.write((namesFrag[i] + ((i == namesFrag.size() - 1) ? ";\n" : ",\n")).getBytes())
-////	}
-//
-////	file.write(("public static int[] getFunc(a aa) \n { \n\t switch(aa) \n { \n\t").getBytes())
-//	final var String aaa= "}));\n}\n"
-//	for(int i=0;i<namesFrag.size();i++)
-//	{
-//		new ByteArrayOutputStream().withStream{ os ->
-//			exec {
-//				workingDir "temDir/Fragger"
-//				executable = 'glslc'
-//				commandLine(executable, '-fshader-stage=frag', namesFrag[i]+".fsh", '-c', '-mfmt=num', '-O', '-o', '-')
-//				standardOutput = os
-//				ignoreExitValue(true)
-//			}
-//
-//				tstA.aa = "private static IntBuffer " + namesFrag[i] + "() \n { \n return (IntBuffer.wrap(new int[]{"
-//				file.write(tstA.aa.getBytes())
-//				file.write(os.toByteArray())
-//				file.write((aaa).getBytes())
-//				file.flush()
-//
-//
-//
-//		}
-//	}
-//	file.flush()
-//	file.write(("public static IntBuffer getFunc(String aa) \n { \n\t IntBuffer ax = switch(aa) \n { \n\t").getBytes())
-//	for(int i=0;i<namesFrag.size();i++)
-//	{
-//		file.write(("case "+"\""+namesFrag[i]+"\" ->"+namesFrag[i]+"();\n\t").getBytes())
-//	}
-//	String cltr="default -> throw new RuntimeException(\"Fail!: Invalid Shader File!\");\n};\ncurrentSize=ax.remaining()*Integer.BYTES;if(ax.capacity()<=8)\n" +
-//			"{\n" +
-//			" throw new RuntimeException(\"Fail!: Invalid Shader File!: -->\"+aa);\n" +
-//			"}\nreturn (ax);\n}\n}"
-//	file.write(cltr.getBytes())
-//	file.close()
-//
-//
-//
-//
-//
-////	commandLine './stop.sh'
-////	System.out.println(executionResult)
-////	System.out.println(commandLine)
-////	System.out.println(errorOutput)
-////	//store the output instead of printing to the console:
-////	System.out.println(standardOutput.toString())
-//
-//
-//
-//
-//
-////	//extension method stopTomcat.output() can be used to obtain the output:
-///*		standardOutput = new ByteArrayOutputStream()
-//	ext.output = {
-//		return standardOutput.toByteArray();
-//	}*/
-//}
-//task b(type:Exec) {
-//	workingDir "temDir/Vertxs"
-//	dependsOn tasks.genVertxsFiles
-//	//on windows:
-////	commandLine 'cmd', '/c', 'stop.bat'
-////	logging.captureStandardOutput LogLevel.INFO
-////	standardInput = new ByteArrayInputStream()
-////	file = new File().canExecute(true, true);
-////	standardOutput = new ByteArrayOutputStream()
-//
-//	var file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\b.java")
-////	ArrayList<Integer> buf= []
-//	String cl="package net.vulkanmod.sdrs;\n" +
-//			"\n" +
-//			"import java.nio.IntBuffer;\n" +
-//			"import static org.lwjgl.system.MemoryUtil.memAddress;\n" +
-//			"\n" +
-//			"public class  b\n{\n public static int currentSize;\n"
-//	file.write(cl.getBytes())
-//
-////	for(int i=0;i<namesFrag.size();i++)
-////	{
-////		file.write((namesFrag[i] + ((i == namesFrag.size() - 1) ? ";\n" : ",\n")).getBytes())
-////	}
-//
-////	file.write(("public static int[] getFunc(a aa) \n { \n\t switch(aa) \n { \n\t").getBytes())
-//	final var String aaa= "}));\n}\n"
-//	for(int i=0;i<namesFrag.size();i++)
-//	{
-//		new ByteArrayOutputStream().withStream{ os ->
-//			exec {
-//				workingDir "temDir/Vertxs"
-//				executable = 'glslc'
-//				commandLine(executable, '-fshader-stage=vert', namesFrag[i]+".vsh", '-c', '-mfmt=num', '-O', '-o', '-')
-//				standardOutput = os
-//				ignoreExitValue(true)
-//			}
-//
-//			tstA.aa = "private static IntBuffer " + namesFrag[i] + "() \n { \n return (IntBuffer.wrap(new int[]{"
-//			file.write(tstA.aa.getBytes())
-//			file.write(os.toByteArray())
-//			file.write((aaa).getBytes())
-//			file.flush()
-//
-//
-//
-//		}
-//	}
-//	file.flush()
-//	file.write(("public static IntBuffer getFunc(String aa) \n { \n\t IntBuffer ax = switch(aa) \n { \n\t").getBytes())
-//	for(int i=0;i<namesFrag.size();i++)
-//	{
-//		file.write(("case "+"\""+namesFrag[i]+"\" ->"+namesFrag[i]+"();\n\t").getBytes())
-//	}
-//	String cltr="default -> throw new RuntimeException(\"Fail!: Invalid Shader File!\");\n};\ncurrentSize=ax.remaining()*Integer.BYTES;if(ax.capacity()<=8)\n" +
-//			"{\n" +
-//			" throw new RuntimeException(\"Fail!: Invalid Shader File!: -->\"+aa);\n" +
-//			"}\nreturn (ax);\n}\n}"
-//	file.write(cltr.getBytes())
-//	file.close()
-//
-//
-//
-//
-//
-////	commandLine './stop.sh'
-////	System.out.println(executionResult)
-////	System.out.println(commandLine)
-////	System.out.println(errorOutput)
-////	//store the output instead of printing to the console:
-////	System.out.println(standardOutput.toString())
-//
-//
-//
-//
-//
-////	//extension method stopTomcat.output() can be used to obtain the output:
-///*		standardOutput = new ByteArrayOutputStream()
-//	ext.output = {
-//		return standardOutput.toByteArray();
-//	}*/
-//}
-def tarArtifactTask(String ext) {
-	println ext
+ArrayList<String> namesFrag = []
+//ArrayList<String> namesvert = []
 
+
+final byte[] cltr=("default -> throw new RuntimeException(\"Fail!: Invalid Shader File!\");\n};" +
+		"ByteBuffer axl = ByteBuffer.allocateDirect(ax.length*4).order(ByteOrder.LITTLE_ENDIAN);\n" +
+		"  axl.asIntBuffer().put(ax);\n" +
+		"  currentSize=axl.remaining();\n" +
+		"return memAddress0(axl);\n}\n}").getBytes()
+final byte[] aaa= ("}));\n}\n").getBytes()
+
+task genFraggerFiles(type: Copy) {
+
+		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+		into 'temDir/Fragger'
+		include '**/*.fsh'
+		exclude '**/*.vsh'
+//	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+//				into 'temDir/Vertxs'
+//				include '**/*.vsh'
+//				exclude '**/*.fsh'
+		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
+		fileTree("temDir/Fragger").visit { FileVisitDetails details ->
+			namesFrag << details.file.name.substring(0, details.file.name.indexOf("."))
+		}
+		System.out.println(namesFrag);
+
+	//on windows:
+//	commandLine 'cmd', '/c', 'stop.bat'
+//	logging.captureStandardOutput LogLevel.INFO
+//	standardInput = new ByteArrayInputStream()
+//	file = new File().canExecute(true, true);
+//	standardOutput = new ByteArrayOutputStream()
+
+doLast {
+	/*workingDir "temDir/Fragger"
+	inputs.dir(workingDir)
+	outputs.file("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\a.java")*/
+
+	FileOutputStream file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\a.java")
+//	ArrayList<Integer> buf= []
+	String cl = "package net.vulkanmod.sdrs;\n" +
+			"\n" +
+			"import java.nio.ByteBuffer;\n" +
+			"import java.nio.ByteOrder;\n" +
+			"\n" +
+			"import static org.lwjgl.system.MemoryUtil.memAddress0;" +
+			"\n" +
+			"public class  a\n{\n public static int currentSize;\n"
+	file.write(cl.getBytes())
+
+	var axx = new ByteArrayOutputStream()
+	for (final String name in namesFrag) {
+		exec {
+			workingDir "temDir"
+			executable = 'glslc.exe'
+			args('-fshader-stage=frag', "Fragger/" + name + ".fsh", '-c', '-mfmt=num', '-O', '-o', '-')
+
+			standardOutput = axx
+
+			ignoreExitValue(true)
+		}
+
+		if (axx.size() == 0) //replace failing shaders that fail to compile with nulls
+		{
+			file.write(("private static int[] $name ()\n { \n return null;}").getBytes())
+			continue
+		}
+		file.write(("private static int[] $name ()\n { \n return ((new int[]{").getBytes())
+		file.write(axx.toByteArray())
+		file.write((aaa))
+		axx.reset()
+
+
+	}
+	file.flush()
+	cases(file, namesFrag)
+
+	file.write(cltr)
+	file.close()
 }
-String Tst()
+
+
+
+
+//	commandLine './stop.sh'
+//	System.out.println(executionResult)
+//	System.out.println(commandLine)
+//	System.out.println(errorOutput)
+//	//store the output instead of printing to the console:
+//	System.out.println(standardOutput.toString())
+
+
+
+
+
+//	//extension method stopTomcat.output() can be used to obtain the output:
+/*		standardOutput = new ByteArrayOutputStream()
+	ext.output = {
+		return standardOutput.toByteArray();
+	}*/
+}
+
+task genVertxsFiles(type: Copy)
 {
-	return a.outputs
-}
+		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+		into 'temDir/Vertxs'
+		include '**/*.vsh'
+		exclude '**/*.fsh'
+//	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+//				into 'temDir/Vertxs'
+//				include '**/*.vsh'
+//				exclude '**/*.fsh'
+		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
 
-task gitRev(type: Exec) {
-	commandLine 'git', 'log', '-1', '--format=%H'
-	standardOutput = new ByteArrayOutputStream()
-	ext.variable = {
-		standardOutput.toString('UTF-8')
+	doLast {
+		var file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\b.java")
+		String cl = "package net.vulkanmod.sdrs;\n" +
+				"\n" +
+				"import java.nio.ByteBuffer;\n" +
+				"import java.nio.ByteOrder;\n" +
+				"\n" +
+				"import static org.lwjgl.system.MemoryUtil.memAddress0;" +
+				"\n" +
+				"public class  b\n{\n public static int currentSize;\n"
+		file.write(cl.getBytes())
+		var axx = new ByteArrayOutputStream();
+		for (final String name in namesFrag) {
+			exec {
+				workingDir "temDir"
+				executable = 'glslc.exe'
+				commandLine(executable, '-fshader-stage=vert', "Vertxs/" + name + ".vsh", '-c', '-mfmt=num', '-O', '-o', '-')
+				standardOutput = axx
+				ignoreExitValue(true)
+			}
+			if (axx.size() == 0) //replace failing shaders that fail to compile with nulls
+			{
+				file.write(("private static int[] $name ()\n { \n return null;}").getBytes())
+				continue
+			}
+			file.write(("private static int[] $name()\n { \n return ((new int[]{").getBytes())
+			file.write(axx.toByteArray())
+			file.write((aaa))
+			axx.reset()
+
+
+		}
+		file.flush()
+		cases(file, namesFrag)
+
+		file.write(cltr)
+		file.close()
 	}
 }
+
+gradle.afterProject { project ->
+	println ((project.state.failure) ?
+		 "Evaluation of $project FAILED" : "Evaluation of $project succeeded")
+}
+
+private static final void cases(FileOutputStream file, ArrayList namesFrag) {
+	file.write(("public static long getFunc(String aa)\n { \n\t int[]ax = switch(aa) \n { \n\t").getBytes())
+	for (String name : namesFrag) {
+		file.write(("case\"$name\" ->$name();\n\t").getBytes())
+	}
+}
+

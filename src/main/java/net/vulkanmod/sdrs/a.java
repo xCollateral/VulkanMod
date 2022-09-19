@@ -3,15 +3,13 @@ package net.vulkanmod.sdrs;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.system.MemoryUtil.memAddress0;
-
 public class  a
 {
  public static int currentSize;
-private static int[] blit_screen()
+private static int[] blit_screen ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -60,11 +58,11 @@ private static int[] blit_screen()
 0x00050085,0x00000007,0x00000023,0x00000017,
 0x00000022,0x0003003e,0x00000019,0x00000023,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] particle()
+private static int[] particle ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000aa,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000aa,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -177,11 +175,11 @@ private static int[] particle()
 0x000700f5,0x00000007,0x000000a9,0x00000054,
 0x00000085,0x000000a2,0x00000091,0x0003003e,
 0x0000005d,0x000000a9,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] position()
+private static int[] position ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000091,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000091,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -268,11 +266,11 @@ private static int[] position()
 0x00000090,0x0000004c,0x0000006d,0x0000008a,
 0x00000079,0x0003003e,0x0000003e,0x00000090,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] position_color()
+private static int[] position_color ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -313,19 +311,15 @@ private static int[] position_color()
 0x0000000c,0x00000022,0x0003003e,0x00000019,
 0x00000023,0x0003003e,0x00000019,0x0000000c,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] position_color_lightmap()
+private static int[] position_color_lightmap ()
  { 
- return (new int[]{});
-}
-private static int[] position_color_normal()
+ return null;}private static int[] position_color_normal ()
  { 
- return (new int[]{});
-}
-private static int[] position_color_tex()
+ return null;}private static int[] position_color_tex ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -381,15 +375,13 @@ private static int[] position_color_tex()
 0x00050085,0x00000007,0x0000002e,0x00000017,
 0x0000002d,0x0003003e,0x00000024,0x0000002e,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] position_color_tex_lightmap()
+private static int[] position_color_tex_lightmap ()
  { 
- return (new int[]{});
-}
-private static int[] position_tex()
+ return null;}private static int[] position_tex ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x0000002b,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000002b,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -439,11 +431,11 @@ private static int[] position_tex()
 0x00000029,0x00000028,0x00050085,0x00000007,
 0x0000002a,0x00000013,0x00000029,0x0003003e,
 0x00000020,0x0000002a,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] position_tex_color()
+private static int[] position_tex_color ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -499,11 +491,11 @@ private static int[] position_tex_color()
 0x00050085,0x00000007,0x0000002e,0x00000017,
 0x0000002d,0x0003003e,0x00000024,0x0000002e,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] position_tex_color_normal()
+private static int[] position_tex_color_normal ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -616,11 +608,11 @@ private static int[] position_tex_color_normal()
 0x000700f5,0x00000007,0x000000ab,0x00000054,
 0x00000087,0x000000a4,0x00000093,0x0003003e,
 0x0000005d,0x000000ab,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_armor_cutout_no_cull()
+private static int[] rendertype_armor_cutout_no_cull ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -733,11 +725,11 @@ private static int[] rendertype_armor_cutout_no_cull()
 0x000700f5,0x00000007,0x000000ab,0x00000054,
 0x00000087,0x000000a4,0x00000093,0x0003003e,
 0x0000005d,0x000000ab,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_armor_entity_glint()
+private static int[] rendertype_armor_entity_glint ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -833,11 +825,11 @@ private static int[] rendertype_armor_entity_glint()
 0x00000024,0x0000005e,0x0000005b,0x0000005c,
 0x0000005d,0x0000003d,0x0003003e,0x00000053,
 0x0000005e,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_armor_glint()
+private static int[] rendertype_armor_glint ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -933,11 +925,11 @@ private static int[] rendertype_armor_glint()
 0x00000024,0x0000005e,0x0000005b,0x0000005c,
 0x0000005d,0x0000003d,0x0003003e,0x00000053,
 0x0000005e,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_beacon_beam()
+private static int[] rendertype_beacon_beam ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000b5,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000b5,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1074,11 +1066,11 @@ private static int[] rendertype_beacon_beam()
 0x00000055,0x00000091,0x000000ae,0x0000009d,
 0x0003003e,0x0000006f,0x000000b4,0x000100fd,
 0x00010038
-});
+}));
 }
-private static int[] rendertype_crumbling()
+private static int[] rendertype_crumbling ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1134,11 +1126,11 @@ private static int[] rendertype_crumbling()
 0x00050085,0x00000007,0x0000002e,0x00000017,
 0x0000002d,0x0003003e,0x00000024,0x0000002e,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_cutout()
+private static int[] rendertype_cutout ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000ab,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000ab,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1251,11 +1243,11 @@ private static int[] rendertype_cutout()
 0x000700f5,0x00000007,0x000000aa,0x00000054,
 0x00000086,0x000000a3,0x00000092,0x0003003e,
 0x0000005d,0x000000aa,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_cutout_mipped()
+private static int[] rendertype_cutout_mipped ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000ab,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000ab,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1368,11 +1360,11 @@ private static int[] rendertype_cutout_mipped()
 0x000700f5,0x00000007,0x000000aa,0x00000054,
 0x00000086,0x000000a3,0x00000092,0x0003003e,
 0x0000005d,0x000000aa,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_end_portal()
+private static int[] rendertype_end_portal ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x0000013d,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000013d,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1615,11 +1607,11 @@ private static int[] rendertype_end_portal()
 0x0000000e,0x000000ed,0x000000ea,0x000000eb,
 0x000000ec,0x0000001d,0x0003003e,0x000000e8,
 0x000000ed,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_energy_swirl()
+private static int[] rendertype_energy_swirl ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x0000007a,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000007a,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1712,11 +1704,11 @@ private static int[] rendertype_energy_swirl()
 0x00000071,0x0005008e,0x00000024,0x00000058,
 0x0000003d,0x00000079,0x0003003e,0x00000048,
 0x00000058,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_alpha()
+private static int[] rendertype_entity_alpha ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000025,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000025,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1761,11 +1753,11 @@ private static int[] rendertype_entity_alpha()
 0x00000020,0x000100fc,0x000200f8,0x00000021,
 0x0003003e,0x00000024,0x00000013,0x000100fd,
 0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_cutout()
+private static int[] rendertype_entity_cutout ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -1906,11 +1898,11 @@ private static int[] rendertype_entity_cutout()
 0x000700f5,0x00000007,0x000000c6,0x00000073,
 0x0000009c,0x000000b9,0x000000a8,0x0003003e,
 0x00000075,0x000000c6,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_cutout_no_cull()
+private static int[] rendertype_entity_cutout_no_cull ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2051,11 +2043,11 @@ private static int[] rendertype_entity_cutout_no_cull()
 0x000700f5,0x00000007,0x000000c6,0x00000073,
 0x0000009c,0x000000b9,0x000000a8,0x0003003e,
 0x00000075,0x000000c6,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_cutout_no_cull_z_offset()
+private static int[] rendertype_entity_cutout_no_cull_z_offset ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2196,11 +2188,11 @@ private static int[] rendertype_entity_cutout_no_cull_z_offset()
 0x000700f5,0x00000007,0x000000c6,0x00000073,
 0x0000009c,0x000000b9,0x000000a8,0x0003003e,
 0x00000075,0x000000c6,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_decal()
+private static int[] rendertype_entity_decal ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000c3,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000c3,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2337,11 +2329,11 @@ private static int[] rendertype_entity_decal()
 0x000000c2,0x0000006f,0x00000098,0x000000b5,
 0x000000a4,0x0003003e,0x00000071,0x000000c2,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_glint()
+private static int[] rendertype_entity_glint ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2437,11 +2429,11 @@ private static int[] rendertype_entity_glint()
 0x00000024,0x0000005e,0x0000005b,0x0000005c,
 0x0000005d,0x0000003d,0x0003003e,0x00000053,
 0x0000005e,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_glint_direct()
+private static int[] rendertype_entity_glint_direct ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2537,11 +2529,11 @@ private static int[] rendertype_entity_glint_direct()
 0x00000024,0x0000005e,0x0000005b,0x0000005c,
 0x0000005d,0x0000003d,0x0003003e,0x00000053,
 0x0000005e,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_no_outline()
+private static int[] rendertype_entity_no_outline ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000a3,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000a3,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2649,11 +2641,11 @@ private static int[] rendertype_entity_no_outline()
 0x00000007,0x000000a2,0x00000054,0x0000007f,
 0x0000009c,0x0000008b,0x0003003e,0x00000056,
 0x000000a2,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_shadow()
+private static int[] rendertype_entity_shadow ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000a9,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000a9,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2767,11 +2759,11 @@ private static int[] rendertype_entity_shadow()
 0x00000059,0x00000083,0x000000a0,0x0000008f,
 0x0003003e,0x0000005b,0x000000a6,0x000100fd,
 0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_smooth_cutout()
+private static int[] rendertype_entity_smooth_cutout ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -2912,11 +2904,11 @@ private static int[] rendertype_entity_smooth_cutout()
 0x000700f5,0x00000007,0x000000c6,0x00000073,
 0x0000009c,0x000000b9,0x000000a8,0x0003003e,
 0x00000075,0x000000c6,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_solid()
+private static int[] rendertype_entity_solid ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000be,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000be,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3051,11 +3043,11 @@ private static int[] rendertype_entity_solid()
 0x000000bd,0x0000006b,0x00000094,0x000000b1,
 0x000000a0,0x0003003e,0x0000006d,0x000000bd,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_translucent()
+private static int[] rendertype_entity_translucent ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000c7,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3196,11 +3188,11 @@ private static int[] rendertype_entity_translucent()
 0x000700f5,0x00000007,0x000000c6,0x00000073,
 0x0000009c,0x000000b9,0x000000a8,0x0003003e,
 0x00000075,0x000000c6,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_entity_translucent_cull()
+private static int[] rendertype_entity_translucent_cull ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3313,11 +3305,11 @@ private static int[] rendertype_entity_translucent_cull()
 0x000700f5,0x00000007,0x000000ab,0x00000054,
 0x00000087,0x000000a4,0x00000093,0x0003003e,
 0x0000005d,0x000000ab,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_eyes()
+private static int[] rendertype_eyes ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000071,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000071,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3404,11 +3396,11 @@ private static int[] rendertype_eyes()
 0x00000024,0x0000004f,0x00000040,0x00000070,
 0x0003003e,0x00000036,0x0000004f,0x000100fd,
 0x00010038
-});
+}));
 }
-private static int[] rendertype_glint()
+private static int[] rendertype_glint ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3504,11 +3496,11 @@ private static int[] rendertype_glint()
 0x00000024,0x0000005e,0x0000005b,0x0000005c,
 0x0000005d,0x0000003d,0x0003003e,0x00000053,
 0x0000005e,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_glint_direct()
+private static int[] rendertype_glint_direct ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3604,11 +3596,11 @@ private static int[] rendertype_glint_direct()
 0x00000024,0x0000005e,0x0000005b,0x0000005c,
 0x0000005d,0x0000003d,0x0003003e,0x00000053,
 0x0000005e,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_glint_translucent()
+private static int[] rendertype_glint_translucent ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000081,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3704,11 +3696,11 @@ private static int[] rendertype_glint_translucent()
 0x00000024,0x0000005e,0x0000005b,0x0000005c,
 0x0000005d,0x0000003d,0x0003003e,0x00000053,
 0x0000005e,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_item_entity_translucent_cull()
+private static int[] rendertype_item_entity_translucent_cull ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000ac,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3821,11 +3813,11 @@ private static int[] rendertype_item_entity_translucent_cull()
 0x000700f5,0x00000007,0x000000ab,0x00000054,
 0x00000087,0x000000a4,0x00000093,0x0003003e,
 0x0000005d,0x000000ab,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_leash()
+private static int[] rendertype_leash ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000091,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000091,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3911,11 +3903,11 @@ private static int[] rendertype_leash()
 0x000700f5,0x00000007,0x00000090,0x0000004b,
 0x0000006d,0x0000008a,0x00000079,0x0003003e,
 0x0000003e,0x00000090,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_lightning()
+private static int[] rendertype_lightning ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000063,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000063,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -3986,11 +3978,11 @@ private static int[] rendertype_lightning()
 0x0005008e,0x00000024,0x00000041,0x00000032,
 0x00000062,0x0003003e,0x00000026,0x00000041,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_lines()
+private static int[] rendertype_lines ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000097,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000097,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4082,11 +4074,11 @@ private static int[] rendertype_lines()
 0x000700f5,0x00000007,0x00000096,0x00000049,
 0x00000073,0x00000090,0x0000007f,0x0003003e,
 0x0000004b,0x00000096,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_outline()
+private static int[] rendertype_outline ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000037,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000037,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4157,11 +4149,11 @@ private static int[] rendertype_outline()
 0x00000033,0x00000034,0x00000035,0x00000032,
 0x0003003e,0x00000020,0x00000036,0x000100fd,
 0x00010038
-});
+}));
 }
-private static int[] rendertype_solid()
+private static int[] rendertype_solid ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000a3,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000a3,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4269,11 +4261,11 @@ private static int[] rendertype_solid()
 0x00000007,0x000000a2,0x00000054,0x0000007f,
 0x0000009c,0x0000008b,0x0003003e,0x00000056,
 0x000000a2,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_text()
+private static int[] rendertype_text ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000aa,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000aa,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4386,11 +4378,11 @@ private static int[] rendertype_text()
 0x000700f5,0x00000007,0x000000a9,0x00000054,
 0x00000085,0x000000a2,0x00000091,0x0003003e,
 0x0000005d,0x000000a9,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_text_see_through()
+private static int[] rendertype_text_see_through ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x0000002f,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4446,11 +4438,11 @@ private static int[] rendertype_text_see_through()
 0x00050085,0x00000007,0x0000002e,0x00000017,
 0x0000002d,0x0003003e,0x00000024,0x0000002e,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_translucent()
+private static int[] rendertype_translucent ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000a3,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000a3,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4558,11 +4550,11 @@ private static int[] rendertype_translucent()
 0x00000007,0x000000a2,0x00000054,0x0000007f,
 0x0000009c,0x0000008b,0x0003003e,0x00000056,
 0x000000a2,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_translucent_moving_block()
+private static int[] rendertype_translucent_moving_block ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4611,11 +4603,11 @@ private static int[] rendertype_translucent_moving_block()
 0x00050085,0x00000007,0x00000023,0x00000017,
 0x00000022,0x0003003e,0x00000019,0x00000023,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_translucent_no_crumbling()
+private static int[] rendertype_translucent_no_crumbling ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000024,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4664,11 +4656,11 @@ private static int[] rendertype_translucent_no_crumbling()
 0x00050085,0x00000007,0x00000023,0x00000017,
 0x00000022,0x0003003e,0x00000019,0x00000023,
 0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_tripwire()
+private static int[] rendertype_tripwire ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x000000ab,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x000000ab,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4781,11 +4773,11 @@ private static int[] rendertype_tripwire()
 0x000700f5,0x00000007,0x000000aa,0x00000054,
 0x00000086,0x000000a3,0x00000092,0x0003003e,
 0x0000005d,0x000000aa,0x000100fd,0x00010038
-});
+}));
 }
-private static int[] rendertype_water_mask()
+private static int[] rendertype_water_mask ()
  { 
- return (new int[]{0x07230203,0x00010000,0x000d000a,0x00000012,
+ return ((new int[]{0x07230203,0x00010000,0x000d000a,0x00000012,
 0x00000000,0x00020011,0x00000001,0x0006000b,
 0x00000001,0x4c534c47,0x6474732e,0x3035342e,
 0x00000000,0x0003000e,0x00000000,0x00000001,
@@ -4813,71 +4805,66 @@ private static int[] rendertype_water_mask()
 0x0004003d,0x00000007,0x00000011,0x00000010,
 0x0003003e,0x00000009,0x00000011,0x000100fd,
 0x00010038
-});
+}));
 }
 public static long getFunc(String aa)
  { 
-	 int[] ax = switch(aa)
+	 int[]ax = switch(aa) 
  { 
-	case "blit_screen" ->blit_screen();
-	case "particle" ->particle();
-	case "position" ->position();
-	case "position_color" ->position_color();
-	case "position_color_lightmap" ->position_color_lightmap();
-	case "position_color_normal" ->position_color_normal();
-	case "position_color_tex" ->position_color_tex();
-	case "position_color_tex_lightmap" ->position_color_tex_lightmap();
-	case "position_tex" ->position_tex();
-	case "position_tex_color" ->position_tex_color();
-	case "position_tex_color_normal" ->position_tex_color_normal();
-	case "rendertype_armor_cutout_no_cull" ->rendertype_armor_cutout_no_cull();
-	case "rendertype_armor_entity_glint" ->rendertype_armor_entity_glint();
-	case "rendertype_armor_glint" ->rendertype_armor_glint();
-	case "rendertype_beacon_beam" ->rendertype_beacon_beam();
-	case "rendertype_crumbling" ->rendertype_crumbling();
-	case "rendertype_cutout" ->rendertype_cutout();
-	case "rendertype_cutout_mipped" ->rendertype_cutout_mipped();
-	case "rendertype_end_portal" ->rendertype_end_portal();
-	case "rendertype_energy_swirl" ->rendertype_energy_swirl();
-	case "rendertype_entity_alpha" ->rendertype_entity_alpha();
-	case "rendertype_entity_cutout" ->rendertype_entity_cutout();
-	case "rendertype_entity_cutout_no_cull" ->rendertype_entity_cutout_no_cull();
-	case "rendertype_entity_cutout_no_cull_z_offset" ->rendertype_entity_cutout_no_cull_z_offset();
-	case "rendertype_entity_decal" ->rendertype_entity_decal();
-	case "rendertype_entity_glint" ->rendertype_entity_glint();
-	case "rendertype_entity_glint_direct" ->rendertype_entity_glint_direct();
-	case "rendertype_entity_no_outline" ->rendertype_entity_no_outline();
-	case "rendertype_entity_shadow" ->rendertype_entity_shadow();
-	case "rendertype_entity_smooth_cutout" ->rendertype_entity_smooth_cutout();
-	case "rendertype_entity_solid" ->rendertype_entity_solid();
-	case "rendertype_entity_translucent" ->rendertype_entity_translucent();
-	case "rendertype_entity_translucent_cull" ->rendertype_entity_translucent_cull();
-	case "rendertype_eyes" ->rendertype_eyes();
-	case "rendertype_glint" ->rendertype_glint();
-	case "rendertype_glint_direct" ->rendertype_glint_direct();
-	case "rendertype_glint_translucent" ->rendertype_glint_translucent();
-	case "rendertype_item_entity_translucent_cull" ->rendertype_item_entity_translucent_cull();
-	case "rendertype_leash" ->rendertype_leash();
-	case "rendertype_lightning" ->rendertype_lightning();
-	case "rendertype_lines" ->rendertype_lines();
-	case "rendertype_outline" ->rendertype_outline();
-	case "rendertype_solid" ->rendertype_solid();
-	case "rendertype_text" ->rendertype_text();
-	case "rendertype_text_see_through" ->rendertype_text_see_through();
-	case "rendertype_translucent" ->rendertype_translucent();
-	case "rendertype_translucent_moving_block" ->rendertype_translucent_moving_block();
-	case "rendertype_translucent_no_crumbling" ->rendertype_translucent_no_crumbling();
-	case "rendertype_tripwire" ->rendertype_tripwire();
-	case "rendertype_water_mask" ->rendertype_water_mask();
+	case"blit_screen" ->blit_screen();
+	case"particle" ->particle();
+	case"position" ->position();
+	case"position_color" ->position_color();
+	case"position_color_lightmap" ->position_color_lightmap();
+	case"position_color_normal" ->position_color_normal();
+	case"position_color_tex" ->position_color_tex();
+	case"position_color_tex_lightmap" ->position_color_tex_lightmap();
+	case"position_tex" ->position_tex();
+	case"position_tex_color" ->position_tex_color();
+	case"position_tex_color_normal" ->position_tex_color_normal();
+	case"rendertype_armor_cutout_no_cull" ->rendertype_armor_cutout_no_cull();
+	case"rendertype_armor_entity_glint" ->rendertype_armor_entity_glint();
+	case"rendertype_armor_glint" ->rendertype_armor_glint();
+	case"rendertype_beacon_beam" ->rendertype_beacon_beam();
+	case"rendertype_crumbling" ->rendertype_crumbling();
+	case"rendertype_cutout" ->rendertype_cutout();
+	case"rendertype_cutout_mipped" ->rendertype_cutout_mipped();
+	case"rendertype_end_portal" ->rendertype_end_portal();
+	case"rendertype_energy_swirl" ->rendertype_energy_swirl();
+	case"rendertype_entity_alpha" ->rendertype_entity_alpha();
+	case"rendertype_entity_cutout" ->rendertype_entity_cutout();
+	case"rendertype_entity_cutout_no_cull" ->rendertype_entity_cutout_no_cull();
+	case"rendertype_entity_cutout_no_cull_z_offset" ->rendertype_entity_cutout_no_cull_z_offset();
+	case"rendertype_entity_decal" ->rendertype_entity_decal();
+	case"rendertype_entity_glint" ->rendertype_entity_glint();
+	case"rendertype_entity_glint_direct" ->rendertype_entity_glint_direct();
+	case"rendertype_entity_no_outline" ->rendertype_entity_no_outline();
+	case"rendertype_entity_shadow" ->rendertype_entity_shadow();
+	case"rendertype_entity_smooth_cutout" ->rendertype_entity_smooth_cutout();
+	case"rendertype_entity_solid" ->rendertype_entity_solid();
+	case"rendertype_entity_translucent" ->rendertype_entity_translucent();
+	case"rendertype_entity_translucent_cull" ->rendertype_entity_translucent_cull();
+	case"rendertype_eyes" ->rendertype_eyes();
+	case"rendertype_glint" ->rendertype_glint();
+	case"rendertype_glint_direct" ->rendertype_glint_direct();
+	case"rendertype_glint_translucent" ->rendertype_glint_translucent();
+	case"rendertype_item_entity_translucent_cull" ->rendertype_item_entity_translucent_cull();
+	case"rendertype_leash" ->rendertype_leash();
+	case"rendertype_lightning" ->rendertype_lightning();
+	case"rendertype_lines" ->rendertype_lines();
+	case"rendertype_outline" ->rendertype_outline();
+	case"rendertype_solid" ->rendertype_solid();
+	case"rendertype_text" ->rendertype_text();
+	case"rendertype_text_see_through" ->rendertype_text_see_through();
+	case"rendertype_translucent" ->rendertype_translucent();
+	case"rendertype_translucent_moving_block" ->rendertype_translucent_moving_block();
+	case"rendertype_translucent_no_crumbling" ->rendertype_translucent_no_crumbling();
+	case"rendertype_tripwire" ->rendertype_tripwire();
+	case"rendertype_water_mask" ->rendertype_water_mask();
 	default -> throw new RuntimeException("Fail!: Invalid Shader File!");
-};
-     ByteBuffer axl = ByteBuffer.allocateDirect(ax.length*4).order(ByteOrder.LITTLE_ENDIAN);
-     axl.asIntBuffer().put(ax);
-//currentSize=ax.remaining()*Integer.BYTES;if(ax.capacity()<=8)
-//{
-// throw new RuntimeException("Fail!: Invalid Shader File!: -->"+aa);
-//}
+};ByteBuffer axl = ByteBuffer.allocateDirect(ax.length*4).order(ByteOrder.LITTLE_ENDIAN);
+  axl.asIntBuffer().put(ax);
   currentSize=axl.remaining();
-  return memAddress0(axl);
+return memAddress0(axl);
 }
 }
