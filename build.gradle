@@ -3,12 +3,6 @@ plugins {
 	id 'maven-publish'
 }
 
-import org.gradle.work.Incremental
-import org.gradle.work.InputChanges
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
 
@@ -17,7 +11,7 @@ version = project.mod_version
 group = project.maven_group
 
 project.ext.lwjglVersion = "3.3.1"
-project.ext.jomlVersion = "1.10.4"
+project.ext.jomlVersion = "1.10.5"
 project.ext.winNatives = "natives-windows"
 project.ext.linuxNatives = "natives-linux"
 
@@ -110,37 +104,8 @@ publishing {
 	}
 }
 
-abstract class IncrementalReverseTask extends DefaultTask {
-	@Incremental
-	@InputDirectory
-	abstract DirectoryProperty getInputDir()
-
-	@OutputDirectory
-	abstract DirectoryProperty getOutputDir()
-
-	@TaskAction
-	void execute(InputChanges inputChanges) {
-		inputChanges.getFileChanges(inputDir).each { change ->
-			if (change.fileType == FileType.DIRECTORY) return
-
-			def targetFile = outputDir.file(change.normalizedPath).get().asFile
-			if (change.changeType == ChangeType.REMOVED) {
-				targetFile.delete()
-			} else {
-				targetFile.text = change.file.text.reverse()
-			}
-		}
-	}
-}
-/*var Stage = "frag" //Overrides File Extension
-//Indealy would add Mu;toTherad Invoke/Compile but will keep things simple for now
-final String glslc = "assets/vulkanmod/glslc.exe"
-task:PrecompShaders(type: exec, File, String)
-		{
-			exec {glslc "-fshader-stage=vert blit_screen.frag -c -mfmt=c -finvert-y  -fshader-stage=Stage --target-env=vulkan1.3 -O -o -"}
-		}*/
 ArrayList<String> namesFrag = []
-//ArrayList<String> namesvert = []
+ArrayList<String> namesVert = []
 
 
 final byte[] cltr=("default -> throw new RuntimeException(\"Fail!: Invalid Shader File!\");\n};" +
@@ -150,52 +115,52 @@ final byte[] cltr=("default -> throw new RuntimeException(\"Fail!: Invalid Shade
 		"return memAddress0(axl);\n}\n}").getBytes()
 final byte[] aaa= ("}));\n}\n").getBytes()
 
-task genFraggerFiles(type: Copy) {
+final String DefBoilerPlate = "package net.vulkanmod.sdrs;\n" +
+		"\n" +
+		"import java.nio.ByteBuffer;\n" +
+		"import java.nio.ByteOrder;\n" +
+		"\n" +
+		"import static org.lwjgl.system.MemoryUtil.memAddress0;" +
+		"\n";
 
-		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-		into 'temDir/Fragger'
-		include '**/*.fsh'
-		exclude '**/*.vsh'
-//	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+
+task genFraggerFiles(type: Copy) {
+	String Def ='Fragger';
+	from "$projectDir/src/main/resources/assets/vulkanmod/shaders/core"
+	into 'temDir/'+Def
+	include '**/*.fsh'
+	exclude '**/*.vsh'
+//	from "$projectDir/src/main/resources/assets/vulkanmod/shaders/core"
 //				into 'temDir/Vertxs'
 //				include '**/*.vsh'
 //				exclude '**/*.fsh'
-		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
-		fileTree("temDir/Fragger").visit { FileVisitDetails details ->
+	System.out.println("$projectDir/src/main/resources/assets/vulkanmod/shaders/core")
+	doFirst {
+		fileTree("temDir/" + Def).visit { FileVisitDetails details ->
 			namesFrag << details.file.name.substring(0, details.file.name.indexOf("."))
 		}
-		System.out.println(namesFrag);
+	}
+	final def ShaderStage = 'frag'
 
-	//on windows:
-//	commandLine 'cmd', '/c', 'stop.bat'
-//	logging.captureStandardOutput LogLevel.INFO
-//	standardInput = new ByteArrayInputStream()
-//	file = new File().canExecute(true, true);
-//	standardOutput = new ByteArrayOutputStream()
+	doLast {
 
-doLast {
-	/*workingDir "temDir/Fragger"
-	inputs.dir(workingDir)
-	outputs.file("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\a.java")*/
+		preCompShaders(DefBoilerPlate, namesFrag, ShaderStage, Def, aaa, cltr, "a", ".fsh")
+	}
+}
 
-	FileOutputStream file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\a.java")
-//	ArrayList<Integer> buf= []
-	String cl = "package net.vulkanmod.sdrs;\n" +
-			"\n" +
-			"import java.nio.ByteBuffer;\n" +
-			"import java.nio.ByteOrder;\n" +
-			"\n" +
-			"import static org.lwjgl.system.MemoryUtil.memAddress0;" +
-			"\n" +
-			"public class  a\n{\n public static int currentSize;\n"
+private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, ShaderStage, String Def, byte[] aaa, byte[] cltr, String DefName, DefExt) {
+	FileOutputStream file = new FileOutputStream("$projectDir/src/main/java/net/vulkanmod/sdrs/$DefName"+".java")
+	String cl = DefBoilerPlate +
+			"public class  $DefName\n{\n public static int currentSize;\n"
 	file.write(cl.getBytes())
-
 	var axx = new ByteArrayOutputStream()
-	for (final String name in namesFrag) {
+	for (final String name in (namesFrag)) {
 		exec {
+
 			workingDir "temDir"
 			executable = 'glslc.exe'
-			args('-fshader-stage=frag', "Fragger/" + name + ".fsh", '-c', '-mfmt=num', '-O', '-o', '-')
+
+			args('-fshader-stage=' + ShaderStage, "$Def/" + name + DefExt, '-c', '--target-env=vulkan1.1', '-mfmt=num', '-O', '-o', '-')
 
 			standardOutput = axx
 
@@ -204,99 +169,51 @@ doLast {
 
 		if (axx.size() == 0) //replace failing shaders that fail to compile with nulls
 		{
-			file.write(("private static int[] $name ()\n { \n return null;}").getBytes())
+			file.write(("private static int[] $name()\n { \n return null;}").getBytes())
 			continue
 		}
-		file.write(("private static int[] $name ()\n { \n return ((new int[]{").getBytes())
+		file.write(("private static int[] $name()\n { \n return ((new int[]{").getBytes())
 		file.write(axx.toByteArray())
-		file.write((aaa))
+		file.write(aaa)
 		axx.reset()
 
 
 	}
 	file.flush()
 	cases(file, namesFrag)
-
 	file.write(cltr)
 	file.close()
 }
 
 
-
-
-//	commandLine './stop.sh'
-//	System.out.println(executionResult)
-//	System.out.println(commandLine)
-//	System.out.println(errorOutput)
-//	//store the output instead of printing to the console:
-//	System.out.println(standardOutput.toString())
-
-
-
-
-
-//	//extension method stopTomcat.output() can be used to obtain the output:
-/*		standardOutput = new ByteArrayOutputStream()
-	ext.output = {
-		return standardOutput.toByteArray();
-	}*/
-}
-
 task genVertxsFiles(type: Copy)
 {
-		from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
-		into 'temDir/Vertxs'
-		include '**/*.vsh'
-		exclude '**/*.fsh'
-//	from "$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core"
+	String Def ='Vertxs';
+	from "$projectDir/src/main/resources/assets/vulkanmod/shaders/core"
+	into 'temDir/'+Def
+	include '**/*.vsh'
+	exclude '**/*.fsh'
+//	from "$projectDir/src/main/resources/assets/vulkanmod/shaders/core"
 //				into 'temDir/Vertxs'
 //				include '**/*.vsh'
 //				exclude '**/*.fsh'
-		System.out.println("$projectDir\\src\\main\\resources\\assets\\vulkanmod\\shaders\\core")
+	System.out.println("$projectDir/src/main/resources/assets/vulkanmod/shaders/core")
+	doFirst {
+		fileTree("temDir/$Def").visit { FileVisitDetails details1 ->
+			namesVert << details1.file.name.substring(0, details1.file.name.indexOf("."))
+		}
+	}
+	final def ShaderStage = 'vert'
 
 	doLast {
-		var file = new FileOutputStream("$projectDir\\src\\main\\java\\net\\vulkanmod\\sdrs\\b.java")
-		String cl = "package net.vulkanmod.sdrs;\n" +
-				"\n" +
-				"import java.nio.ByteBuffer;\n" +
-				"import java.nio.ByteOrder;\n" +
-				"\n" +
-				"import static org.lwjgl.system.MemoryUtil.memAddress0;" +
-				"\n" +
-				"public class  b\n{\n public static int currentSize;\n"
-		file.write(cl.getBytes())
-		var axx = new ByteArrayOutputStream();
-		for (final String name in namesFrag) {
-			exec {
-				workingDir "temDir"
-				executable = 'glslc.exe'
-				commandLine(executable, '-fshader-stage=vert', "Vertxs/" + name + ".vsh", '-c', '-mfmt=num', '-O', '-o', '-')
-				standardOutput = axx
-				ignoreExitValue(true)
-			}
-			if (axx.size() == 0) //replace failing shaders that fail to compile with nulls
-			{
-				file.write(("private static int[] $name ()\n { \n return null;}").getBytes())
-				continue
-			}
-			file.write(("private static int[] $name()\n { \n return ((new int[]{").getBytes())
-			file.write(axx.toByteArray())
-			file.write((aaa))
-			axx.reset()
+		preCompShaders(DefBoilerPlate, namesVert, ShaderStage, Def, aaa, cltr, "b", ".vsh")
 
-
-		}
-		file.flush()
-		cases(file, namesFrag)
-
-		file.write(cltr)
-		file.close()
 	}
 }
 
 gradle.afterProject { project ->
 	println ((project.state.failure) ?
-		 "Evaluation of $project FAILED" : "Evaluation of $project succeeded")
+			"Evaluation of $project FAILED" : "Evaluation of $project succeeded")
 }
 
 private static final void cases(FileOutputStream file, ArrayList namesFrag) {
