@@ -10,8 +10,8 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.vulkanmod.sdrs.a;
-import net.vulkanmod.sdrs.b;
+import net.vulkanmod.sdrs.frag;
+import net.vulkanmod.sdrs.vert;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -69,8 +69,8 @@ public class Pipeline {
     private long fragShaderModule = 0;
 
     public Pipeline(VertexFormat vertexFormat, String path, String name) {
-        this.vertShaderSPIRV = b.getFunc(name);
-        this.fragShaderSPIRV = a.getFunc(name);
+        this.vertShaderSPIRV = vert.getFunc(name);
+        this.fragShaderSPIRV = frag.getFunc(name);
 
         createDescriptorSetLayout(path);
         createPipelineLayout();
@@ -96,8 +96,8 @@ public class Pipeline {
 //                SPIRV vertShaderSPIRV = compileShaderFile(path + ".vsh", ShaderKind.VERTEX_SHADER);
 //                SPIRV fragShaderSPIRV = compileShaderFile(path + ".fsh", ShaderKind.FRAGMENT_SHADER);
 
-                vertShaderModule = createShaderModule(vertShaderSPIRV, b.currentSize);
-                fragShaderModule = createShaderModule(fragShaderSPIRV, a.currentSize);
+                vertShaderModule = createShaderModule(vertShaderSPIRV, vert.currentSize);
+                fragShaderModule = createShaderModule(fragShaderSPIRV, frag.currentSize);
             }
 
 

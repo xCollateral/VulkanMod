@@ -109,10 +109,10 @@ ArrayList<String> namesVert = []
 
 
 final byte[] cltr=("default -> throw new RuntimeException(\"Fail!: Invalid Shader File!\");\n};" +
-		"ByteBuffer axl = ByteBuffer.allocateDirect(ax.length*4).order(ByteOrder.LITTLE_ENDIAN);\n" +
+		"ByteBuffer axl = MemoryUtil.memAlignedAlloc(Integer.SIZE, ax.length*4); //Align to native uint32_t which is the alignment for the vkShaderModuleCreateInfo pCode in the C/C++ API\n" +
 		"  axl.asIntBuffer().put(ax);\n" +
 		"  currentSize=axl.remaining();\n" +
-		"return memAddress0(axl);\n}\n}").getBytes()
+		"return MemoryUtil.memAddress0(axl);\n}\n}").getBytes()
 final byte[] aaa= ("}));\n}\n").getBytes()
 
 final String DefBoilerPlate = "package net.vulkanmod.sdrs;\n" +
@@ -120,12 +120,12 @@ final String DefBoilerPlate = "package net.vulkanmod.sdrs;\n" +
 		"import java.nio.ByteBuffer;\n" +
 		"import java.nio.ByteOrder;\n" +
 		"\n" +
-		"import static org.lwjgl.system.MemoryUtil.memAddress0;" +
+		"import org.lwjgl.system.MemoryUtil;" +
 		"\n";
 
 
-task genFraggerFiles(type: Copy) {
-	String Def ='Fragger';
+task genFragFiles(type: Copy) {
+	String Def ='Frag';
 	from "$projectDir/src/main/resources/assets/vulkanmod/shaders/core"
 	into 'temDir/'+Def
 	include '**/*.fsh'
@@ -144,7 +144,7 @@ task genFraggerFiles(type: Copy) {
 
 	doLast {
 
-		preCompShaders(DefBoilerPlate, namesFrag, ShaderStage, Def, aaa, cltr, "a", ".fsh")
+		preCompShaders(DefBoilerPlate, namesFrag, ShaderStage, Def, aaa, cltr, "frag", ".fsh")
 	}
 }
 
@@ -158,7 +158,7 @@ private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, 
 		exec {
 
 			workingDir "temDir"
-			executable = 'glslc.exe'
+			executable = 'glslc'
 
 			args('-fshader-stage=' + ShaderStage, "$Def/" + name + DefExt, '-c', '--target-env=vulkan1.1', '-mfmt=num', '-O', '-o', '-')
 
@@ -186,9 +186,9 @@ private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, 
 }
 
 
-task genVertxsFiles(type: Copy)
+task genVertFiles(type: Copy)
 {
-	String Def ='Vertxs';
+	String Def ='Vert';
 	from "$projectDir/src/main/resources/assets/vulkanmod/shaders/core"
 	into 'temDir/'+Def
 	include '**/*.vsh'
@@ -206,7 +206,7 @@ task genVertxsFiles(type: Copy)
 	final def ShaderStage = 'vert'
 
 	doLast {
-		preCompShaders(DefBoilerPlate, namesVert, ShaderStage, Def, aaa, cltr, "b", ".vsh")
+		preCompShaders(DefBoilerPlate, namesVert, ShaderStage, Def, aaa, cltr, "vert", ".vsh")
 
 	}
 }

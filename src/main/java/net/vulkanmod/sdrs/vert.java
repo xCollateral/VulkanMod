@@ -3,8 +3,8 @@ package net.vulkanmod.sdrs;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static org.lwjgl.system.MemoryUtil.memAddress0;
-public class  b
+import org.lwjgl.system.MemoryUtil;
+public class  vert
 {
  public static int currentSize;
 private static int[] blit_screen()
@@ -5572,9 +5572,9 @@ public static long getFunc(String aa)
 	case"rendertype_tripwire" ->rendertype_tripwire();
 	case"rendertype_water_mask" ->rendertype_water_mask();
 	default -> throw new RuntimeException("Fail!: Invalid Shader File!");
-};ByteBuffer axl = ByteBuffer.allocateDirect(ax.length*4).order(ByteOrder.LITTLE_ENDIAN);
+};ByteBuffer axl = MemoryUtil.memAlignedAlloc(Integer.SIZE, ax.length*4); //Align to native uint32_t which is the alignment for the vkShaderModuleCreateInfo pCode in the C/C++ API
   axl.asIntBuffer().put(ax);
   currentSize=axl.remaining();
-return memAddress0(axl);
+return MemoryUtil.memAddress0(axl);
 }
 }
