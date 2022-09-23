@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
@@ -54,6 +55,8 @@ public class MinecraftClientMixin {
 
     @Shadow @Final private static Logger LOGGER;
 
+    @Shadow public boolean skipGameRender;
+
     @Inject(method = "<init>", at = @At("RETURN"))
     public void test(RunArgs args, CallbackInfo ci) {
 
@@ -70,6 +73,11 @@ public class MinecraftClientMixin {
         Drawer drawer = Drawer.getInstance();
         drawer.endRenderPass();
         Drawer.submitDraw();
+    }
+
+    @Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)
+    private void limitWhenMinimized(CallbackInfoReturnable<Integer> cir) {
+        if(this.skipGameRender) cir.setReturnValue(10);
     }
 
     /**

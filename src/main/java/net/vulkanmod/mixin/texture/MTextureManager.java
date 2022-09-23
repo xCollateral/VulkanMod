@@ -5,6 +5,7 @@ import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.texture.TextureTickListener;
 import net.minecraft.util.Identifier;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.TransferQueue;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,6 +26,7 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
+        if(Drawer.skipRendering) return;
         TransferQueue.startRecording();
         for (TextureTickListener textureTickListener : this.tickListeners) {
             textureTickListener.tick();

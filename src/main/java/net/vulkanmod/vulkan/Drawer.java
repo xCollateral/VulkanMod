@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.util.math.Matrix4f;
 import net.vulkanmod.interfaces.ShaderMixed;
@@ -21,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -60,6 +62,7 @@ public class Drawer {
     private static Matrix4f modelViewMatrix = new Matrix4f();
 
     public static boolean shouldRecreate = false;
+    public static boolean skipRendering = false;
 
 
     static {
@@ -123,13 +126,29 @@ public class Drawer {
 
     public static void submitDraw()
     {
-        //if(imageAvailableSemaphores == null) createSyncObjects();
+        if(skipRendering) return;
 
         drawFrame();
     }
 
     public void initiateRenderPass() {
 
+        try (MemoryStack stack = stackPush()) {
+
+            IntBuffer width = stack.ints(0);
+            IntBuffer height = stack.ints(0);
+
+            glfwGetFramebufferSize(window, width, height);
+            if (width.get(0) == 0 && height.get(0) == 0) {
+                skipRendering = true;
+                MinecraftClient.getInstance().skipGameRender = true;
+            } else {
+                skipRendering = false;
+                MinecraftClient.getInstance().skipGameRender = false;
+            }
+        }
+
+        if(skipRendering) return;
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
 
@@ -184,6 +203,8 @@ public class Drawer {
     }
 
     public void endRenderPass() {
+        if(skipRendering) return;
+
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         vkCmdEndRenderPass(commandBuffer);
@@ -471,6 +492,8 @@ public class Drawer {
     }
 
     public static void clearAttachments(int v) {
+        if(skipRendering) return;
+
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         try(MemoryStack stack = stackPush()) {
