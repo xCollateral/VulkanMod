@@ -429,10 +429,16 @@ public class Drawer {
 
         uploadAndBindUBOs(boundPipeline);
 
-        int indexCount;
-        if(drawMode == 7) indexCount = vertexCount * 3 / 2;
-        else if(drawMode == 6 || drawMode == 5) indexCount = (vertexCount - 2) * 3;
-        else throw new RuntimeException("unknown drawMode: " + drawMode);
+        if (boundPipeline.getPushConstant().getSize()>0)
+        {
+            pushConstants(boundPipeline);
+        }
+
+        int indexCount = switch (drawMode) {
+            case 7 -> vertexCount * 3 / 2;
+            case 6, 5 -> (vertexCount - 2) * 3;
+            default -> throw new RuntimeException("unknown drawMode: " + drawMode);
+        };
 
         drawIndexed(vertexBuffer, indexBuffer, indexCount);
     }
