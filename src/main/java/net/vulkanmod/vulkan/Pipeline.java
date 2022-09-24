@@ -724,7 +724,7 @@ public class Pipeline {
                         samplerDescriptorWrite.dstBinding(i);
                         samplerDescriptorWrite.dstArrayElement(0);
                         samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-//                        samplerDescriptorWrite.descriptorCount(1);
+						samplerDescriptorWrite.descriptorCount(1);
                         samplerDescriptorWrite.pImageInfo(imageInfos[1]);
 
                         ++i;
