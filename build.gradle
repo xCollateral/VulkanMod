@@ -160,7 +160,7 @@ private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, 
 			workingDir "temDir"
 			executable = 'glslc'
 
-			args('-fshader-stage=' + ShaderStage, "$Def/" + name + DefExt, '-c', '--target-env=vulkan1.1', '-mfmt=num', '-O', '-o', '-')
+			args('-fshader-stage=' + ShaderStage, "$Def/" + name + DefExt, '-c', '-fauto-map-locations', '--target-env=vulkan1.1', '-mfmt=num', '-O', '-o', '-')
 
 			standardOutput = axx
 
