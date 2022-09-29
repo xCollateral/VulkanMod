@@ -16,7 +16,7 @@
     "render.VertexBufferM",
     "render.VertexConsumerM",
     "screen.EnchantmentScreenM",
-    "screen.VideoOptionsScreenM",
+    "screen.OptionsScreenM",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",

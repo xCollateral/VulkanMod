@@ -7,8 +7,10 @@ import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.ElementListWidget;
+import net.minecraft.client.option.CyclingOption;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -17,8 +19,8 @@ import java.util.Optional;
 
 public class OptionsList extends ElementListWidget<OptionsList.Entry> {
 
-    public OptionsList(MinecraftClient minecraftClient, int i, int j, int k, int l, int m) {
-        super(minecraftClient, i, j, k, l, m);
+    public OptionsList(MinecraftClient minecraftClient, int width, int height, int top, int bottom, int itemHeight) {
+        super(minecraftClient, width, height, top, bottom, itemHeight);
         this.centerListVertically = false;
     }
 
@@ -42,11 +44,33 @@ public class OptionsList extends ElementListWidget<OptionsList.Entry> {
         for (int i = 0; i < options.length; i += 2) {
             this.addOptionEntry(options[i], i < options.length - 1 ? options[i + 1] : null);
         }
+
     }
 
     public void addAll(Option<?>[] options) {
         for (int i = 0; i < options.length; i += 2) {
             this.addOptionEntry(options[i], i < options.length - 1 ? options[i + 1] : null);
+        }
+    }
+
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        this.updateScrollingState(mouseX, mouseY, button);
+        if (!this.isMouseOver(mouseX, mouseY)) {
+            return false;
+        } else {
+            OptionsList.Entry entry = this.getEntryAtPosition(mouseX, mouseY);
+            if (entry != null) {
+                if (entry.mouseClicked(mouseX, mouseY, button)) {
+                    this.setFocused(entry);
+                    this.setDragging(true);
+                    return true;
+                }
+            } else if (button == 0) {
+                this.clickedHeader((int)(mouseX - (double)(this.left + this.width / 2 - this.getRowWidth() / 2)), (int)(mouseY - (double)this.top) + (int)this.getScrollAmount() - 4);
+                return true;
+            }
+
+            return false;
         }
     }
 

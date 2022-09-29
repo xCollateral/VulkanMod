@@ -21,6 +21,8 @@ import java.util.Collections;
 public class Config {
 
     public int frameQueueSize = 2;
+    public VideoResolution resolution = VideoResolution.getVideoResolutions()[0];
+    public boolean windowedFullscreen = false;
 
     private static Path path;
 

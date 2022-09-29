@@ -102,4 +102,14 @@ public class VUtil {
             return dst;
         }
     }
+
+    public static int packColor(float r, float g, float b, float a) {
+        int color = 0;
+        color += (int)(a * 255) << 24;
+        color += (int)(r * 255) << 16;
+        color += (int)(g * 255) << 8;
+        color += (int)(b * 255);
+
+        return color;
+    }
 }

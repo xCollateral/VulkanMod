@@ -3,6 +3,7 @@ package net.vulkanmod;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.vulkanmod.config.Config;
+import net.vulkanmod.config.VideoResolution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,6 +23,8 @@ public class Initializer implements ModInitializer {
 				.getVersion().getFriendlyString();
 
 		LOGGER.info("== VulkanMod ==");
+
+		VideoResolution.init();
 
 		var configPath = FabricLoader.getInstance()
 				.getConfigDir()
