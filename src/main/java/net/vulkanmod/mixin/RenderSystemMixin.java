@@ -148,8 +148,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static int maxSupportedTextureSize() {
-        //TODO: query vulkan for max texture size
-        return 8192;
+        return VRenderSystem.maxSupportedTextureSize();
     }
 
     /**
