@@ -72,7 +72,7 @@ public class MinecraftClientMixin {
     private void submitRender(boolean tick, CallbackInfo ci) {
         Drawer drawer = Drawer.getInstance();
         drawer.endRenderPass();
-        Drawer.submitDraw();
+        drawer.submitDraw();
     }
 
     @Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)
