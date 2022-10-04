@@ -60,6 +60,11 @@ public class VideoResolution {
         return videoResolutions;
     }
 
+    public static VideoResolution getFirstAvailable() {
+        if(videoResolutions != null) return videoResolutions[0];
+        else return new VideoResolution(-1, -1);
+    }
+
     public static VideoResolution[] populateVideoResolutions(long monitor) {
         GLFWVidMode.Buffer buffer = GLFW.glfwGetVideoModes(monitor);
 //        VideoMode[] videoModes = new VideoMode[buffer.limit()];

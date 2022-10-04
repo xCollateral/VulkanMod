@@ -32,7 +32,8 @@ public class Options {
                             config.windowedFullscreen = value;
                             fullscreenDirty = true;
                         },
-                        () -> config.windowedFullscreen),
+                        () -> config.windowedFullscreen)
+                        .setTooltip(Text.of("Might not work properly")),
                 new SwitchOption("Fullscreen",
                         value -> {
                             minecraftOptions.fullscreen = value;
@@ -62,8 +63,7 @@ public class Options {
                             minecraftOptions.guiScale = value;
                             MinecraftClient.getInstance().onResolutionChanged();
                         },
-                        () -> minecraftOptions.guiScale)
-                        .setTooltip(Text.of("TestTooltip")),
+                        () -> minecraftOptions.guiScale),
                 new RangeOption("Brightness", 0, 100, 1,
                         value -> {
                           if(value == 0) return new TranslatableText("options.gamma.min").getString();
@@ -86,21 +86,17 @@ public class Options {
                         value -> new TranslatableText(value.getTranslationKey()),
                         value -> minecraftOptions.attackIndicator = value,
                         () -> minecraftOptions.attackIndicator),
-                new RangeOption("Distortion Effects", 0, 100, 1,
-                        value -> minecraftOptions.distortionEffectScale = value * 0.01f,
-                        () -> (int)(minecraftOptions.distortionEffectScale * 100.0f)),
                 new SwitchOption("Autosave Indicator",
                         value -> minecraftOptions.showAutosaveIndicator = value,
                         () -> minecraftOptions.showAutosaveIndicator),
+                new RangeOption("Distortion Effects", 0, 100, 1,
+                        value -> minecraftOptions.distortionEffectScale = value * 0.01f,
+                        () -> (int)(minecraftOptions.distortionEffectScale * 100.0f))
+                        .setTooltip(new TranslatableText("options.screenEffectScale.tooltip")),
                 new RangeOption("FOV Effects", 0, 100, 1,
                         value -> minecraftOptions.fovEffectScale = value * 0.01f,
-                        () -> (int)(minecraftOptions.fovEffectScale * 100.0f)),
-                new RangeOption("RenderFrameQueue", 2,
-                        5, 1,
-                        value -> {
-                    Drawer.shouldRecreate = true;
-                    config.frameQueueSize = value;
-                    }, () -> config.frameQueueSize)
+                        () -> (int)(minecraftOptions.fovEffectScale * 100.0f))
+                        .setTooltip(new TranslatableText("options.fovEffectScale.tooltip"))
         };
     }
 
@@ -153,8 +149,33 @@ public class Options {
                         new ParticlesMode[]{ParticlesMode.MINIMAL, ParticlesMode.DECREASED, ParticlesMode.ALL},
                         particlesMode -> new TranslatableText(particlesMode.getTranslationKey()),
                         value -> minecraftOptions.particles = value,
-                        () -> minecraftOptions.particles)
+                        () -> minecraftOptions.particles),
+                new CyclingOption<>("Mipmap Levels",
+                        new Integer[]{0, 1, 2, 3, 4},
+                        value -> Text.of(value.toString()),
+                        value -> minecraftOptions.mipmapLevels = value,
+                        () -> minecraftOptions.mipmapLevels)
         };
+    }
+
+    public static Option<?>[] getOtherOpts() {
+        return new Option[] {
+                new RangeOption("RenderFrameQueue", 2,
+                        5, 1,
+                        value -> {
+                            Drawer.rebuild = true;
+                            config.frameQueueSize = value;
+                        }, () -> config.frameQueueSize)
+                        .setTooltip(Text.of("Restart is needed to take effect")),
+                new SwitchOption("Gui Optimizations",
+                        value -> config.guiOptimizations = value,
+                        () -> config.guiOptimizations)
+                        .setTooltip(Text.of("""
+                        Enable Gui optimizations (Stats bar, Chat, Debug Hud)
+                        Might break mod compatibility
+                        Restart is needed to take effect"""))
+        };
+
     }
 
     public static void applyOptions(Config config, Option<?>[][] optionPages) {

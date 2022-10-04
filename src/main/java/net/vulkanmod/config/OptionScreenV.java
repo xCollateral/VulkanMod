@@ -22,11 +22,13 @@ public class OptionScreenV extends Screen {
     private final List<OptionList2> optionLists;
     private Option<?>[] videoOpts;
     private Option<?>[] graphicsOpts;
+    private Option<?>[] otherOpts;
     private final Screen parent;
     private OptionList2 currentList;
 
     private CustomButtonWidget videoButton;
     private CustomButtonWidget graphicsButton;
+    private CustomButtonWidget otherButton;
 
     private ButtonWidget doneButton;
     private ButtonWidget applyButton;
@@ -38,9 +40,11 @@ public class OptionScreenV extends Screen {
         this.optionLists = new ArrayList<>();
         this.videoOpts = Options.getVideoOpts();
         this.graphicsOpts = Options.getGraphicsOpts();
+        this.otherOpts = Options.getOtherOpts();
 
-        this.videoButton = new CustomButtonWidget(20, 10, 60, 20, Text.of("Video"), button -> this.setOptionList(button, optionLists.get(0)));
-        this.graphicsButton = new CustomButtonWidget(81, 10, 60, 20, Text.of("Graphics"), button -> this.setOptionList(button, optionLists.get(1)));
+        this.videoButton = new CustomButtonWidget(20, 6, 60, 20, Text.of("Video"), button -> this.setOptionList(button, optionLists.get(0)));
+        this.graphicsButton = new CustomButtonWidget(81, 6, 60, 20, Text.of("Graphics"), button -> this.setOptionList(button, optionLists.get(1)));
+        this.otherButton = new CustomButtonWidget(142, 6, 60, 20, Text.of("Other"), button -> this.setOptionList(button, optionLists.get(2)));
 
         this.videoButton.setSelected(true);
 
@@ -59,6 +63,20 @@ public class OptionScreenV extends Screen {
 
         this.currentList = null;
 
+        int top = 28;
+        int bottom = 32;
+
+        this.optionLists.clear();
+        OptionList2 optionList = new OptionList2(this.client, this.width, this.height, top, this.height - bottom, 25);
+        optionList.addAll(this.videoOpts);
+        this.optionLists.add(optionList);
+        optionList = new OptionList2(this.client, this.width, this.height, top, this.height - bottom, 25);
+        optionList.addAll(this.graphicsOpts);
+        this.optionLists.add(optionList);
+        optionList = new OptionList2(this.client, this.width, this.height, top, this.height - bottom, 25);
+        optionList.addAll(this.otherOpts);
+        this.optionLists.add(optionList);
+
         buildPage();
 
 //        OptionWidget widget = new OptionWidget(this.width / 8, this.height / 2, 100, 20, Text.of("TEST")){};
@@ -72,14 +90,6 @@ public class OptionScreenV extends Screen {
     private void buildPage() {
         this.clearChildren();
 
-        optionLists.clear();
-        OptionList2 optionList = new OptionList2(this.client, this.width, this.height, 32, this.height - 40, 25);
-        optionList.addAll(this.videoOpts);
-        optionLists.add(optionList);
-        optionList = new OptionList2(this.client, this.width, this.height, 32, this.height - 40, 25);
-        optionList.addAll(this.graphicsOpts);
-        optionLists.add(optionList);
-
         if(this.currentList == null) this.currentList = optionLists.get(0);
 
         this.addSelectableChild(currentList);
@@ -92,13 +102,14 @@ public class OptionScreenV extends Screen {
     private void buildHeader() {
         this.addDrawableChild(this.videoButton);
         this.addDrawableChild(this.graphicsButton);
+        this.addDrawableChild(this.otherButton);
     }
 
     private void addButtons() {
         int buttonX = (int) (this.width - 150);
         int buttonGap = 55;
         this.applyButton = new CustomButtonWidget(buttonX, this.height - 27, 50, 20, Text.of("Apply"), button -> {
-            Options.applyOptions(Initializer.CONFIG, new Option[][]{this.videoOpts, this.graphicsOpts});
+            Options.applyOptions(Initializer.CONFIG, new Option[][]{this.videoOpts, this.graphicsOpts, this.otherOpts});
         });
         this.doneButton = new CustomButtonWidget(buttonX + buttonGap, this.height - 27, 50, 20, ScreenTexts.DONE, button -> {
             this.client.setScreen(this.parent);
@@ -133,7 +144,7 @@ public class OptionScreenV extends Screen {
         this.currentList.render(matrices, mouseX, mouseY, delta);
 //        fill(matrices, 0, 0, width, height, VUtil.packColor(0.6f,0.2f, 0.2f, 0.5f));
 
-        VideoOptionsScreen.drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 5, 0xFFFFFF);
+//        VideoOptionsScreen.drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 5, 0xFFFFFF);
         super.render(matrices, mouseX, mouseY, delta);
         List<OrderedText> list = getHoveredButtonTooltip(this.currentList, mouseX, mouseY);
         if (list != null) {
@@ -159,6 +170,9 @@ public class OptionScreenV extends Screen {
         for(Option<?> option: this.graphicsOpts) {
             if(option.isModified()) modified = true;
         }
+        for(Option<?> option: this.otherOpts) {
+            if(option.isModified()) modified = true;
+        }
 
         this.applyButton.active = modified;
     }
@@ -170,6 +184,7 @@ public class OptionScreenV extends Screen {
 
         this.videoButton.setSelected(false);
         this.graphicsButton.setSelected(false);
+        this.otherButton.setSelected(false);
 
         ((CustomButtonWidget)button).setSelected(true);
     }
