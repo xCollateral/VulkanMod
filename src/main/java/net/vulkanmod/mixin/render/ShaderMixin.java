@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.render;
 
 import net.minecraft.client.gl.*;
 import net.minecraft.client.render.Shader;

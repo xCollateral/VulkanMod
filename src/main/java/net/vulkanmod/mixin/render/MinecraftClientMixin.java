@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.render;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
