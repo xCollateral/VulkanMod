@@ -29,7 +29,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
-    private static final Drawer INSTANCE = new Drawer();
+    private static Drawer INSTANCE = new Drawer();
 
     private static VkDevice device;
     private static List<VkCommandBuffer> commandBuffers;
@@ -62,6 +62,7 @@ public class Drawer {
     private static Matrix4f modelViewMatrix = new Matrix4f();
 
     public static boolean shouldRecreate = false;
+    public static boolean rebuild = false;
     public static boolean skipRendering = false;
 
     public Drawer()
@@ -126,6 +127,8 @@ public class Drawer {
         if(skipRendering) return;
 
         drawFrame();
+        //TODO
+        //if(rebuild) rebuildInstance();
     }
 
     public void initiateRenderPass() {
@@ -380,6 +383,13 @@ public class Drawer {
 
         Vulkan.recreateSwapChain();
         currentFrame = 0;
+    }
+
+    public void rebuildInstance() {
+        vkDeviceWaitIdle(device);
+
+        Vulkan.recreateSwapChain();
+        INSTANCE = new Drawer();
     }
 
     public static void setProjectionMatrix(Matrix4f mat4) {

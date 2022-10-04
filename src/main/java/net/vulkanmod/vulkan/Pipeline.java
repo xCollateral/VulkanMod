@@ -822,7 +822,7 @@ public class Pipeline {
         }
 
         public BlendState(int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
-            this(true, srcRgb, dstRgb, srcAlpha, dstAlpha);
+            this(true, glToVulkan(srcRgb), glToVulkan(dstRgb), glToVulkan(srcAlpha), glToVulkan(dstAlpha));
         }
 
         protected BlendState(boolean enabled, int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
@@ -833,7 +833,7 @@ public class Pipeline {
             this.dstAlphaFactor = dstAlpha;
         }
 
-        private int glToVulkan(int value) {
+        private static int glToVulkan(int value) {
             return switch (value) {
                 case 1 -> VK_BLEND_FACTOR_ONE;
                 case 0 -> VK_BLEND_FACTOR_ZERO;

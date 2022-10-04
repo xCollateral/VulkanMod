@@ -52,8 +52,8 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
     static {
@@ -158,6 +158,8 @@ public class Vulkan {
 
     private static VkQueue graphicsQueue;
     private static VkQueue presentQueue;
+
+    private static final int frameQueueSize = Initializer.CONFIG.frameQueueSize;
 
     private static long swapChain;
     private static List<Long> swapChainImages;
@@ -505,7 +507,7 @@ public class Vulkan {
             VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
 //            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), 2));
-            IntBuffer imageCount = stack.ints(Initializer.CONFIG.frameQueueSize);
+            IntBuffer imageCount = stack.ints(frameQueueSize);
 
             if(swapChainSupport.capabilities.maxImageCount() > 0 && imageCount.get(0) > swapChainSupport.capabilities.maxImageCount()) {
                 imageCount.put(0, swapChainSupport.capabilities.maxImageCount());
