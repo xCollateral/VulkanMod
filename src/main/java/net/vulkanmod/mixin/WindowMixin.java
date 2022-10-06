@@ -171,10 +171,6 @@ public abstract class WindowMixin {
             }
         }
         else if(config.windowedFullscreen) {
-            if (MinecraftClient.IS_SYSTEM_MAC) {
-                MacWindowUtil.toggleFullscreen(this.handle);
-            }
-//            VideoMode videoMode = this.videoMode.get();
 
             this.x = 0;
             this.y = 0;

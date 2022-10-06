@@ -7,6 +7,8 @@ import net.vulkanmod.config.VideoResolution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Path;
+
 public class Initializer implements ModInitializer {
 	public static final Logger LOGGER = LogManager.getLogger("VulkanMod");
 
@@ -30,8 +32,17 @@ public class Initializer implements ModInitializer {
 				.getConfigDir()
 				.resolve("vulkanmod_settings.json");
 
-		CONFIG = Config.load(configPath);
+		CONFIG = loadConfig(configPath);
 
+	}
+
+	private static Config loadConfig(Path path) {
+		Config config = Config.load(path);
+		if(config == null) {
+			config = new Config();
+			config.write();
+		}
+		return config;
 	}
 
 	public static String getVersion() {
