@@ -10,8 +10,8 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.vulkanmod.sdrs.frag;
-import net.vulkanmod.sdrs.vert;
+import net.vulkanmod.sdrs.fragIntfce;
+import net.vulkanmod.sdrs.vertIntfce;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -19,6 +19,7 @@ import net.vulkanmod.vulkan.shader.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.io.InputStream;
@@ -33,8 +34,7 @@ import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memPutAddress;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -49,6 +49,8 @@ public class Pipeline {
     private static final int imagesSize = getSwapChainImages().size();
     private final long vertShaderSPIRV;
     private final long fragShaderSPIRV;
+//    private final int vertSize;
+//    private final int fragSize;
 
     private String path;
     private long descriptorSetLayout;
@@ -69,8 +71,29 @@ public class Pipeline {
     private long fragShaderModule = 0;
 
     public Pipeline(VertexFormat vertexFormat, String path, String name) {
-        this.vertShaderSPIRV = vert.getFunc(name);
-        this.fragShaderSPIRV = frag.getFunc(name);
+
+
+//    String compositeName =//This could be placed with a much better setup such as an interface/factory
+//        try {
+            ;
+            ;
+//            Class<?>[] paramString = new Class<?>[1];
+//            paramString[0] = String.class;
+//            var a=(int[]) Class.forName("net.vulkanmod.sdrs.vert"+name).getField("vert"+name).get(int[].class);
+//            var b=(int[]) Class.forName("net.vulkanmod.sdrs.frag"+name).getField("frag"+name).get(int[].class);
+            this.vertShaderSPIRV = vertIntfce.getFunc(name);/*.invoke(clazz, name)*/;
+            this.fragShaderSPIRV = fragIntfce.getFunc(name)/*.invoke(clazz, name)*/;;
+
+//            this.vertSize = a.length*Integer.BYTES;//(int) clazz.getField("currentSize").get(int.class);
+//            this.fragSize = b.length*Integer.BYTES;//(int) clazz.getField("currentSize").get(int.class);
+//            if(this.vertShaderSPIRV==0||vertSize==0)
+//            {
+//                throw new ReflectiveOperationException("Bad Class Load: failed to Load Class: "+name);
+//            }
+         /*catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }*/
+//        this.fragShaderSPIRV = frag.getFunc(name);
 
         createDescriptorSetLayout(path);
         createPipelineLayout();
@@ -79,6 +102,19 @@ public class Pipeline {
         createDescriptorPool(descriptorCount);
         //allocateDescriptorSets();
 
+    }
+
+    private long bufferShaderArray(int[] ax) {
+        ByteBuffer axl = MemoryUtil.memAlignedAlloc(Integer.SIZE, ax.length*4); //Align to native uint32_t which is the alignment for the vkShaderModuleCreateInfo pCode in the C/C++ API
+        axl.asIntBuffer().put(ax);
+//        currentSize=axl.remaining();
+        return MemoryUtil.memAddress0(axl);
+    }
+
+    private Class<?> loadClass(String name) throws ReflectiveOperationException {
+        final Class<?> tst;
+        tst=  Class.forName(name);
+        return tst;
     }
 
     private long createGraphicsPipeline(VertexFormat vertexFormat, PipelineState state) {
@@ -96,8 +132,8 @@ public class Pipeline {
 //                SPIRV vertShaderSPIRV = compileShaderFile(path + ".vsh", ShaderKind.VERTEX_SHADER);
 //                SPIRV fragShaderSPIRV = compileShaderFile(path + ".fsh", ShaderKind.FRAGMENT_SHADER);
 
-                vertShaderModule = createShaderModule(vertShaderSPIRV, vert.currentSize);
-                fragShaderModule = createShaderModule(fragShaderSPIRV, frag.currentSize);
+                vertShaderModule = createShaderModule(vertShaderSPIRV, vertIntfce.currentSize);
+                fragShaderModule = createShaderModule(fragShaderSPIRV, fragIntfce.currentSize);
             }
 
 

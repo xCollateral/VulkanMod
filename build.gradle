@@ -144,7 +144,7 @@ task genFragFiles(type: Copy) {
 
 	doLast {
 
-		preCompShaders(DefBoilerPlate, namesFrag, ShaderStage, Def, aaa, cltr, "frag", ".fsh")
+		preCompShaders(DefBoilerPlate, namesFrag, ShaderStage, Def, aaa, cltr, "fragIntfce", ".fsh")
 	}
 }
 
@@ -155,6 +155,11 @@ private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, 
 	file.write(cl.getBytes())
 	var axx = new ByteArrayOutputStream()
 	for (final String name in (namesFrag)) {
+		String compositeName = "$ShaderStage$name"
+		FileOutputStream file2 = new FileOutputStream("$projectDir/src/main/java/net/vulkanmod/sdrs/$compositeName"+".java")
+		String cl2 = DefBoilerPlate +
+				"public class  $compositeName\n{\n\n"
+		file2.write(cl2.getBytes())
 		exec {
 
 			workingDir "temDir"
@@ -169,18 +174,19 @@ private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, 
 
 		if (axx.size() == 0) //replace failing shaders that fail to compile with nulls
 		{
-			file.write(("private static int[] $name()\n { \n return null;}").getBytes())
+			file2.write(("public static final int[] $compositeName = null;}").getBytes())
 			continue
 		}
-		file.write(("private static int[] $name()\n { \n return ((new int[]{").getBytes())
-		file.write(axx.toByteArray())
-		file.write(aaa)
+		file2.write(("public static final int[] $compositeName = ((new int[]{").getBytes())
+		file2.write(axx.toByteArray())
+		file2.write(aaa)
 		axx.reset()
+		file2.flush()
 
 
 	}
 	file.flush()
-	cases(file, namesFrag)
+	cases(file, ShaderStage, namesFrag)
 	file.write(cltr)
 	file.close()
 }
@@ -206,7 +212,7 @@ task genVertFiles(type: Copy)
 	final def ShaderStage = 'vert'
 
 	doLast {
-		preCompShaders(DefBoilerPlate, namesVert, ShaderStage, Def, aaa, cltr, "vert", ".vsh")
+		preCompShaders(DefBoilerPlate, namesVert, ShaderStage, Def, aaa, cltr, "vertIntfce", ".vsh")
 
 	}
 }
@@ -216,10 +222,10 @@ gradle.afterProject { project ->
 			"Evaluation of $project FAILED" : "Evaluation of $project succeeded")
 }
 
-private static final void cases(FileOutputStream file, ArrayList namesFrag) {
+private static final void cases(FileOutputStream file, String shaderStage, ArrayList namesFrag) {
 	file.write(("public static long getFunc(String aa)\n { \n\t int[]ax = switch(aa) \n { \n\t").getBytes())
 	for (String name : namesFrag) {
-		file.write(("case\"$name\" ->$name();\n\t").getBytes())
+		file.write(("case\"$name\" ->$shaderStage$name.$shaderStage$name;\n\t").getBytes())
 	}
 }
 

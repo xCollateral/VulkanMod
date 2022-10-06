@@ -41,7 +41,7 @@ public class Vec3f extends Field {
     void update(ByteBuffer buffer) {
         //update(buffer.asFloatBuffer());
         ByteBuffer src = (ByteBuffer) set.get();
-        buffer.position(offset * 4);
-        MemoryUtil.memCopy(src, buffer);
+//        buffer.position(offset * 4);
+        buffer.put(offset * 4, src, 0, src.remaining());
     }
 }

@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader;
 
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Pointer;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -18,7 +19,7 @@ public class UBO extends AlignedStruct {
     public UBO(int binding, int type) {
         this.binding = binding;
         this.flags = type;
-        this.buffer = MemoryUtil.memAlloc(1024);
+        this.buffer = MemoryUtil.memAlignedAlloc(Pointer.POINTER_SIZE, 1024);
     }
 
     public void addField(Field field) {
