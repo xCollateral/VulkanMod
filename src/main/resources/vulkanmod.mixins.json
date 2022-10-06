@@ -3,20 +3,38 @@
   "minVersion": "0.8",
   "package": "net.vulkanmod.mixin",
   "compatibilityLevel": "JAVA_16",
+  "plugin": "net.vulkanmod.mixin.MixinPlugin",
   "mixins": [
   ],
   "client": [
     "debug.DebugHudM",
     "debug.GlDebugInfoM",
+
     "gui.ChatHudM",
+    "gui.DebugHudM",
     "gui.InGameHudM",
+
     "render.BakedQuadFactoryM",
     "render.BufferBuilderM",
     "render.BufferRendererM",
     "render.VertexBufferM",
     "render.VertexConsumerM",
+    "render.FramebufferMixin",
+    "render.GameRendererMixin",
+    "render.GlProgramManagerMixin",
+    "render.GlStateManagerM",
+    "render.IntTypeMixin",
+    "render.MinecraftClientMixin",
+    "render.RenderSystemMixin",
+    "render.ShaderMixin",
+    "render.VertexFormatMixin",
+    "render.WindowFramebufferMixin",
+    "render.WorldRendererMixin",
+
     "screen.EnchantmentScreenM",
-    "screen.VideoOptionsScreenM",
+    "screen.OptionsScreenM",
+    "screen.SplashOverlayM",
+
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
@@ -28,22 +46,13 @@
     "texture.MTextureManager",
     "texture.MTextureUtil",
     "texture.VNativeImage",
+    "texture.ModelLoaderM",
+
     "util.Matrix4fM",
     "util.ScreenshotRecorderM",
-    "FramebufferMixin",
-    "GameRendererMixin",
-    "GlProgramManagerMixin",
-    "GlStateManagerM",
-    "IntTypeMixin",
-    "MinecraftClientMixin",
-    "ModelLoaderM",
-    "RenderSystemMixin",
-    "ShaderMixin",
-    "SplashOverlayM",
-    "VertexFormatMixin",
-    "WindowFramebufferMixin",
-    "WindowMixin",
-    "WorldRendererMixin"
+
+    "WindowMixin"
+
   ],
   "injectors": {
     "defaultRequire": 1

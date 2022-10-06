@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;

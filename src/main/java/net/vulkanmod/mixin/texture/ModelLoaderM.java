@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.texture;
 
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.render.model.*;

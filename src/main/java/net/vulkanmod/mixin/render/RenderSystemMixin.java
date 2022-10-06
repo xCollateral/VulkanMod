@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderCall;
@@ -149,7 +149,7 @@ public abstract class RenderSystemMixin {
     @Overwrite(remap = false)
     public static int maxSupportedTextureSize() {
         //TODO: query vulkan for max texture size
-        return 8192;
+        return VRenderSystem.maxSupportedTextureSize();
     }
 
     /**
@@ -467,5 +467,11 @@ public abstract class RenderSystemMixin {
         VRenderSystem.calculateMVP();
     }
 
-
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void texParameter(int target, int pname, int param) {
+        //TODO
+    }
 }

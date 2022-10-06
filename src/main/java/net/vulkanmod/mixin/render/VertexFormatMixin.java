@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.render;
 
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.client.render.VertexFormat;

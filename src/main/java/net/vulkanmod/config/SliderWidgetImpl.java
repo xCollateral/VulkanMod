@@ -13,7 +13,7 @@ public class SliderWidgetImpl extends SliderWidget {
 
     @Override
     protected void updateMessage() {
-        this.setMessage(option.getText());
+        this.setMessage(option.getName());
     }
 
     @Override

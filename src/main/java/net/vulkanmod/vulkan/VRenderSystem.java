@@ -62,6 +62,10 @@ public class VRenderSystem {
 
     public static ByteBuffer getChunkOffset() { return ChunkOffset; }
 
+    public static int maxSupportedTextureSize() {
+        return Vulkan.deviceProperties.limits().maxImageDimension2D();
+    }
+
     public static void renderCrosshair(int p_69348_, boolean p_69349_, boolean p_69350_, boolean p_69351_) {
         RenderSystem.assertOnRenderThread();
 //        GlStateManager._disableTexture();

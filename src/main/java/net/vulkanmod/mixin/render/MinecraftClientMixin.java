@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.render;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
@@ -72,7 +72,7 @@ public class MinecraftClientMixin {
     private void submitRender(boolean tick, CallbackInfo ci) {
         Drawer drawer = Drawer.getInstance();
         drawer.endRenderPass();
-        Drawer.submitDraw();
+        drawer.submitDraw();
     }
 
     @Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)

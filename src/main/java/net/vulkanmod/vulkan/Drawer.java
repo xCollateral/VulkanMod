@@ -29,7 +29,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
-    private static final Drawer INSTANCE = new Drawer();
+    private static Drawer INSTANCE = new Drawer();
 
     private static VkDevice device;
     private static List<VkCommandBuffer> commandBuffers;
@@ -43,13 +43,13 @@ public class Drawer {
     private UniformBuffers uniformBuffers;
 
     private static int MAX_FRAMES_IN_FLIGHT;
-    private static ArrayList<Long> imageAvailableSemaphores;
-    private static ArrayList<Long> renderFinishedSemaphores;
-    private static ArrayList<Long> inFlightFences;
+    private ArrayList<Long> imageAvailableSemaphores;
+    private ArrayList<Long> renderFinishedSemaphores;
+    private ArrayList<Long> inFlightFences;
 
     private static int currentFrame = 0;
     private final int commandBuffersCount = getSwapChainFramebuffers().size();
-    private static boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
+    private boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
 
     private static int currentIndex = 0;
 
@@ -62,14 +62,8 @@ public class Drawer {
     private static Matrix4f modelViewMatrix = new Matrix4f();
 
     public static boolean shouldRecreate = false;
+    public static boolean rebuild = false;
     public static boolean skipRendering = false;
-
-
-    static {
-        createSyncObjects();
-
-        for(boolean bool : activeCommandBuffers) bool = false;
-    }
 
     public Drawer()
     {
@@ -88,6 +82,10 @@ public class Drawer {
         quadsIndexBuffer = new AutoIndexBuffer(100000, AutoIndexBuffer.DrawType.QUADS);
         triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
         triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
+
+        createSyncObjects();
+
+        for(boolean bool : activeCommandBuffers) bool = false;
 
         this.allocateCommandBuffers();
     }
@@ -124,11 +122,13 @@ public class Drawer {
 
     }
 
-    public static void submitDraw()
+    public void submitDraw()
     {
         if(skipRendering) return;
 
         drawFrame();
+        //TODO
+        //if(rebuild) rebuildInstance();
     }
 
     public void initiateRenderPass() {
@@ -253,11 +253,11 @@ public class Drawer {
         usedPipelines.clear();
     }
 
-    private static void assertCommandBufferState() {
-        if(activeCommandBuffers[currentFrame] == false) throw new RuntimeException("CommandBuffer not active.");
+    private void assertCommandBufferState() {
+        if(!activeCommandBuffers[currentFrame]) throw new RuntimeException("CommandBuffer not active.");
     }
 
-    private static void createSyncObjects() {
+    private void createSyncObjects() {
 
         final int frameNum = getSwapChainImages().size();
 
@@ -301,7 +301,7 @@ public class Drawer {
 
     public static int getCurrentFrame() { return currentFrame; }
 
-    private static void drawFrame() {
+    private void drawFrame() {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -364,7 +364,7 @@ public class Drawer {
         }
     }
 
-    private static void recreateSwapChain() {
+    private void recreateSwapChain() {
 //        for(Long fence : inFlightFences) {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
@@ -383,6 +383,13 @@ public class Drawer {
 
         Vulkan.recreateSwapChain();
         currentFrame = 0;
+    }
+
+    public void rebuildInstance() {
+        vkDeviceWaitIdle(device);
+
+        Vulkan.recreateSwapChain();
+        INSTANCE = new Drawer();
     }
 
     public static void setProjectionMatrix(Matrix4f mat4) {

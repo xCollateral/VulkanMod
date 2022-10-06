@@ -65,83 +65,83 @@ public abstract class DebugHudM {
         return strings;
     }
 
-    /**
-     * @author
-     */
-    @Overwrite
-    public void renderLeftText(MatrixStack matrices) {
-        List<String> list = this.getLeftText();
-        list.add("");
-        boolean bl = this.client.getServer() != null;
-        list.add("Debug: Pie [shift]: " + (this.client.options.debugProfilerEnabled ? "visible" : "hidden") + (bl ? " FPS + TPS" : " FPS") + " [alt]: " + (this.client.options.debugTpsEnabled ? "visible" : "hidden"));
-        list.add("For help: press F3 + Q");
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        GuiBatchRenderer.beginBatch(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.textRenderer.fontHeight;
-            int k = this.textRenderer.getWidth(string);
-            int l = 2;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.fill(matrices, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
-        }
-        GuiBatchRenderer.endBatch();
-
-        VertexConsumerProvider.Immediate bufferSource = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.textRenderer.fontHeight;
-            int k = this.textRenderer.getWidth(string);
-            int l = 2;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.drawString(this.textRenderer, bufferSource, matrices, string, 2.0f, (float)m, 0xE0E0E0);
-        }
-        bufferSource.draw();
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite
-    public void renderRightText(MatrixStack matrices) {
-        List<String> list = this.getRightText();
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        GuiBatchRenderer.beginBatch(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.textRenderer.fontHeight;
-            int k = this.textRenderer.getWidth(string);
-            int l = this.client.getWindow().getScaledWidth() - 2 - k;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.fill(matrices, l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
-        }
-        GuiBatchRenderer.endBatch();
-
-        VertexConsumerProvider.Immediate bufferSource = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.textRenderer.fontHeight;
-            int k = this.textRenderer.getWidth(string);
-            int l = this.client.getWindow().getScaledWidth() - 2 - k;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.drawString(this.textRenderer, bufferSource, matrices, string, (float)l, (float)m, 0xE0E0E0);
-        }
-        bufferSource.draw();
-    }
+//    /**
+//     * @author
+//     */
+//    @Overwrite
+//    public void renderLeftText(MatrixStack matrices) {
+//        List<String> list = this.getLeftText();
+//        list.add("");
+//        boolean bl = this.client.getServer() != null;
+//        list.add("Debug: Pie [shift]: " + (this.client.options.debugProfilerEnabled ? "visible" : "hidden") + (bl ? " FPS + TPS" : " FPS") + " [alt]: " + (this.client.options.debugTpsEnabled ? "visible" : "hidden"));
+//        list.add("For help: press F3 + Q");
+//
+//        RenderSystem.enableBlend();
+//        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//        GuiBatchRenderer.beginBatch(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+//
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.textRenderer.fontHeight;
+//            int k = this.textRenderer.getWidth(string);
+//            int l = 2;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.fill(matrices, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
+//        }
+//        GuiBatchRenderer.endBatch();
+//
+//        VertexConsumerProvider.Immediate bufferSource = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.textRenderer.fontHeight;
+//            int k = this.textRenderer.getWidth(string);
+//            int l = 2;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.drawString(this.textRenderer, bufferSource, matrices, string, 2.0f, (float)m, 0xE0E0E0);
+//        }
+//        bufferSource.draw();
+//    }
+//
+//    /**
+//     * @author
+//     */
+//    @Overwrite
+//    public void renderRightText(MatrixStack matrices) {
+//        List<String> list = this.getRightText();
+//
+//        RenderSystem.enableBlend();
+//        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//        GuiBatchRenderer.beginBatch(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+//
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.textRenderer.fontHeight;
+//            int k = this.textRenderer.getWidth(string);
+//            int l = this.client.getWindow().getScaledWidth() - 2 - k;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.fill(matrices, l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
+//        }
+//        GuiBatchRenderer.endBatch();
+//
+//        VertexConsumerProvider.Immediate bufferSource = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.textRenderer.fontHeight;
+//            int k = this.textRenderer.getWidth(string);
+//            int l = this.client.getWindow().getScaledWidth() - 2 - k;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.drawString(this.textRenderer, bufferSource, matrices, string, (float)l, (float)m, 0xE0E0E0);
+//        }
+//        bufferSource.draw();
+//    }
 
     private long getOffHeapMemory() {
         return toMiB(ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed());
