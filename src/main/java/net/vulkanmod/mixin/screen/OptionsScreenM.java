@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screen.option.OptionsScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.text.Text;
+import net.vulkanmod.config.OptionScreenV;
 import net.vulkanmod.config.VideoSettingsScreen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,7 +29,8 @@ public class OptionsScreenM extends Screen {
 
     @Inject(method = "method_19828", at = @At("HEAD"), cancellable = true)
     private void injectVideoOptionScreen(ButtonWidget button, CallbackInfo ci) {
-        this.client.setScreen(new VideoSettingsScreen(this, this.settings));
+//        this.client.setScreen(new VideoSettingsScreen(this, this.settings));
+        this.client.setScreen(new OptionScreenV(Text.of("Video Settings"), this));
         ci.cancel();
     }
 }
