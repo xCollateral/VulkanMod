@@ -10,7 +10,6 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -31,6 +30,8 @@ import java.util.function.Consumer;
 import static net.vulkanmod.vulkan.ShaderSPIRVUtils.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -43,6 +44,8 @@ public class Pipeline {
     private static final VkDevice device = Vulkan.getDevice();
     private static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
+    private final SPIRV vertShaderSPIRV;
+    private final SPIRV fragShaderSPIRV;
 
     private String path;
     private long descriptorSetLayout;
@@ -62,8 +65,11 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, String path) {
+    public Pipeline(VertexFormat vertexFormat, String path, String name) {
         this.path = path;
+        //todo: can't skip null/Bad/Failed Shaders
+        vertShaderSPIRV = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.VERTEX_SHADER) : ShaderSPIRVUtils.loadShaderFile(name, ShaderKind.VERTEX_SHADER);
+        fragShaderSPIRV = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.FRAGMENT_SHADER) : ShaderSPIRVUtils.loadShaderFile(name, ShaderKind.FRAGMENT_SHADER);
 
         createDescriptorSetLayout(path);
         createPipelineLayout();
@@ -86,11 +92,9 @@ public class Pipeline {
 //                SPIRV vertShaderSPIRV = compileShader(path + ".vsh", "vertex");
 //                SPIRV fragShaderSPIRV = compileShader(path + ".fsh", "fragment");
 
-                SPIRV vertShaderSPIRV = compileShaderFile(path + ".vsh", ShaderKind.VERTEX_SHADER);
-                SPIRV fragShaderSPIRV = compileShaderFile(path + ".fsh", ShaderKind.FRAGMENT_SHADER);
 
-                vertShaderModule = createShaderModule(vertShaderSPIRV.bytecode());
-                fragShaderModule = createShaderModule(fragShaderSPIRV.bytecode());
+                vertShaderModule = createShaderModule(vertShaderSPIRV.handle(), vertShaderSPIRV.size());
+                fragShaderModule = createShaderModule(fragShaderSPIRV.handle(), fragShaderSPIRV.size());
             }
 
 
@@ -539,18 +543,19 @@ public class Pipeline {
         };
     }
 
-    private static long createShaderModule(ByteBuffer spirvCode) {
+    private static long createShaderModule(long spirvCode, int size) {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
-
-            createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            createInfo.pCode(spirvCode);
+            VkShaderModuleCreateInfo vkShaderModuleCreateInfo = VkShaderModuleCreateInfo.callocStack(stack)
+                    .sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
+            long struct = vkShaderModuleCreateInfo.address();
+            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE, (spirvCode));
+            VkShaderModuleCreateInfo.ncodeSize(struct, size);
 
             LongBuffer pShaderModule = stack.mallocLong(1);
 
-            if(vkCreateShaderModule(device, createInfo, null, pShaderModule) != VK_SUCCESS) {
+            if(vkCreateShaderModule(device, vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
 

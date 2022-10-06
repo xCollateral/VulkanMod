@@ -52,6 +52,7 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
+    static final boolean RECOMPILE_SHADERS = false;
     private static final boolean ENABLE_VALIDATION_LAYERS = false;
 //    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
