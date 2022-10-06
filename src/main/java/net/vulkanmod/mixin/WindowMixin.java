@@ -84,6 +84,15 @@ public abstract class WindowMixin {
      * @author
      */
     @Overwrite
+    public void toggleFullscreen() {
+        this.fullscreen = !this.fullscreen;
+        Options.fullscreenDirty = true;
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite
     public void swapBuffers() {
         RenderSystem.flipFrame(this.handle);
 //        if (this.fullscreen != this.currentFullscreen) {
