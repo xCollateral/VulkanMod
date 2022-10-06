@@ -108,14 +108,15 @@ ArrayList<String> namesFrag = []
 ArrayList<String> namesVert = []
 
 
-final byte[] cltr=("default -> throw new RuntimeException(\"Fail!: Invalid Shader File!\");\n};" +
+final byte[] cltr=(
 		"ByteBuffer axl = MemoryUtil.memAlignedAlloc(Integer.SIZE, ax.length*4); //Align to native uint32_t which is the alignment for the vkShaderModuleCreateInfo pCode in the C/C++ API\n" +
 		"  axl.asIntBuffer().put(ax);\n" +
 		"  currentSize=axl.remaining();\n" +
 		"return MemoryUtil.memAddress0(axl);\n}\n}").getBytes()
 final byte[] aaa= ("}));\n}\n").getBytes()
 
-final String DefBoilerPlate = "package net.vulkanmod.sdrs;\n" +
+final String PackageBoilerPlate = "package net.vulkanmod.sdrs;\n"
+final String DefBoilerPlate = "$PackageBoilerPlate" +
 		"\n" +
 		"import java.nio.ByteBuffer;\n" +
 		"import java.nio.ByteOrder;\n" +
@@ -144,20 +145,20 @@ task genFragFiles(type: Copy) {
 
 	doLast {
 
-		preCompShaders(DefBoilerPlate, namesFrag, ShaderStage, Def, aaa, cltr, "fragIntfce", ".fsh")
+		preCompShaders(DefBoilerPlate, PackageBoilerPlate, namesFrag, ShaderStage, Def, aaa, cltr, "fragIntfce", ".fsh")
 	}
 }
 
-private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, ShaderStage, String Def, byte[] aaa, byte[] cltr, String DefName, DefExt) {
+private void preCompShaders(String DefBoilerPlate, String PackageBoilerPlate, ArrayList<String> namesFrag, ShaderStage, String Def, byte[] aaa, byte[] cltr, String DefName, DefExt) {
 	FileOutputStream file = new FileOutputStream("$projectDir/src/main/java/net/vulkanmod/sdrs/$DefName"+".java")
 	String cl = DefBoilerPlate +
-			"public class  $DefName\n{\n public static int currentSize;\n"
+			"public class  $DefName\n{\n public static int currentSize;\n\tprivate static final ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();\n"
 	file.write(cl.getBytes())
 	var axx = new ByteArrayOutputStream()
 	for (final String name in (namesFrag)) {
 		String compositeName = "$ShaderStage$name"
 		FileOutputStream file2 = new FileOutputStream("$projectDir/src/main/java/net/vulkanmod/sdrs/$compositeName"+".java")
-		String cl2 = DefBoilerPlate +
+		String cl2 = PackageBoilerPlate +
 				"public class  $compositeName\n{\n\n"
 		file2.write(cl2.getBytes())
 		exec {
@@ -186,7 +187,7 @@ private void preCompShaders(String DefBoilerPlate, ArrayList<String> namesFrag, 
 
 	}
 	file.flush()
-	cases(file, ShaderStage, namesFrag)
+	addRefect(file, ShaderStage, namesFrag)
 	file.write(cltr)
 	file.close()
 }
@@ -212,7 +213,7 @@ task genVertFiles(type: Copy)
 	final def ShaderStage = 'vert'
 
 	doLast {
-		preCompShaders(DefBoilerPlate, namesVert, ShaderStage, Def, aaa, cltr, "vertIntfce", ".vsh")
+		preCompShaders(DefBoilerPlate, PackageBoilerPlate, namesVert, ShaderStage, Def, aaa, cltr, "vertIntfce", ".vsh")
 
 	}
 }
@@ -222,6 +223,13 @@ gradle.afterProject { project ->
 			"Evaluation of $project FAILED" : "Evaluation of $project succeeded")
 }
 
+private static final void addRefect(FileOutputStream file, String shaderStage, ArrayList namesFrag) {
+	file.write(("public static long getFunc(String aa)\n { \n\t int[]ax; \ntry {\n" +
+			"\t\tax= (int[]) Class.forName(\"net.vulkanmod.sdrs.$shaderStage\"+aa, false, systemClassLoader).getField(\"$shaderStage\"+aa).get(int[].class);\n" +
+			"\t } catch (ReflectiveOperationException e) {\n" +
+			"\t\t throw new RuntimeException(e);\n" +
+			"\t };").getBytes())
+}
 private static final void cases(FileOutputStream file, String shaderStage, ArrayList namesFrag) {
 	file.write(("public static long getFunc(String aa)\n { \n\t int[]ax = switch(aa) \n { \n\t").getBytes())
 	for (String name : namesFrag) {
