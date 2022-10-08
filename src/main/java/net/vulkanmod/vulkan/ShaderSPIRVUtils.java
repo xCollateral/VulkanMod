@@ -17,25 +17,25 @@ import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class ShaderSPIRVUtils {
 
-    public static SPIRV compileShaderFile(String shaderFile, String outFile, ShaderKind shaderKind) {
+    public static long compileShaderFile(String shaderFile, String outFile, ShaderKind shaderKind) {
         String shaderStage = shaderKind.kind == ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh";
         String path = ShaderSPIRVUtils.class.getResource("/assets/vulkanmod/shaders/" + shaderFile+shaderStage).toExternalForm();
-        return compileShaderAbsoluteFile(path, shaderKind, outFile, shaderStage);
+        return compileShaderAbsoluteFile(path, shaderKind, ShaderLoader.defDir+"/"+outFile);
     }
 
-    public static SPIRV compileShaderAbsoluteFile(String shaderFile, ShaderKind shaderKind, String outFile, String shaderStage) {
+    public static long compileShaderAbsoluteFile(String shaderFile, ShaderKind shaderKind, String outFile) {
         try {
             String source = new String(Files.readAllBytes(Paths.get(new URI(shaderFile))));
-            return compileShader(shaderFile, shaderStage, outFile, source, shaderKind);
+            return compileShader(shaderFile, outFile, source, shaderKind);
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
-        return null;
+        return 0;
     }
-
-    public static SPIRV compileShader(String filename, String shaderStage, String outFile, String source, ShaderKind shaderKind) throws IOException {
+//Don't compile and copy the file into the generated Dir to avoid potentia, issue sif tehShader is /*Missing*//Failed to propile properly
+    public static long compileShader(String filename, String outFile, String source, ShaderKind shaderKind) throws IOException {
 //        System.out.println(filename);
-        String pathname = outFile + shaderStage + ".spv";
+        String pathname = outFile;// + shaderStage + ".spv";
 //        File fileOutputStream = new File(pathname);
 //        boolean overWrite =  (!fileOutputStream.exists())? !fileOutputStream.createNewFile(): fileOutputStream.canWrite();
 //        if(overWrite)
@@ -52,7 +52,7 @@ public class ShaderSPIRVUtils {
                 throw new RuntimeException("Failed to create compiler options");
             }
 
-            Shaderc.shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+            Shaderc.shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1&((1 << 22) | (1 << 12)));
 //            Shaderc.shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_0);
             shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
@@ -85,7 +85,7 @@ public class ShaderSPIRVUtils {
                 }
 //                System.out.println(fileOutputStream.getAbsolutePath());
             }
-            return new SPIRV(memAddress0(bytecode), bytecode.capacity());
+            return ShaderLoader.createShaderModule(memAddress0(bytecode), bytecode.capacity());
 //        }
 //        else {
 //           return readFromStream(/*new FileInputStream*/(pathname));
@@ -113,16 +113,25 @@ public class ShaderSPIRVUtils {
     }
 
     public static SPIRV loadShaderFile(String name, ShaderKind vertexShader){
-        return readFromStream((name + (vertexShader.kind==ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh") + ".spv"));
+        return readFromStream((ShaderLoader.defDir+name + (vertexShader.kind==ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh") + ".spv"));
     }
 
     public enum ShaderKind {
 
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
         GEOMETRY_SHADER(shaderc_glsl_geometry_shader),
-        FRAGMENT_SHADER(shaderc_glsl_fragment_shader);
+        FRAGMENT_SHADER(shaderc_glsl_fragment_shader),
 
-        private final int kind;
+        COMPUTER_SHADER(shaderc_glsl_compute_shader),
+
+        MESH_SHADER(shaderc_mesh_shader),
+
+        RAYGEN_SHADER(shaderc_glsl_raygen_shader),
+        ANYHIT_SHADER(shaderc_glsl_anyhit_shader),
+        MISS_SHADER(shaderc_glsl_miss_shader),
+        INTERSECTION_SHADER(shaderc_glsl_intersection_shader);
+
+        final int kind;
 
         ShaderKind(int kind) {
             this.kind = kind;

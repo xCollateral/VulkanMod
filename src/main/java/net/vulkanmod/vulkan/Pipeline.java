@@ -31,7 +31,6 @@ import static net.vulkanmod.vulkan.ShaderSPIRVUtils.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -44,8 +43,8 @@ public class Pipeline {
     private static final VkDevice device = Vulkan.getDevice();
     private static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
-    private final SPIRV vertShaderSPIRV;
-    private final SPIRV fragShaderSPIRV;
+//    private final SPIRV vertShaderSPIRV;
+//    private final SPIRV fragShaderSPIRV;
 
     private String path;
     private long descriptorSetLayout;
@@ -64,12 +63,13 @@ public class Pipeline {
 
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
+    private static int idx;
 
-    public Pipeline(VertexFormat vertexFormat, String path, String name) {
+    public Pipeline(VertexFormat vertexFormat, String path, String name, int types) {
         this.path = path;
         //todo: can't skip null/Bad/Failed Shaders
-        vertShaderSPIRV = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.VERTEX_SHADER) : ShaderSPIRVUtils.loadShaderFile(name, ShaderKind.VERTEX_SHADER);
-        fragShaderSPIRV = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.FRAGMENT_SHADER) : ShaderSPIRVUtils.loadShaderFile(name, ShaderKind.FRAGMENT_SHADER);
+        vertShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.VERTEX_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.VERTEX_SHADER);
+        fragShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.FRAGMENT_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.FRAGMENT_SHADER);
 
         createDescriptorSetLayout(path);
         createPipelineLayout();
@@ -93,8 +93,8 @@ public class Pipeline {
 //                SPIRV fragShaderSPIRV = compileShader(path + ".fsh", "fragment");
 
 
-                vertShaderModule = createShaderModule(vertShaderSPIRV.handle(), vertShaderSPIRV.size());
-                fragShaderModule = createShaderModule(fragShaderSPIRV.handle(), fragShaderSPIRV.size());
+//                vertShaderModule = createShaderModule(vertShaderSPIRV.handle(), vertShaderSPIRV.size());
+//                fragShaderModule = createShaderModule(fragShaderSPIRV.handle(), fragShaderSPIRV.size());
             }
 
 
@@ -541,26 +541,6 @@ public class Pipeline {
 
             default -> throw new RuntimeException("cannot identify type..");
         };
-    }
-
-    private static long createShaderModule(long spirvCode, int size) {
-
-        try(MemoryStack stack = stackPush()) {
-
-            VkShaderModuleCreateInfo vkShaderModuleCreateInfo = VkShaderModuleCreateInfo.callocStack(stack)
-                    .sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            long struct = vkShaderModuleCreateInfo.address();
-            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE, (spirvCode));
-            VkShaderModuleCreateInfo.ncodeSize(struct, size);
-
-            LongBuffer pShaderModule = stack.mallocLong(1);
-
-            if(vkCreateShaderModule(device, vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create shader module");
-            }
-
-            return pShaderModule.get(0);
-        }
     }
 
     private static long createPipelineCache() {

@@ -15,7 +15,7 @@ import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
-public abstract class Buffer {
+public class Buffer {
     protected long id;
     protected long allocation;
 

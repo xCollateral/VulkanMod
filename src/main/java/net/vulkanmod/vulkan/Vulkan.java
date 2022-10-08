@@ -12,6 +12,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
 
+import java.io.IOException;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
