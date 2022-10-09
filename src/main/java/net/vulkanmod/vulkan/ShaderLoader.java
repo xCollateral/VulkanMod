@@ -27,6 +27,7 @@ public class ShaderLoader
 //    private static final ArrayList<String> shaderNames;
     private static final ArrayList<Path> shaderFiles;
     static final String defDir = (System.getProperty("user.dir")+"/compiled/Generated/");
+    static final boolean forceUpdate;
 
     static
     {
@@ -34,7 +35,7 @@ public class ShaderLoader
          *Can't currently incrementally compile shaders individually; (e.g. Per Pipeline) to allow for per Pipeline Reloading/Editing in game
          *Also can't add Custom Pipelines (e.g. Shader Mods/Packs)
          */
-        checkRootDir();
+        forceUpdate = checkRootDir();
         try(Stream<Path> frNames = Files.walk(Path.of(defDir), 1))
         {
             shaderFiles = new ArrayList<>(0);
@@ -57,13 +58,17 @@ public class ShaderLoader
         }
 
     }
-    private static void checkRootDir()
+    private static boolean checkRootDir()
     {
-        if(Vulkan.RECOMPILE_SHADERS)
+        File directory = new File(defDir);
+        boolean b = !directory.exists();
+        if(Vulkan.RECOMPILE_SHADERS || b)
         {
-            try {FileUtils.forceMkdir(new File(defDir));}
+            try {
+                FileUtils.forceMkdir(directory);}
             catch (IOException e) {throw new RuntimeException(e);}
         }
+        return b;
     }
 
     private static ShaderSPIRVUtils.ShaderKind stageOf(String name) {
@@ -125,7 +130,7 @@ public class ShaderLoader
             if(vkCreateShaderModule(Vulkan.getDevice(), vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
-            if(!Vulkan.RECOMPILE_SHADERS) MemoryUtil.nmemAlignedFree(spirvCode); //Can't seem to free if the Shaders are being compiled/Can free if they are PreCompiled However
+//            if(!Vulkan.RECOMPILE_SHADERS) MemoryUtil.nmemAlignedFree(spirvCode); //Can't seem to free if the Shaders are being compiled/Can free if they are PreCompiled However
             return pShaderModule.get(0);
         }
     }

@@ -65,8 +65,8 @@ public class Pipeline {
     public Pipeline(VertexFormat vertexFormat, String path, String name) {
         this.path = path;
 
-        vertShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.VERTEX_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.VERTEX_SHADER);
-        fragShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.FRAGMENT_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.FRAGMENT_SHADER);
+        vertShaderModule = Vulkan.RECOMPILE_SHADERS | ShaderLoader.forceUpdate ? compileShaderFile(path, name, ShaderKind.VERTEX_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.VERTEX_SHADER);
+        fragShaderModule = Vulkan.RECOMPILE_SHADERS | ShaderLoader.forceUpdate ? compileShaderFile(path, name, ShaderKind.FRAGMENT_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.FRAGMENT_SHADER);
 
         createDescriptorSetLayout(path);
         createPipelineLayout();
