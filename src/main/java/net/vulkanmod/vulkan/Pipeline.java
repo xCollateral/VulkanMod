@@ -43,10 +43,10 @@ public class Pipeline {
     private static final VkDevice device = Vulkan.getDevice();
     private static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
-    private final String name;
 //    private final SPIRV vertShaderSPIRV;
 //    private final SPIRV fragShaderSPIRV;
 
+    private String path;
     private long descriptorSetLayout;
     private long pipelineLayout;
     private Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
@@ -61,12 +61,13 @@ public class Pipeline {
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
 
-    private final long vertShaderModule;
-    private final long fragShaderModule;
+    private long vertShaderModule = 0;
+    private long fragShaderModule = 0;
     private static int idx;
 
     public Pipeline(VertexFormat vertexFormat, String path, String name, int types) {
-        this.name = name;
+        this.path = path;
+        //todo: can't skip null/Bad/Failed Shaders
         vertShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.VERTEX_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.VERTEX_SHADER);
         fragShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.FRAGMENT_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.FRAGMENT_SHADER);
 
@@ -91,8 +92,23 @@ public class Pipeline {
 
 
 
+            ByteBuffer entryPoint = stack.UTF8("main");
 
-            VkPipelineShaderStageCreateInfo.Buffer shaderStages = ShaderLoader.ShaderStages(name, stack);
+            VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.callocStack(2, stack);
+
+            VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
+
+            vertShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+            vertShaderStageInfo.stage(VK_SHADER_STAGE_VERTEX_BIT);
+            vertShaderStageInfo.module(vertShaderModule);
+            vertShaderStageInfo.pName(entryPoint);
+
+            VkPipelineShaderStageCreateInfo fragShaderStageInfo = shaderStages.get(1);
+
+            fragShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+            fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
+            fragShaderStageInfo.module(fragShaderModule);
+            fragShaderStageInfo.pName(entryPoint);
 
             // ===> VERTEX STAGE <===
 

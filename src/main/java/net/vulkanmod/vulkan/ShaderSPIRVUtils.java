@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memAddress0;
 import static org.lwjgl.util.shaderc.Shaderc.*;
-import static org.lwjgl.vulkan.VK10.*;
 
 public class ShaderSPIRVUtils {
 
@@ -105,17 +104,6 @@ public class ShaderSPIRVUtils {
         INTERSECTION_SHADER(shaderc_glsl_intersection_shader);
 
         final int kind;
-
-        public int cinvertShaderCtoVKAccessFlags()
-        {
-            return switch (kind)
-                    {
-                        case shaderc_glsl_vertex_shader -> VK_SHADER_STAGE_VERTEX_BIT;
-                        case shaderc_glsl_geometry_shader -> VK_SHADER_STAGE_GEOMETRY_BIT;
-                        case shaderc_glsl_fragment_shader -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                        default -> throw new IllegalStateException("Unexpected value: " + kind);
-                    };
-        }
 
         ShaderKind(int kind) {
             this.kind = kind;
