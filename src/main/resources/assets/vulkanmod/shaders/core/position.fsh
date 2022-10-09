@@ -9,7 +9,7 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
     return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
 }
 
-layout(binding = 0) uniform UBO{
+layout(binding = 1) uniform UBO{
     vec4 ColorModulator;
     vec4 FogColor;
     float FogStart;

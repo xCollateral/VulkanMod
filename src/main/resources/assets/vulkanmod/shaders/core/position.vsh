@@ -2,7 +2,7 @@
 
 layout(location = 0) in vec3 Position;
 
-layout(Push_Constant) uniform UniformBufferObject {
+layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
    mat4 ModelViewMat;
 };
