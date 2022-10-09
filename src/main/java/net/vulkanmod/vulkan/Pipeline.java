@@ -43,8 +43,6 @@ public class Pipeline {
     private static final VkDevice device = Vulkan.getDevice();
     private static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
-//    private final SPIRV vertShaderSPIRV;
-//    private final SPIRV fragShaderSPIRV;
 
     private String path;
     private long descriptorSetLayout;
@@ -61,13 +59,12 @@ public class Pipeline {
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
 
-    private long vertShaderModule = 0;
-    private long fragShaderModule = 0;
-    private static int idx;
+    private final long vertShaderModule;
+    private final long fragShaderModule;
 
-    public Pipeline(VertexFormat vertexFormat, String path, String name, int types) {
+    public Pipeline(VertexFormat vertexFormat, String path, String name) {
         this.path = path;
-        //todo: can't skip null/Bad/Failed Shaders
+
         vertShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.VERTEX_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.VERTEX_SHADER);
         fragShaderModule = Vulkan.RECOMPILE_SHADERS ? compileShaderFile(path, name, ShaderKind.FRAGMENT_SHADER) : ShaderLoader.loadDirectHandle(name, ShaderKind.FRAGMENT_SHADER);
 
@@ -95,20 +92,17 @@ public class Pipeline {
             ByteBuffer entryPoint = stack.UTF8("main");
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.callocStack(2, stack);
+            shaderStages.get(0)
+                    .sType$Default()
+                    .stage(VK_SHADER_STAGE_VERTEX_BIT)
+                    .module(vertShaderModule)
+                    .pName(entryPoint);
 
-            VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
-
-            vertShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-            vertShaderStageInfo.stage(VK_SHADER_STAGE_VERTEX_BIT);
-            vertShaderStageInfo.module(vertShaderModule);
-            vertShaderStageInfo.pName(entryPoint);
-
-            VkPipelineShaderStageCreateInfo fragShaderStageInfo = shaderStages.get(1);
-
-            fragShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-            fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
-            fragShaderStageInfo.module(fragShaderModule);
-            fragShaderStageInfo.pName(entryPoint);
+            shaderStages.get(1)
+                    .sType$Default()
+                    .stage(VK_SHADER_STAGE_FRAGMENT_BIT)
+                    .module(fragShaderModule)
+                    .pName(entryPoint);
 
             // ===> VERTEX STAGE <===
 
@@ -134,18 +128,15 @@ public class Pipeline {
 
             // ===> RASTERIZATION STAGE <===
 
-            VkPipelineRasterizationStateCreateInfo rasterizer = VkPipelineRasterizationStateCreateInfo.callocStack(stack);
-            rasterizer.sType(VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
-            rasterizer.depthClampEnable(false);
-            rasterizer.rasterizerDiscardEnable(false);
-            rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
-            rasterizer.lineWidth(1.0f);
-
-            if(state.cullState) rasterizer.cullMode(VK_CULL_MODE_BACK_BIT);
-            else rasterizer.cullMode(VK_CULL_MODE_NONE);
-
-            rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            rasterizer.depthBiasEnable(true);
+            VkPipelineRasterizationStateCreateInfo rasterizer = VkPipelineRasterizationStateCreateInfo.callocStack(stack)
+                    .sType$Default()
+                    .depthClampEnable(false)
+                    .rasterizerDiscardEnable(false)
+                    .polygonMode(VK_POLYGON_MODE_FILL)
+                    .lineWidth(1.0f)
+                    .cullMode(state.cullState ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE)
+                    .frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                    .depthBiasEnable(true);
 
             // ===> MULTISAMPLING <===
 
@@ -168,21 +159,16 @@ public class Pipeline {
 
             // ===> COLOR BLENDING <===
 
-            VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.callocStack(1, stack);
-            colorBlendAttachment.colorWriteMask(state.colorMask.colorMask);
+            VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.callocStack(1, stack)
+                    .colorWriteMask(state.colorMask.colorMask)
+                    .blendEnable(state.blendState.enabled)
+                    .srcColorBlendFactor(state.blendState.srcRgbFactor)
+                    .dstColorBlendFactor(state.blendState.dstRgbFactor)
+                    .colorBlendOp(VK_BLEND_OP_ADD)
+                    .srcAlphaBlendFactor(state.blendState.srcAlphaFactor)
+                    .dstAlphaBlendFactor(state.blendState.dstAlphaFactor)
+                    .alphaBlendOp(VK_BLEND_OP_ADD);
 
-            if(state.blendState.enabled) {
-                colorBlendAttachment.blendEnable(true);
-                colorBlendAttachment.srcColorBlendFactor(state.blendState.srcRgbFactor);
-                colorBlendAttachment.dstColorBlendFactor(state.blendState.dstRgbFactor);
-                colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
-                colorBlendAttachment.srcAlphaBlendFactor(state.blendState.srcAlphaFactor);
-                colorBlendAttachment.dstAlphaBlendFactor(state.blendState.dstAlphaFactor);
-                colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
-            }
-            else {
-                colorBlendAttachment.blendEnable(false);
-            }
 
             VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.callocStack(stack);
             colorBlending.sType(VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
@@ -193,26 +179,25 @@ public class Pipeline {
 
             // ===> DYNAMIC STATES <===
 
-            VkPipelineDynamicStateCreateInfo dynamicStates = VkPipelineDynamicStateCreateInfo.callocStack(stack);
-            dynamicStates.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-            dynamicStates.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
+            VkPipelineDynamicStateCreateInfo dynamicStates = VkPipelineDynamicStateCreateInfo.callocStack(stack).sType$Default()
+                    .pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
 
-            VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.callocStack(1, stack);
-            pipelineInfo.sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-            pipelineInfo.pStages(shaderStages);
-            pipelineInfo.pVertexInputState(vertexInputInfo);
-            pipelineInfo.pInputAssemblyState(inputAssembly);
-            pipelineInfo.pViewportState(viewportState);
-            pipelineInfo.pRasterizationState(rasterizer);
-            pipelineInfo.pMultisampleState(multisampling);
-            pipelineInfo.pDepthStencilState(depthStencil);
-            pipelineInfo.pColorBlendState(colorBlending);
-            pipelineInfo.pDynamicState(dynamicStates);
-            pipelineInfo.layout(pipelineLayout);
-            pipelineInfo.renderPass(Vulkan.getRenderPass());
-            pipelineInfo.subpass(0);
-            pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
-            pipelineInfo.basePipelineIndex(-1);
+            VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.callocStack(1, stack)
+                    .sType$Default()
+                    .pStages(shaderStages)
+                    .pVertexInputState(vertexInputInfo)
+                    .pInputAssemblyState(inputAssembly)
+                    .pViewportState(viewportState)
+                    .pRasterizationState(rasterizer)
+                    .pMultisampleState(multisampling)
+                    .pDepthStencilState(depthStencil)
+                    .pColorBlendState(colorBlending)
+                    .pDynamicState(dynamicStates)
+                    .layout(pipelineLayout)
+                    .renderPass(Vulkan.getRenderPass())
+                    .subpass(0)
+                    .basePipelineHandle(VK_NULL_HANDLE)
+                    .basePipelineIndex(-1);
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 

@@ -20,7 +20,7 @@ public class ShaderSPIRVUtils {
     public static long compileShaderFile(String shaderFile, String outFile, ShaderKind shaderKind) {
         String shaderStage = shaderKind.kind == ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh";
         String path = ShaderSPIRVUtils.class.getResource("/assets/vulkanmod/shaders/" + shaderFile+shaderStage).toExternalForm();
-        return compileShaderAbsoluteFile(path, shaderStage, shaderKind, outFile);
+        return compileShaderAbsoluteFile(path, shaderStage, shaderKind, ShaderLoader.defDir+outFile);
     }
 
     public static long compileShaderAbsoluteFile(String shaderFile, String shaderStage, ShaderKind shaderKind, String outFile) {
@@ -32,14 +32,9 @@ public class ShaderSPIRVUtils {
         }
         return 0;
     }
-//Don't compile and copy the file into the generated Dir to avoid potentia, issue sif tehShader is /*Missing*//Failed to propile properly
     public static long compileShader(String filename, String outFile, String shaderStage, String source, ShaderKind shaderKind) throws IOException {
-//        System.out.println(filename);
         String pathname = outFile + shaderStage;// + ".spv";
-//        File fileOutputStream = new File(pathname);
-//        boolean overWrite =  (!fileOutputStream.exists())? !fileOutputStream.createNewFile(): fileOutputStream.canWrite();
-//        if(overWrite)
-//            {
+
             long compiler = shaderc_compiler_initialize();
 
             if(compiler == NULL) {
@@ -72,20 +67,14 @@ public class ShaderSPIRVUtils {
             ByteBuffer bytecode =  shaderc_result_get_bytes(result);
 
             try(final DataOutputStream dataOutputStreamD = new DataOutputStream(new FileOutputStream(pathname))) {
-//                fileOutputStream.createNewFile();
 
-
-//                DataOutputStream fileOutputStreamD = new DataOutputStream(new FileOutputStream(fileOutputStream));
                 for (int i = 0; i < (bytecode).capacity(); i++) {
                     dataOutputStreamD.writeByte(bytecode.get(i));
                 }
-//                System.out.println(fileOutputStream.getAbsolutePath());
+
             }
             return ShaderLoader.createShaderModule(memAddress0(bytecode), bytecode.capacity());
-//        }
-//        else {
-//           return readFromStream(/*new FileInputStream*/(pathname));
-//        }
+
     }
 
 
@@ -109,17 +98,8 @@ public class ShaderSPIRVUtils {
             this.kind = kind;
         }
     }
-    //don;t cal this if a bad/failed handle as a result of failed Alloctaion?COmpialtion toa void Unessacery Heap Fragmentation/Alloctaions amdtcistaios eg. e.tc i.e. /.MSIc .e.rerer.eeree
     public record SPIRV(long handle, int size) implements NativeResource {
 
-//        public final long handle;
-//        public int size;
-////        private ByteBuffer bytecode;
-//
-//        public SPIRV(long handle, int bytecode) {
-//            this.handle = handle;
-//            this.size = bytecode;
-//        }
 
         public long bytecode() {
             return handle;

@@ -6,7 +6,6 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.resource.ResourceFactory;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Pipeline;
-import org.lwjgl.util.shaderc.Shaderc;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,7 +26,7 @@ public class ShaderMixin implements ShaderMixed {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void create(ResourceFactory factory, String name, VertexFormat format, CallbackInfo ci) {
         String path = "core/" + name;
-        pipeline = new Pipeline(format, path, name, Shaderc.shaderc_glsl_fragment_shader| Shaderc.shaderc_glsl_vertex_shader);
+        pipeline = new Pipeline(format, path, name);
     }
 
     @Inject(method = "loadProgram", at = @At("HEAD"), cancellable = true)

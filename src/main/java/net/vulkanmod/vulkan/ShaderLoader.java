@@ -1,11 +1,12 @@
 package net.vulkanmod.vulkan;
 
+import org.apache.commons.io.FileUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
 
+import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
@@ -25,29 +26,26 @@ public class ShaderLoader
     private static final HashMap<String, Integer> supportedStages;
 //    private static final ArrayList<String> shaderNames;
     private static final ArrayList<Path> shaderFiles;
-    private static final String defDir = ("compiled/Generated");
+    static final String defDir = (System.getProperty("user.dir")+"/compiled/Generated/");
 
     static
     {
-        //Loaded names correspond to the number of Distinct pipelines Created
-        //Make sure erroring/Missing/Failed shaders are not added Accidentally
-        //Enum Root COmpiled ShadreNames Dir
-
+        /*Loaded names correspond to the number of Distinct pipelines Created
+         *Can't currently incrementally compile shaders individually; (e.g. Per Pipeline) to allow for per Pipeline Reloading/Editing in game
+         *Also can't add Custom Pipelines (e.g. Shader Mods/Packs)
+         */
+        checkRootDir();
         try(Stream<Path> frNames = Files.walk(Path.of(defDir), 1))
         {
             shaderFiles = new ArrayList<>(0);
             frNames.forEach(shaderFiles::add);
 
             shaderFiles.remove(0); //remove Dummy Base Dir Index
-//            System.out.println(shaderFiles);
 
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-//        FRNames2 = Files.walk(defDir, 1);
-//        System.out.println(Arrays.toString(frNames.toArray()));
-//        List<Path> ax= FRNames.toList();
 
         vkShaderModulesVert = new HashMap<>(shaderFiles.size() >> 1);
         vkShaderModulesFrag = new HashMap<>(shaderFiles.size() >> 1);
@@ -55,16 +53,17 @@ public class ShaderLoader
 
         //        SPIRVSet = new ArrayList<>();
         for (Path frName : shaderFiles) {
-//            System.out.println(frName);
             loadShaderFile(frName);
-//            loadShaderFile(frName.toString());
         }
-//        vkShaderModulesVert.rewind();
-//        vkShaderModulesFrag.rewind();
 
-
-
-
+    }
+    private static void checkRootDir()
+    {
+        if(Vulkan.RECOMPILE_SHADERS)
+        {
+            try {FileUtils.forceMkdir(new File(defDir));}
+            catch (IOException e) {throw new RuntimeException(e);}
+        }
     }
 
     private static ShaderSPIRVUtils.ShaderKind stageOf(String name) {
@@ -126,7 +125,7 @@ public class ShaderLoader
             if(vkCreateShaderModule(Vulkan.getDevice(), vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
-            MemoryUtil.nmemAlignedFree(spirvCode);
+            if(!Vulkan.RECOMPILE_SHADERS) MemoryUtil.nmemAlignedFree(spirvCode); //Can't seem to free if the Shaders are being compiled/Can free if they are PreCompiled However
             return pShaderModule.get(0);
         }
     }
@@ -136,22 +135,14 @@ public class ShaderLoader
         loadShaderFile(name);
     }
 
-//    public static long loadDirectFragHandle(String name)
-//    {
-//
-//    }
     public static long loadDirectHandle(String name, ShaderSPIRVUtils.ShaderKind vertexShader)
     {
-//        int integer = supportedStages.get(name);
-//        if((integer | vertexShader.kind)!=integer)
-//        {
-//            throw new RuntimeException();
-//        }
         return switch (vertexShader)
         {
             case VERTEX_SHADER -> vkShaderModulesVert.get(name);
-            case CLOSESTHIT_SHADER, GEOMETRY_SHADER, COMPUTER_SHADER, MESH_SHADER, RAYGEN_SHADER, ANYHIT_SHADER, MISS_SHADER, INTERSECTION_SHADER -> 0L;
             case FRAGMENT_SHADER -> vkShaderModulesFrag.get(name);
+            default -> throw new IllegalStateException("UnSupported ShaderStage!: " + vertexShader);
         };
     }
+
 }
