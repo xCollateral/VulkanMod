@@ -18,6 +18,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class ShaderSPIRVUtils {
+    private static long compiler;
 
     public static SPIRV compileShaderFile(String shaderFile, ShaderKind shaderKind) {
         String path = ShaderSPIRVUtils.class.getResource("/assets/vulkanmod/shaders/" + shaderFile).toExternalForm();
@@ -36,7 +37,7 @@ public class ShaderSPIRVUtils {
 
     public static SPIRV compileShader(String filename, String source, ShaderKind shaderKind) {
 
-        long compiler = shaderc_compiler_initialize();
+        if(compiler == 0) compiler = shaderc_compiler_initialize();
 
         if(compiler == NULL) {
             throw new RuntimeException("Failed to create shader compiler");
@@ -60,7 +61,7 @@ public class ShaderSPIRVUtils {
             throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(result));
         }
 
-        shaderc_compiler_release(compiler);
+//        shaderc_compiler_release(compiler);
 
         return new SPIRV(result, shaderc_result_get_bytes(result));
     }
