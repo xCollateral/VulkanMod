@@ -88,14 +88,7 @@ public class Pipeline {
             // Let's compile the GLSL shaders into SPIR-V at runtime using the org.lwjgl.util.shaderc library
             // Check ShaderSPIRVUtils class to see how it can be done
 
-            if(vertShaderModule == 0 || fragShaderModule == 0) {
-//                SPIRV vertShaderSPIRV = compileShader(path + ".vsh", "vertex");
-//                SPIRV fragShaderSPIRV = compileShader(path + ".fsh", "fragment");
 
-
-//                vertShaderModule = createShaderModule(vertShaderSPIRV.handle(), vertShaderSPIRV.size());
-//                fragShaderModule = createShaderModule(fragShaderSPIRV.handle(), fragShaderSPIRV.size());
-            }
 
 
 

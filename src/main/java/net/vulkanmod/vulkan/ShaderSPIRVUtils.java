@@ -20,22 +20,22 @@ public class ShaderSPIRVUtils {
     public static long compileShaderFile(String shaderFile, String outFile, ShaderKind shaderKind) {
         String shaderStage = shaderKind.kind == ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh";
         String path = ShaderSPIRVUtils.class.getResource("/assets/vulkanmod/shaders/" + shaderFile+shaderStage).toExternalForm();
-        return compileShaderAbsoluteFile(path, shaderKind, ShaderLoader.defDir+"/"+outFile);
+        return compileShaderAbsoluteFile(path, shaderStage, shaderKind, outFile);
     }
 
-    public static long compileShaderAbsoluteFile(String shaderFile, ShaderKind shaderKind, String outFile) {
+    public static long compileShaderAbsoluteFile(String shaderFile, String shaderStage, ShaderKind shaderKind, String outFile) {
         try {
             String source = new String(Files.readAllBytes(Paths.get(new URI(shaderFile))));
-            return compileShader(shaderFile, outFile, source, shaderKind);
+            return compileShader(shaderFile, outFile, shaderStage, source, shaderKind);
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
         return 0;
     }
 //Don't compile and copy the file into the generated Dir to avoid potentia, issue sif tehShader is /*Missing*//Failed to propile properly
-    public static long compileShader(String filename, String outFile, String source, ShaderKind shaderKind) throws IOException {
+    public static long compileShader(String filename, String outFile, String shaderStage, String source, ShaderKind shaderKind) throws IOException {
 //        System.out.println(filename);
-        String pathname = outFile;// + shaderStage + ".spv";
+        String pathname = outFile + shaderStage;// + ".spv";
 //        File fileOutputStream = new File(pathname);
 //        boolean overWrite =  (!fileOutputStream.exists())? !fileOutputStream.createNewFile(): fileOutputStream.canWrite();
 //        if(overWrite)
@@ -70,10 +70,6 @@ public class ShaderSPIRVUtils {
 
 
             ByteBuffer bytecode =  shaderc_result_get_bytes(result);
-//            if(bytecode==null)
-//            {
-//                throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(result));
-//            }
 
             try(final DataOutputStream dataOutputStreamD = new DataOutputStream(new FileOutputStream(pathname))) {
 //                fileOutputStream.createNewFile();
@@ -92,42 +88,18 @@ public class ShaderSPIRVUtils {
 //        }
     }
 
-    private static SPIRV readFromStream(String inputStream) {
 
-        try(final FileInputStream fileInputStream = new FileInputStream(inputStream)) {
-            byte[] bytes = fileInputStream.readAllBytes();
-            ByteBuffer buffer = MemoryUtil.memAlignedAlloc(Integer.BYTES, bytes.length); //Must be in Little Endian to be Loaded Correctly
-            buffer.put(bytes);
-//            buffer.rewind();
-//            if (bytes.length==0)
-//            {
-//                throw new RuntimeException();
-//            }
-//            inputStream.close();
-
-            return new SPIRV(MemoryUtil.memAddress0(buffer), buffer.capacity());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        throw new RuntimeException("unable to read inputStream");
-    }
-
-    public static SPIRV loadShaderFile(String name, ShaderKind vertexShader){
-        return readFromStream((ShaderLoader.defDir+name + (vertexShader.kind==ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh") + ".spv"));
-    }
 
     public enum ShaderKind {
 
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
         GEOMETRY_SHADER(shaderc_glsl_geometry_shader),
         FRAGMENT_SHADER(shaderc_glsl_fragment_shader),
-
         COMPUTER_SHADER(shaderc_glsl_compute_shader),
-
         MESH_SHADER(shaderc_mesh_shader),
-
         RAYGEN_SHADER(shaderc_glsl_raygen_shader),
         ANYHIT_SHADER(shaderc_glsl_anyhit_shader),
+        CLOSESTHIT_SHADER(shaderc_glsl_closesthit_shader),
         MISS_SHADER(shaderc_glsl_miss_shader),
         INTERSECTION_SHADER(shaderc_glsl_intersection_shader);
 
