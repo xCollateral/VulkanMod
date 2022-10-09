@@ -26,7 +26,8 @@ public class Options {
                             config.resolution = value;
                             fullscreenDirty = true;
                         },
-                        () -> config.resolution),
+                        () -> config.resolution)
+                        .setTooltip(Text.of("Only works on fullscreen")),
                 new SwitchOption("Windowed Fullscreen",
                         value -> {
                             config.windowedFullscreen = value;

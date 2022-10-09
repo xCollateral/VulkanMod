@@ -84,6 +84,15 @@ public abstract class WindowMixin {
      * @author
      */
     @Overwrite
+    public void toggleFullscreen() {
+        this.fullscreen = !this.fullscreen;
+        Options.fullscreenDirty = true;
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite
     public void swapBuffers() {
         RenderSystem.flipFrame(this.handle);
 //        if (this.fullscreen != this.currentFullscreen) {
@@ -171,10 +180,6 @@ public abstract class WindowMixin {
             }
         }
         else if(config.windowedFullscreen) {
-            if (MinecraftClient.IS_SYSTEM_MAC) {
-                MacWindowUtil.toggleFullscreen(this.handle);
-            }
-//            VideoMode videoMode = this.videoMode.get();
 
             this.x = 0;
             this.y = 0;

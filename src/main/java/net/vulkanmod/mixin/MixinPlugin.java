@@ -17,6 +17,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String mixinPackage) {
         config = Config.load(new File("./config/vulkanmod_settings.json").toPath().toAbsolutePath());
+        if(config == null) config = new Config();
     }
 
     @Override

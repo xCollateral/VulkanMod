@@ -45,8 +45,7 @@ public class Config {
             }
         }
         else {
-            config = new Config();
-            config.write();
+            config = null;
         }
 
         return config;
