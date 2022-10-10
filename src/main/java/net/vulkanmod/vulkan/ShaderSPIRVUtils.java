@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.util.shaderc.Shaderc;
+import org.lwjgl.vulkan.VK10;
 
 import java.io.*;
 import java.net.URI;
@@ -47,7 +48,7 @@ public class ShaderSPIRVUtils {
                 throw new RuntimeException("Failed to create compiler options");
             }
 
-            Shaderc.shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1&((1 << 22) | (1 << 12)));
+        Shaderc.shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, VK10.VK_VERSION_MAJOR(Vulkan.vkRawVersion) << 22 | VK10.VK_VERSION_MINOR(Vulkan.vkRawVersion) << 12);
 //            Shaderc.shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_0);
             shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
