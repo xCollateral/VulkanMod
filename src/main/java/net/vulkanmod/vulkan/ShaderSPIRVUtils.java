@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan;
 
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.util.shaderc.Shaderc;
@@ -10,20 +9,14 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Objects;
 
-import static org.lwjgl.system.Checks.CHECKS;
-import static org.lwjgl.system.Checks.checkNT1;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.memAddress0;
 import static org.lwjgl.util.shaderc.Shaderc.*;
-import static org.lwjgl.util.shaderc.Shaderc.shaderc_result_get_bytes;
 
 public class ShaderSPIRVUtils {
-
-    private static long compiler;
 
     public static long compileShaderFile(String shaderFile, String outFile, ShaderKind shaderKind) {
         String shaderStage = shaderKind.kind == ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh";
@@ -43,7 +36,7 @@ public class ShaderSPIRVUtils {
     public static long compileShader(String filename, String outFile, String shaderStage, String source, ShaderKind shaderKind) throws IOException {
         String pathname = outFile + shaderStage;// + ".spv";
 
-        compiler = shaderc_compiler_initialize();
+            long compiler = shaderc_compiler_initialize();
 
             if(compiler == NULL) {
                 throw new RuntimeException("Failed to create shader compiler");
@@ -59,29 +52,20 @@ public class ShaderSPIRVUtils {
 //            Shaderc.shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_0);
             shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
-//            byte[] a =  new DataInputStream(new FileInputStream(source)).readAllBytes();
+            long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 
-//            ByteBuffer ax = ByteBuffer.allocateDirect( source.length()).put(source.getBytes()).order(ByteOrder.LITTLE_ENDIAN);
-        long assembly = shaderc_compile_into_spv_assembly(compiler, ((source)), shaderKind.kind, ((outFile)), (("main")), options);
-
-
-//            ByteBuffer obj = memByteBuffer(nshaderc_result_get_bytes(result), (int) shaderc_result_get_length(result));
-        long result1 = shaderc_assemble_into_spv(compiler, shaderc_result_get_bytes(assembly), options);
-
-
-
-        if(result1 == NULL) {
+            if(result == NULL) {
                 throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V");
             }
 
-            if(shaderc_result_get_compilation_status(result1) != shaderc_compilation_status_success) {
-                throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(result1));
+            if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+                throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(result));
             }
 
-//            shaderc_compiler_release(compiler);
+            shaderc_compiler_release(compiler);
 
 
-            ByteBuffer bytecode =  shaderc_result_get_bytes(result1);
+            ByteBuffer bytecode =  shaderc_result_get_bytes(result);
 
             try(final DataOutputStream dataOutputStreamD = new DataOutputStream(new FileOutputStream(pathname))) {
 
@@ -90,7 +74,7 @@ public class ShaderSPIRVUtils {
                 }
 
             }
-            return ShaderLoader.createShaderModule(memAddress0(bytecode), (int) shaderc_result_get_length(result1));
+            return ShaderLoader.createShaderModule(memAddress0(bytecode), bytecode.capacity());
 
     }
 
@@ -100,14 +84,7 @@ public class ShaderSPIRVUtils {
 
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
         GEOMETRY_SHADER(shaderc_glsl_geometry_shader),
-        FRAGMENT_SHADER(shaderc_glsl_fragment_shader),
-        COMPUTER_SHADER(shaderc_glsl_compute_shader),
-        MESH_SHADER(shaderc_mesh_shader),
-        RAYGEN_SHADER(shaderc_glsl_raygen_shader),
-        ANYHIT_SHADER(shaderc_glsl_anyhit_shader),
-        CLOSESTHIT_SHADER(shaderc_glsl_closesthit_shader),
-        MISS_SHADER(shaderc_glsl_miss_shader),
-        INTERSECTION_SHADER(shaderc_glsl_intersection_shader);
+        FRAGMENT_SHADER(shaderc_glsl_fragment_shader);
 
         final int kind;
 
@@ -126,8 +103,6 @@ public class ShaderSPIRVUtils {
         public void free() {
             shaderc_result_release(handle);
             MemoryUtil.nmemAlignedFree(handle);
-            shaderc_compiler_release(compiler);
-
 //            bytecode = null; // Help the GC
         }
     }

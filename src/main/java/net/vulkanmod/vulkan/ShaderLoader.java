@@ -31,10 +31,7 @@ public class ShaderLoader
 
     static
     {
-        /*Loaded names correspond to the number of Distinct pipelines Created
-         *Can't currently incrementally compile shaders individually; (e.g. Per Pipeline) to allow for per Pipeline Reloading/Editing in game
-         *Also can't add Custom Pipelines (e.g. Shader Mods/Packs)
-         */
+
         forceUpdate = checkRootDir();
         try(Stream<Path> frNames = Files.walk(Path.of(defDir), 1))
         {
@@ -102,7 +99,7 @@ public class ShaderLoader
         try(final FileInputStream fileInputStream = new FileInputStream(name))
         {
             byte[] bytes = fileInputStream.readAllBytes();
-            ByteBuffer buffer = MemoryUtil.memAlignedAlloc(Integer.BYTES, bytes.length); //Must be in Little Endian to be Loaded Correctly
+            ByteBuffer buffer = MemoryUtil.memAlignedAlloc(Integer.BYTES, bytes.length);
             buffer.put(bytes);
             int capacity = buffer.capacity();
 
@@ -130,7 +127,7 @@ public class ShaderLoader
             if(vkCreateShaderModule(Vulkan.getDevice(), vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
-//            if(!Vulkan.RECOMPILE_SHADERS) MemoryUtil.nmemAlignedFree(spirvCode); //Can't seem to free if the Shaders are being compiled/Can free if they are PreCompiled However
+            if(!Vulkan.RECOMPILE_SHADERS|forceUpdate) MemoryUtil.nmemAlignedFree(spirvCode);
             return pShaderModule.get(0);
         }
     }
