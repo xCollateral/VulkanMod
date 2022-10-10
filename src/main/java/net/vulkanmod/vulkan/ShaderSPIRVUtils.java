@@ -37,7 +37,7 @@ public class ShaderSPIRVUtils {
     public static long compileShader(String filename, String outFile, String shaderStage, String source, ShaderKind shaderKind) throws IOException {
         String pathname = outFile + shaderStage;// + ".spv";
 
-        if(compiler == 0) compiler = shaderc_compiler_initialize();
+            if(compiler == 0) compiler = shaderc_compiler_initialize();
 
             long options = shaderc_compile_options_initialize();
 
@@ -66,7 +66,7 @@ public class ShaderSPIRVUtils {
             try(final DataOutputStream dataOutputStreamD = new DataOutputStream(new FileOutputStream(pathname))) {
 
                 for (int i = 0; i < (bytecode).capacity(); i++) {
-                    dataOutputStreamD.writeByte(bytecode.get(i));
+                    dataOutputStreamD.writeByte(bytecode.get(i)); //Not sure if this is slow
                 }
 
             }
