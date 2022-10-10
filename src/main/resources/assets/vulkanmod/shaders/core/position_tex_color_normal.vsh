@@ -5,9 +5,10 @@ layout(location = 1) in vec2 UV0;
 layout(location = 2) in vec4 Color;
 layout(location = 3) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP;
+
+layout(Push_Constant) uniform UniformBufferObject2 {
    mat4 ModelViewMat;
+   mat4 MVP;
 };
 
 layout(location = 0) out vec4 vertexColor;

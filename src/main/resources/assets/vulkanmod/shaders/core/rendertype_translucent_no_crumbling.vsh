@@ -6,7 +6,7 @@ layout(location = 2) in vec2 UV0;
 layout(location = 3) in ivec2 UV2;
 layout(location = 4) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(Push_Constant) uniform UniformBufferObject {
    mat4 MVP;
 };
 

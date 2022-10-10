@@ -127,7 +127,7 @@ public class ShaderLoader
             if(vkCreateShaderModule(Vulkan.getDevice(), vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
-            if(!Vulkan.RECOMPILE_SHADERS|!forceUpdate) MemoryUtil.nmemAlignedFree(spirvCode);
+            if(!Vulkan.RECOMPILE_SHADERS & !forceUpdate) MemoryUtil.nmemAlignedFree(spirvCode);
             return pShaderModule.get(0);
         }
     }
