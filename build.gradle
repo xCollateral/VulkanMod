@@ -12,6 +12,7 @@ group = project.maven_group
 
 project.ext.lwjglVersion = "3.3.1"
 project.ext.jomlVersion = "1.10.5"
+
 project.ext.winNatives = "natives-windows"
 project.ext.linuxNatives = "natives-linux"
 

@@ -17,6 +17,7 @@ import static org.lwjgl.system.MemoryUtil.memAddress0;
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class ShaderSPIRVUtils {
+    private static long compiler;
 
     public static long compileShaderFile(String shaderFile, String outFile, ShaderKind shaderKind) {
         String shaderStage = shaderKind.kind == ShaderKind.VERTEX_SHADER.kind ? ".vsh" : ".fsh";
@@ -36,11 +37,7 @@ public class ShaderSPIRVUtils {
     public static long compileShader(String filename, String outFile, String shaderStage, String source, ShaderKind shaderKind) throws IOException {
         String pathname = outFile + shaderStage;// + ".spv";
 
-            long compiler = shaderc_compiler_initialize();
-
-            if(compiler == NULL) {
-                throw new RuntimeException("Failed to create shader compiler");
-            }
+        if(compiler == 0) compiler = shaderc_compiler_initialize();
 
             long options = shaderc_compile_options_initialize();
 
@@ -62,8 +59,7 @@ public class ShaderSPIRVUtils {
                 throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(result));
             }
 
-            shaderc_compiler_release(compiler);
-
+//        shaderc_compiler_release(compiler);
 
             ByteBuffer bytecode =  shaderc_result_get_bytes(result);
 
