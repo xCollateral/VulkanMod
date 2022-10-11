@@ -13,6 +13,7 @@ import net.minecraft.util.JsonHelper;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
+import net.vulkanmod.vulkan.shader.Sampler;
 import net.vulkanmod.vulkan.shader.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -265,9 +266,9 @@ public class Pipeline {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(i);
                 samplerLayoutBinding.binding(s.binding());
                 samplerLayoutBinding.descriptorCount(1);
-                samplerLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                samplerLayoutBinding.descriptorType(s.getType());
                 samplerLayoutBinding.pImmutableSamplers(null);
-                samplerLayoutBinding.stageFlags(VK_SHADER_STAGE_ALL_GRAPHICS);
+                samplerLayoutBinding.stageFlags(s.getStage());
 
                 ++i;
             }
@@ -328,9 +329,9 @@ public class Pipeline {
                 uniformBufferPoolSize.descriptorCount(descriptorCount);
             }
 
-            for(; i < UBOs.size() + samplers.size(); ++i) {
-                VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(i);
-                textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            for(Sampler s : samplers) {
+                VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(i++);
+                textureSamplerPoolSize.type(s.getType());
                 textureSamplerPoolSize.descriptorCount(descriptorCount);
             }
 
@@ -490,8 +491,10 @@ public class Pipeline {
         JsonObject jsonobject = JsonHelper.asObject(jsonelement, "UBO");
         String name = JsonHelper.getString(jsonobject, "name");
         int binding = JsonHelper.getInt(jsonobject, "binding");
+        String type = JsonHelper.getString(jsonobject, "type");
+        String stage = JsonHelper.getString(jsonobject, "stage");
 
-        samplers.add(new Sampler(name, binding));
+        samplers.add(new Sampler(name, binding, type, stage));
     }
 
     private void parsePushConstantNode(JsonArray jsonArray) {
@@ -654,7 +657,7 @@ public class Pipeline {
                     samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
                     samplerDescriptorWrite.dstBinding(samplers.get(0).binding());
                     samplerDescriptorWrite.dstArrayElement(0);
-                    samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                    samplerDescriptorWrite.descriptorType(samplers.get(0).getType());
                     samplerDescriptorWrite.descriptorCount(1);
                     samplerDescriptorWrite.pImageInfo(imageInfos[0]);
 
@@ -674,7 +677,7 @@ public class Pipeline {
                         samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
                         samplerDescriptorWrite.dstBinding(samplers.get(1).binding());
                         samplerDescriptorWrite.dstArrayElement(0);
-                        samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                        samplerDescriptorWrite.descriptorType(samplers.get(1).getType());
                         samplerDescriptorWrite.descriptorCount(1);
                         samplerDescriptorWrite.pImageInfo(imageInfos[1]);
 
@@ -694,7 +697,7 @@ public class Pipeline {
                             samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
                             samplerDescriptorWrite.dstBinding(samplers.get(2).binding());
                             samplerDescriptorWrite.dstArrayElement(0);
-                            samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                            samplerDescriptorWrite.descriptorType(samplers.get(2).getType());
                             samplerDescriptorWrite.descriptorCount(1);
                             samplerDescriptorWrite.pImageInfo(imageInfos[2]);
                         }

@@ -13,7 +13,7 @@
         "Normal"
     ],
     "samplers": [
-        { "name": "Sampler0", "binding": 2 }
+        { "name": "Sampler0", "binding": 2, "type": "combined" , "stage": "all" }
     ],
     "uniforms": [
         { "name": "ColorModulator", "type": "float", "count": 4, "values": [ 1.0, 1.0, 1.0, 1.0 ] },
