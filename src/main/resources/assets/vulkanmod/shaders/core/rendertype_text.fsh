@@ -8,10 +8,10 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
     float fogValue = vertexDistance < fogEnd ? smoothstep(fogStart, fogEnd, vertexDistance) : 1.0;
     return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
 }
+//apparently slots should be 1,2 instead of 0,1 to reduce binding frequency: https://vkguide.dev/docs/chapter-4/descriptors/
+layout(binding = 1) uniform sampler2D Sampler0;
 
-layout(binding = 2) uniform sampler2D Sampler0;
-
-layout(binding = 1) uniform UBO{
+layout(binding = 0) uniform UBO{
     vec4 ColorModulator;
     vec4 FogColor;
     float FogStart;
