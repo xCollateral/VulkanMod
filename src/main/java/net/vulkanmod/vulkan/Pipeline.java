@@ -54,7 +54,7 @@ public class Pipeline {
     private int descriptorCount = 500;
 
     private final List<UBO> UBOs = new ArrayList<>();
-    private final List<String> samplers = new ArrayList<>();
+    private final List<Sampler> samplers = new ArrayList<>();
     private final PushConstant pushConstant = new PushConstant();
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
@@ -251,7 +251,7 @@ public class Pipeline {
 
             int i = 0;
             for(UBO ubo : this.UBOs) {
-                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(ubo.getBinding());
+                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(i); //Will use the wrong beinging of starting at offset 1 or greater: hence using the iteration index instead of the binding
                 uboLayoutBinding.binding(ubo.getBinding());
                 uboLayoutBinding.descriptorCount(1);
                 uboLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -261,9 +261,9 @@ public class Pipeline {
                 ++i;
             }
 
-            for(String s : this.samplers) {
+            for(Sampler s : this.samplers) {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(i);
-                samplerLayoutBinding.binding(i);
+                samplerLayoutBinding.binding(s.binding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 samplerLayoutBinding.pImmutableSamplers(null);
@@ -489,8 +489,9 @@ public class Pipeline {
     private void parseSamplerNode(JsonElement jsonelement) {
         JsonObject jsonobject = JsonHelper.asObject(jsonelement, "UBO");
         String name = JsonHelper.getString(jsonobject, "name");
+        int binding = JsonHelper.getInt(jsonobject, "binding");
 
-        samplers.add(name);
+        samplers.add(new Sampler(name, binding));
     }
 
     private void parsePushConstantNode(JsonArray jsonArray) {
@@ -623,7 +624,7 @@ public class Pipeline {
                     bufferInfos[i].offset(currentOffset);
                     bufferInfos[i].range(ubo.getSize());
 
-                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);
+                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i); //TODO:-->!
                     uboDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
                     uboDescriptorWrite.dstBinding(ubo.getBinding());
                     uboDescriptorWrite.dstArrayElement(0);
@@ -651,7 +652,7 @@ public class Pipeline {
 
                     VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
                     samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                    samplerDescriptorWrite.dstBinding(i);
+                    samplerDescriptorWrite.dstBinding(samplers.get(0).binding());
                     samplerDescriptorWrite.dstArrayElement(0);
                     samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                     samplerDescriptorWrite.descriptorCount(1);
@@ -671,7 +672,7 @@ public class Pipeline {
 
                         samplerDescriptorWrite = descriptorWrites.get(i);
                         samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                        samplerDescriptorWrite.dstBinding(i);
+                        samplerDescriptorWrite.dstBinding(samplers.get(1).binding());
                         samplerDescriptorWrite.dstArrayElement(0);
                         samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                         samplerDescriptorWrite.descriptorCount(1);
@@ -691,7 +692,7 @@ public class Pipeline {
 
                             samplerDescriptorWrite = descriptorWrites.get(i);
                             samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                            samplerDescriptorWrite.dstBinding(i);
+                            samplerDescriptorWrite.dstBinding(samplers.get(2).binding());
                             samplerDescriptorWrite.dstArrayElement(0);
                             samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                             samplerDescriptorWrite.descriptorCount(1);

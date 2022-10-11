@@ -31,8 +31,8 @@ layout(binding = 0) uniform UniformBufferObject {
    vec3 Light1_Direction;
 };
 
-layout(binding = 3) uniform sampler2D Sampler2;
-layout(binding = 4) uniform sampler2D Sampler1;
+layout(binding = 4) uniform sampler2D Sampler2;
+layout(binding = 3) uniform sampler2D Sampler1;
 
 layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec4 lightMapColor;
