@@ -99,6 +99,7 @@ public class ShaderLoader
         try(final FileInputStream fileInputStream = new FileInputStream(name))
         {
             byte[] bytes = fileInputStream.readAllBytes();
+            if(bytes.length==0) throw new IOException("Failed to read Shader File!: "+name);
             ByteBuffer buffer = MemoryUtil.memAlignedAlloc(Integer.BYTES, bytes.length);
             buffer.put(bytes);
             int capacity = buffer.capacity();
