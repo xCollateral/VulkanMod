@@ -23,8 +23,6 @@ public class ShaderLoader
 {
     private static final HashMap<String, Long> vkShaderModulesFrag;
     private static final HashMap<String, Long> vkShaderModulesVert;
-    private static final HashMap<String, Integer> supportedStages;
-//    private static final ArrayList<String> shaderNames;
     private static final ArrayList<Path> shaderFiles;
     static final String defDir = (System.getProperty("user.dir")+"/compiled/Generated/");
     static final boolean forceUpdate;
@@ -47,7 +45,6 @@ public class ShaderLoader
 
         vkShaderModulesVert = new HashMap<>(shaderFiles.size() >> 1);
         vkShaderModulesFrag = new HashMap<>(shaderFiles.size() >> 1);
-        supportedStages = new HashMap<>(shaderFiles.size() >> 1);
 
         //        SPIRVSet = new ArrayList<>();
         for (Path frName : shaderFiles) {
@@ -100,7 +97,7 @@ public class ShaderLoader
         {
             byte[] bytes = fileInputStream.readAllBytes();
             if(bytes.length==0) throw new IOException("Failed to read Shader File!: "+name);
-            ByteBuffer buffer = MemoryUtil.memAlignedAlloc(Integer.BYTES, bytes.length);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
             buffer.put(bytes);
             int capacity = buffer.capacity();
 
@@ -128,11 +125,12 @@ public class ShaderLoader
             if(vkCreateShaderModule(Vulkan.getDevice(), vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
-            if(!Vulkan.RECOMPILE_SHADERS & !forceUpdate) MemoryUtil.nmemAlignedFree(spirvCode);
+//            if(!Vulkan.RECOMPILE_SHADERS & !forceUpdate) MemoryUtil.nmemAlignedFree(spirvCode);
             return pShaderModule.get(0);
         }
     }
 
+    //Might be possible to load Shader Addons/ShadersPacks/Other Pipelines: (If that isn't planned feel free to remove this)
     public static void addCustomPipeLineShaderSet(Path name)
     {
         loadShaderFile(name);
