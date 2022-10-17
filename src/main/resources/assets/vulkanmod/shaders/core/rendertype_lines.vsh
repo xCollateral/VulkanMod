@@ -4,7 +4,7 @@ layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 layout(location = 2) in vec3 Normal;
 
-layout(binding = 1) uniform UniformBufferObject {
+layout(binding = 0) uniform UniformBufferObject {
    mat4 ModelViewMat;
    mat4 ProjMat;
    vec2 ScreenSize;
