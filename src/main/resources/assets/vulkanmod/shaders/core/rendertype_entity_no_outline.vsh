@@ -42,7 +42,7 @@ void main() {
     gl_Position = MVP * vec4(Position, 1.0);
 
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
-    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * texelFetch(Sampler2, UV2 / 16, 0);
+    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * texelFetch(Sampler2, UV2 >> 4, 0);
     texCoord0 = UV0;
     normal = MVP * vec4(Normal, 0.0);
 }

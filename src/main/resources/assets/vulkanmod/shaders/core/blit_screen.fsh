@@ -6,7 +6,7 @@ layout(binding = 1) uniform UBO{
     vec4 ColorModulator;
 };
 
-layout(location = 0) in vec2 texCoord;
+layout(location = 0) in flat ivec2 texCoord;
 layout(location = 1) in vec4 vertexColor;
 
 layout(location = 0) out vec4 fragColor;
