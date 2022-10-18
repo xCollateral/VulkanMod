@@ -7,6 +7,7 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.Window;
 import net.minecraft.util.math.Matrix4f;
 import org.joml.Vector2f;
+import org.joml.Vector2i;
 import org.lwjgl.system.MemoryUtil;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
@@ -256,9 +257,9 @@ public class VRenderSystem {
         Drawer.setDepthBias(0.0F, 0.0F);
     }
 
-    public static Vector2f getScreenSize() {
+    public static Vector2i getScreenSize() {
         Window window = MinecraftClient.getInstance().getWindow();
-        return new Vector2f((float)window.getWidth(), (float)window.getHeight());
+        return new Vector2i(window.getWidth(), window.getHeight());
     }
     
     public static void setWindow(long window) {

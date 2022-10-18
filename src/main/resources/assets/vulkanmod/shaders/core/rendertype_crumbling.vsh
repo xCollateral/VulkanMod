@@ -12,7 +12,7 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec2 texCoord0;
-layout(location = 2) out vec2 texCoord2;
+//layout(location = 2) out vec2 texCoord2;
 layout(location = 3) out vec4 normal;
 
 void main() {

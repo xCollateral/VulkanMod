@@ -7,14 +7,14 @@ layout(location = 2) in vec3 Normal;
 layout(binding = 0) uniform UniformBufferObject {
    mat4 ModelViewMat;
    mat4 ProjMat;
-   vec2 ScreenSize;
-   float LineWidth;
+   uvec2 ScreenSize;
+   uint LineWidth;
 };
 
 layout(location = 1) out float vertexDistance;
 layout(location = 0) out vec4 vertexColor;
 
-const float VIEW_SHRINK = 1.0 - (1.0 / 256.0);
+const uint VIEW_SHRINK = 1 - (1 >> 8);
 const mat4 VIEW_SCALE = mat4(
     VIEW_SHRINK, 0.0, 0.0, 0.0,
     0.0, VIEW_SHRINK, 0.0, 0.0,
@@ -37,11 +37,7 @@ void main() {
     }
 
     int div = (gl_VertexIndex / 2);
-    if (gl_VertexIndex - div * 2 == 0) {
-        gl_Position = vec4((ndc1 + vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
-    } else {
-        gl_Position = vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
-    }
+    gl_Position =  (gl_VertexIndex - div * 2 == 0) ? vec4((ndc1 + vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w) : vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
 
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
     vertexColor = Color;
@@ -60,5 +56,4 @@ void main() {
 //
 // out float vertexDistance;
 // out vec4 vertexColor;
-
 

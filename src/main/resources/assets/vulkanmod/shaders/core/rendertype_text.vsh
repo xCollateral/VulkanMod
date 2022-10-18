@@ -20,8 +20,8 @@ void main() {
     gl_Position = MVP * vec4(Position, 1.0);
 
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
-    vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
-    vertexColor = Color;
+    vertexColor = Color * texelFetch(Sampler2, UV2 >> 4, 0);
+    //vertexColor = Color;
     texCoord0 = UV0;
 }
 /*
@@ -45,6 +45,6 @@ void main() {
     gl_Position = MVP * vec4(Position, 1.0);
 
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
-    vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
+    vertexColor = Color * texelFetch(Sampler2, UV2 >> 4, 0);
     texCoord0 = UV0;
 } */
