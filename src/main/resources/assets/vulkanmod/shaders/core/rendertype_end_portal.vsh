@@ -1,4 +1,4 @@
-#version 450
+#version 460
 
 //projection.glsl
 vec4 projection_from_position(vec4 position) {

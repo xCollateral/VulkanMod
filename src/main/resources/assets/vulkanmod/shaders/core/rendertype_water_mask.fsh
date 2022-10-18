@@ -1,4 +1,4 @@
-#version 450
+#version 460
 
 layout(binding = 1) uniform UniformBufferObject {
     vec4 ColorModulator;

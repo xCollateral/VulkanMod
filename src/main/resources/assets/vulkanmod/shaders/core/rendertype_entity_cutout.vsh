@@ -1,4 +1,4 @@
-#version 450
+#version 460
 
 //light.glsl
 #define MINECRAFT_LIGHT_POWER   (0.6)

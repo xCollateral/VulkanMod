@@ -1,4 +1,4 @@
-#version 450
+#version 460
 
 float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     if (vertexDistance <= fogStart) {
