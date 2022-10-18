@@ -18,6 +18,7 @@ public class Vec1f extends Field {
         switch (this.name) {
             case "FogStart" -> this.set = RenderSystem::getShaderFogStart;
             case "FogEnd" -> this.set = RenderSystem::getShaderFogEnd;
+            case "LineWidth" -> this.set = RenderSystem::getShaderLineWidth;
             case "GameTime" -> this.set = RenderSystem::getShaderGameTime;
         }
     }

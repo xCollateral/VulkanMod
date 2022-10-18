@@ -1,7 +1,5 @@
 package net.vulkanmod.vulkan.shader;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
@@ -14,11 +12,7 @@ public class Vec1i extends Field {
     }
 
     void setFunction() {
-        switch (this.name) {
-            case "EndPortalLayers" -> this.set = () -> 15;
-            case "LineWidth" -> this.set = () -> (int)RenderSystem.getShaderLineWidth();
-
-        }
+        if (this.name.equals("EndPortalLayers")) this.set = () -> 15;
     }
 
     void update(FloatBuffer fb) {

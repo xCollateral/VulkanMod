@@ -2,14 +2,13 @@ package net.vulkanmod.vulkan.shader;
 
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.joml.Vector2f;
-import org.joml.Vector2i;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class Vec2u extends Field {
+public class Vec2f extends Field {
 
-    protected Vec2u(String name, AlignedStruct ubo) {
+    protected Vec2f(String name, AlignedStruct ubo) {
         super(name, 2, 4, ubo.getCurrentOffset());
 
         ubo.setCurrentOffset(offset + size);
@@ -37,16 +36,16 @@ public class Vec2u extends Field {
     void update(ByteBuffer buffer) {
         //update(buffer.asFloatBuffer());
 
-        Vector2i vec2 = (Vector2i) this.set.get();
-        int[] ints = new int[2];
+        Vector2f vec2 = (Vector2f) this.set.get();
+        float[] floats = new float[2];
 
-        ints[0] = vec2.x();
-        ints[1] = vec2.y();
+        floats[0] = vec2.x();
+        floats[1] = vec2.y();
 
         buffer.position(offset * 4);
 
-        for(int f : ints) {
-            buffer.putInt(f);
+        for(float f : floats) {
+            buffer.putFloat(f);
         }
     }
 }

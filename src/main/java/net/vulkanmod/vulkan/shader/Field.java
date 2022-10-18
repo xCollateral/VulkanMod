@@ -44,12 +44,11 @@ public abstract class Field {
         else if(type.equals("float")) {
             if (count == 4) return new Vec4f(name, ubo);
             else if (count == 3) return new Vec3f(name,ubo);
-
+            else if (count == 2) return new Vec2f(name,ubo);
             else return new Vec1f(name, ubo);
         }
         else if(type.equals("int")) {
-            if (count == 1) return new Vec1i(name, ubo);
-            else return new Vec2u(name,ubo);
+            return new Vec1i(name, ubo);
         }
         else {
             throw new RuntimeException("not admitted type..");
