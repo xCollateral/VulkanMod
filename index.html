@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=deivce-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v2.1.5/css/unicons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css'> 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="icon" type="image/x-icon" href="VulkanMod.ico">
+    <title>VulkanMod</title>
+</head>
+<body>
+    <div id="particles"></div>
+    <div class="container">
+        <div class="content">
+            <img src="VulkanMod.png" class="logo" alt="VulkanMod">
+            <div class="heading">
+                <h1>VulkanMod</h1>
+            </div>
+            <div class="text">
+                <p>A <u><a href="https://fabricmc.net/" style="color: white;">fabric</a></u> mod that rewrites Minecraft <u><a href="https://opengl.org/" style="color: white;">OpenGL©️</a></u> renderer to use <u><a href="https://vulkan.org/" style="color: white;">Vulkan©️</a></u> API.</p>
+            </div>
+            <div class="button">
+                <a class="btn" href="https://modrinth.com/mod/vulkanmod"><i class="bi bi-download"></i><span class="btn-text"> Download</span></a>
+                <a class="btn" href="https://github.com/xCollateral/VulkanMod"><i class="bi bi-github"></i><span class="btn-text"> GitHub</span></a>
+                <a class="btn" href="https://ko-fi.com/V7V7CHHJV"><i class="bi bi-cup"></i><span class="btn-text"> Donate</span></a>
+                <a class="btn" href="https://discord.gg/FVXg7AYR2Q"><i class="bi bi-discord"></i><span class="btn-text"> Discord</span></a>
+            </div>
+        </div>
+    </div>
+    <div id="disclaimer" class="modal">
+        <div class="content animate__animated animate__fadeInDown">
+          <span class="close" onclick="disclaimerModal()">&times;</span>
+          <h4>Disclaimer:</h4>
+          <ul>
+            <li>Vulkan and the Vulkan logo are registered trademarks of the Khronos Group Inc.</li>
+            <li>OpenGL and the OpenGL logo are registered trademarks of the Khronos Group Inc.</li>
+            <li>Minecraft is the trademark of Microsoft Corporation.</li>
+            <li>Fabric is the trademark of FabricMC.</li>
+          </ul>
+          <div style="display: block; margin-top: 12px"><a class="button" href="javascript:void(0)" onclick="disclaimerModal()">Close</a></div>  
+        </div>
+    </div>
+    <div class="footer">
+        <p>© COPYRIGHT 2022. NOT APPROVED BY OR ASSOCIATED WITH MOJANG. <a href="javascript:void(0)" onclick="disclaimerModal()" style="color: #fff">DISCLAIMER</a></p>
+    </div>
+    <script src="./particles.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js" integrity="sha512-aVKKRRi/Q/YV+4mjoKBsE4x3H+BkegoM/em46NNlCqNTmUYADjBbeNefNxYV7giUp0VxICtqdrbqU7iVaeZNXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        particlesJS.load('particles', 'particles.json');
+
+        var modal = $("#disclaimer");
+        function disclaimerModal() {
+            modal.toggle();
+        }
+    </script>
+</body>
+</html>
