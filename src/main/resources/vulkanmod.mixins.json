@@ -28,6 +28,7 @@
     "render.FramebufferMixin",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
+    "render.GlStateManagerM",
     "render.IndexTypeMixin",
     "render.MinecraftMixin",
     "render.RenderSystemMixin",
