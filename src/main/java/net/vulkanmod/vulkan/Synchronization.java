@@ -20,6 +20,19 @@ public class Synchronization {
         idx++;
     }
 
+    // I don't know how Java handling CPU processes, but I'm hope about Java preemptive
+    // Also, we can handle errors of fences.
+    // May drop bit GPU performance, but increase CPU efficiency.
+    public synchronized static void preemptiveWaitFence(long[] longs) {
+        VkDevice device = Vulkan.getDevice();
+        for (int i=0;i<longs.length;i++) {
+            int status = VK_NOT_READY;
+            do {
+                // in JS should have `setImmediate` to be preemptive
+            } while((status = vkGetFenceStatus(device, longs[i])) == VK_NOT_READY);
+        }
+    }
+
     public synchronized static void waitFences() {
 //        TransferQueue.resetCurrent();
 
@@ -35,13 +48,15 @@ public class Synchronization {
         for (i = 0; i + count - 1 < idx; i += count) {
             fences.position(i);
             fences.get(longs, 0, count);
-            vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
+            preemptiveWaitFence(longs);
+            //vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
         }
         if(idx - i > 0) {
             longs = new long[idx - i];
             fences.position(i);
             fences.get(longs, 0, idx - i);
-            vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
+            preemptiveWaitFence(longs);
+            //vkWaitForFences(device, longs, true, VUtil.UINT64_MAX);
         }
 
 //        Profiler profiler = new Profiler("sync");
