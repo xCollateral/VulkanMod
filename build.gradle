@@ -18,6 +18,7 @@ project.ext.linuxNatives = "natives-linux"
 dependencies {
 	include(implementation("org.lwjgl:lwjgl:$lwjglVersion"))
 	include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
+	include(implementation("org.joml:joml:${jomlVersion}"))
 	include(implementation("org.lwjgl:lwjgl-vma:$lwjglVersion"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
