@@ -927,6 +927,16 @@ public class Vulkan {
         return immediateCmdBuffer;
     }
 
+    // I don't know how Java handling CPU processes, but I'm hope about Java preemptive
+    // Also, we can handle errors of fences.
+    // May drop bit GPU performance, but increase CPU efficiency.
+    public static void preemptiveWaitFence(Long fence) {
+        int status = VK_NOT_READY;
+        do {
+            // in JS should have `setImmediate` to be preemptive
+        } while((status = vkGetFenceStatus(device, fence)) == VK_NOT_READY);
+    }
+
     public static void endImmediateCmd() {
         try (MemoryStack stack = stackPush()) {
             vkEndCommandBuffer(immediateCmdBuffer);
@@ -937,7 +947,7 @@ public class Vulkan {
 
             vkQueueSubmit(graphicsQueue, submitInfo, immediateFence);
 
-            vkWaitForFences(device, immediateFence, true, VUtil.UINT64_MAX);
+            preemptiveWaitFence(immediateFence);
             vkResetFences(device, immediateFence);
             vkResetCommandBuffer(immediateCmdBuffer, 0);
         }

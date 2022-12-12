@@ -348,6 +348,16 @@ public class VulkanImage {
         copyBufferToImage(buffer, image, mipLevel, width, height, xOffset, yOffset, 0, 0, 0);
     }
 
+    // I don't know how Java handling CPU processes, but I'm hope about Java preemptive
+    // Also, we can handle errors of fences.
+    // May drop bit GPU performance, but increase CPU efficiency.
+    private static void preemptiveWaitFence(Long fence) {
+        int status = VK_NOT_READY;
+        do {
+            // in JS should have `setImmediate` to be preemptive
+        } while((status = vkGetFenceStatus(device, fence)) == VK_NOT_READY);
+    }
+
     private void copyBufferToImage(long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
 
         try(MemoryStack stack = stackPush()) {
@@ -367,8 +377,7 @@ public class VulkanImage {
 
             long fence = TransferQueue.endCommands(commandBuffer);
 
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
-
+            preemptiveWaitFence(fence);
         }
     }
 
@@ -412,7 +421,7 @@ public class VulkanImage {
 
             long fence = TransferQueue.endCommands(commandBuffer);
 
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+            preemptiveWaitFence(fence);
         }
     }
 

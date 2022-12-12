@@ -131,6 +131,17 @@ public class Drawer {
         //if(rebuild) rebuildInstance();
     }
 
+    // I don't know how Java handling CPU processes, but I'm hope about Java preemptive
+    // Also, we can handle errors of fences.
+    // May drop bit GPU performance, but increase CPU efficiency.
+    public synchronized static void preemptiveWaitFence(Long fence) {
+        //VkDevice device = Vulkan.getDevice();
+        int status = VK_NOT_READY;
+        do {
+            // in JS should have `setImmediate` to be preemptive
+        } while((status = vkGetFenceStatus(device, fence)) == VK_NOT_READY);
+    }
+
     public void initiateRenderPass() {
 
         try (MemoryStack stack = stackPush()) {
@@ -150,7 +161,8 @@ public class Drawer {
 
         if(skipRendering) return;
 
-        vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+        //vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+        preemptiveWaitFence(inFlightFences.get(currentFrame));
 
         CompletableFuture.runAsync(MemoryManager::freeBuffers);
 //        MemoryManager.freeBuffers();
