@@ -413,9 +413,9 @@ public class Pipeline {
         ImmutableList<VertexFormatElement> elements = vertexFormat.getElements();
 
         int size = elements.size();
-//        if(elements.stream().anyMatch(vertexFormatElement -> vertexFormatElement.getType() == VertexFormatElement.Type.PADDING)) {
-//            size--;
-//        }
+        if(elements.stream().anyMatch(vertexFormatElement -> vertexFormatElement.getUsage() == VertexFormatElement.Usage.PADDING)) {
+            size--;
+        }
 
         VkVertexInputAttributeDescription.Buffer attributeDescriptions =
                 VkVertexInputAttributeDescription.callocStack(size);
@@ -461,19 +461,19 @@ public class Pipeline {
             }
             else if (usage == VertexFormatElement.Usage.NORMAL)
             {
-                posDescription.format(VK_FORMAT_R8G8B8_SNORM);
-//                posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
+//                posDescription.format(VK_FORMAT_R8G8B8_SNORM);
+                posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
                 posDescription.offset(offset);
 
-                offset += 3;
+                offset += 4;
             }
-            else if (usage == VertexFormatElement.Usage.PADDING)
-            {
-                posDescription.format(VK_FORMAT_R8_SNORM);
-//                posDescription.offset(offset);
-
-                offset += 1;
-            }
+//            else if (usage == VertexFormatElement.Usage.PADDING)
+//            {
+////                posDescription.format(VK_FORMAT_R8_SNORM);
+////                posDescription.offset(offset);
+//
+////                offset += 1;
+//            }
 
             else {
                 throw new RuntimeException("Unknown format:");
