@@ -12,6 +12,7 @@
     "chunk.LevelRendererMixin",
     "chunk.VisibilitySetMixin",
 
+    "debug.ChunkBorderRendererM",
     "debug.DebugHudM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
