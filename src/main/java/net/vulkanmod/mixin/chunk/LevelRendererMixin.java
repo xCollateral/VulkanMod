@@ -53,6 +53,11 @@ public abstract class LevelRendererMixin {
         this.worldRenderer.setLevel(clientLevel);
     }
 
+    @Inject(method = "allChanged", at = @At("RETURN"))
+    private void allChanged(CallbackInfo ci) {
+        this.worldRenderer.allChanged();
+    }
+
     @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;checkPoseStack(Lcom/mojang/blaze3d/vertex/PoseStack;)V", ordinal = 1, shift = At.Shift.BEFORE))
     private void renderBlockEntities(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
         Vec3 pos = camera.getPosition();
