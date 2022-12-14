@@ -466,7 +466,9 @@ public class WorldRenderer {
 //        this.entityRenderDispatcher.setLevel(level);
         this.level = level;
         if (level != null) {
-//            this.allChanged();
+            if(this.chunkGrid == null) {
+                this.allChanged();
+            }
         } else {
             if (this.chunkGrid != null) {
                 this.chunkGrid.releaseAllBuffers();
