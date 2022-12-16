@@ -11,6 +11,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.vulkanmod.render.RHandler;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
@@ -65,6 +66,7 @@ public abstract class DebugHudM {
         strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
+        strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
 
         return strings;
     }

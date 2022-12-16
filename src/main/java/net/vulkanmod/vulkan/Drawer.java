@@ -486,7 +486,7 @@ public class Drawer {
         usedPipelines.add(pipeline);
     }
 
-    public void pushConstants(Pipeline pipeline) {
+    public static void pushConstants(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         PushConstant pushConstant = pipeline.getPushConstant();

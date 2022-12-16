@@ -3,3 +3,5 @@ accessWidener	v1	named
 accessible field net/minecraft/client/renderer/LevelRenderer$RenderChunkInfo chunk Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;
 accessible class net/minecraft/client/gui/Gui$HeartType
 accessible class net/minecraft/client/renderer/LevelRenderer$RenderChunkStorage
+accessible field net/minecraft/client/renderer/chunk/ChunkRenderDispatcher toUpload Ljava/util/Queue;
+accessible field net/minecraft/client/renderer/LevelRenderer viewArea Lnet/minecraft/client/renderer/ViewArea;

@@ -16,6 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
+import net.vulkanmod.render.VBO;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -26,9 +27,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class RenderSection {
-    private final int index;
+    final int index;
 
     private final RenderSection[] neighbours = new RenderSection[6];
+    final VBO vbo;
     private ChunkAreaManager.Tree chunkAreaTree;
     private ChunkArea chunkArea;
     private int lastFrame = -1;
@@ -64,16 +66,21 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
+        vbo = new VBO(this.index, this.origin);
     }
 
     public void setOrigin(int x, int y, int z) {
         this.reset();
+        if(!vbo.preInitialised) vbo.close();
         this.origin.set(x, y, z);
-        this.bb = new AABB((double)x, (double)y, (double)z, (double)(x + 16), (double)(y + 16), (double)(z + 16));
+        this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
 
-        for(Direction direction : Direction.values()) {
-            this.relativeOrigins[direction.ordinal()].set(this.origin).move(direction, 16);
-        }
+        this.relativeOrigins[Direction.DOWN.ordinal()].set(this.origin).move(Direction.DOWN, 16);
+        this.relativeOrigins[Direction.UP.ordinal()].set(this.origin).move(Direction.UP, 16);
+        this.relativeOrigins[Direction.NORTH.ordinal()].set(this.origin).move(Direction.NORTH, 16);
+        this.relativeOrigins[Direction.SOUTH.ordinal()].set(this.origin).move(Direction.SOUTH, 16);
+        this.relativeOrigins[Direction.WEST.ordinal()].set(this.origin).move(Direction.WEST, 16);
+        this.relativeOrigins[Direction.EAST.ordinal()].set(this.origin).move(Direction.EAST, 16);
 
     }
 

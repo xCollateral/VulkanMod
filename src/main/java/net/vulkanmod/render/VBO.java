@@ -3,12 +3,10 @@ package net.vulkanmod.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.math.Matrix4f;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.core.BlockPos;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
@@ -18,6 +16,8 @@ import java.nio.ByteBuffer;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
+    private final int index;
+    public final BlockPos.MutableBlockPos origin;
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private VertexFormat.IndexType indexType;
@@ -29,7 +29,12 @@ public class VBO {
 
     private boolean autoIndexed = false;
 
-    public VBO() {}
+    public boolean preInitialised = true;
+
+    public VBO(int index, BlockPos.MutableBlockPos origin) {
+        this.index = index;
+        this.origin = origin;
+    }
 
     public void upload_(BufferBuilder.RenderedBuffer buffer) {
         BufferBuilder.DrawState parameters = buffer.drawState();
@@ -38,7 +43,7 @@ public class VBO {
         this.vertexCount = parameters.vertexCount();
         this.indexType = parameters.indexType();
         this.mode = parameters.mode();
-
+        preInitialised=false;
         this.configureVertexFormat(parameters, buffer.vertexBuffer());
         this.configureIndexBuffer(parameters, buffer.indexBuffer());
 
@@ -91,6 +96,7 @@ public class VBO {
     }
 
     public void close() {
+        if(preInitialised) return;
         if(vertexCount <= 0) return;
         vertexBuffer.freeBuffer();
         vertexBuffer = null;
@@ -101,6 +107,7 @@ public class VBO {
 
         this.vertexCount = 0;
         this.indexCount = 0;
+        preInitialised=true;
     }
 
     public VertexFormat getFormat() {

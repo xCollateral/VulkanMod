@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -22,7 +23,10 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.interfaces.VBOPxy;
+import net.vulkanmod.render.RHandler;
 import net.vulkanmod.render.SkyBoxVBO;
+import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Random;
@@ -321,6 +325,7 @@ public abstract class LevelRendererMixin {
         }
         this.minecraft.getProfiler().push("apply_frustum");
         this.renderChunksInFrustum.clear();
+        RHandler.uniqueVBOs.clear();
 
         for (LevelRenderer.RenderChunkInfo renderChunkInfo : this.renderChunkStorage.get().renderChunks) {
             if (frustum.isVisible(renderChunkInfo.chunk.getBoundingBox())) {
@@ -355,8 +360,13 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
+      /*  deinitTransparency();
+        this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);*/
+    }
+    @Inject(method = "renderLevel", at=@At(value="RETURN"))
+    private void renderChunkLayer(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
         deinitTransparency();
-        this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
+        this.worldRenderer.renderChunkLayer(RenderType.translucent(), poseStack, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, matrix4f);
     }
 
     /**

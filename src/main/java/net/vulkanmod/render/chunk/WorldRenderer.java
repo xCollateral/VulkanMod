@@ -17,6 +17,8 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
+import net.vulkanmod.render.RHandler;
+import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
@@ -40,7 +42,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class WorldRenderer {
-    private static WorldRenderer INSTANCE;
+    public static WorldRenderer INSTANCE;
 
     private Minecraft minecraft;
 
@@ -63,7 +65,7 @@ public class WorldRenderer {
     private boolean needsUpdate;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
-    private TaskDispatcher taskDispatcher;
+    public final TaskDispatcher taskDispatcher;
     private final ChunkQueue chunkQueue = new ChunkQueue();
     private int lastFrame = 0;
     private final ObjectArrayList<QueueChunkInfo> sectionsInFrustum = new ObjectArrayList<>(10000);
@@ -72,10 +74,10 @@ public class WorldRenderer {
     private double yTransparentOld;
     private double zTransparentOld;
 
-    public ObjectArrayList<RenderSection> solidChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> cutoutChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> cutoutMippedChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> tripwireChunks = new ObjectArrayList<>();
+//    public ObjectArrayList<RenderSection> solidChunks = new ObjectArrayList<>();
+//    public ObjectArrayList<RenderSection> cutoutChunks = new ObjectArrayList<>();
+//    public ObjectArrayList<RenderSection> cutoutMippedChunks = new ObjectArrayList<>();
+//    public ObjectArrayList<RenderSection> tripwireChunks = new ObjectArrayList<>();
     public ObjectArrayList<RenderSection> translucentChunks = new ObjectArrayList<>();
 
     private Frustum frustum;
@@ -229,32 +231,24 @@ public class WorldRenderer {
 
         this.sectionsInFrustum.clear();
 
-        this.solidChunks.clear();
-        this.cutoutChunks.clear();
-        this.cutoutMippedChunks.clear();
-        this.tripwireChunks.clear();
+//        this.solidChunks.clear();
+//        this.cutoutChunks.clear();
+//        this.cutoutMippedChunks.clear();
+//        this.tripwireChunks.clear();
         this.translucentChunks.clear();
 
+        RHandler.uniqueVBOs.clear();
         this.lastFrame++;
-
 //        p.push("pre-loop");
         while(this.chunkQueue.hasNext()) {
             QueueChunkInfo renderChunkInfo = this.chunkQueue.poll();
             RenderSection renderChunk = renderChunkInfo.chunk;
+            if(!renderChunk.vbo.preInitialised) RHandler.uniqueVBOs.add(renderChunk.vbo);
 
             this.sectionsInFrustum.add(renderChunkInfo);
-
             for (RenderType renderType : renderChunk.compiledSection.renderTypes) {
-                if (RenderType.solid().equals(renderType)) {
-                    solidChunks.add(renderChunk);
-                } else if (RenderType.cutout().equals(renderType)) {
-                    cutoutChunks.add(renderChunk);
-                } else if (RenderType.cutoutMipped().equals(renderType)) {
-                    cutoutMippedChunks.add(renderChunk);
-                } else if (RenderType.translucent().equals(renderType)) {
+               if (RenderType.translucent().equals(renderType)) {
                     translucentChunks.add(renderChunk);
-                } else if (RenderType.tripwire().equals(renderType)) {
-                    tripwireChunks.add(renderChunk);
                 }
             }
 
@@ -487,7 +481,7 @@ public class WorldRenderer {
     }
 
     public void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
-        if(renderType!=RenderType.translucent()) return;
+//        if(renderType!=RenderType.translucent()) return;
 //        //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 //        RenderType solid = RenderType.solid();
@@ -513,7 +507,7 @@ public class WorldRenderer {
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-        translucentSort(renderType, camX, camY, camZ);
+        translucentSort(renderType, camX, camY, camZ); //TODO: Maybe Replace/Merge with reBuildTask..
 
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> {
@@ -521,13 +515,11 @@ public class WorldRenderer {
         });
         boolean flag = renderType != RenderType.translucent();
 
-        ObjectArrayList<RenderSection> sections;
-       if (RenderType.translucent().equals(renderType)) {
-            sections = this.translucentChunks;
-        }
-        else {
-            sections = ObjectArrayList.of();
-        }
+//        if (RenderType.translucent().equals(renderType)) {
+//        }
+//        else {
+//            sections = ObjectArrayList.of();
+//        }
 
 //        ObjectListIterator<WorldRenderer.QueueChunkInfo> iterator = this.sectionsInFrustum.listIterator(flag ? 0 : this.sectionsInFrustum.size());
 //        ObjectListIterator<RenderSection> iterator = sections.listIterator(flag ? 0 : sections.size());
@@ -546,17 +538,17 @@ public class WorldRenderer {
 //        Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
 //        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;
 
-        for (int i = sections.size() - 1; i >= 0; i--) {
-            RenderSection a = sections.get(i);
+        for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
+            VBO a = RHandler.uniqueVBOs.get(i);
 
 
-            VertexBuffer vertexbuffer = a.getBuffer(renderType);
-            BlockPos blockpos = a.getOrigin();
+
+            BlockPos blockpos = a.origin;
 
             VRenderSystem.setChunkOffset((float) (blockpos.getX() - camX), (float) (blockpos.getY() - camY), (float) (blockpos.getZ() - camZ));
             drawer.pushConstants(pipeline);
 ////
-            vertexbuffer.draw();
+            a.drawChunkLayer();
 
 //            flag1 = true;
         }

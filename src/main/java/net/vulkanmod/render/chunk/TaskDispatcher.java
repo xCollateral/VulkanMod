@@ -28,7 +28,7 @@ public class TaskDispatcher {
     private final Queue<ChunkTask> toBatchLowPriority = Queues.newLinkedBlockingDeque();
     private int highPriorityQuota = 2;
     private final LinkedBlockingDeque<ChunkBufferBuilderPack> freeBuffers;
-    private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
+    public final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
     private volatile int toBatchCount;
     private volatile int freeBufferCount;
     final ChunkBufferBuilderPack fixedBuffers;

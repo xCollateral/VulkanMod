@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.render.RHandler;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -155,7 +156,9 @@ public class ChunkTask {
                 CompileResults compileResults = this.compile(f, g, h, chunkBufferBuilderPack);
                 this.renderSection.updateGlobalBlockEntities(compileResults.globalBlockEntities);
                 if (this.cancelled.get()) {
-                    compileResults.renderedLayers.values().forEach(BufferBuilder.RenderedBuffer::release);
+                    for (BufferBuilder.RenderedBuffer renderedBuffer : compileResults.renderedLayers.values()) {
+                        renderedBuffer.release();
+                    }
                     return CompletableFuture.completedFuture(Result.CANCELLED);
                 } else {
                     RenderSection.CompiledSection compiledChunk = new RenderSection.CompiledSection();
@@ -167,7 +170,11 @@ public class ChunkTask {
                     for (Map.Entry<RenderType, BufferBuilder.RenderedBuffer> entry : compileResults.renderedLayers.entrySet()) {
                         RenderType renderType = entry.getKey();
                         BufferBuilder.RenderedBuffer renderedBuffer = entry.getValue();
-                        list.add(taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, this.renderSection.getBuffer(renderType)));
+                        /*if(RHandler.viewArea==null) {
+                            this.cancelled.set(true);
+                            break;
+                        }*/
+                        list.add(RHandler.uploadVBO(renderSection.vbo, renderedBuffer));
                         compiledChunk.renderTypes.add(renderType);
                     }
                     return Util.sequenceFailFast(list).handle((listx, throwable) -> {
@@ -242,19 +249,19 @@ public class ChunkTask {
                     }
                 }
 
-                if (compiledSection.renderTypes.contains(RenderType.translucent())) {
+                if (!compiledSection.renderTypes.isEmpty()) {
                     BufferBuilder bufferbuilder1 = builderPack.builder(RenderType.translucent());
                     bufferbuilder1.setQuadSortOrigin(x - (float)blockpos.getX(), y - (float)blockpos.getY(), z - (float)blockpos.getZ());
                     compiledSection.transparencyState = bufferbuilder1.getSortState();
                 }
 
 //                compiledSection.renderTypes.stream().map(builderPack::builder).forEach(BufferBuilder::end);
-                compiledSection.renderTypes.stream().forEach(renderType -> {
+                for (RenderType renderType : compiledSection.renderTypes) {
                     BufferBuilder.RenderedBuffer renderedBuffer = builderPack.builder(renderType).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
                         buffers.put(renderType, renderedBuffer);
                     }
-                });
+                }
                 ModelBlockRenderer.clearCache();
             }
 
@@ -414,9 +421,7 @@ public class ChunkTask {
                     if (this.cancelled.get()) {
                         return CompletableFuture.completedFuture(Result.CANCELLED);
                     } else {
-                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.getBuffer(RenderType.translucent())).thenApply((p_112898_) -> {
-                            return Result.CANCELLED;
-                        });
+                        CompletableFuture<Result> completablefuture = RHandler.uploadVBO(renderSection.vbo, renderedBuffer).thenApply((p_112898_) -> Result.CANCELLED);
                         return completablefuture.handle((p_199960_, p_199961_) -> {
                             if (p_199961_ != null && !(p_199961_ instanceof CancellationException) && !(p_199961_ instanceof InterruptedException)) {
                                 CrashReport crashreport = CrashReport.forThrowable(p_199961_, "Rendering chunk");
