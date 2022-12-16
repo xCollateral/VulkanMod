@@ -71,6 +71,9 @@ public abstract class LevelRendererMixin {
 
     @Shadow @Final private static ResourceLocation SUN_LOCATION;
     @Shadow @Final private static ResourceLocation MOON_LOCATION;
+
+    @Shadow protected abstract void deinitTransparency();
+
     private WorldRenderer worldRenderer;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -352,6 +355,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
+        deinitTransparency();
         this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
     }
 

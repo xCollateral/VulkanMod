@@ -211,7 +211,7 @@ public class WorldRenderer {
 //            //TODO
 //            chunkInfoQueue.addAll(list);
         } else {
-            QueueChunkInfo chunkInfo = new QueueChunkInfo(renderSection, (Direction)null, 0);
+            QueueChunkInfo chunkInfo = new QueueChunkInfo(renderSection, null, 0);
             this.chunkQueue.add(chunkInfo);
         }
 
@@ -244,25 +244,19 @@ public class WorldRenderer {
 
             this.sectionsInFrustum.add(renderChunkInfo);
 
-            renderChunk.compiledSection.renderTypes.forEach(
-                    renderType -> {
-                        if (RenderType.solid().equals(renderType)) {
-                            solidChunks.add(renderChunk);
-                        }
-                        else if (RenderType.cutout().equals(renderType)) {
-                            cutoutChunks.add(renderChunk);
-                        }
-                        else if (RenderType.cutoutMipped().equals(renderType)) {
-                            cutoutMippedChunks.add(renderChunk);
-                        }
-                        else if (RenderType.translucent().equals(renderType)) {
-                            translucentChunks.add(renderChunk);
-                        }
-                        else if (RenderType.tripwire().equals(renderType)) {
-                            tripwireChunks.add(renderChunk);
-                        }
-                    }
-            );
+            for (RenderType renderType : renderChunk.compiledSection.renderTypes) {
+                if (RenderType.solid().equals(renderType)) {
+                    solidChunks.add(renderChunk);
+                } else if (RenderType.cutout().equals(renderType)) {
+                    cutoutChunks.add(renderChunk);
+                } else if (RenderType.cutoutMipped().equals(renderType)) {
+                    cutoutMippedChunks.add(renderChunk);
+                } else if (RenderType.translucent().equals(renderType)) {
+                    translucentChunks.add(renderChunk);
+                } else if (RenderType.tripwire().equals(renderType)) {
+                    tripwireChunks.add(renderChunk);
+                }
+            }
 
 //            mainLoop++;
 
@@ -332,12 +326,7 @@ public class WorldRenderer {
 //                        if (renderChunkInfo.mainDir != null && renderChunkInfo.mainDir.ordinal() != direction.ordinal() && !renderChunk.compiledSection.hasNoRenderableLayers())
                         if ((renderChunkInfo.sourceDirs & (1 << direction.ordinal())) == 0 && !renderChunk.compiledSection.hasNoRenderableLayers())
                         {
-                            if(renderChunkInfo.step > 4) {
-                                d = renderChunkInfo.directionChanges + 1;
-                            }
-                            else {
-                                d = 0;
-                            }
+                            d = renderChunkInfo.step > 4 ? renderChunkInfo.directionChanges + 1 : 0;
 //                            d = renderChunkInfo.directionChanges + 1;
                         }
 
@@ -498,6 +487,7 @@ public class WorldRenderer {
     }
 
     public void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
+        if(renderType!=RenderType.translucent()) return;
 //        //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 //        RenderType solid = RenderType.solid();
@@ -532,26 +522,15 @@ public class WorldRenderer {
         boolean flag = renderType != RenderType.translucent();
 
         ObjectArrayList<RenderSection> sections;
-        if (RenderType.solid().equals(renderType)) {
-            sections = this.solidChunks;
-        }
-        else if (RenderType.cutout().equals(renderType)) {
-            sections = this.cutoutChunks;
-        }
-        else if (RenderType.cutoutMipped().equals(renderType)) {
-            sections = this.cutoutMippedChunks;
-        }
-        else if (RenderType.translucent().equals(renderType)) {
+       if (RenderType.translucent().equals(renderType)) {
             sections = this.translucentChunks;
         }
-        else if (RenderType.tripwire().equals(renderType)) {
-            sections = this.tripwireChunks;
-        } else {
+        else {
             sections = ObjectArrayList.of();
         }
 
 //        ObjectListIterator<WorldRenderer.QueueChunkInfo> iterator = this.sectionsInFrustum.listIterator(flag ? 0 : this.sectionsInFrustum.size());
-        ObjectListIterator<RenderSection> iterator = sections.listIterator(flag ? 0 : sections.size());
+//        ObjectListIterator<RenderSection> iterator = sections.listIterator(flag ? 0 : sections.size());
 
         VertexFormat vertexformat = renderType.format();
         //TODO: ViewBobbing dosen't function properly if Affine
@@ -559,21 +538,22 @@ public class WorldRenderer {
 
 
         Drawer drawer = Drawer.getInstance();
-        Pipeline pipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
+        Pipeline pipeline = ((ShaderMixed)(GameRenderer.getRendertypeCutoutMippedShader())).getPipeline();
         drawer.bindPipeline(pipeline);
 
         drawer.uploadAndBindUBOs(pipeline);
 
-        Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
-        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;
+//        Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
+//        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;
 
-        while (checker.get()) {
-            RenderSection renderSection = getter.get();
+        for (int i = sections.size() - 1; i >= 0; i--) {
+            RenderSection a = sections.get(i);
 
-            VertexBuffer vertexbuffer = renderSection.getBuffer(renderType);
-            BlockPos blockpos = renderSection.getOrigin();
 
-            VRenderSystem.setChunkOffset((float)(blockpos.getX() - camX), (float)(blockpos.getY() - camY), (float)(blockpos.getZ() - camZ));
+            VertexBuffer vertexbuffer = a.getBuffer(renderType);
+            BlockPos blockpos = a.getOrigin();
+
+            VRenderSystem.setChunkOffset((float) (blockpos.getX() - camX), (float) (blockpos.getY() - camY), (float) (blockpos.getZ() - camZ));
             drawer.pushConstants(pipeline);
 ////
             vertexbuffer.draw();

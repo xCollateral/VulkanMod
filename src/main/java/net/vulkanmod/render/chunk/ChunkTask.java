@@ -74,7 +74,7 @@ public class ChunkTask {
         //debug
         private boolean submitted = false;
 
-        private Reference2ObjectArrayMap<RenderType, BufferBuilder.RenderedBuffer> buffers = new Reference2ObjectArrayMap<>();
+        private final Reference2ObjectArrayMap<RenderType, BufferBuilder.RenderedBuffer> buffers = new Reference2ObjectArrayMap<>();
 
         public BuildTask(RenderSection renderSection, RenderChunkRegion renderChunkRegion, boolean highPriority) {
             super(renderSection);
@@ -164,10 +164,12 @@ public class ChunkTask {
                     compiledChunk.transparencyState = compileResults.transparencyState;
                     List<CompletableFuture<Void>> list = Lists.newArrayList();
                     if(!compileResults.renderedLayers.isEmpty()) compiledChunk.isCompletelyEmpty = false;
-                    compileResults.renderedLayers.forEach((renderType, renderedBuffer) -> {
+                    for (Map.Entry<RenderType, BufferBuilder.RenderedBuffer> entry : compileResults.renderedLayers.entrySet()) {
+                        RenderType renderType = entry.getKey();
+                        BufferBuilder.RenderedBuffer renderedBuffer = entry.getValue();
                         list.add(taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, this.renderSection.getBuffer(renderType)));
                         compiledChunk.renderTypes.add(renderType);
-                    });
+                    }
                     return Util.sequenceFailFast(list).handle((listx, throwable) -> {
                         if (throwable != null && !(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
                             Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Rendering chunk"));
@@ -233,7 +235,7 @@ public class ChunkTask {
                         }
 
                         posestack.pushPose();
-                        posestack.translate((double)(blockpos2.getX() & 15), (double)(blockpos2.getY() & 15), (double)(blockpos2.getZ() & 15));
+                        posestack.translate(blockpos2.getX() & 15, blockpos2.getY() & 15, blockpos2.getZ() & 15);
                         blockrenderdispatcher.renderBatched(blockstate, blockpos2, renderchunkregion, posestack, bufferbuilder2, true, random);
 
                         posestack.popPose();
@@ -312,7 +314,7 @@ public class ChunkTask {
                         }
 
                         poseStack.pushPose();
-                        poseStack.translate((double)(blockPos3.getX() & 15), (double)(blockPos3.getY() & 15), (double)(blockPos3.getZ() & 15));
+                        poseStack.translate(blockPos3.getX() & 15, blockPos3.getY() & 15, blockPos3.getZ() & 15);
                         blockRenderDispatcher.renderBatched(blockState, blockPos3, renderChunkRegion, poseStack, bufferBuilder, true, randomSource);
                         poseStack.popPose();
                     }
@@ -433,6 +435,6 @@ public class ChunkTask {
     
     public enum Result {
         CANCELLED,
-        SUCCESSFUL;
+        SUCCESSFUL
     }
 }
