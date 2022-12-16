@@ -523,26 +523,7 @@ public class WorldRenderer {
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-        if (renderType == RenderType.translucent()) {
-            this.minecraft.getProfiler().push("translucent_sort");
-            double d0 = camX - this.xTransparentOld;
-            double d1 = camY - this.yTransparentOld;
-            double d2 = camZ - this.zTransparentOld;
-            if (d0 * d0 + d1 * d1 + d2 * d2 > 1.0D) {
-                this.xTransparentOld = camX;
-                this.yTransparentOld = camY;
-                this.zTransparentOld = camZ;
-                int j = 0;
-
-                for(QueueChunkInfo chunkInfo : this.sectionsInFrustum) {
-                    if (j < 15 && chunkInfo.chunk.resortTransparency(renderType, this.taskDispatcher)) {
-                        ++j;
-                    }
-                }
-            }
-
-            this.minecraft.getProfiler().pop();
-        }
+        translucentSort(renderType, camX, camY, camZ);
 
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> {
@@ -573,7 +554,7 @@ public class WorldRenderer {
         ObjectListIterator<RenderSection> iterator = sections.listIterator(flag ? 0 : sections.size());
 
         VertexFormat vertexformat = renderType.format();
-
+        //TODO: ViewBobbing dosen't function properly if Affine
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
 
@@ -592,7 +573,7 @@ public class WorldRenderer {
             VertexBuffer vertexbuffer = renderSection.getBuffer(renderType);
             BlockPos blockpos = renderSection.getOrigin();
 
-            VRenderSystem.setChunkOffset((float) ((double) blockpos.getX() - camX), (float) ((double) blockpos.getY() - camY), (float) ((double) blockpos.getZ() - camZ));
+            VRenderSystem.setChunkOffset((float)(blockpos.getX() - camX), (float)(blockpos.getY() - camY), (float)(blockpos.getZ() - camZ));
             drawer.pushConstants(pipeline);
 ////
             vertexbuffer.draw();
@@ -607,8 +588,31 @@ public class WorldRenderer {
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
-        VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+        VRenderSystem.applyMVPAffine(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
+    }
+
+    private void translucentSort(RenderType renderType, double camX, double camY, double camZ) {
+        if (renderType == RenderType.translucent()) {
+            this.minecraft.getProfiler().push("translucent_sort");
+            double d0 = camX - this.xTransparentOld;
+            double d1 = camY - this.yTransparentOld;
+            double d2 = camZ - this.zTransparentOld;
+            if (d0 * d0 + d1 * d1 + d2 * d2 > 1.0D) {
+                this.xTransparentOld = camX;
+                this.yTransparentOld = camY;
+                this.zTransparentOld = camZ;
+                int j = 0;
+
+                for(QueueChunkInfo chunkInfo : this.sectionsInFrustum) {
+                    if (j < 15 && chunkInfo.chunk.resortTransparency(renderType, this.taskDispatcher)) {
+                        ++j;
+                    }
+                }
+            }
+
+            this.minecraft.getProfiler().pop();
+        }
     }
 
     public void renderBlockEntities(PoseStack poseStack, double camX, double camY, double camZ,

@@ -91,10 +91,9 @@ public class VBO {
 
             VRenderSystem.applyMVP(MV, P);
 
-            Drawer drawer = Drawer.getInstance();
-            drawer.draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
+            Drawer.getInstance().draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
 
-            VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+            VRenderSystem.applyMVPAffine(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
         }
     }

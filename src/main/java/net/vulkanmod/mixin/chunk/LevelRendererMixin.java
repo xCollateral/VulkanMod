@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.chunk;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -24,8 +25,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
@@ -41,6 +44,8 @@ public abstract class LevelRendererMixin {
     @Shadow @Final private Minecraft minecraft;
     @Shadow @Final private Set<BlockEntity> globalBlockEntities;
     @Shadow private boolean generateClouds;
+    @Shadow @Final private ObjectArrayList<LevelRenderer.RenderChunkInfo> renderChunksInFrustum;
+    @Shadow @Final private AtomicReference<LevelRenderer.RenderChunkStorage> renderChunkStorage;
     private WorldRenderer worldRenderer;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -71,6 +76,27 @@ public abstract class LevelRendererMixin {
     @Overwrite
     private void setupRender(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
         this.worldRenderer.setupRenderer(camera, frustum, isCapturedFrustum, spectator);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void applyFrustum(Frustum frustum) {
+        if (!Minecraft.getInstance().isSameThread()) {
+            throw new IllegalStateException("applyFrustum called from wrong thread: " + Thread.currentThread().getName());
+        }
+        this.minecraft.getProfiler().push("apply_frustum");
+        this.renderChunksInFrustum.clear();
+
+        for (LevelRenderer.RenderChunkInfo renderChunkInfo : this.renderChunkStorage.get().renderChunks) {
+            if (frustum.isVisible(renderChunkInfo.chunk.getBoundingBox())) {
+                this.renderChunksInFrustum.add(renderChunkInfo);
+            }
+        }
+
+        this.minecraft.getProfiler().pop();
     }
 
     /**

@@ -1,5 +1,6 @@
 package net.vulkanmod;
 
+import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.vulkanmod.config.Config;
@@ -9,14 +10,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 
-public class Initializer implements ModInitializer {
+public class Initializer implements ClientModInitializer {
 	public static final Logger LOGGER = LogManager.getLogger("VulkanMod");
 
 	private static String VERSION;
 	public static Config CONFIG;
 
 	@Override
-	public void onInitialize() {
+	public void onInitializeClient() {
 
 		VERSION = FabricLoader.getInstance()
 				.getModContainer("vulkanmod")
