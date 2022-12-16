@@ -17,6 +17,7 @@ import static org.lwjgl.util.vma.Vma.vmaUnmapMemory;
 public class VUtil {
     public static final int UINT32_MAX = 0xFFFFFFFF;
     public static final long UINT64_MAX = 0xFFFFFFFFFFFFFFFFL;
+    public static final long tmOut = 10000;
 
     public static void memcpy(ByteBuffer buffer, short[] indices) {
 

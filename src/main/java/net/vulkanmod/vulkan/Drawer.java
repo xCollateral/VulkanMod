@@ -310,7 +310,7 @@ public class Drawer {
 
             IntBuffer pImageIndex = stack.mallocInt(1);
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain(), VUtil.UINT64_MAX,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain(), VUtil.tmOut,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
@@ -336,7 +336,7 @@ public class Drawer {
 
             vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
 
-            Synchronization.waitFences();
+//            Synchronization.waitFences();
 
             if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
@@ -371,8 +371,9 @@ public class Drawer {
 //        for(Long fence : inFlightFences) {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
-
-        vkDeviceWaitIdle(device);
+        //TODO: vkDeviceWaitIdle Dosen;t effect SwapChain operatiosn/vkAcquireNextImageKHR Semaphores (For Some reason)
+//        vkDeviceWaitIdle(device);
+//        vkQueueWaitIdle(Vulkan.getPresentQueue());
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
             vkDestroyFence(device, inFlightFences.get(i), null);
