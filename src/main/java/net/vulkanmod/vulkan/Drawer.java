@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.interfaces.ShaderMixed;
+import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -33,7 +34,7 @@ public class Drawer {
     private static Drawer INSTANCE = new Drawer();
 
     private static VkDevice device;
-    private static List<VkCommandBuffer> commandBuffers;
+    public static List<VkCommandBuffer> commandBuffers;
 
     private static Set<Pipeline> usedPipelines = new HashSet<>();
 
@@ -473,6 +474,15 @@ public class Drawer {
 //            Profiler.Push("draw");
             vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
         }
+    }
+    public static void drawIndexed(VkBufferPointer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+
+            VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+
+            vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+//            Profiler.Push("draw");
+            vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, vertexBuffer.i2>>5, 0);
+
     }
 
     public void bindPipeline(Pipeline pipeline) {

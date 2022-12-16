@@ -8,7 +8,6 @@ import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -19,6 +18,7 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
 import net.vulkanmod.render.RHandler;
 import net.vulkanmod.render.VBO;
+import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
@@ -36,10 +36,19 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Pipeline;
 import net.vulkanmod.vulkan.VRenderSystem;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
+import java.nio.LongBuffer;
 import java.util.*;
-import java.util.function.Supplier;
+
+import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.vulkan.VK10.vkCmdBindVertexBuffers;
 
 public class WorldRenderer {
     public static WorldRenderer INSTANCE;
@@ -540,6 +549,14 @@ public class WorldRenderer {
 //        Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
 //        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;
 
+        try(MemoryStack stack = stackPush()) {
+            VkCommandBuffer commandBuffer = Drawer.commandBuffers.get(Drawer.getCurrentFrame());
+
+            long vertexBuffers = stack.npointer(VirtualBuffer.bufferPointerSuperSet);
+            long offsets = stack.npointer(0);
+//            Profiler.Push("bindVertex");
+            VK10.nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        }
         for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
             VBO a = RHandler.uniqueVBOs.get(i);
 

@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.vulkanmod.render.RHandler;
+import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
@@ -67,6 +68,19 @@ public abstract class DebugHudM {
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
         strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
+        strings.add("Used Bytes: " + (VirtualBuffer.usedBytes >> 20) + "MB");
+        strings.add("Allocs: " + VirtualBuffer.allocs);
+//        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
+        strings.add("subAllocs: " + VirtualBuffer.subAllocs);
+        strings.add("Blocks: " + VirtualBuffer.blocks);
+        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
+        strings.add("subIncr: " + VirtualBuffer.subIncr);
+        strings.add("unusedRangesS: " + VirtualBuffer.unusedRangesS);
+        strings.add("unusedRangesM: " + VirtualBuffer.unusedRangesM);
+        strings.add("unusedRangesCount: " + VirtualBuffer.unusedRangesCount);
+        strings.add("allocMin: " + VirtualBuffer.allocMin);
+        strings.add("allocMax: " + VirtualBuffer.allocMax);
+        strings.add("unusedBytes: " + (VirtualBuffer.blockBytes-VirtualBuffer.usedBytes));
 
         return strings;
     }

@@ -8,18 +8,21 @@ import net.fabricmc.api.Environment;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.memory.VertexBuffer;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.memory.*;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.Vulkan.copyStagingtoLocalBuffer;
+
 @Environment(EnvType.CLIENT)
 public class VBO {
+    public static final int size_t = 32768;
     public AABB bb;
     public BlockPos.MutableBlockPos origin;
-    private VertexBuffer vertexBuffer;
+
+    public VkBufferPointer addSubIncr;
+//    private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private int indexCount;
     private int vertexCount;
@@ -53,9 +56,17 @@ public class VBO {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         if (!parameters.indexOnly()) {
 
-            if(vertexBuffer != null) this.vertexBuffer.freeBuffer();
-            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
+            if(addSubIncr==null || addSubIncr.sizes<data.remaining())
+            {
+                if(addSubIncr!=null) VirtualBuffer.addFreeableRange(addSubIncr);
+                addSubIncr=VirtualBuffer.addSubIncr(data.remaining());
+            }
+
+
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+            stagingBuffer.copyBuffer(data.remaining(), data);
+
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, addSubIncr.i2, addSubIncr.sizes);
         }
     }
 
@@ -89,15 +100,16 @@ public class VBO {
         if (this.indexCount != 0) {
 
             RenderSystem.assertOnRenderThread();
-            Drawer.drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            Drawer.drawIndexed(addSubIncr, indexBuffer, indexCount);
         }
     }
 
     public void close() {
         if(preInitialised) return;
         if(vertexCount <= 0) return;
-        vertexBuffer.freeBuffer();
-        vertexBuffer = null;
+        VirtualBuffer.addFreeableRange(addSubIncr);
+        addSubIncr=null;
+//        vertexBuffer = null;
         if(!autoIndexed) {
             indexBuffer.freeBuffer();
             indexBuffer = null;
