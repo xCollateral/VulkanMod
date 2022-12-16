@@ -61,17 +61,25 @@ public class RHandler
         if(buffers==null) return CompletableFuture.completedFuture(null);
 
         return CompletableFuture.runAsync(() ->
-                vbo.upload_(buffers), WorldRenderer.INSTANCE.taskDispatcher.toUpload::add);
+                vbo.upload_(buffers), WorldRenderer.taskDispatcher.toUpload::add);
     }
 
-    /*public static VBO getVBOFromIndex(int index) {
-        *//*for(VBO vbo : uniqueVBOs)
+    public static CompletableFuture<Void> uploadVBO(int index, BufferBuilder.RenderedBuffer buffers)
+    {
+        if(buffers==null) return CompletableFuture.completedFuture(null);
+
+        return CompletableFuture.runAsync(() ->
+                getVBOFromIndex(index).upload_(buffers), WorldRenderer.taskDispatcher.toUpload::add);
+    }
+
+    public static VBO getVBOFromIndex(int index) {
+        /*for(VBO vbo : uniqueVBOs)
         {
             if(vbo.index==index) return vbo;
         }
         return uniqueVBOs.get(0);
 
-        *//*
-        return ((VBOPxy) viewArea.chunks[index]).getCurrentVBO();
-    }*/
+        */
+        return WorldRenderer.chunkGrid.chunks[index].vbo;
+    }
 }

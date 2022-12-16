@@ -166,7 +166,7 @@ public class TaskDispatcher {
 
     public void uploadAllPendingUploads() {
 
-        if(!this.toUpload.isEmpty()) WorldRenderer.getInstance().setNeedsUpdate();
+        if(!this.toUpload.isEmpty()) WorldRenderer.setNeedsUpdate();
 
         Runnable runnable;
         while((runnable = this.toUpload.poll()) != null) {

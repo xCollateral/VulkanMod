@@ -1,15 +1,12 @@
 package net.vulkanmod.render.chunk;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import net.minecraft.CrashReport;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -149,7 +146,7 @@ public class ChunkTask {
             } else if (this.cancelled.get()) {
                 return CompletableFuture.completedFuture(Result.CANCELLED);
             } else {
-                Vec3 vec3 = WorldRenderer.getCameraPos();
+                Vec3 vec3 = WorldRenderer.cameraPos;
                 float f = (float)vec3.x;
                 float g = (float)vec3.y;
                 float h = (float)vec3.z;
@@ -391,7 +388,7 @@ public class ChunkTask {
                 this.cancelled.set(true);
                 return CompletableFuture.completedFuture(Result.CANCELLED);
             } else {
-                Vec3 vec3 = WorldRenderer.getCameraPos();
+                Vec3 vec3 = WorldRenderer.cameraPos;
                 float f = (float)vec3.x;
                 float f1 = (float)vec3.y;
                 float f2 = (float)vec3.z;

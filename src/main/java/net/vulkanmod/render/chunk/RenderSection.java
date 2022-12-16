@@ -30,7 +30,7 @@ public class RenderSection {
     final int index;
 
     private final RenderSection[] neighbours = new RenderSection[6];
-    final VBO vbo;
+    public final VBO vbo;
     private ChunkAreaManager.Tree chunkAreaTree;
     private ChunkArea chunkArea;
     private int lastFrame = -1;
@@ -114,7 +114,7 @@ public class RenderSection {
         boolean flag = this.cancelTasks();
         BlockPos blockpos = this.origin.immutable();
 //         int i = 1;
-        RenderChunkRegion renderchunkregion = renderRegionCache.createRegion(WorldRenderer.getLevel(), blockpos.offset(-1, -1, -1), blockpos.offset(16, 16, 16), 1);
+        RenderChunkRegion renderchunkregion = renderRegionCache.createRegion(WorldRenderer.level, blockpos.offset(-1, -1, -1), blockpos.offset(16, 16, 16), 1);
         boolean flag1 = this.compiledSection == CompiledSection.UNCOMPILED;
         if (flag1 && flag) {
             this.initialCompilationCancelCount.incrementAndGet();
