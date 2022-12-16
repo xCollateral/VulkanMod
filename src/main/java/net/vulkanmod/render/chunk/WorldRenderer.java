@@ -78,7 +78,7 @@ public class WorldRenderer {
 //    public ObjectArrayList<RenderSection> cutoutChunks = new ObjectArrayList<>();
 //    public ObjectArrayList<RenderSection> cutoutMippedChunks = new ObjectArrayList<>();
 //    public ObjectArrayList<RenderSection> tripwireChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> translucentChunks = new ObjectArrayList<>();
+    public ObjectArrayList<RenderSection> translucentChunks = new ObjectArrayList<>(1024);
 
     private Frustum frustum;
 
@@ -243,14 +243,16 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             QueueChunkInfo renderChunkInfo = this.chunkQueue.poll();
             RenderSection renderChunk = renderChunkInfo.chunk;
-            if(!renderChunk.vbo.preInitialised) RHandler.uniqueVBOs.add(renderChunk.vbo);
+            VBO vbo = renderChunk.vbo;
+            //based in the 1.18.2 applyfrustum Function: Hence why performance is likley bad
+            if(frustum.isVisible(vbo.bb)) {
+                if (!vbo.preInitialised) RHandler.uniqueVBOs.add(vbo);
+            }
 
             this.sectionsInFrustum.add(renderChunkInfo);
-            for (RenderType renderType : renderChunk.compiledSection.renderTypes) {
-               if (RenderType.translucent().equals(renderType)) {
-                    translucentChunks.add(renderChunk);
-                }
-            }
+
+            translucentChunks.add(renderChunk);
+
 
 //            mainLoop++;
 

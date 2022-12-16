@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
@@ -16,8 +17,9 @@ import java.nio.ByteBuffer;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
+    public AABB bb;
     private final int index;
-    public final BlockPos.MutableBlockPos origin;
+    public BlockPos.MutableBlockPos origin;
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private VertexFormat.IndexType indexType;
@@ -31,7 +33,8 @@ public class VBO {
 
     public boolean preInitialised = true;
 
-    public VBO(int index, BlockPos.MutableBlockPos origin) {
+    public VBO(AABB bb, int index, BlockPos.MutableBlockPos origin) {
+        this.bb = bb;
         this.index = index;
         this.origin = origin;
     }
@@ -107,6 +110,7 @@ public class VBO {
 
         this.vertexCount = 0;
         this.indexCount = 0;
+        RHandler.uniqueVBOs.remove(this);
         preInitialised=true;
     }
 

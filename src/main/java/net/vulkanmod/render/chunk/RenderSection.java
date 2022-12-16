@@ -66,7 +66,7 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
-        vbo = new VBO(this.index, this.origin);
+        vbo = new VBO(new AABB(x, y, z, x + 16, y + 16, z + 16), this.index, this.origin);
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -74,7 +74,8 @@ public class RenderSection {
         if(!vbo.preInitialised) vbo.close();
         this.origin.set(x, y, z);
         this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
-
+        vbo.origin=this.origin;
+        vbo.bb=this.bb;
         this.relativeOrigins[Direction.DOWN.ordinal()].set(this.origin).move(Direction.DOWN, 16);
         this.relativeOrigins[Direction.UP.ordinal()].set(this.origin).move(Direction.UP, 16);
         this.relativeOrigins[Direction.NORTH.ordinal()].set(this.origin).move(Direction.NORTH, 16);
@@ -235,6 +236,7 @@ public class RenderSection {
     public void releaseBuffers() {
         this.reset();
         this.buffers.values().forEach(VertexBuffer::close);
+        vbo.close();
     }
 
     public static class CompiledSection {
