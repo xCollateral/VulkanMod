@@ -18,16 +18,13 @@ import java.nio.ByteBuffer;
 @Environment(EnvType.CLIENT)
 public class VBO {
     public AABB bb;
-    private final int index;
     public BlockPos.MutableBlockPos origin;
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
-    private VertexFormat.IndexType indexType;
     private int indexCount;
     private int vertexCount;
     private VertexFormat.Mode mode;
-    private boolean sequentialIndices;
-    private VertexFormat vertexFormat;
+//    private VertexFormat vertexFormat;
 
     private boolean autoIndexed = false;
 
@@ -35,7 +32,6 @@ public class VBO {
 
     public VBO(AABB bb, int index, BlockPos.MutableBlockPos origin) {
         this.bb = bb;
-        this.index = index;
         this.origin = origin;
     }
 
@@ -44,7 +40,6 @@ public class VBO {
 
         this.indexCount = parameters.indexCount();
         this.vertexCount = parameters.vertexCount();
-        this.indexType = parameters.indexType();
         this.mode = parameters.mode();
         preInitialised=false;
         this.configureVertexFormat(parameters, buffer.vertexBuffer());
@@ -114,8 +109,8 @@ public class VBO {
         preInitialised=true;
     }
 
-    public VertexFormat getFormat() {
+    /*public VertexFormat getFormat() {
         return this.vertexFormat;
-    }
+    }*/
 
 }

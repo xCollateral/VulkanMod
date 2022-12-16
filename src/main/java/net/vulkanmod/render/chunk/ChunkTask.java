@@ -318,7 +318,7 @@ public class ChunkTask {
                 {
 
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
-                        bufferBuilder2.setQuadSortOrigin(f - (float)blockPos.getX(), g - (float)blockPos.getY(), h - (float)blockPos.getZ());
+                        bufferBuilder2.setQuadSortOrigin(f - blockPos.getX(), g - blockPos.getY(), h - blockPos.getZ());
                         compileResults.transparencyState = bufferBuilder2.getSortState();
 //                        tst = bufferBuilder2.endOrDiscardIfEmpty();
                         compileResults.renderedLayers.put(RenderType.translucent(), bufferBuilder2.endOrDiscardIfEmpty());

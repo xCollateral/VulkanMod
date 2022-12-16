@@ -548,7 +548,7 @@ public class WorldRenderer {
             BlockPos blockpos = a.origin;
 
             VRenderSystem.setChunkOffset((float) (blockpos.getX() - camX), (float) (blockpos.getY() - camY), (float) (blockpos.getZ() - camZ));
-            drawer.pushConstants(pipeline);
+            Drawer.pushConstants(pipeline);
 ////
             a.drawChunkLayer();
 
@@ -556,8 +556,8 @@ public class WorldRenderer {
         }
 
         //Need to reset push constant in case the pipeline will still be used for rendering
-        VRenderSystem.setChunkOffset(0, 0, 0);
-        drawer.pushConstants(pipeline);
+//        VRenderSystem.setChunkOffset(0, 0, 0);
+//        drawer.pushConstants(pipeline);
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();

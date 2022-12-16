@@ -64,21 +64,18 @@ public class Matrix4fM {
         return matrix4f;
     }
 
-/*
-    */
-/**
+    /**
      * @author
      * @reason
-     *//*
+     */
 
     @Overwrite
     public void multiplyWithTranslation(float f, float g, float h) {
         this.m03 += this.m00 * f + this.m01 * g + this.m02 * h;
         this.m13 += this.m10 * f + this.m11 * g + this.m12 * h;
         this.m23 += this.m20 * f + this.m21 * g + this.m22 * h;
-        this.m33 = 1;
+        this.m33 +=0;
     }
-*/
 
     /**
      * @author
