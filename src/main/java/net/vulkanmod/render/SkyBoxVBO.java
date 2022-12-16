@@ -17,7 +17,7 @@ import net.vulkanmod.vulkan.memory.VertexBuffer;
 import java.nio.ByteBuffer;
 
 @Environment(EnvType.CLIENT)
-public class VBO {
+public class SkyBoxVBO {
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private VertexFormat.IndexType indexType;
@@ -29,7 +29,6 @@ public class VBO {
 
     private boolean autoIndexed = false;
 
-    public VBO() {}
 
     public void upload_(BufferBuilder.RenderedBuffer buffer) {
         BufferBuilder.DrawState parameters = buffer.drawState();
@@ -40,7 +39,7 @@ public class VBO {
         this.mode = parameters.mode();
 
         this.configureVertexFormat(parameters, buffer.vertexBuffer());
-        this.configureIndexBuffer(parameters, buffer.indexBuffer());
+        this.configureIndexBuffer(parameters);
 
         buffer.release();
 
@@ -56,7 +55,7 @@ public class VBO {
         }
     }
 
-    private void configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
+    private void configureIndexBuffer(BufferBuilder.DrawState parameters) {
         if (parameters.sequentialIndex()) {
 
             AutoIndexBuffer autoIndexBuffer;
@@ -74,33 +73,22 @@ public class VBO {
             this.autoIndexed = true;
 
         }
-        else {
-            if(indexBuffer != null) this.indexBuffer.freeBuffer();
-            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            indexBuffer.copyBuffer(data);
-        }
 
     }
 
-    public void drawChunkLayer() {
+    public void _drawWithShader(Matrix4f MV, Matrix4f P, ShaderInstance shader) {
         if (this.indexCount != 0) {
-
             RenderSystem.assertOnRenderThread();
-            Drawer.drawIndexed(vertexBuffer, indexBuffer, indexCount);
-        }
-    }
 
-    public void close() {
-        if(vertexCount <= 0) return;
-        vertexBuffer.freeBuffer();
-        vertexBuffer = null;
-        if(!autoIndexed) {
-            indexBuffer.freeBuffer();
-            indexBuffer = null;
-        }
+            RenderSystem.setShader(() -> shader);
 
-        this.vertexCount = 0;
-        this.indexCount = 0;
+            VRenderSystem.applyMVP(MV, P);
+
+            Drawer.getInstance().draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
+
+            VRenderSystem.applyMVPAffine(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+
+        }
     }
 
     public VertexFormat getFormat() {

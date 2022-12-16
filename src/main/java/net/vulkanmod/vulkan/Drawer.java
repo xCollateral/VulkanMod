@@ -459,7 +459,7 @@ public class Drawer {
         }
     }
 
-    public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+    public static void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
 
         try(MemoryStack stack = stackPush()) {
             VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);

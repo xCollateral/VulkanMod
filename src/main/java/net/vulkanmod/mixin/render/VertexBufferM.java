@@ -57,7 +57,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {
-        vbo._drawWithShader(viewMatrix, projectionMatrix, shader);
+//        vbo._drawWithShader(viewMatrix, projectionMatrix, shader);
     }
 
     /**
