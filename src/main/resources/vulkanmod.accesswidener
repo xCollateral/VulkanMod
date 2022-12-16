@@ -5,3 +5,4 @@ accessible class net/minecraft/client/gui/Gui$HeartType
 accessible class net/minecraft/client/renderer/LevelRenderer$RenderChunkStorage
 accessible field net/minecraft/client/renderer/chunk/ChunkRenderDispatcher toUpload Ljava/util/Queue;
 accessible field net/minecraft/client/renderer/LevelRenderer viewArea Lnet/minecraft/client/renderer/ViewArea;
+accessible field com/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer released Z

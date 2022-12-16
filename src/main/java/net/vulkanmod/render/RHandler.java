@@ -58,6 +58,7 @@ public class RHandler
 
     public static CompletableFuture<Void> uploadVBO(VBO vbo, BufferBuilder.RenderedBuffer buffers)
     {
+        if(buffers==null) return CompletableFuture.completedFuture(null);
 
         return CompletableFuture.runAsync(() ->
                 vbo.upload_(buffers), WorldRenderer.INSTANCE.taskDispatcher.toUpload::add);

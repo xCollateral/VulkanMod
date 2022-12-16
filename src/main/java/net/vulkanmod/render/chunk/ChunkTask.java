@@ -17,7 +17,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.chunk.RenderChunkRegion;
 import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.client.renderer.chunk.VisibilitySet;
@@ -42,6 +41,7 @@ public class ChunkTask {
     protected AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final RenderSection renderSection;
     public boolean highPriority = false;
+//    private static BufferBuilder.RenderedBuffer tst;
 
     ChunkTask(RenderSection renderSection) {
         this.renderSection = renderSection;
@@ -165,19 +165,14 @@ public class ChunkTask {
                     compiledChunk.visibilitySet = compileResults.visibilitySet;
                     compiledChunk.renderableBlockEntities.addAll(compileResults.blockEntities);
                     compiledChunk.transparencyState = compileResults.transparencyState;
-                    List<CompletableFuture<Void>> list = Lists.newArrayList();
-                    if(!compileResults.renderedLayers.isEmpty()) compiledChunk.isCompletelyEmpty = false;
-                    for (Map.Entry<RenderType, BufferBuilder.RenderedBuffer> entry : compileResults.renderedLayers.entrySet()) {
-                        RenderType renderType = entry.getKey();
-                        BufferBuilder.RenderedBuffer renderedBuffer = entry.getValue();
-                        /*if(RHandler.viewArea==null) {
-                            this.cancelled.set(true);
-                            break;
-                        }*/
-                        list.add(RHandler.uploadVBO(renderSection.vbo, renderedBuffer));
-                        compiledChunk.renderTypes.add(renderType);
+//                    List<CompletableFuture<Void>> list = Lists.newArrayList();
+                    boolean b = !compileResults.renderedLayers.isEmpty();
+                    if(b) {
+                        compiledChunk.isCompletelyEmpty = false;
+                        compiledChunk.renderTypes.add(RenderType.translucent());
                     }
-                    return Util.sequenceFailFast(list).handle((listx, throwable) -> {
+                    CompletableFuture<Void> e = b ?  RHandler.uploadVBO(renderSection.vbo, compileResults.renderedLayers.get(RenderType.translucent())) : CompletableFuture.completedFuture(null);
+                    return e.handle((listx, throwable) -> {
                         if (throwable != null && !(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
                             Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Rendering chunk"));
                         }
@@ -280,13 +275,14 @@ public class ChunkTask {
             PoseStack poseStack = new PoseStack();
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
-                Set<RenderType> set = new ReferenceArraySet(RenderType.chunkBufferLayers().size());
+//                Set<RenderType> set = new ReferenceArraySet<>(RenderType.chunkBufferLayers().size());
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
-                Iterator var15 = BlockPos.betweenClosed(blockPos, blockPos2).iterator();
+                final BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.translucent());
+                if(!bufferBuilder2.building()) bufferBuilder2.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 
-                while(var15.hasNext()) {
-                    BlockPos blockPos3 = (BlockPos)var15.next();
+                for (BlockPos blockPos3 : BlockPos.betweenClosed(blockPos, blockPos2)) {
+//                    BlockPos blockPos3 = (BlockPos)var15.next();
                     BlockState blockState = renderChunkRegion.getBlockState(blockPos3);
                     if (blockState.isSolidRender(renderChunkRegion, blockPos3)) {
                         visGraph.setOpaque(blockPos3);
@@ -301,53 +297,42 @@ public class ChunkTask {
 
                     BlockState blockState2 = renderChunkRegion.getBlockState(blockPos3);
                     FluidState fluidState = blockState2.getFluidState();
-                    RenderType renderType;
-                    BufferBuilder bufferBuilder;
                     if (!fluidState.isEmpty()) {
-                        renderType = ItemBlockRenderTypes.getRenderLayer(fluidState);
-                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
-                        if (set.add(renderType)) {
-                            bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-                        }
+                        //                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
 
-                        blockRenderDispatcher.renderLiquid(blockPos3, renderChunkRegion, bufferBuilder, blockState2, fluidState);
+
+                        blockRenderDispatcher.renderLiquid(blockPos3, renderChunkRegion, bufferBuilder2, blockState2, fluidState);
                     }
 
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
-                        renderType = ItemBlockRenderTypes.getChunkRenderType(blockState);
-                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
-                        if (set.add(renderType)) {
-                            bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-                        }
+                        //                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
+
 
                         poseStack.pushPose();
                         poseStack.translate(blockPos3.getX() & 15, blockPos3.getY() & 15, blockPos3.getZ() & 15);
-                        blockRenderDispatcher.renderBatched(blockState, blockPos3, renderChunkRegion, poseStack, bufferBuilder, true, randomSource);
+                        blockRenderDispatcher.renderBatched(blockState, blockPos3, renderChunkRegion, poseStack, bufferBuilder2, true, randomSource);
                         poseStack.popPose();
                     }
                 }
 
-                if (set.contains(RenderType.translucent())) {
-                    BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.translucent());
+                {
+
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
                         bufferBuilder2.setQuadSortOrigin(f - (float)blockPos.getX(), g - (float)blockPos.getY(), h - (float)blockPos.getZ());
                         compileResults.transparencyState = bufferBuilder2.getSortState();
+//                        tst = bufferBuilder2.endOrDiscardIfEmpty();
+                        compileResults.renderedLayers.put(RenderType.translucent(), bufferBuilder2.endOrDiscardIfEmpty());
                     }
                 }
 
-                var15 = set.iterator();
 
-                while(var15.hasNext()) {
-                    RenderType renderType2 = (RenderType)var15.next();
-                    BufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
-                    if (renderedBuffer != null) {
-                        compileResults.renderedLayers.put(renderType2, renderedBuffer);
-                    }
-                }
+
+
+
 
                 ModelBlockRenderer.clearCache();
-            }
 
+            }
             compileResults.visibilitySet = visGraph.resolve();
             return compileResults;
         }

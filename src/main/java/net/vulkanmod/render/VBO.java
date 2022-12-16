@@ -50,7 +50,7 @@ public class VBO {
         this.configureVertexFormat(parameters, buffer.vertexBuffer());
         this.configureIndexBuffer(parameters, buffer.indexBuffer());
 
-        buffer.release();
+        if(!buffer.released) buffer.release();
 
     }
 
