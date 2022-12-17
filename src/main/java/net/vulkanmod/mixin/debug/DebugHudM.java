@@ -76,11 +76,11 @@ public abstract class DebugHudM {
 //        strings.add("Blocks: " + VirtualBuffer.blocks);
 //        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
         strings.add("subIncr: " + VirtualBuffer.subIncr);
-        strings.add("minVBOSize: " + VirtualBuffer.unusedRangesS);
-        strings.add("maxVBOSize: " + VirtualBuffer.unusedRangesM);
+        strings.add("minRange: " + VirtualBuffer.unusedRangesS);
+        strings.add("maxRange: " + VirtualBuffer.unusedRangesM);
         strings.add("unusedRangesCount: " + VirtualBuffer.unusedRangesCount);
-        strings.add("allocMin: " + VirtualBuffer.allocMin);
-        strings.add("allocMax: " + VirtualBuffer.allocMax);
+        strings.add("minVBOSize: " + VirtualBuffer.allocMin);
+        strings.add("maxVBOSize: " + VirtualBuffer.allocMax);
         strings.add("unusedBytes: " + (VirtualBuffer.size_t-VirtualBuffer.usedBytes));
 
         return strings;

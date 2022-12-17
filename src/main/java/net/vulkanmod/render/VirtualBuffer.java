@@ -44,16 +44,27 @@ public class VirtualBuffer {
     }
     public static void reset(int i)
     {
-        vkDeviceWaitIdle(Vulkan.getDevice());
-        if(!bound) return;
-        bound=false;
-        Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
+
         if(size_t==i) return;
+
+
+        freeThis(i);
         size_t=i;
+
+        bound=false;
+
         FreeRanges.clear();
+        subIncr=0;
         subAllocs=0;
         usedBytes=0;
         initBufferSuperSet(i);
+    }
+
+    private static void freeThis(int i) {
+        Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
+        if(size_t!=i){
+            Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
+        }
     }
 
 
@@ -97,10 +108,6 @@ public class VirtualBuffer {
 
     private static void initBufferSuperSet(int size) {
 
-        if(size_t==size) return;
-        if(bound){
-            Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
-        }
         bound=true;
 
         try(MemoryStack stack = MemoryStack.stackPush())

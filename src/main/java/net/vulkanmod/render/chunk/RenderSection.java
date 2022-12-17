@@ -216,7 +216,7 @@ public class RenderSection {
         this.cancelTasks();
         this.compiledSection = CompiledSection.UNCOMPILED;
         this.dirty = true;
-        vbo.close(); //free if Out of range
+//        vbo.close();
     }
 
     public void setDirty(boolean playerChanged) {
@@ -237,7 +237,7 @@ public class RenderSection {
     public void releaseBuffers() {
         this.reset();
         this.buffers.values().forEach(VertexBuffer::close);
-//        vbo.close();
+
     }
 
     public static class CompiledSection {
