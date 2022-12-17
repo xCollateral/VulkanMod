@@ -82,4 +82,8 @@ public class RHandler
         */
         return WorldRenderer.chunkGrid.chunks[index].vbo;
     }
+
+    public static void freeVBO(int index) {
+        getVBOFromIndex(index).close();
+    }
 }

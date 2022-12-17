@@ -18,6 +18,7 @@ import static net.vulkanmod.vulkan.Vulkan.copyStagingtoLocalBuffer;
 @Environment(EnvType.CLIENT)
 public class VBO {
     public static final int size_t = 32768;
+    private final int index;
     public AABB bb;
     public BlockPos.MutableBlockPos origin;
 
@@ -33,9 +34,8 @@ public class VBO {
 
     public boolean preInitialised = true;
 
-    public VBO(AABB bb, int index, BlockPos.MutableBlockPos origin) {
-        this.bb = bb;
-        this.origin = origin;
+    public VBO(int index) {
+        this.index=index;
     }
 
     public void upload_(BufferBuilder.RenderedBuffer buffer) {
@@ -119,6 +119,11 @@ public class VBO {
         this.indexCount = 0;
         RHandler.uniqueVBOs.remove(this);
         preInitialised=true;
+    }
+
+    public void updateOrigin(BlockPos.MutableBlockPos origin, AABB bb) {
+        this.origin=origin;
+        this.bb=bb;
     }
 
     /*public VertexFormat getFormat() {

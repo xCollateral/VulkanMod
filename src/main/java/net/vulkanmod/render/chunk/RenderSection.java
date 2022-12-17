@@ -16,6 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
+import net.vulkanmod.render.RHandler;
 import net.vulkanmod.render.VBO;
 
 import javax.annotation.Nullable;
@@ -66,16 +67,15 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
-        vbo = new VBO(new AABB(x, y, z, x + 16, y + 16, z + 16), this.index, this.origin);
+        vbo = new VBO(index);
     }
 
     public void setOrigin(int x, int y, int z) {
         this.reset();
-        vbo.close(); //free if Out of range
+
         this.origin.set(x, y, z);
         this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
-        vbo.origin=this.origin;
-        vbo.bb=this.bb;
+        vbo.updateOrigin(origin, bb);
         this.relativeOrigins[Direction.DOWN.ordinal()].set(this.origin).move(Direction.DOWN, 16);
         this.relativeOrigins[Direction.UP.ordinal()].set(this.origin).move(Direction.UP, 16);
         this.relativeOrigins[Direction.NORTH.ordinal()].set(this.origin).move(Direction.NORTH, 16);
@@ -216,6 +216,7 @@ public class RenderSection {
         this.cancelTasks();
         this.compiledSection = CompiledSection.UNCOMPILED;
         this.dirty = true;
+        vbo.close(); //free if Out of range
     }
 
     public void setDirty(boolean playerChanged) {
@@ -236,7 +237,7 @@ public class RenderSection {
     public void releaseBuffers() {
         this.reset();
         this.buffers.values().forEach(VertexBuffer::close);
-        vbo.close();
+//        vbo.close();
     }
 
     public static class CompiledSection {
