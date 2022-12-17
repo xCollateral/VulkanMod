@@ -1,8 +1,9 @@
 package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.config.Config;
+import net.vulkanmod.config.Option;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -15,10 +16,8 @@ import org.lwjgl.vulkan.VkMemoryDedicatedAllocateInfo;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.lastViewDistance;
-import static org.lwjgl.system.Checks.check;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.*;
-import static org.lwjgl.util.vma.Vma.vmaGetVirtualBlockStatistics;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VirtualBuffer {
@@ -26,9 +25,6 @@ public class VirtualBuffer {
     public static int size_t;
     public static int subIncr;
     public static int usedBytes;
-    public static int allocs;
-    public static int blocks;
-    public static long blockBytes;
     private static final ObjectArrayList<VkBufferPointer> FreeRanges = new ObjectArrayList<>(1024);
     public static int subAllocs;
     public static long unusedRangesS;
@@ -43,17 +39,17 @@ public class VirtualBuffer {
 //    public static int allocBytes;
 
     static {
-        initBufferSuperSet((lastViewDistance*lastViewDistance)*24*65536);
+        initBufferSuperSet((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize);
     }
     public static void reset(int i)
     {
 //        Drawer.skipRendering=true;
 
-        if(size_t==i) return;
-        RHandler.uniqueVBOs.clear();
         subIncr=0;
         subAllocs=0;
         usedBytes=0;
+        if(size_t==i) return;
+        RHandler.uniqueVBOs.clear();
         FreeRanges.clear();
 
        /* for(VBO a : RHandler.uniqueVBOs)
@@ -86,12 +82,13 @@ public class VirtualBuffer {
 
     private static void createBuffer(long size, MemoryStack stack, PointerBuffer pBuffer) {
 
-        VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.callocStack(stack);
-        bufferInfo.sType$Default();
-        bufferInfo.pNext(NULL);
-        bufferInfo.size(size);
-        bufferInfo.usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+        VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.callocStack(stack)
+                .sType$Default()
+                .pNext(NULL)
+                .size(size)
+                .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+                .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+
 //
 //            vkGetBufferMemoryRequirements(Vulkan.getDevice(), )
 //            vkAllocateMemory(d)
@@ -107,12 +104,14 @@ public class VirtualBuffer {
 
 //        VkMemoryRequirements memRequirements = VkMemoryRequirements.mallocStack(stack);
 //        vkGetBufferMemoryRequirements(Vulkan.getDevice(), pBuffer.get(0), memRequirements);
-
-        VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
+        VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = VkMemoryDedicatedAllocateInfo.mallocStack(stack)
                 .buffer(pBuffer.get(0))
+                .image(0)
+                .pNext(0)
                 .sType$Default();
 
-        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.callocStack(stack)
+
+        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.mallocStack(stack)
                 .sType$Default()
                 .pNext(vkMemoryDedicatedAllocateInfo.address())
                 .allocationSize(size)
@@ -169,7 +168,7 @@ public class VirtualBuffer {
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size(size)
-                    .alignment(VBO.size_t)
+                    .alignment(Config.vboAlignmentActual)
                     .flags((checkforFreeable(size)) ? VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
             PointerBuffer pAlloc = stack.mallocPointer(1);
@@ -191,7 +190,7 @@ public class VirtualBuffer {
     }
 
     private static int alignAs(int size) {
-        return size + (VBO.size_t - (size-1&VBO.size_t-1) - 1);
+        return size + (Config.vboAlignmentActual - (size-1&Config.vboAlignmentActual-1) - 1);
     }
 
     private static boolean checkforFreeable(int size) {

@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
@@ -379,7 +380,7 @@ public class WorldRenderer {
 
     public static void allChanged() {
         lastViewDistance = minecraft.options.getEffectiveRenderDistance();
-        VirtualBuffer.reset((lastViewDistance*lastViewDistance)*24*65536);
+        VirtualBuffer.reset((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize);
         if (level != null) {
 //            this.graphicsChanged();
             level.clearTintCaches();

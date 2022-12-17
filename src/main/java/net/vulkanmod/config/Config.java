@@ -12,6 +12,10 @@ import java.util.Collections;
 
 public class Config {
 
+    public static int baseAlignSize = 65536;
+    public static int vboAlignment = 15;
+    public static int prevValue=32768;
+    public static int vboAlignmentActual;
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;

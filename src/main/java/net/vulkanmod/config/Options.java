@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.LiteralContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.VirtualBuffer;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 
 public class Options {
@@ -185,7 +187,31 @@ public class Options {
                             return Component.nullToEmpty(t);
                         },
                         value -> config.advCulling = value,
-                        () -> config.advCulling)
+                        () -> config.advCulling),
+                new RangeOption("baseAlignSize", 65536,
+                        131072, 128,
+                        value -> {
+
+                            Config.baseAlignSize = value;
+                            WorldRenderer.allChanged();
+                        }, () -> Config.baseAlignSize)
+                        .setTooltip(Component.nullToEmpty("Adjust Base Modifier Size for Chunk/VBO Allocations")),
+                new RangeOption("vboAlignment", 0,
+                        16, 1,
+                        value -> {
+                            /*Config.prevValue = Config.prevValue < Config.vboAlignment ? value >> 1 : value << 1;*/
+                            Config.vboAlignment=value;
+                            Config.vboAlignmentActual=1<<value;
+
+                            WorldRenderer.allChanged();
+                        }, () -> Config.vboAlignment)
+                        .setTooltip(Component.nullToEmpty("Current Value: "+ (1<<Config.vboAlignment)+" \n (Refreshes if Exiting/Reentering options Screen)"+"\n\n"+"""
+                        Use to Adjust VBO Alignment
+                        Can only be Adjusted in Powers of 2
+                        Value is Equal to 2^Value (e.g. 2^16=65536)
+                        Used to reduce Fragmentation when suballocating VBOs
+                        reduce this value to reduce memory usage/inefficiency
+                        but in exchange increases fragmentation which may lead to glitches/weird issues""")),
         };
 
     }
