@@ -339,12 +339,9 @@ public class WorldRenderer {
 
                 list.add(renderSection);
             }
-            VBO vbo = renderSection.vbo;
             //based on the 1.18.2 applyfrustum Function: Hence why performance is likley bad
             //COuld do/use GPU-based CUllign which would require a Compute Shader, but apparently it isn't very/Particuarly hard to do
-            if(frustum.isVisible(vbo.bb)){
-                if (!vbo.preInitialised) RHandler.uniqueVBOs.add(vbo);
-            }
+            if (!renderSection.vbo.preInitialised) RHandler.uniqueVBOs.add(renderSection.vbo);
         }
 
         minecraft.getProfiler().popPush("upload");
@@ -501,7 +498,13 @@ public class WorldRenderer {
 
         VertexFormat vertexformat = renderType.format();
         //TODO: ViewBobbing dosen't function properly if Affine
-        VRenderSystem.applyMVP(poseStack.last().pose(), projection);
+        Matrix4f pose = poseStack.last().pose();
+
+        if(Config.doChunkPreTranslation)
+        {
+            pose.multiplyWithTranslation((float) camX, (float) camY, (float) camZ);
+        }
+        VRenderSystem.applyMVP(pose, projection);
 
 
         Drawer drawer = Drawer.getInstance();
@@ -528,8 +531,10 @@ public class WorldRenderer {
 
 //            BlockPos blockpos = a.origin;
 
-            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
-            Drawer.pushConstants(pipeline);
+            if(Config.doChunkPreTranslation){
+                VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
+                Drawer.pushConstants(pipeline);
+            }
 ////
             a.drawChunkLayer();
 

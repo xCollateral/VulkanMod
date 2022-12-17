@@ -44,19 +44,19 @@ public class VirtualBuffer {
     public static void reset(int i)
     {
 //        Drawer.skipRendering=true;
-
+        vkDeviceWaitIdle(Vulkan.getDevice());
+        RHandler.uniqueVBOs.clear();
         subIncr=0;
         subAllocs=0;
         usedBytes=0;
-        if(size_t==i) return;
-        RHandler.uniqueVBOs.clear();
         FreeRanges.clear();
+        freeThis(i);
+        if(size_t==i) return;
 
        /* for(VBO a : RHandler.uniqueVBOs)
         {
             a.close();
         }*/
-        freeThis(i);
 
 
 
@@ -177,7 +177,7 @@ public class VirtualBuffer {
             subIncr += size;
             usedBytes+=size;
             if(Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) == VK10.VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-                throw new RuntimeException("Out of Mem!: " + usedBytes +"-->"+(usedBytes+size));
+                throw new IllegalStateException("Out of Mem!: " + usedBytes +"-->"+(usedBytes+size));
             }
             long allocation = pAlloc.get(0);
 //            Vma.vmaSetVirtualAllocationUserData(virtualBlockBufferSuperSet, allocation, 0);

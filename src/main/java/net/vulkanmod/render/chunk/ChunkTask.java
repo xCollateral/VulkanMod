@@ -261,6 +261,14 @@ public class ChunkTask {
             return set;
         }
 
+        private void translateChunk(PoseStack posestack, float x, float y, float z) {
+            float blockPos33 = (this.renderSection.origin.getX() - x);
+            float blockPos312 = (this.renderSection.origin.getY());
+            float blockPos321 = (this.renderSection.origin.getZ()  - z);
+
+            posestack.translate(blockPos33, blockPos312, blockPos321);
+        }
+
         private CompileResults compile(float f, float g, float h, ChunkBufferBuilderPack chunkBufferBuilderPack) {
             CompileResults compileResults = new CompileResults();
 
@@ -270,6 +278,7 @@ public class ChunkTask {
             RenderChunkRegion renderChunkRegion = this.region;
             this.region = null;
             PoseStack poseStack = new PoseStack();
+            translateChunk(poseStack, f, g, h);
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
 //                Set<RenderType> set = new ReferenceArraySet<>(RenderType.chunkBufferLayers().size());
