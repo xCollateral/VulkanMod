@@ -58,7 +58,7 @@ public class VBO {
 
             if(addSubIncr==null || addSubIncr.sizes<data.remaining())
             {
-                if(addSubIncr!=null) VirtualBuffer.addFreeableRange(addSubIncr);
+                if(addSubIncr != null) VirtualBuffer.addFreeableRange(addSubIncr);
                 addSubIncr=VirtualBuffer.addSubIncr(data.remaining());
             }
 

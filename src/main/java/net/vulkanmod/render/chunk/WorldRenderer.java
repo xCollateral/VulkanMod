@@ -54,7 +54,7 @@ public class WorldRenderer {
     public static final Minecraft minecraft;
 
     public static ClientLevel level;
-    private static int lastViewDistance;
+    public static int lastViewDistance;
     private static final RenderBuffers renderBuffers;
 
     static Vec3 cameraPos;
@@ -341,7 +341,7 @@ public class WorldRenderer {
             VBO vbo = renderSection.vbo;
             //based on the 1.18.2 applyfrustum Function: Hence why performance is likley bad
             //COuld do/use GPU-based CUllign which would require a Compute Shader, but apparently it isn't very/Particuarly hard to do
-            {
+            if(frustum.isVisible(vbo.bb)){
                 if (!vbo.preInitialised) RHandler.uniqueVBOs.add(vbo);
             }
         }
@@ -378,6 +378,9 @@ public class WorldRenderer {
     }
 
     public static void allChanged() {
+        RHandler.uniqueVBOs.clear();
+        lastViewDistance = minecraft.options.getEffectiveRenderDistance();
+        VirtualBuffer.reset((lastViewDistance*lastViewDistance)*24*65536);
         if (level != null) {
 //            this.graphicsChanged();
             level.clearTintCaches();
@@ -391,11 +394,10 @@ public class WorldRenderer {
 //            generateClouds = true;
 //            recentlyCompiledChunks.clear();
 //            ItemBlockRenderTypes.setFancy(Minecraft.useFancyGraphics());
-            lastViewDistance = minecraft.options.getEffectiveRenderDistance();
+
             if (chunkGrid != null) {
                 chunkGrid.releaseAllBuffers();
             }
-
             taskDispatcher.clearBatchQueue();
             synchronized(globalBlockEntities) {
                 globalBlockEntities.clear();

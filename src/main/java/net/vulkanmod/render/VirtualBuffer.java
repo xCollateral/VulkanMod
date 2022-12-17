@@ -1,6 +1,7 @@
 package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -12,6 +13,7 @@ import org.lwjgl.vulkan.VkMemoryDedicatedAllocateInfo;
 
 import java.nio.LongBuffer;
 
+import static net.vulkanmod.render.chunk.WorldRenderer.lastViewDistance;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.util.vma.Vma.*;
@@ -20,7 +22,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VirtualBuffer {
     private static long virtualBlockBufferSuperSet;
-    private static int size_t;
+    public static int size_t;
     public static int subIncr;
     public static int usedBytes;
     public static int allocs;
@@ -34,14 +36,24 @@ public class VirtualBuffer {
     public static long allocMin;
     public static long allocMax;
     public static long bufferPointerSuperSet;
+    public static boolean bound=false;
 //    public static int allocBytes;
 
     static {
-        initBufferSuperSet(0x20000000);
+        initBufferSuperSet((lastViewDistance*lastViewDistance)*24*65536);
     }
-    public static void reset()
+    public static void reset(int i)
     {
+        vkDeviceWaitIdle(Vulkan.getDevice());
+        if(!bound) return;
+        bound=false;
+        Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
+        if(size_t==i) return;
+        size_t=i;
         FreeRanges.clear();
+        subAllocs=0;
+        usedBytes=0;
+        initBufferSuperSet(i);
     }
 
 
@@ -86,6 +98,10 @@ public class VirtualBuffer {
     private static void initBufferSuperSet(int size) {
 
         if(size_t==size) return;
+        if(bound){
+            Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
+        }
+        bound=true;
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
@@ -116,10 +132,10 @@ public class VirtualBuffer {
 
         bufferPointerSuperSet= pBuffer.get(0);
 
-        size_t= size;
+//        size_t= size;
     }
 
-    //TODO: draw Call Coalesing: if /get/grab two unaliggned blocks and attemot to merge them together if fit within teh same (relative) alignment
+    //TODO: draw Call Coalescing: if get/grab two unaligned blocks and attempt to merge them together if fit within the same (relative) alignment
     static VkBufferPointer addSubIncr(int size) {
         size=alignAs(size);
 //        VkBufferPointer bufferPointer = checkforFreeable(size);
@@ -136,9 +152,8 @@ public class VirtualBuffer {
 
             LongBuffer pOffset = stack.longs(0);
             subIncr += size;
-
-            int a = Vma.nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc.address0(), (pOffset.get(0)));
-            if(a== VK10.VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            usedBytes+=size;
+            if(Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) == VK10.VK_ERROR_OUT_OF_DEVICE_MEMORY) {
                 throw new RuntimeException("Out of Mem!: " + usedBytes +"-->"+(usedBytes+size));
             }
             long allocation = pAlloc.get(0);
@@ -168,12 +183,12 @@ public class VirtualBuffer {
     private static void updateStatistics(MemoryStack stack) {
         VmaDetailedStatistics vmaStatistics = VmaDetailedStatistics.malloc(stack);
         vmaCalculateVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics);
-        vmaGetVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics.statistics());
-        usedBytes= (int) vmaStatistics.statistics().allocationBytes();
-        allocs=vmaStatistics.statistics().allocationCount();
+//        vmaGetVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics.statistics());
+//        usedBytes= (int) vmaStatistics.statistics().allocationBytes();
+//        allocs=vmaStatistics.statistics().allocationCount();
 //        allocBytes= (int) vmaStatistics.statistics().allocationBytes();
-        blocks=vmaStatistics.statistics().blockCount();
-        blockBytes=vmaStatistics.statistics().blockBytes();
+//        blocks=vmaStatistics.statistics().blockCount();
+//        blockBytes=vmaStatistics.statistics().blockBytes();
         unusedRangesS=vmaStatistics.unusedRangeSizeMin();
         unusedRangesM=vmaStatistics.unusedRangeSizeMax();
         unusedRangesCount=vmaStatistics.unusedRangeCount();
@@ -188,6 +203,7 @@ public class VirtualBuffer {
 //        if(bufferPointer.sizes==0) return;
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation);
         subAllocs--;
+        usedBytes-=bufferPointer.sizes;
         addToFreeableRanges(bufferPointer);
     }
 

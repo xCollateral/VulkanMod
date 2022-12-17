@@ -30,7 +30,7 @@ import java.util.List;
 
 import static net.vulkanmod.Initializer.getVersion;
 
-@Mixin(DebugScreenOverlay.class)
+@Mixin(value = DebugScreenOverlay.class, priority = 999)
 public abstract class DebugHudM {
 
     @Shadow @Final private Minecraft minecraft;
@@ -69,18 +69,19 @@ public abstract class DebugHudM {
         strings.add("");
         strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
         strings.add("Used Bytes: " + (VirtualBuffer.usedBytes >> 20) + "MB");
-        strings.add("Allocs: " + VirtualBuffer.allocs);
+        strings.add("Max Size: " + (VirtualBuffer.size_t >> 20) + "MB");
+//        strings.add("Allocs: " + VirtualBuffer.allocs);
 //        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
         strings.add("subAllocs: " + VirtualBuffer.subAllocs);
-        strings.add("Blocks: " + VirtualBuffer.blocks);
-        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
+//        strings.add("Blocks: " + VirtualBuffer.blocks);
+//        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
         strings.add("subIncr: " + VirtualBuffer.subIncr);
-        strings.add("unusedRangesS: " + VirtualBuffer.unusedRangesS);
-        strings.add("unusedRangesM: " + VirtualBuffer.unusedRangesM);
+        strings.add("minVBOSize: " + VirtualBuffer.unusedRangesS);
+        strings.add("maxVBOSize: " + VirtualBuffer.unusedRangesM);
         strings.add("unusedRangesCount: " + VirtualBuffer.unusedRangesCount);
         strings.add("allocMin: " + VirtualBuffer.allocMin);
         strings.add("allocMax: " + VirtualBuffer.allocMax);
-        strings.add("unusedBytes: " + (VirtualBuffer.blockBytes-VirtualBuffer.usedBytes));
+        strings.add("unusedBytes: " + (VirtualBuffer.size_t-VirtualBuffer.usedBytes));
 
         return strings;
     }

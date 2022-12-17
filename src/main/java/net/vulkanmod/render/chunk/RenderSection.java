@@ -71,7 +71,7 @@ public class RenderSection {
 
     public void setOrigin(int x, int y, int z) {
         this.reset();
-        if(!vbo.preInitialised) vbo.close();
+        vbo.close(); //free if Out of range
         this.origin.set(x, y, z);
         this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
         vbo.origin=this.origin;

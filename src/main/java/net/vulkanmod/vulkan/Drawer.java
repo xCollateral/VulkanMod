@@ -4,6 +4,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.vulkan.memory.*;
@@ -434,7 +436,9 @@ public class Drawer {
     private void drawAutoIndexed(ByteBuffer buffer, VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int drawMode, VertexFormat vertexFormat, int vertexCount) {
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
-        Pipeline boundPipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
+        ShaderInstance shader = RenderSystem.getShader();
+        if(shader==null) shader=GameRenderer.getRendertypeCutoutMippedShader();
+        Pipeline boundPipeline = ((ShaderMixed) shader).getPipeline();
         usedPipelines.add(boundPipeline);
         bindPipeline(boundPipeline);
 
