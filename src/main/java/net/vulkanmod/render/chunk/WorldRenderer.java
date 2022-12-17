@@ -378,7 +378,6 @@ public class WorldRenderer {
     }
 
     public static void allChanged() {
-        RHandler.uniqueVBOs.clear();
         lastViewDistance = minecraft.options.getEffectiveRenderDistance();
         VirtualBuffer.reset((lastViewDistance*lastViewDistance)*24*65536);
         if (level != null) {
@@ -526,9 +525,9 @@ public class WorldRenderer {
 
 
 
-            BlockPos blockpos = a.origin;
+//            BlockPos blockpos = a.origin;
 
-            VRenderSystem.setChunkOffset((float) (blockpos.getX() - camX), (float) (blockpos.getY() - camY), (float) (blockpos.getZ() - camZ));
+            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
             Drawer.pushConstants(pipeline);
 ////
             a.drawChunkLayer();

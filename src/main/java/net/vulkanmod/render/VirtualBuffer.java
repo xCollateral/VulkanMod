@@ -2,6 +2,7 @@ package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -37,6 +38,8 @@ public class VirtualBuffer {
     public static long allocMax;
     public static long bufferPointerSuperSet;
     public static boolean bound=false;
+    private static long alloc;
+    private static long bufferPtrBackingAlloc;
 //    public static int allocBytes;
 
     static {
@@ -44,26 +47,39 @@ public class VirtualBuffer {
     }
     public static void reset(int i)
     {
+//        Drawer.skipRendering=true;
 
         if(size_t==i) return;
+        RHandler.uniqueVBOs.clear();
+        subIncr=0;
+        subAllocs=0;
+        usedBytes=0;
+        FreeRanges.clear();
 
-
+       /* for(VBO a : RHandler.uniqueVBOs)
+        {
+            a.close();
+        }*/
         freeThis(i);
+
+
+
         size_t=i;
 
         bound=false;
 
-        FreeRanges.clear();
-        subIncr=0;
-        subAllocs=0;
-        usedBytes=0;
+
+
         initBufferSuperSet(i);
+//        Drawer.skipRendering=false;
     }
 
     private static void freeThis(int i) {
         Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
         if(size_t!=i){
             Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
+            vkFreeMemory(Vulkan.getDevice(), bufferPtrBackingAlloc, null);
+            vkDestroyBuffer(Vulkan.getDevice(), bufferPointerSuperSet, null);
         }
     }
 
@@ -138,6 +154,7 @@ public class VirtualBuffer {
         vkBindBufferMemory(Vulkan.getDevice(), pBuffer.get(0), pAlloc.get(0), 0);
 
         bufferPointerSuperSet= pBuffer.get(0);
+        bufferPtrBackingAlloc= pAlloc.get(0);
 
 //        size_t= size;
     }

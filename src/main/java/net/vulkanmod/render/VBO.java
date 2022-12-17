@@ -19,8 +19,10 @@ import static net.vulkanmod.vulkan.Vulkan.copyStagingtoLocalBuffer;
 public class VBO {
     public static final int size_t = 32768;
     private final int index;
+    public float x;
+    public float y;
+    public float z;
     public AABB bb;
-    public BlockPos.MutableBlockPos origin;
 
     public VkBufferPointer addSubIncr;
 //    private VertexBuffer vertexBuffer;
@@ -34,8 +36,11 @@ public class VBO {
 
     public boolean preInitialised = true;
 
-    public VBO(int index) {
+    public VBO(int index, int x, int y, int z) {
         this.index=index;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     public void upload_(BufferBuilder.RenderedBuffer buffer) {
@@ -121,8 +126,11 @@ public class VBO {
         preInitialised=true;
     }
 
-    public void updateOrigin(BlockPos.MutableBlockPos origin, AABB bb) {
-        this.origin=origin;
+    public void updateOrigin(int x, int y, int z, AABB bb) {
+//        this.origin=origin;
+        this.x=x;
+        this.y=y;
+        this.z=z;
         this.bb=bb;
     }
 

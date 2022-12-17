@@ -44,13 +44,13 @@ public class RenderSection {
     @Nullable
     private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-    private final Map<RenderType, VertexBuffer> buffers =
+    /*private final Map<RenderType, VertexBuffer> buffers =
             //TODO later: find something better
             new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) -> {
         return renderType;
     }, (renderType) -> {
         return new VertexBuffer();
-    })));
+    })));*/
     private AABB bb;
     private boolean dirty = true;
     final BlockPos.MutableBlockPos origin = new BlockPos.MutableBlockPos(-1, -1, -1);
@@ -67,7 +67,7 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
-        vbo = new VBO(index);
+        vbo = new VBO(index, x, y, z);
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -75,7 +75,7 @@ public class RenderSection {
 
         this.origin.set(x, y, z);
         this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
-        vbo.updateOrigin(origin, bb);
+        vbo.updateOrigin(x,y,z, bb);
         this.relativeOrigins[Direction.DOWN.ordinal()].set(this.origin).move(Direction.DOWN, 16);
         this.relativeOrigins[Direction.UP.ordinal()].set(this.origin).move(Direction.UP, 16);
         this.relativeOrigins[Direction.NORTH.ordinal()].set(this.origin).move(Direction.NORTH, 16);
@@ -161,9 +161,9 @@ public class RenderSection {
         return this.origin;
     }
 
-    public VertexBuffer getBuffer(RenderType renderType) {
-        return buffers.get(renderType);
-    }
+//    public VertexBuffer getBuffer(RenderType renderType) {
+//        return buffers.get(renderType);
+//    }
 
     public void setNeighbour(int index, @Nullable RenderSection chunk) {
         this.neighbours[index] = chunk;
@@ -236,7 +236,7 @@ public class RenderSection {
 
     public void releaseBuffers() {
         this.reset();
-        this.buffers.values().forEach(VertexBuffer::close);
+//        this.buffers.values().forEach(VertexBuffer::close);
 
     }
 
