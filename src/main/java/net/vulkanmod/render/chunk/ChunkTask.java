@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.render.RHandler;
 
 import javax.annotation.Nullable;
@@ -262,9 +263,9 @@ public class ChunkTask {
         }
 
         private void translateChunk(PoseStack posestack, float x, float y, float z) {
-            float blockPos33 = (this.renderSection.origin.getX() - x);
+            float blockPos33 = (this.renderSection.origin.getX() - Minecraft.getInstance().player.getBlockX());
             float blockPos312 = (this.renderSection.origin.getY());
-            float blockPos321 = (this.renderSection.origin.getZ()  - z);
+            float blockPos321 = (this.renderSection.origin.getZ()  - Minecraft.getInstance().player.getBlockZ());
 
             posestack.translate(blockPos33, blockPos312, blockPos321);
         }
@@ -278,7 +279,7 @@ public class ChunkTask {
             RenderChunkRegion renderChunkRegion = this.region;
             this.region = null;
             PoseStack poseStack = new PoseStack();
-            translateChunk(poseStack, f, g, h);
+//            if(Config.doChunkPreTranslation) translateChunk(poseStack, f, g, h);
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
 //                Set<RenderType> set = new ReferenceArraySet<>(RenderType.chunkBufferLayers().size());
@@ -305,7 +306,7 @@ public class ChunkTask {
                     FluidState fluidState = blockState2.getFluidState();
                     if (!fluidState.isEmpty()) {
                         //                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
-
+                        renderSection.vbo.translucent= true;
 
                         blockRenderDispatcher.renderLiquid(blockPos3, renderChunkRegion, bufferBuilder2, blockState2, fluidState);
                     }
@@ -326,6 +327,7 @@ public class ChunkTask {
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
                         bufferBuilder2.setQuadSortOrigin(f - blockPos.getX(), g - blockPos.getY(), h - blockPos.getZ());
                         compileResults.transparencyState = bufferBuilder2.getSortState();
+
 //                        tst = bufferBuilder2.endOrDiscardIfEmpty();
                         compileResults.renderedLayers.put(RenderType.translucent(), bufferBuilder2.endOrDiscardIfEmpty());
                     }
@@ -393,38 +395,38 @@ public class ChunkTask {
         public CompletableFuture<Result> doTask(ChunkBufferBuilderPack builderPack) {
             if (this.cancelled.get()) {
                 return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else if (renderSection.hasXYNeighbours()) {
+            }
+            if (this.compiledSection.transparencyState==null) {
                 this.cancelled.set(true);
                 return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else {
-                Vec3 vec3 = WorldRenderer.cameraPos;
-                float f = (float)vec3.x;
-                float f1 = (float)vec3.y;
-                float f2 = (float)vec3.z;
-                BufferBuilder.SortState bufferbuilder$sortstate = this.compiledSection.transparencyState;
-                if (bufferbuilder$sortstate != null && this.compiledSection.renderTypes.contains(RenderType.translucent())) {
-                    BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
-                    bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-                    bufferbuilder.restoreSortState(bufferbuilder$sortstate);
-                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
-                    this.compiledSection.transparencyState = bufferbuilder.getSortState();
-                    BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
-                    if (this.cancelled.get()) {
-                        return CompletableFuture.completedFuture(Result.CANCELLED);
-                    } else {
-                        CompletableFuture<Result> completablefuture = RHandler.uploadVBO(renderSection.vbo, renderedBuffer).thenApply((p_112898_) -> Result.CANCELLED);
-                        return completablefuture.handle((p_199960_, p_199961_) -> {
-                            if (p_199961_ != null && !(p_199961_ instanceof CancellationException) && !(p_199961_ instanceof InterruptedException)) {
-                                CrashReport crashreport = CrashReport.forThrowable(p_199961_, "Rendering chunk");
-                                Minecraft.getInstance().delayCrash(crashreport);
-                            }
+            }
+            Vec3 vec3 = WorldRenderer.cameraPos;
+            float f = (float)vec3.x;
+            float f1 = (float)vec3.y;
+            float f2 = (float)vec3.z;
 
-                            return this.cancelled.get() ? Result.CANCELLED : Result.SUCCESSFUL;
-                        });
-                    }
-                } else {
+            if (renderSection.vbo.translucent && !this.compiledSection.isCompletelyEmpty && this.compiledSection.renderTypes.contains(RenderType.translucent())) {
+                BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
+                if(!bufferbuilder.building()) bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                bufferbuilder.restoreSortState(this.compiledSection.transparencyState);
+                bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
+                this.compiledSection.transparencyState = bufferbuilder.getSortState();
+                BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
+                if (this.cancelled.get()) {
                     return CompletableFuture.completedFuture(Result.CANCELLED);
+                } else {
+                    CompletableFuture<Result> completablefuture = RHandler.uploadVBO(renderSection.vbo, renderedBuffer).thenApply((p_112898_) -> Result.CANCELLED);
+                    return completablefuture.handle((p_199960_, p_199961_) -> {
+                        if (p_199961_ != null && !(p_199961_ instanceof CancellationException) && !(p_199961_ instanceof InterruptedException)) {
+                            CrashReport crashreport = CrashReport.forThrowable(p_199961_, "Rendering chunk");
+                            Minecraft.getInstance().delayCrash(crashreport);
+                        }
+
+                        return this.cancelled.get() ? Result.CANCELLED : Result.SUCCESSFUL;
+                    });
                 }
+            } else {
+                return CompletableFuture.completedFuture(Result.CANCELLED);
             }
         }
     }

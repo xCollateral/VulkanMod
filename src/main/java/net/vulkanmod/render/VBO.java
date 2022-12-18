@@ -25,7 +25,8 @@ public class VBO {
     public AABB bb;
 
     public VkBufferPointer addSubIncr;
-//    private VertexBuffer vertexBuffer;
+    public boolean translucent=false;
+    //    private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private int indexCount;
     private int vertexCount;
@@ -48,6 +49,9 @@ public class VBO {
 
         this.indexCount = parameters.indexCount();
         this.vertexCount = parameters.vertexCount();
+        if(vertexCount==0){
+            System.out.println("NULL Buffer!: "+this+"-->"+buffer);
+        }
         this.mode = parameters.mode();
         preInitialised=false;
         this.configureVertexFormat(parameters, buffer.vertexBuffer());

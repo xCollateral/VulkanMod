@@ -89,6 +89,9 @@ public class WorldRenderer {
     public static ObjectArrayList<RenderSection> translucentChunks = new ObjectArrayList<>(1024);
 
     private static Frustum frustum;
+    private static double xTransparentOld2;
+    private static double yTransparentOld2;
+    private static double zTransparentOld2;
 
     static  {
         minecraft = Minecraft.getInstance();
@@ -241,7 +244,7 @@ public class WorldRenderer {
             RenderSection renderChunk = renderChunkInfo.chunk;
 
             sectionsInFrustum.add(renderChunkInfo);
-
+            RHandler.uniqueVBOs.add(renderChunk.vbo);
             translucentChunks.add(renderChunk);
 
 
@@ -325,6 +328,15 @@ public class WorldRenderer {
         RenderRegionCache renderregioncache = new RenderRegionCache();
         BlockPos cameraPos = camera.getBlockPosition();
         List<RenderSection> list = Lists.newArrayList();
+        double d0 = camera.getPosition().x - xTransparentOld2;
+        double d1 = camera.getPosition().y - yTransparentOld2;
+        double d2 = camera.getPosition().x - zTransparentOld2;
+        if (d0 * d0 + d1 * d1 + d2 * d2 <= 1.0D) {
+            xTransparentOld2=d0;
+            yTransparentOld2=d1;
+            zTransparentOld2=d2;
+            return;
+        }
 
         RHandler.uniqueVBOs.clear();
 
@@ -500,10 +512,10 @@ public class WorldRenderer {
         //TODO: ViewBobbing dosen't function properly if Affine
         Matrix4f pose = poseStack.last().pose();
 
-        if(Config.doChunkPreTranslation)
+        /*if(Config.doChunkPreTranslation)
         {
             pose.multiplyWithTranslation((float) camX, (float) camY, (float) camZ);
-        }
+        }*/
         VRenderSystem.applyMVP(pose, projection);
 
 
@@ -531,11 +543,9 @@ public class WorldRenderer {
 
 //            BlockPos blockpos = a.origin;
 
-            if(Config.doChunkPreTranslation){
-                VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
-                Drawer.pushConstants(pipeline);
-            }
-////
+            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
+            Drawer.pushConstants(pipeline);
+            ////
             a.drawChunkLayer();
 
 //            flag1 = true;
@@ -548,12 +558,12 @@ public class WorldRenderer {
         minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
-        VRenderSystem.applyMVPAffine(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+        VRenderSystem.copyMVP(RenderSystem.getModelViewMatrix());
 
     }
 
     private static void translucentSort(RenderType renderType, double camX, double camY, double camZ) {
-        if (renderType == RenderType.translucent()) {
+       {
             minecraft.getProfiler().push("translucent_sort");
             double d0 = camX - xTransparentOld;
             double d1 = camY - yTransparentOld;

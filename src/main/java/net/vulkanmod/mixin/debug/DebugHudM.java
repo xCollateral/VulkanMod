@@ -82,6 +82,7 @@ public abstract class DebugHudM {
         strings.add("minVBOSize: " + VirtualBuffer.allocMin);
         strings.add("maxVBOSize: " + VirtualBuffer.allocMax);
         strings.add("unusedBytes: " + (VirtualBuffer.size_t-VirtualBuffer.usedBytes));
+        strings.add("freeRanges: " + (VirtualBuffer.FreeRanges.size()));
 
         return strings;
     }

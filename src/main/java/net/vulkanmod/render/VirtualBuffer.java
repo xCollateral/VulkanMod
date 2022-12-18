@@ -25,7 +25,7 @@ public class VirtualBuffer {
     public static int size_t;
     public static int subIncr;
     public static int usedBytes;
-    private static final ObjectArrayList<VkBufferPointer> FreeRanges = new ObjectArrayList<>(1024);
+    public static final ObjectArrayList<VkBufferPointer> FreeRanges = new ObjectArrayList<>(1024);
     public static int subAllocs;
     public static long unusedRangesS;
     public static long unusedRangesM;
