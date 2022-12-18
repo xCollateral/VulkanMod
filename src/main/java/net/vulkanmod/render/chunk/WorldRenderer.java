@@ -58,7 +58,7 @@ public class WorldRenderer {
     public static int lastViewDistance;
     private static final RenderBuffers renderBuffers;
 
-    static Vec3 cameraPos;
+    public static Vec3 cameraPos;
     private static int lastCameraSectionX;
     private static int lastCameraSectionY;
     private static int lastCameraSectionZ;
@@ -92,6 +92,13 @@ public class WorldRenderer {
     private static double xTransparentOld2;
     private static double yTransparentOld2;
     private static double zTransparentOld2;
+    public static double originX;
+    public static double originZ;
+    private static float prevPosX;
+    public static double curPosX;
+    private static double prevCamX;
+    public static double curPosZ;
+    private static double prevCamZ;
 
     static  {
         minecraft = Minecraft.getInstance();
@@ -388,6 +395,8 @@ public class WorldRenderer {
     }
 
     public static void allChanged() {
+
+        resetOrigin();
         lastViewDistance = minecraft.options.getEffectiveRenderDistance();
         VirtualBuffer.reset((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize);
         if (level != null) {
@@ -421,6 +430,11 @@ public class WorldRenderer {
             }
 
         }
+    }
+
+    private static void resetOrigin() {
+        originX=0;
+        originZ=0;
     }
 
     public static void setLevel(@Nullable ClientLevel level_) {
@@ -489,6 +503,9 @@ public class WorldRenderer {
 //
 //        p.pushMilestone("layer " + layerName);
 
+        RHandler.camX=camX;
+        RHandler.camY=camY;
+        RHandler.camZ=camZ;
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
         translucentSort(renderType, camX, camY, camZ); //TODO: Maybe Replace/Merge with reBuildTask..
@@ -512,10 +529,21 @@ public class WorldRenderer {
         //TODO: ViewBobbing dosen't function properly if Affine
         Matrix4f pose = poseStack.last().pose();
 
-        /*if(Config.doChunkPreTranslation)
+//        curPosX=curPosX-(float)camX;
+
+        curPosX= (prevCamX - camX);
+        curPosZ= (prevCamZ - camZ);
+        originX+= curPosX;
+        originZ+= curPosZ;
         {
-            pose.multiplyWithTranslation((float) camX, (float) camY, (float) camZ);
-        }*/
+
+            pose.m03 += Math.fma(pose.m00, (originX), Math.fma(pose.m01, -camY, pose.m02 * ((originZ))));
+            pose.m13 += Math.fma(pose.m10, (originX), Math.fma(pose.m11, -camY, pose.m12 * ((originZ))));
+            pose.m23 += Math.fma(pose.m20, (originX), Math.fma(pose.m21, -camY, pose.m22 * ((originZ))));
+            pose.m33 += 0;
+        }
+        prevCamX=camX;
+        prevCamZ=camZ;
         VRenderSystem.applyMVP(pose, projection);
 
 
@@ -543,8 +571,8 @@ public class WorldRenderer {
 
 //            BlockPos blockpos = a.origin;
 
-            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
-            Drawer.pushConstants(pipeline);
+//            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
+//            Drawer.pushConstants(pipeline);
             ////
             a.drawChunkLayer();
 

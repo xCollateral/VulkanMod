@@ -5,13 +5,9 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.Vec3i;
 
-import net.vulkanmod.interfaces.VBOPxy;
-import net.vulkanmod.render.chunk.ChunkGrid;
 import net.vulkanmod.render.chunk.WorldRenderer;
 
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +20,9 @@ public class RHandler
     public static ObjectArrayList<VBO> uniqueVBOs=new ObjectArrayList<>(1024);
     public static int loadedVBOs;
     public static int totalVBOs;
+    public static double camX;
+    public static double camY;
+    public static double camZ;
 //    public static ChunkGrid viewArea;
    /* public static final VkDrawIndexedIndirectCommand defStruct=VkDrawIndexedIndirectCommand.malloc(MemoryStack.stackGet())
             .indexCount(0)
@@ -56,12 +55,12 @@ public class RHandler
         chunkBuilder=a;
     }
 
-    public static CompletableFuture<Void> uploadVBO(VBO vbo, BufferBuilder.RenderedBuffer buffers)
+    public static CompletableFuture<Void> uploadVBO(VBO vbo, BufferBuilder.RenderedBuffer buffers, boolean sort)
     {
 //        if(buffers==null) return CompletableFuture.completedFuture(null);
 
         return CompletableFuture.runAsync(() ->
-                vbo.upload_(buffers), WorldRenderer.taskDispatcher.toUpload::add);
+                vbo.upload_(buffers, sort), WorldRenderer.taskDispatcher.toUpload::add);
     }
 
     public static CompletableFuture<Void> uploadVBO(int index, BufferBuilder.RenderedBuffer buffers)
@@ -69,7 +68,7 @@ public class RHandler
         if(buffers==null) return CompletableFuture.completedFuture(null);
 
         return CompletableFuture.runAsync(() ->
-                getVBOFromIndex(index).upload_(buffers), WorldRenderer.taskDispatcher.toUpload::add);
+                getVBOFromIndex(index).upload_(buffers, false), WorldRenderer.taskDispatcher.toUpload::add);
     }
 
     public static VBO getVBOFromIndex(int index) {

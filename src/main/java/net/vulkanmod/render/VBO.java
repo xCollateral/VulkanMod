@@ -5,11 +5,12 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.*;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
@@ -44,7 +45,7 @@ public class VBO {
         this.z = z;
     }
 
-    public void upload_(BufferBuilder.RenderedBuffer buffer) {
+    public void upload_(BufferBuilder.RenderedBuffer buffer, boolean sort) {
         BufferBuilder.DrawState parameters = buffer.drawState();
 
         this.indexCount = parameters.indexCount();
@@ -52,6 +53,17 @@ public class VBO {
         if(vertexCount==0){
             System.out.println("NULL Buffer!: "+this+"-->"+buffer);
         }
+        if(!sort){
+            final long addr = MemoryUtil.memAddress0(buffer.vertexBuffer());
+            for(int i=0;i<buffer.vertexBuffer().remaining();i+=32)
+            {
+                MemoryUtil.memPutFloat(addr+i, (MemoryUtil.memGetFloat(addr+i)+(float)(x- RHandler.camX-WorldRenderer.originX)));
+                MemoryUtil.memPutFloat(addr+i+4, (MemoryUtil.memGetFloat(addr+i+4)+(y)));
+                MemoryUtil.memPutFloat(addr+i+8, (MemoryUtil.memGetFloat(addr+i+8)+(float)(z-RHandler.camZ-WorldRenderer.originZ)));
+            }
+        }
+
+
         this.mode = parameters.mode();
         preInitialised=false;
         this.configureVertexFormat(parameters, buffer.vertexBuffer());

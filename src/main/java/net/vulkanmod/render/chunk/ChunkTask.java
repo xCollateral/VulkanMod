@@ -24,7 +24,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import net.vulkanmod.config.Config;
 import net.vulkanmod.render.RHandler;
 
 import javax.annotation.Nullable;
@@ -169,7 +168,7 @@ public class ChunkTask {
                         compiledChunk.isCompletelyEmpty = false;
                         compiledChunk.renderTypes.add(RenderType.translucent());
                     }
-                    CompletableFuture<Void> e = b ?  RHandler.uploadVBO(renderSection.vbo, compileResults.renderedLayers.get(RenderType.translucent())) : CompletableFuture.completedFuture(null);
+                    CompletableFuture<Void> e = b ?  RHandler.uploadVBO(renderSection.vbo, compileResults.renderedLayers.get(RenderType.translucent()), false) : CompletableFuture.completedFuture(null);
                     return e.handle((listx, throwable) -> {
                         if (throwable != null && !(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
                             Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Rendering chunk"));
@@ -415,7 +414,7 @@ public class ChunkTask {
                 if (this.cancelled.get()) {
                     return CompletableFuture.completedFuture(Result.CANCELLED);
                 } else {
-                    CompletableFuture<Result> completablefuture = RHandler.uploadVBO(renderSection.vbo, renderedBuffer).thenApply((p_112898_) -> Result.CANCELLED);
+                    CompletableFuture<Result> completablefuture = RHandler.uploadVBO(renderSection.vbo, renderedBuffer, true).thenApply((p_112898_) -> Result.CANCELLED);
                     return completablefuture.handle((p_199960_, p_199961_) -> {
                         if (p_199961_ != null && !(p_199961_ instanceof CancellationException) && !(p_199961_ instanceof InterruptedException)) {
                             CrashReport crashreport = CrashReport.forThrowable(p_199961_, "Rendering chunk");
