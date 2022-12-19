@@ -11,6 +11,7 @@ import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.*;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import java.nio.ByteBuffer;
 
@@ -25,10 +26,10 @@ public class VBO {
     public float z;
     public AABB bb;
 
-    public VkBufferPointer addSubIncr;
+    private VkBufferPointer addSubIncr;
     public boolean translucent=false;
     //    private VertexBuffer vertexBuffer;
-    private IndexBuffer indexBuffer;
+    private VkBufferPointer indexBuffer;
     private int indexCount;
     private int vertexCount;
     private VertexFormat.Mode mode;
@@ -37,6 +38,7 @@ public class VBO {
     private boolean autoIndexed = false;
 
     public boolean preInitialised = true;
+    private VkDrawIndexedIndirectCommand indirectCommand;
 
     public VBO(int index, int x, int y, int z) {
         this.index=index;
@@ -69,13 +71,21 @@ public class VBO {
         this.configureVertexFormat(parameters, buffer.vertexBuffer());
         this.configureIndexBuffer(parameters, buffer.indexBuffer());
 
+        indirectCommand = VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20))
+                .indexCount(parameters.indexCount())
+                .vertexOffset(configureVertexFormat(parameters, buffer.vertexBuffer()))
+                .firstIndex(configureIndexBuffer(parameters, buffer.indexBuffer()))
+                .firstInstance(0)
+                .instanceCount(1);
+        ;
+
         if(!buffer.released) buffer.release();
 
     }
 
-    private void configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
+    private int configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
-        if (!parameters.indexOnly()) {
+        {
 
             if(addSubIncr==null || addSubIncr.sizes<data.remaining())
             {
@@ -88,31 +98,23 @@ public class VBO {
             stagingBuffer.copyBuffer(data.remaining(), data);
 
             copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, addSubIncr.i2, addSubIncr.sizes);
+            return addSubIncr.i2>>5;
         }
     }
 
-    private void configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
-        if (parameters.sequentialIndex()) {
-
-            AutoIndexBuffer autoIndexBuffer;
-            if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
-                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
-            } else {
-                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
-                this.indexCount = (vertexCount - 2) * 3;
+    private int configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
+        {
+            if(indexBuffer==null || indexBuffer.sizes<data.remaining())
+            {
+                if(indexBuffer != null) VirtualBufferIdx.addFreeableRange(indexBuffer);
+                indexBuffer=VirtualBufferIdx.addSubIncr(data.remaining());
             }
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+            stagingBuffer.copyBuffer(indexBuffer.sizes, data);
 
-            if(indexBuffer != null && !this.autoIndexed) indexBuffer.freeBuffer();
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, indexBuffer.i2, indexBuffer.sizes);
 
-            autoIndexBuffer.checkCapacity(vertexCount);
-            indexBuffer = autoIndexBuffer.getIndexBuffer();
-            this.autoIndexed = true;
-
-        }
-        else {
-            if(indexBuffer != null) this.indexBuffer.freeBuffer();
-            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            indexBuffer.copyBuffer(data);
+            return indexBuffer.i2>>1;
         }
 
     }
@@ -120,8 +122,7 @@ public class VBO {
     public void drawChunkLayer() {
         if (this.indexCount != 0) {
 
-            RenderSystem.assertOnRenderThread();
-            Drawer.drawIndexed(addSubIncr, indexBuffer, indexCount);
+            Drawer.drawIndexedBindless(indirectCommand);
         }
     }
 
@@ -131,10 +132,11 @@ public class VBO {
         VirtualBuffer.addFreeableRange(addSubIncr);
         addSubIncr=null;
 //        vertexBuffer = null;
-        if(!autoIndexed) {
-            indexBuffer.freeBuffer();
+        {
+            VirtualBufferIdx.addFreeableRange(indexBuffer);
             indexBuffer = null;
         }
+        indirectCommand.free();
 
         this.vertexCount = 0;
         this.indexCount = 0;

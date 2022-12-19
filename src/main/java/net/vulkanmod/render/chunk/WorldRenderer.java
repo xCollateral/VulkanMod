@@ -16,10 +16,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
-import net.vulkanmod.render.Profiler;
-import net.vulkanmod.render.RHandler;
-import net.vulkanmod.render.VBO;
-import net.vulkanmod.render.VirtualBuffer;
+import net.vulkanmod.render.*;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
@@ -37,6 +34,7 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Pipeline;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -47,7 +45,7 @@ import java.util.*;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.vulkan.VK10.vkCmdBindVertexBuffers;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class WorldRenderer {
 //    public static WorldRenderer INSTANCE;
@@ -243,7 +241,7 @@ public class WorldRenderer {
 //        this.tripwireChunks.clear();
         translucentChunks.clear();
 
-        RHandler.uniqueVBOs.clear();
+
         lastFrame++;
 //        p.push("pre-loop");
         while(chunkQueue.hasNext()) {
@@ -251,7 +249,7 @@ public class WorldRenderer {
             RenderSection renderChunk = renderChunkInfo.chunk;
 
             sectionsInFrustum.add(renderChunkInfo);
-            RHandler.uniqueVBOs.add(renderChunk.vbo);
+
             translucentChunks.add(renderChunk);
 
 
@@ -335,7 +333,7 @@ public class WorldRenderer {
         RenderRegionCache renderregioncache = new RenderRegionCache();
         BlockPos cameraPos = camera.getBlockPosition();
         List<RenderSection> list = Lists.newArrayList();
-        double d0 = camera.getPosition().x - xTransparentOld2;
+        /*double d0 = camera.getPosition().x - xTransparentOld2;
         double d1 = camera.getPosition().y - yTransparentOld2;
         double d2 = camera.getPosition().x - zTransparentOld2;
         if (d0 * d0 + d1 * d1 + d2 * d2 <= 1.0D) {
@@ -343,7 +341,7 @@ public class WorldRenderer {
             yTransparentOld2=d1;
             zTransparentOld2=d2;
             return;
-        }
+        }*/
 
         RHandler.uniqueVBOs.clear();
 
@@ -398,7 +396,10 @@ public class WorldRenderer {
 
         resetOrigin();
         lastViewDistance = minecraft.options.getEffectiveRenderDistance();
+        vkDeviceWaitIdle(Vulkan.getDevice());
+        RHandler.uniqueVBOs.clear();
         VirtualBuffer.reset((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize);
+        VirtualBufferIdx.reset((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize/8);
         if (level != null) {
 //            this.graphicsChanged();
             level.clearTintCaches();
@@ -563,10 +564,9 @@ public class WorldRenderer {
             long offsets = stack.npointer(0);
 //            Profiler.Push("bindVertex");
             VK10.nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffer, VirtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
         }
         for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
-            VBO a = RHandler.uniqueVBOs.get(i);
-
 
 
 //            BlockPos blockpos = a.origin;
@@ -574,7 +574,7 @@ public class WorldRenderer {
 //            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
 //            Drawer.pushConstants(pipeline);
             ////
-            a.drawChunkLayer();
+            RHandler.uniqueVBOs.get(i).drawChunkLayer();
 
 //            flag1 = true;
         }
@@ -624,7 +624,7 @@ public class WorldRenderer {
                     BlockPos blockpos4 = blockentity1.getBlockPos();
                     MultiBufferSource multibuffersource1 = bufferSource;
                     poseStack.pushPose();
-                    poseStack.translate((double)blockpos4.getX() - camX, (double)blockpos4.getY() - camY, (double)blockpos4.getZ() - camZ);
+                    poseStack.translate(blockpos4.getX() - camX, blockpos4.getY() - camY, blockpos4.getZ() - camZ);
                     SortedSet<BlockDestructionProgress> sortedset = destructionProgress.get(blockpos4.asLong());
                     if (sortedset != null && !sortedset.isEmpty()) {
                         int j1 = sortedset.last().getProgress();

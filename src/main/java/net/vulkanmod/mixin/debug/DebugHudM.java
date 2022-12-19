@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.vulkanmod.render.RHandler;
 import net.vulkanmod.render.VirtualBuffer;
+import net.vulkanmod.render.VirtualBufferIdx;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
@@ -60,7 +61,7 @@ public abstract class DebugHudM {
         strings.add(String.format("Allocated: % 2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
-        strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
+        strings.add("DeviceMemory: " + (VirtualBuffer.usedBytes>>20)+"+"+(VirtualBufferIdx.usedBytes>>20) + "MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
@@ -68,6 +69,11 @@ public abstract class DebugHudM {
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
         strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
+        strings.add("");
+
+        strings.add("\u00018 Vertex-Buffers");
+        strings.add("");
+
         strings.add("Used Bytes: " + (VirtualBuffer.usedBytes >> 20) + "MB");
         strings.add("Max Size: " + (VirtualBuffer.size_t >> 20) + "MB");
 //        strings.add("Allocs: " + VirtualBuffer.allocs);
@@ -83,6 +89,26 @@ public abstract class DebugHudM {
         strings.add("maxVBOSize: " + VirtualBuffer.allocMax);
         strings.add("unusedBytes: " + (VirtualBuffer.size_t-VirtualBuffer.usedBytes));
         strings.add("freeRanges: " + (VirtualBuffer.FreeRanges.size()));
+
+        strings.add("");
+        strings.add("\u0008 Index-Buffers");
+        strings.add("");
+
+        strings.add("Used Bytes: " + (VirtualBufferIdx.usedBytes >> 20) + "MB");
+        strings.add("Max Size: " + (VirtualBufferIdx.size_t >> 20) + "MB");
+//        strings.add("Allocs: " + VirtualBufferIdx.allocs);
+//        strings.add("allocBytes: " + VirtualBufferIdx.allocBytes);
+        strings.add("subAllocs: " + VirtualBufferIdx.subAllocs);
+//        strings.add("Blocks: " + VirtualBufferIdx.blocks);
+//        strings.add("BlocksBytes: " + VirtualBufferIdx.blockBytes);
+        strings.add("subIncr: " + VirtualBufferIdx.subIncr);
+        strings.add("minRange: " + VirtualBufferIdx.unusedRangesS);
+        strings.add("maxRange: " + VirtualBufferIdx.unusedRangesM);
+        strings.add("unusedRangesCount: " + VirtualBufferIdx.unusedRangesCount);
+        strings.add("minIndexSize: " + VirtualBufferIdx.allocMin);
+        strings.add("maxIndexSize: " + VirtualBufferIdx.allocMax);
+        strings.add("unusedBytes: " + (VirtualBufferIdx.size_t- VirtualBufferIdx.usedBytes));
+        strings.add("freeRanges: " + (VirtualBufferIdx.FreeRanges.size()));
 
         return strings;
     }

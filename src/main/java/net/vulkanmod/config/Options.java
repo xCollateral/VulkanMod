@@ -189,7 +189,7 @@ public class Options {
                         value -> config.advCulling = value,
                         () -> config.advCulling),
                 new RangeOption("baseAlignSize", 65536,
-                        131072, 128,
+                        131072, 4096,
                         value -> {
 
                             Config.baseAlignSize = value;

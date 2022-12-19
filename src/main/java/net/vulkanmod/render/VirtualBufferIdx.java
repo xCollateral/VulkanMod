@@ -2,8 +2,6 @@ package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.config.Config;
-import net.vulkanmod.config.Option;
-import net.vulkanmod.config.Options;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -20,7 +18,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
-public class VirtualBuffer {
+public class VirtualBufferIdx {
     private static long virtualBlockBufferSuperSet;
     public static int size_t;
     public static int subIncr;
@@ -39,7 +37,7 @@ public class VirtualBuffer {
 //    public static int allocBytes;
 
     static {
-        initBufferSuperSet((lastViewDistance*lastViewDistance)*32* Config.baseAlignSize);
+        initBufferSuperSet((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize/8);
     }
     public static void reset(int i)
     {
@@ -85,7 +83,7 @@ public class VirtualBuffer {
                 .sType$Default()
                 .pNext(NULL)
                 .size(size)
-                .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+                .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                 .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
 //
@@ -128,7 +126,7 @@ public class VirtualBuffer {
         {
             VmaVirtualBlockCreateInfo blockCreateInfo = VmaVirtualBlockCreateInfo.malloc(stack)
                     .size(size)
-                    .flags(0)
+                    .flags(0/*VMA_VIRTUAL_BLOCK_CREATE_LINEAR_ALGORITHM_BIT*/)
                     .pAllocationCallbacks(null);
             PointerBuffer pAlloc = stack.mallocPointer(1);
             PointerBuffer pBuffer = stack.mallocPointer(1);
@@ -157,18 +155,17 @@ public class VirtualBuffer {
 //        size_t= size;
     }
 
-    //TODO: draw Call Coalescing: if get/grab two unaligned blocks and attempt to merge them together if fit within the same (relative) alignment
-    static VkBufferPointer addSubIncr(int size) {
-        size=alignAs(size);
-//        VkBufferPointer bufferPointer = checkforFreeable(size);
-//        if(bufferPointer!=null) return reallocSubIncr(bufferPointer);
 
+    static VkBufferPointer addSubIncr(int size) {
+
+        //Don;t Bother aligning IndexBuffers due to Smaller size+posble risk with Incrretc |Index Cunts/Bugs e.g.
+        size=alignAs(size);
         try(MemoryStack stack = MemoryStack.stackPush())
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size(size)
-                    .alignment(Config.vboAlignmentActual)
-                    .flags((checkforFreeable(size)) ? VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
+                    .alignment(Config.vboAlignmentActual/8)
+                    .flags(checkforFreeable(size) ? VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
             PointerBuffer pAlloc = stack.mallocPointer(1);
 
@@ -189,7 +186,7 @@ public class VirtualBuffer {
     }
 
     private static int alignAs(int size) {
-        return size + (Config.vboAlignmentActual - (size-1&Config.vboAlignmentActual-1) - 1);
+        return size + ((Config.vboAlignmentActual/8) - (size-1& (Config.vboAlignmentActual/8) -1) - 1);
     }
 
     private static boolean checkforFreeable(int size) {

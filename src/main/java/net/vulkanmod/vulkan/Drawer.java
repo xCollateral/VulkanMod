@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
-import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.PushConstant;
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -162,7 +160,7 @@ public class Drawer {
 
         resetDescriptors();
 
-        vkResetCommandBuffer(commandBuffers.get(currentFrame), 0);
+//        vkResetCommandBuffer(commandBuffers.get(currentFrame), 0);
 
         try(MemoryStack stack = stackPush()) {
 
@@ -330,18 +328,18 @@ public class Drawer {
 
             submitInfo.waitSemaphoreCount(1);
             submitInfo.pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT));
 
             submitInfo.pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
 
             submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(imageIndex)));
 
-            vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, (inFlightFences.get(currentFrame)));
 
 //            Synchronization.waitFences();
 
             if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
+                vkResetFences(device, (inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
@@ -383,7 +381,7 @@ public class Drawer {
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
 
-        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
+//        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
         createSyncObjects();
 
@@ -430,7 +428,7 @@ public class Drawer {
 
         uploadAndBindUBOs(boundPipeline);
 
-        drawIndexed(vertexBuffer, indexBuffer, indexCount);
+        drawIndexedBindless(vertexBuffer, indexBuffer, indexCount);
     }
 
     private void drawAutoIndexed(ByteBuffer buffer, VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int drawMode, VertexFormat vertexFormat, int vertexCount) {
@@ -449,7 +447,7 @@ public class Drawer {
         else if(drawMode == 6 || drawMode == 5) indexCount = (vertexCount - 2) * 3;
         else throw new RuntimeException("unknown drawMode: " + drawMode);
 
-        drawIndexed(vertexBuffer, indexBuffer, indexCount);
+        drawIndexedBindless(vertexBuffer, indexBuffer, indexCount);
     }
 
     public void uploadAndBindUBOs(Pipeline pipeline) {
@@ -465,28 +463,26 @@ public class Drawer {
         }
     }
 
-    public static void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+    public static void drawIndexedBindless(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
 
         try(MemoryStack stack = stackPush()) {
             VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-            LongBuffer vertexBuffers = stack.longs(vertexBuffer.getId());
-            LongBuffer offsets = stack.longs(vertexBuffer.getOffset());
+            long vertexBuffers = stack.npointer(vertexBuffer.getId());
+            long offsets = stack.npointer(vertexBuffer.getOffset());
 //            Profiler.Push("bindVertex");
-            vkCmdBindVertexBuffers(commandBuffer, 0, vertexBuffers, offsets);
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
             vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
 //            Profiler.Push("draw");
             vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
         }
     }
-    public static void drawIndexed(VkBufferPointer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+    public static void drawIndexedBindless(VkDrawIndexedIndirectCommand indirectCommand) {
 
-            VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-            vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
 //            Profiler.Push("draw");
-            vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, vertexBuffer.i2>>5, 0);
+            vkCmdDrawIndexed(commandBuffers.get(currentFrame), indirectCommand.indexCount(), indirectCommand.instanceCount(), indirectCommand.firstIndex(), indirectCommand.vertexOffset(), indirectCommand.firstInstance());
 
     }
 

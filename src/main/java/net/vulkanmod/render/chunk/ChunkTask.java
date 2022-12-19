@@ -157,33 +157,34 @@ public class ChunkTask {
                         renderedBuffer.release();
                     }
                     return CompletableFuture.completedFuture(Result.CANCELLED);
-                } else {
-                    RenderSection.CompiledSection compiledChunk = new RenderSection.CompiledSection();
-                    compiledChunk.visibilitySet = compileResults.visibilitySet;
-                    compiledChunk.renderableBlockEntities.addAll(compileResults.blockEntities);
-                    compiledChunk.transparencyState = compileResults.transparencyState;
-//                    List<CompletableFuture<Void>> list = Lists.newArrayList();
-                    boolean b = !compileResults.renderedLayers.isEmpty();
-                    if(b) {
-                        compiledChunk.isCompletelyEmpty = false;
-                        compiledChunk.renderTypes.add(RenderType.translucent());
-                    }
-                    CompletableFuture<Void> e = b ?  RHandler.uploadVBO(renderSection.vbo, compileResults.renderedLayers.get(RenderType.translucent()), false) : CompletableFuture.completedFuture(null);
-                    return e.handle((listx, throwable) -> {
-                        if (throwable != null && !(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
-                            Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Rendering chunk"));
-                        }
-
-                        if (this.cancelled.get()) {
-                            return Result.CANCELLED;
-                        } else {
-                            this.renderSection.compiledSection = (compiledChunk);
-                            this.renderSection.initialCompilationCancelCount.set(0);
-//                            ChunkRenderDispatcher.this.renderer.addRecentlyCompiledChunk(ChunkRenderDispatcher.RenderChunk.this);
-                            return Result.SUCCESSFUL;
-                        }
-                    });
                 }
+                RenderSection.CompiledSection compiledChunk = new RenderSection.CompiledSection();
+                compiledChunk.visibilitySet = compileResults.visibilitySet;
+                compiledChunk.renderableBlockEntities.addAll(compileResults.blockEntities);
+                compiledChunk.transparencyState = compileResults.transparencyState;
+//                    List<CompletableFuture<Void>> list = Lists.newArrayList();
+                boolean b = !compileResults.renderedLayers.isEmpty();
+                if(b) {
+
+                    compiledChunk.renderTypes.add(RenderType.translucent());
+                }
+                compiledChunk.isCompletelyEmpty = !b;
+
+                CompletableFuture<Void> e = b ?  RHandler.uploadVBO(renderSection.vbo, compileResults.renderedLayers.get(RenderType.translucent()), false) : CompletableFuture.completedFuture(null);
+                return e.handle((listx, throwable) -> {
+                    if (throwable != null && !(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
+                        Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Rendering chunk"));
+                    }
+
+                    if (this.cancelled.get()) {
+                        return Result.CANCELLED;
+                    } else {
+                        this.renderSection.compiledSection = (compiledChunk);
+                        this.renderSection.initialCompilationCancelCount.set(0);
+//                            ChunkRenderDispatcher.this.renderer.addRecentlyCompiledChunk(ChunkRenderDispatcher.RenderChunk.this);
+                        return Result.SUCCESSFUL;
+                    }
+                });
             }
         }
 
@@ -283,7 +284,7 @@ public class ChunkTask {
                 ModelBlockRenderer.enableCaching();
 //                Set<RenderType> set = new ReferenceArraySet<>(RenderType.chunkBufferLayers().size());
                 RandomSource randomSource = RandomSource.create();
-                BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
+                BlockRenderDispatcher blockRenderDispatcher = WorldRenderer.minecraft.getBlockRenderer();
                 final BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.translucent());
                 if(!bufferBuilder2.building()) bufferBuilder2.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 
@@ -306,6 +307,9 @@ public class ChunkTask {
                     if (!fluidState.isEmpty()) {
                         //                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         renderSection.vbo.translucent= true;
+                        /*if (compiledSection.renderTypes.add(rendertype)) {
+                            bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                        }*/
 
                         blockRenderDispatcher.renderLiquid(blockPos3, renderChunkRegion, bufferBuilder2, blockState2, fluidState);
                     }
@@ -404,8 +408,12 @@ public class ChunkTask {
             float f1 = (float)vec3.y;
             float f2 = (float)vec3.z;
 
+            final BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
+            if(bufferbuilder.isCurrentBatchEmpty()){
+                this.cancelled.set(true);
+                return CompletableFuture.completedFuture(Result.CANCELLED);
+            }
             if (renderSection.vbo.translucent && !this.compiledSection.isCompletelyEmpty && this.compiledSection.renderTypes.contains(RenderType.translucent())) {
-                BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
                 if(!bufferbuilder.building()) bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                 bufferbuilder.restoreSortState(this.compiledSection.transparencyState);
                 bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());

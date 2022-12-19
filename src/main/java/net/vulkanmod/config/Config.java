@@ -12,8 +12,8 @@ import java.util.Collections;
 
 public class Config {
 
-    public static int baseAlignSize = 32768;
-    public static int vboAlignment = 7;
+    public static int baseAlignSize = 81920;
+    public static int vboAlignment = 8;
     public static int vboAlignmentActual;
 
     public static boolean doChunkPreTranslation=false;
