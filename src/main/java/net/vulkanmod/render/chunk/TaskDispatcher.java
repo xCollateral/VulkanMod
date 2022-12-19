@@ -34,6 +34,7 @@ public class TaskDispatcher {
     final ChunkBufferBuilderPack fixedBuffers;
     private final ProcessorMailbox<Runnable> mailbox;
     private final Executor executor;
+    public static boolean resetting=false; //Stop/forcibly abort Async Uploads from crashing the game before the SubAllocator Is Ready (In case of Reset/Resize e.g.)
 
     public TaskDispatcher(Executor executor, ChunkBufferBuilderPack fixedBuffers) {
         int j = Math.max((Runtime.getRuntime().availableProcessors() - 1) >> 1, 1);
@@ -166,10 +167,11 @@ public class TaskDispatcher {
 
     public void uploadAllPendingUploads() {
 
+        if(resetting) return; //Stop Async Upload Crash When Changing/Updating Size
         if(!this.toUpload.isEmpty()) WorldRenderer.setNeedsUpdate();
-
+        if(resetting) return; //Stop Async Upload Crash When Changing/Updating Size
         Runnable runnable;
-        while((runnable = this.toUpload.poll()) != null) {
+        while(!resetting && (runnable = this.toUpload.poll()) != null) {
             runnable.run();
         }
 

@@ -6,13 +6,11 @@ import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -20,17 +18,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
-import net.vulkanmod.interfaces.VBOPxy;
-import net.vulkanmod.render.RHandler;
 import net.vulkanmod.render.SkyBoxVBO;
-import net.vulkanmod.render.VBO;
+import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import org.jetbrains.annotations.Nullable;
-import org.joml.Random;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -39,10 +32,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Iterator;
-import java.util.Set;
 import java.util.SortedSet;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Mixin(value = LevelRenderer.class, priority = 999)
 public abstract class LevelRendererMixin {
@@ -84,7 +74,7 @@ public abstract class LevelRendererMixin {
 
     @Inject(method = "allChanged", at = @At("RETURN"))
     private void allChanged(CallbackInfo ci) {
-        WorldRenderer.allChanged();
+        WorldRenderer.allChanged(0);
     }
 
     @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;checkPoseStack(Lcom/mojang/blaze3d/vertex/PoseStack;)V", ordinal = 1, shift = At.Shift.BEFORE))
@@ -316,7 +306,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void compileChunks(Camera camera) {
-        WorldRenderer.compileChunks(camera);
+        if(!TaskDispatcher.resetting)  WorldRenderer.compileChunks(camera);
     }
 
     /**

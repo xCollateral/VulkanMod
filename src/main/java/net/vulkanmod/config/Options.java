@@ -3,10 +3,7 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 
@@ -188,12 +185,12 @@ public class Options {
                         },
                         value -> config.advCulling = value,
                         () -> config.advCulling),
-                new RangeOption("baseAlignSize", 65536,
+                new RangeOption("baseAlignSize", 16384,
                         131072, 4096,
                         value -> {
 
                             Config.baseAlignSize = value;
-                            WorldRenderer.allChanged();
+                            WorldRenderer.allChanged(0);
                         }, () -> Config.baseAlignSize)
                         .setTooltip(Component.nullToEmpty("Adjust Base Modifier Size for Chunk/VBO Allocations")),
                 new RangeOption("vboAlignment", 0,
@@ -203,7 +200,7 @@ public class Options {
                             Config.vboAlignment=value;
                             Config.vboAlignmentActual=1<<value;
 
-                            WorldRenderer.allChanged();
+                            WorldRenderer.allChanged(0);
                         }, () -> Config.vboAlignment)
                         .setTooltip(Component.nullToEmpty("Current Value: "+ (1<<Config.vboAlignment)+" \n (Refreshes if Exiting/Reentering options Screen)"+"\n\n"+"""
                         Use to Adjust VBO Alignment

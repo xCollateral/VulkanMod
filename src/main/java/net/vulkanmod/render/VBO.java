@@ -1,11 +1,11 @@
 package net.vulkanmod.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.world.phys.AABB;
+import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -48,46 +48,47 @@ public class VBO {
     }
 
     public void upload_(BufferBuilder.RenderedBuffer buffer, boolean sort) {
+        if(TaskDispatcher.resetting) return;
         BufferBuilder.DrawState parameters = buffer.drawState();
 
         this.indexCount = parameters.indexCount();
         this.vertexCount = parameters.vertexCount();
-        if(vertexCount==0){
-            System.out.println("NULL Buffer!: "+this+"-->"+buffer);
-        }
-        if(!sort){
-            final long addr = MemoryUtil.memAddress0(buffer.vertexBuffer());
-            for(int i=0;i<buffer.vertexBuffer().remaining();i+=32)
-            {
-                MemoryUtil.memPutFloat(addr+i, (MemoryUtil.memGetFloat(addr+i)+(float)(x- RHandler.camX-WorldRenderer.originX)));
-                MemoryUtil.memPutFloat(addr+i+4, (MemoryUtil.memGetFloat(addr+i+4)+(y)));
-                MemoryUtil.memPutFloat(addr+i+8, (MemoryUtil.memGetFloat(addr+i+8)+(float)(z-RHandler.camZ-WorldRenderer.originZ)));
-            }
-        }
+       //TODO: Could Move to BufferBuilderM but need to access VBO/CHunk Origin to Translate/Offset the Vertices Correctly
+        if(!sort) translateVBO(buffer);
 
 
         this.mode = parameters.mode();
         preInitialised=false;
-        this.configureVertexFormat(parameters, buffer.vertexBuffer());
-        this.configureIndexBuffer(parameters, buffer.indexBuffer());
+        this.configureVertexFormat(buffer.vertexBuffer());
+        this.configureIndexBuffer(buffer.indexBuffer());
 
-        indirectCommand = VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20))
+        indirectCommand = VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) //ALIGN and SIZEOF are NULL due to a bug in LWJGL
                 .indexCount(parameters.indexCount())
-                .vertexOffset(configureVertexFormat(parameters, buffer.vertexBuffer()))
-                .firstIndex(configureIndexBuffer(parameters, buffer.indexBuffer()))
+                .vertexOffset(configureVertexFormat(buffer.vertexBuffer()))
+                .firstIndex(configureIndexBuffer(buffer.indexBuffer()))
                 .firstInstance(0)
-                .instanceCount(1);
+                .instanceCount(this.indexCount != 0 ? 1 : 0); //Cull if Empty
         ;
 
         if(!buffer.released) buffer.release();
 
     }
+    //WorkAround For PushConstants
+    private void translateVBO(BufferBuilder.RenderedBuffer buffer) {
+        final long addr = MemoryUtil.memAddress0(buffer.vertexBuffer());
+        for(int i = 0; i< buffer.vertexBuffer().remaining(); i+=32)
+        {
+            MemoryUtil.memPutFloat(addr+i,   (MemoryUtil.memGetFloat(addr+i)  +(float)(x-RHandler.camX-WorldRenderer.originX)));
+            MemoryUtil.memPutFloat(addr+i+4, (MemoryUtil.memGetFloat(addr+i+4)+y));
+            MemoryUtil.memPutFloat(addr+i+8, (MemoryUtil.memGetFloat(addr+i+8)+(float)(z-RHandler.camZ-WorldRenderer.originZ)));
+        }
+    }
 
-    private int configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
+    private int configureVertexFormat(ByteBuffer data) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         {
 
-            if(addSubIncr==null || addSubIncr.sizes<data.remaining())
+            if(addSubIncr==null || addSubIncr.size_t<data.remaining())
             {
                 if(addSubIncr != null) VirtualBuffer.addFreeableRange(addSubIncr);
                 addSubIncr=VirtualBuffer.addSubIncr(data.remaining());
@@ -97,22 +98,22 @@ public class VBO {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(data.remaining(), data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, addSubIncr.i2, addSubIncr.sizes);
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, addSubIncr.i2, addSubIncr.size_t);
             return addSubIncr.i2>>5;
         }
     }
 
-    private int configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
+    private int configureIndexBuffer(ByteBuffer data) {
         {
-            if(indexBuffer==null || indexBuffer.sizes<data.remaining())
+            if(indexBuffer==null || indexBuffer.size_t <data.remaining())
             {
                 if(indexBuffer != null) VirtualBufferIdx.addFreeableRange(indexBuffer);
                 indexBuffer=VirtualBufferIdx.addSubIncr(data.remaining());
             }
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-            stagingBuffer.copyBuffer(indexBuffer.sizes, data);
+            stagingBuffer.copyBuffer(indexBuffer.size_t, data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, indexBuffer.i2, indexBuffer.sizes);
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, indexBuffer.i2, indexBuffer.size_t);
 
             return indexBuffer.i2>>1;
         }

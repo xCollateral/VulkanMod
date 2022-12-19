@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.Vec3i;
 
+import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
 
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +34,6 @@ public class RHandler
 
     private static Vec3i origin;
     public static int calls;
-    public static ChunkRenderDispatcher chunkBuilder = Minecraft.getInstance().levelRenderer.getChunkRenderDispatcher();
     private static long indirectAllocation;
 
 
@@ -51,10 +51,6 @@ public class RHandler
 //        if(origin!=null) origin.add(-i, 0,  -j);
 //    }
 
-    public static void setCnkBldr(ChunkRenderDispatcher a) {
-        chunkBuilder=a;
-    }
-
     public static CompletableFuture<Void> uploadVBO(VBO vbo, BufferBuilder.RenderedBuffer buffers, boolean sort)
     {
 //        if(buffers==null) return CompletableFuture.completedFuture(null);
@@ -63,12 +59,12 @@ public class RHandler
                 vbo.upload_(buffers, sort), WorldRenderer.taskDispatcher.toUpload::add);
     }
 
-    public static CompletableFuture<Void> uploadVBO(int index, BufferBuilder.RenderedBuffer buffers)
+    public static CompletableFuture<Void> uploadVBO(int index, BufferBuilder.RenderedBuffer buffers, boolean sort)
     {
-        if(buffers==null) return CompletableFuture.completedFuture(null);
+        if(TaskDispatcher.resetting) return CompletableFuture.completedFuture(null);
 
         return CompletableFuture.runAsync(() ->
-                getVBOFromIndex(index).upload_(buffers, false), WorldRenderer.taskDispatcher.toUpload::add);
+                getVBOFromIndex(index).upload_(buffers, sort), WorldRenderer.taskDispatcher.toUpload::add);
     }
 
     public static VBO getVBOFromIndex(int index) {

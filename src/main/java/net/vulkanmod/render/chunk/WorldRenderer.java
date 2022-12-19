@@ -118,7 +118,7 @@ public class WorldRenderer {
         WorldRenderer.frustum = frustum.offsetToFullyIncludeCameraCube(8);
         cameraPos = camera.getPosition();
         if (minecraft.options.getEffectiveRenderDistance() != lastViewDistance) {
-            allChanged();
+            allChanged(minecraft.options.getEffectiveRenderDistance()*minecraft.options.getEffectiveRenderDistance()*24*Config.baseAlignSize);
         }
 
         level.getProfiler().push("camera");
@@ -329,6 +329,8 @@ public class WorldRenderer {
     }
 
     public static void compileChunks(Camera camera) {
+        if(TaskDispatcher.resetting) return;
+
         minecraft.getProfiler().push("populate_chunks_to_compile");
         RenderRegionCache renderregioncache = new RenderRegionCache();
         BlockPos cameraPos = camera.getBlockPosition();
@@ -362,7 +364,7 @@ public class WorldRenderer {
         }
 
         minecraft.getProfiler().popPush("upload");
-        taskDispatcher.uploadAllPendingUploads();
+        if(!TaskDispatcher.resetting) taskDispatcher.uploadAllPendingUploads();
 //        CompletableFuture.runAsync(() -> this.taskDispatcher.uploadAllPendingUploads());
         minecraft.getProfiler().popPush("schedule_async_compile");
 
@@ -392,14 +394,13 @@ public class WorldRenderer {
         return renderSection != null && renderSection.compiledSection != RenderSection.CompiledSection.UNCOMPILED;
     }
 
-    public static void allChanged() {
-
+    public static void allChanged(int size ) {
+        TaskDispatcher.resetting=true;
         resetOrigin();
         lastViewDistance = minecraft.options.getEffectiveRenderDistance();
-        vkDeviceWaitIdle(Vulkan.getDevice());
-        RHandler.uniqueVBOs.clear();
-        VirtualBuffer.reset((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize);
-        VirtualBufferIdx.reset((lastViewDistance*lastViewDistance)*24* Config.baseAlignSize/8);
+
+        resetAllBuffers(size);
+
         if (level != null) {
 //            this.graphicsChanged();
             level.clearTintCaches();
@@ -431,6 +432,16 @@ public class WorldRenderer {
             }
 
         }
+//        TaskDispatcher.resetting=false;
+    }
+
+    public static void resetAllBuffers(int size) {
+        TaskDispatcher.resetting=true;
+        RHandler.uniqueVBOs.clear();
+        vkDeviceWaitIdle(Vulkan.getDevice());
+        VirtualBuffer.reset(size);
+        VirtualBufferIdx.reset(size/8);
+        TaskDispatcher.resetting=false;
     }
 
     private static void resetOrigin() {
@@ -446,10 +457,11 @@ public class WorldRenderer {
         lastCameraSectionY = Integer.MIN_VALUE;
         lastCameraSectionZ = Integer.MIN_VALUE;
 //        this.entityRenderDispatcher.setLevel(level);
-        level = level_;
+        level = level_;TaskDispatcher.resetting=true;
         if (level != null) {
+
             if(chunkGrid == null) {
-                allChanged();
+                allChanged(0);
             }
         } else {
             if (chunkGrid != null) {
@@ -469,6 +481,7 @@ public class WorldRenderer {
 //            this.renderChunkStorage.set((LevelRenderer.RenderChunkStorage)null);
             sectionsInFrustum.clear();
         }
+//        TaskDispatcher.resetting=false;
 
     }
 

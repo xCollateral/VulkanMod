@@ -91,7 +91,7 @@ public class RenderSection {
             this.lastResortTransparencyTask.cancel();
         }
 
-        if (!compiledSection1.renderTypes.contains(renderType)) {
+        if (compiledSection1.renderTypes!=(renderType)) {
             return false;
         } else {
             this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);
@@ -246,20 +246,27 @@ public class RenderSection {
                 return false;
             }
         };
-        final Set<RenderType> renderTypes = new ObjectArraySet<>();
+        final RenderType renderTypes = RenderType.translucent();
         boolean isCompletelyEmpty = true;
         final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
         VisibilitySet visibilitySet = new VisibilitySet();
         @Nullable
         BufferBuilder.SortState transparencyState;
 
+        public CompiledSection() {}
+        public CompiledSection(ChunkTask.BuildTask.CompileResults compileResults) {
+            this.visibilitySet = compileResults.visibilitySet;
+            this.renderableBlockEntities.addAll(compileResults.blockEntities);
+            this.transparencyState = compileResults.transparencyState;
+        }
+
         public boolean hasNoRenderableLayers() {
             return this.isCompletelyEmpty;
         }
 
-        public boolean isEmpty(RenderType p_112759_) {
-            return !this.renderTypes.contains(p_112759_);
-        }
+//        public boolean isEmpty(RenderType p_112759_) {
+//            return !this.renderTypes.contains(p_112759_);
+//        }
 
         public List<BlockEntity> getRenderableBlockEntities() {
             return this.renderableBlockEntities;

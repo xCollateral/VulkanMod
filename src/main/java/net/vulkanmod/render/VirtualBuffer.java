@@ -2,13 +2,11 @@ package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.config.Config;
-import net.vulkanmod.config.Option;
-import net.vulkanmod.config.Options;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.*;
-import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
 import org.lwjgl.vulkan.VkMemoryAllocateInfo;
 import org.lwjgl.vulkan.VkMemoryDedicatedAllocateInfo;
@@ -16,6 +14,7 @@ import org.lwjgl.vulkan.VkMemoryDedicatedAllocateInfo;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.lastViewDistance;
+import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -38,11 +37,18 @@ public class VirtualBuffer {
     private static long bufferPtrBackingAlloc;
 //    public static int allocBytes;
 
+    private static final int initsize_t;
+
     static {
-        initBufferSuperSet((lastViewDistance*lastViewDistance)*32* Config.baseAlignSize);
+        initsize_t = (lastViewDistance * lastViewDistance) * 24 * Config.baseAlignSize;
+        initBufferSuperSet(initsize_t);
     }
+    //Could just Set Allocation to 2GB and not bother with resizing as initially allocated space is treated as "Reserved Space" and not used space
+    //However it would get in the way of other programs/Naively assume the GPU as 2GB available
     public static void reset(int i)
     {
+        if(i==0) i=size_t;
+
 //        Drawer.skipRendering=true;
 
         subIncr=0;
@@ -50,7 +56,7 @@ public class VirtualBuffer {
         usedBytes=0;
         FreeRanges.clear();
         freeThis(i);
-        if(size_t==i) return;
+//        if(size_t==i) return;
 
        /* for(VBO a : RHandler.uniqueVBOs)
         {
@@ -59,7 +65,7 @@ public class VirtualBuffer {
 
 
 
-        size_t=i;
+
 
         bound=false;
 
@@ -122,7 +128,6 @@ public class VirtualBuffer {
 
     private static void initBufferSuperSet(int size) {
 
-        bound=true;
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
@@ -135,10 +140,12 @@ public class VirtualBuffer {
 
             createBackingBuffer(size, stack, pAlloc, pBuffer);
 
-            PointerBuffer block = stack.pointers(virtualBlockBufferSuperSet);
+            PointerBuffer block = stack.mallocPointer(1);
             Vma.vmaCreateVirtualBlock(blockCreateInfo, block);
             virtualBlockBufferSuperSet = block.get(0);
 
+            size_t=size;
+            bound=true;
 
 
 
@@ -163,28 +170,57 @@ public class VirtualBuffer {
 //        VkBufferPointer bufferPointer = checkforFreeable(size);
 //        if(bufferPointer!=null) return reallocSubIncr(bufferPointer);
 
+        if(size_t<=usedBytes+size)
+        {
+            System.out.println(size_t+"-->"+(usedBytes+size)+"-->"+size_t*2);
+            WorldRenderer.setNeedsUpdate();
+            WorldRenderer.allChanged(size_t+size_t);
+        }
+
         try(MemoryStack stack = MemoryStack.stackPush())
         {
+            var a = (checkforFreeable(size));
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size(size)
                     .alignment(Config.vboAlignmentActual)
-                    .flags((checkforFreeable(size)) ? VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
+                    .flags((a!=null) ? VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
             PointerBuffer pAlloc = stack.mallocPointer(1);
 
-            LongBuffer pOffset = stack.longs(0);
+            LongBuffer pOffset = a!=null ? stack.longs(a.i2) : null;
             subIncr += size;
             usedBytes+=size;
-            if(Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) == VK10.VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-                throw new IllegalStateException("Out of Mem!: " + usedBytes +"-->"+(usedBytes+size));
-            }
+            Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset);
+
             long allocation = pAlloc.get(0);
+
 //            Vma.vmaSetVirtualAllocationUserData(virtualBlockBufferSuperSet, allocation, 0);
             subAllocs++;
-            VmaVirtualAllocationInfo vmaVirtualAllocationInfo = setOffsetRangesStats(allocation, stack);
+            VmaVirtualAllocationInfo allocCreateInfo1 = VmaVirtualAllocationInfo.malloc(stack);
 
-            updateStatistics(stack);
-            return new VkBufferPointer(pAlloc.get(0), (int) vmaVirtualAllocationInfo.offset(), (int) vmaVirtualAllocationInfo.size());
+            if(allocation==0)
+            {
+                /*VirtualBuffer.reset(size_t*2);
+                VmaVirtualAllocationCreateInfo allocCreateInfo2 = VmaVirtualAllocationCreateInfo.malloc(stack)
+                        .size(size)
+                        .alignment(0)
+                        .flags(VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
+                        .pUserData(NULL);
+//                pOffset.put(0, 0);
+                Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo2, pAlloc, null);
+                allocation = pAlloc.get(0);*/
+                System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+size)+"-->"+size+"-->"+size_t+initsize_t);
+                WorldRenderer.setNeedsUpdate();
+                WorldRenderer.allChanged(size_t+initsize_t);
+                pAlloc=stack.mallocPointer(1);
+                Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, stack.longs(0));
+                allocation=pAlloc.get(0);
+
+            }
+            vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocCreateInfo1);
+
+//            updateStatistics(stack);
+            return new VkBufferPointer(pAlloc.get(0), (int) allocCreateInfo1.offset(), (int) allocCreateInfo1.size());
         }
     }
 
@@ -192,14 +228,14 @@ public class VirtualBuffer {
         return size + (Config.vboAlignmentActual - (size-1&Config.vboAlignmentActual-1) - 1);
     }
 
-    private static boolean checkforFreeable(int size) {
+    private static VkBufferPointer checkforFreeable(int size) {
         for(VkBufferPointer bufferPointer : FreeRanges)
         {
-            if(bufferPointer.sizes<=size) {
-                return FreeRanges.remove(FreeRanges.indexOf(bufferPointer))!=null;
+            if(bufferPointer.size_t <=size) {
+                return FreeRanges.remove(FreeRanges.indexOf(bufferPointer));
             }
         }
-        return false;
+        return null;
     }
 
     private static void updateStatistics(MemoryStack stack) {
@@ -220,13 +256,14 @@ public class VirtualBuffer {
 
     public static void addFreeableRange(VkBufferPointer bufferPointer)
     {
+        if(usedBytes==0)return;
         if(bufferPointer==null) return;
         if(bufferPointer.allocation==0) return;
 //        if(bufferPointer.sizes==0) return;
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation);
         subAllocs--;
-        usedBytes-=bufferPointer.sizes;
-        addToFreeableRanges(bufferPointer);
+        usedBytes-=bufferPointer.size_t;
+//        addToFreeableRanges(bufferPointer);
     }
 
     private static void addToFreeableRanges(VkBufferPointer bufferPointer) {
