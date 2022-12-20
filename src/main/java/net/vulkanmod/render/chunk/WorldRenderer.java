@@ -587,7 +587,7 @@ public class WorldRenderer {
 //            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
 //            Drawer.pushConstants(pipeline);
             ////
-            RHandler.uniqueVBOs.get(i).drawChunkLayer();
+            Drawer.drawIndexedBindless(RHandler.uniqueVBOs.get(i).indirectCommand);
 
 //            flag1 = true;
         }

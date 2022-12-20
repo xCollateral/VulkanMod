@@ -38,7 +38,7 @@ public class VBO {
     private boolean autoIndexed = false;
 
     public boolean preInitialised = true;
-    private VkDrawIndexedIndirectCommand indirectCommand;
+    public VkDrawIndexedIndirectCommand indirectCommand;
 
     public VBO(int index, int x, int y, int z) {
         this.index=index;
