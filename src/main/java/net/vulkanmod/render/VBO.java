@@ -23,7 +23,7 @@ public class VBO {
     public float x;
     public float y;
     public float z;
-    public AABB bb;
+//    public AABB bb;
 
     private VkBufferPointer addSubIncr;
     public boolean translucent=false;
@@ -156,12 +156,12 @@ public class VBO {
         preInitialised=true;
     }
 
-    public void updateOrigin(int x, int y, int z, AABB bb) {
+    public void updateOrigin(int x, int y, int z) {
 //        this.origin=origin;
         this.x=x;
         this.y=y;
         this.z=z;
-        this.bb=bb;
+//        this.bb=bb;
     }
 
     /*public VertexFormat getFormat() {

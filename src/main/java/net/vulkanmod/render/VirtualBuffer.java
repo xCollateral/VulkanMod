@@ -33,7 +33,6 @@ public class VirtualBuffer {
     public static long allocMax;
     public static long bufferPointerSuperSet;
     public static boolean bound=false;
-    private static long alloc;
     private static long bufferPtrBackingAlloc;
 //    public static int allocBytes;
 
@@ -44,7 +43,7 @@ public class VirtualBuffer {
         initBufferSuperSet(initsize_t);
     }
     //Could just Set Allocation to 2GB and not bother with resizing as initially allocated space is treated as "Reserved Space" and not used space
-    //However it would get in the way of other programs/Naively assume the GPU as 2GB available
+    //However it would get in the way of other programs and naively assumes the GPU has 2GB available which may cause issues with older GPUs/iGPUs
     public static void reset(int i)
     {
         if(i==0) i=size_t;
@@ -219,7 +218,7 @@ public class VirtualBuffer {
             }
             vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocCreateInfo1);
 
-//            updateStatistics(stack);
+            updateStatistics(stack);
             return new VkBufferPointer(pAlloc.get(0), (int) allocCreateInfo1.offset(), (int) allocCreateInfo1.size());
         }
     }

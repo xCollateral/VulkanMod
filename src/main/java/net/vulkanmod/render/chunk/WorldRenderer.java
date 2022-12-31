@@ -86,13 +86,8 @@ public class WorldRenderer {
 //    public ObjectArrayList<RenderSection> tripwireChunks = new ObjectArrayList<>();
     public static ObjectArrayList<RenderSection> translucentChunks = new ObjectArrayList<>(1024);
 
-    private static Frustum frustum;
-    private static double xTransparentOld2;
-    private static double yTransparentOld2;
-    private static double zTransparentOld2;
     public static double originX;
     public static double originZ;
-    private static float prevPosX;
     public static double curPosX;
     private static double prevCamX;
     public static double curPosZ;
@@ -116,7 +111,7 @@ public class WorldRenderer {
         Profiler p = Profiler.getProfiler("chunks");
         p.start();
 
-        WorldRenderer.frustum = frustum.offsetToFullyIncludeCameraCube(8);
+//        WorldRenderer.frustum = frustum.offsetToFullyIncludeCameraCube(8);
         cameraPos = camera.getPosition();
         if (minecraft.options.getEffectiveRenderDistance() != lastViewDistance) {
             allChanged(minecraft.options.getEffectiveRenderDistance()*minecraft.options.getEffectiveRenderDistance()*24*Config.baseAlignSize);
@@ -365,8 +360,8 @@ public class WorldRenderer {
 
                 list.add(renderSection);
             }
-            //based on the 1.18.2 applyfrustum Function: Hence why performance is likley bad
-            //COuld do/use GPU-based CUllign which would require a Compute Shader, but apparently it isn't very/Particuarly hard to do
+            //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
+            //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
             if (!renderSection.vbo.preInitialised) RHandler.uniqueVBOs.add(renderSection.vbo);
         }
 
@@ -530,7 +525,7 @@ public class WorldRenderer {
         RHandler.camZ=camZ;
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-        translucentSort(renderType, camX, camY, camZ); //TODO: Maybe Replace/Merge with reBuildTask..
+        translucentSort(renderType, camX, camY, camZ); //may be better to place translucent textures ina separate renderpass and submit it together with the vbos
 
         minecraft.getProfiler().push("filterempty");
         minecraft.getProfiler().popPush(() -> {

@@ -3,9 +3,6 @@ package net.vulkanmod.render.chunk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -16,16 +13,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
-import net.vulkanmod.render.RHandler;
 import net.vulkanmod.render.VBO;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class RenderSection {
     final int index;
@@ -75,7 +69,7 @@ public class RenderSection {
 
         this.origin.set(x, y, z);
         this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
-        vbo.updateOrigin(x,y,z, bb);
+        vbo.updateOrigin(x,y,z);
         this.relativeOrigins[Direction.DOWN.ordinal()].set(this.origin).move(Direction.DOWN, 16);
         this.relativeOrigins[Direction.UP.ordinal()].set(this.origin).move(Direction.UP, 16);
         this.relativeOrigins[Direction.NORTH.ordinal()].set(this.origin).move(Direction.NORTH, 16);
@@ -91,13 +85,14 @@ public class RenderSection {
             this.lastResortTransparencyTask.cancel();
         }
 
-        if (compiledSection1.renderTypes!=(renderType)) {
+        if (!vbo.translucent || compiledSection1.renderTypes != (renderType)) {
             return false;
         } else {
             this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);
             taskDispatcher.schedule(this.lastResortTransparencyTask);
             return true;
         }
+
     }
 
     public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {

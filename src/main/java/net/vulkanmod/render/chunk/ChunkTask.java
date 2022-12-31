@@ -329,15 +329,15 @@ public class ChunkTask {
             float f1 = (float)vec3.y;
             float f2 = (float)vec3.z;
 
-            final BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
-            /*if(bufferbuilder.isCurrentBatchEmpty()){
+           /* if(bufferbuilder.isCurrentBatchEmpty()){
                 this.cancelled.set(true);
                 return CompletableFuture.completedFuture(Result.CANCELLED);
             }*/
             if (renderSection.vbo.translucent && !this.compiledSection.isCompletelyEmpty && this.compiledSection.renderTypes==(RenderType.translucent())) {
-                bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                final BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
+                if(!bufferbuilder.building()) bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                 bufferbuilder.restoreSortState(this.compiledSection.transparencyState);
-                bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
+                bufferbuilder.setQuadSortOrigin(f - this.renderSection.vbo.x, f1 - renderSection.vbo.y, f2 - renderSection.vbo.z);
                 this.compiledSection.transparencyState = bufferbuilder.getSortState();
                 BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
                 if(TaskDispatcher.resetting) return CompletableFuture.completedFuture(Result.CANCELLED); //Stop Async Upload Crash When Changing/Updating Size
@@ -349,9 +349,8 @@ public class ChunkTask {
 
                     return this.cancelled.get() ? Result.CANCELLED : Result.SUCCESSFUL;
                 });
-            } else {
-                return CompletableFuture.completedFuture(Result.CANCELLED);
             }
+            return CompletableFuture.completedFuture(Result.CANCELLED);
         }
     }
     

@@ -61,7 +61,9 @@ public abstract class DebugHudM {
         strings.add(String.format("Allocated: % 2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
-        strings.add("DeviceMemory: " + (VirtualBuffer.usedBytes>>20)+"+"+(VirtualBufferIdx.usedBytes>>20) + "MB");
+        strings.add("DeviceMemory: " + (MemoryManager.getInstance().getDeviceMemoryMB()>>20) + "MB");
+        strings.add("DeviceMemory2: " + (VirtualBuffer.usedBytes>>20)+"+"+(VirtualBufferIdx.usedBytes>>20) + "MB");
+        strings.add("ReservedMemory: " + (VirtualBuffer.size_t>>20)+"+"+(VirtualBufferIdx.size_t>>20) + "MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);

@@ -161,7 +161,7 @@ public class VirtualBufferIdx {
 
     static VkBufferPointer addSubIncr(int size) {
 
-        //Don;t Bother aligning IndexBuffers due to Smaller size+posble risk with Incrretc |Index Cunts/Bugs e.g.
+
         size=alignAs(size);
 
         if(size_t<=usedBytes+size)
@@ -191,7 +191,7 @@ public class VirtualBufferIdx {
             subAllocs++;
             VmaVirtualAllocationInfo vmaVirtualAllocationInfo = setOffsetRangesStats(allocation, stack);
 
-//            updateStatistics(stack);
+            updateStatistics(stack);
             return new VkBufferPointer(pAlloc.get(0), (int) vmaVirtualAllocationInfo.offset(), (int) vmaVirtualAllocationInfo.size());
         }
     }
