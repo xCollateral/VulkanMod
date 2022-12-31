@@ -12,7 +12,7 @@ import java.util.Collections;
 
 public class Config {
 
-    public static int baseAlignSize = 81920;
+    public static int baseAlignSize = 65536;
     public static int vboAlignment = 8;
     public static int vboAlignmentActual;
 

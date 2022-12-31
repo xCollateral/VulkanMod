@@ -38,7 +38,6 @@ import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -52,6 +51,7 @@ public class WorldRenderer {
 //    public static WorldRenderer INSTANCE;
 
     public static final Minecraft minecraft;
+    private static final long maxGPUMemLimit = Vulkan.memoryProperties.memoryHeaps(0).size();
 
     public static ClientLevel level;
     public static int lastViewDistance;
@@ -442,6 +442,7 @@ public class WorldRenderer {
         TaskDispatcher.resetting=true;
         RHandler.drawCommands.clear();
         nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
+        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
         VirtualBuffer.reset(size);
         VirtualBufferIdx.reset(size/8);
         TaskDispatcher.resetting=false;
