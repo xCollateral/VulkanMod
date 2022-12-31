@@ -97,6 +97,7 @@ public class WorldRenderer {
     private static double prevCamX;
     public static double curPosZ;
     private static double prevCamZ;
+    private static boolean needsReset=true;
 
     static  {
         minecraft = Minecraft.getInstance();
@@ -119,6 +120,12 @@ public class WorldRenderer {
         cameraPos = camera.getPosition();
         if (minecraft.options.getEffectiveRenderDistance() != lastViewDistance) {
             allChanged(minecraft.options.getEffectiveRenderDistance()*minecraft.options.getEffectiveRenderDistance()*24*Config.baseAlignSize);
+        }
+        if(needsReset) //Move WorldOrigin to the correct position on (Initial) World Load
+        {
+            needsReset=false;
+            prevCamX=cameraPos.x;
+            prevCamZ=cameraPos.z;
         }
 
         level.getProfiler().push("camera");
@@ -493,7 +500,8 @@ public class WorldRenderer {
     }
 
     public static void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
-//        if(renderType!=RenderType.translucent()) return;
+
+        //        if(renderType!=RenderType.translucent()) return;
 //        //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 //        RenderType solid = RenderType.solid();
@@ -562,7 +570,8 @@ public class WorldRenderer {
 
 
         Drawer drawer = Drawer.getInstance();
-        Pipeline pipeline = ((ShaderMixed)(GameRenderer.getRendertypeCutoutMippedShader())).getPipeline();
+        ShaderInstance rendertypeCutoutMippedShader = Config.noFog ? GameRenderer.getRendertypeCutoutMippedShader() : GameRenderer.getRendertypeTripwireShader();
+        Pipeline pipeline = ((ShaderMixed) rendertypeCutoutMippedShader).getPipeline();
         drawer.bindPipeline(pipeline);
 
         drawer.uploadAndBindUBOs(pipeline);

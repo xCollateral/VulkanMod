@@ -17,6 +17,7 @@ public class Config {
     public static int vboAlignmentActual;
 
     public static boolean doChunkPreTranslation=false;
+    public static boolean noFog;
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;

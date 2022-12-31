@@ -48,7 +48,7 @@ public class VBO {
     }
 
     public void upload_(BufferBuilder.RenderedBuffer buffer, boolean sort) {
-        if(TaskDispatcher.resetting) return;
+
         BufferBuilder.DrawState parameters = buffer.drawState();
 
         this.indexCount = parameters.indexCount();
@@ -59,8 +59,8 @@ public class VBO {
 
         this.mode = parameters.mode();
         preInitialised=false;
-        this.configureVertexFormat(buffer.vertexBuffer());
-        this.configureIndexBuffer(buffer.indexBuffer());
+//        this.configureVertexFormat(buffer.vertexBuffer());
+//        this.configureIndexBuffer(buffer.indexBuffer());
 
         indirectCommand = VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) //ALIGN and SIZEOF are NULL due to a bug in LWJGL
                 .indexCount(parameters.indexCount())

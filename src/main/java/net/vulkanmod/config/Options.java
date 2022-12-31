@@ -209,6 +209,13 @@ public class Options {
                         Used to reduce Fragmentation when suballocating VBOs
                         reduce this value to reduce memory usage/inefficiency
                         but in exchange increases fragmentation which may lead to glitches/weird issues""")),
+                new SwitchOption("noFog",
+                        value -> {
+
+                            Config.noFog=value;
+
+                        }, () -> Config.noFog)
+                        .setTooltip(Component.nullToEmpty("")),
         };
 
     }

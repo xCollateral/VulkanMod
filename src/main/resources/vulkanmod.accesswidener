@@ -23,3 +23,7 @@ accessible field com/mojang/math/Matrix4f m30 F
 accessible field com/mojang/math/Matrix4f m31 F
 accessible field com/mojang/math/Matrix4f m32 F
 accessible field com/mojang/math/Matrix4f m33 F
+accessible class net/minecraft/client/renderer/RenderStateShard$OutputStateShard
+accessible field net/minecraft/client/renderer/RenderStateShard PARTICLES_TARGET Lnet/minecraft/client/renderer/RenderStateShard$OutputStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard CLOUDS_TARGET Lnet/minecraft/client/renderer/RenderStateShard$OutputStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard WEATHER_TARGET Lnet/minecraft/client/renderer/RenderStateShard$OutputStateShard;
