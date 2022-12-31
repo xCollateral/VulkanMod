@@ -173,6 +173,7 @@ public class VirtualBufferIdx {
         }
         try(MemoryStack stack = MemoryStack.stackPush())
         {
+            var a = checkforFreeable(size);
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size(size)
                     .alignment(Config.vboAlignmentActual)
@@ -180,7 +181,7 @@ public class VirtualBufferIdx {
                     .pUserData(NULL);
             PointerBuffer pAlloc = stack.mallocPointer(1);
 
-            LongBuffer pOffset = stack.longs(0);
+            LongBuffer pOffset = stack.longs(a!=null? a.i2 : 0);
             subIncr += size;
             usedBytes+=size;
             if(Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) == VK10.VK_ERROR_OUT_OF_DEVICE_MEMORY) {
@@ -200,14 +201,14 @@ public class VirtualBufferIdx {
         return size + ((Config.vboAlignmentActual) - (size-1& (Config.vboAlignmentActual) -1) - 1);
     }
 
-    private static boolean checkforFreeable(int size) {
-        for(VkBufferPointer bufferPointer : FreeRanges)
-        {
-            if(bufferPointer.size_t <=size) {
-                return FreeRanges.remove(FreeRanges.indexOf(bufferPointer))!=null;
+    private static VkBufferPointer checkforFreeable(int size) {
+        for (int i = 0; i < FreeRanges.size(); i++) {
+            VkBufferPointer bufferPointer = FreeRanges.get(i);
+            if (bufferPointer.size_t >= size) {
+                return FreeRanges.remove(i);
             }
         }
-        return false;
+        return null;
     }
 
     private static void updateStatistics(MemoryStack stack) {
@@ -235,7 +236,7 @@ public class VirtualBufferIdx {
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation);
         subAllocs--;
         usedBytes-=bufferPointer.size_t;
-//        addToFreeableRanges(bufferPointer);
+        addToFreeableRanges(bufferPointer);
     }
 
     private static void addToFreeableRanges(VkBufferPointer bufferPointer) {

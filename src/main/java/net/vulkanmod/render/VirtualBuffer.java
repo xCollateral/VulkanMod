@@ -228,10 +228,10 @@ public class VirtualBuffer {
     }
 
     private static VkBufferPointer checkforFreeable(int size) {
-        for(VkBufferPointer bufferPointer : FreeRanges)
-        {
-            if(bufferPointer.size_t <=size) {
-                return FreeRanges.remove(FreeRanges.indexOf(bufferPointer));
+        for (int i = 0; i < FreeRanges.size(); i++) {
+            VkBufferPointer bufferPointer = FreeRanges.get(i);
+            if (bufferPointer.size_t >= size) {
+                return FreeRanges.remove(i);
             }
         }
         return null;
@@ -262,7 +262,7 @@ public class VirtualBuffer {
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation);
         subAllocs--;
         usedBytes-=bufferPointer.size_t;
-//        addToFreeableRanges(bufferPointer);
+        addToFreeableRanges(bufferPointer);
     }
 
     private static void addToFreeableRanges(VkBufferPointer bufferPointer) {
