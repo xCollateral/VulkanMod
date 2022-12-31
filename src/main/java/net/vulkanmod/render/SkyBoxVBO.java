@@ -86,7 +86,7 @@ public class SkyBoxVBO {
 
             Drawer.getInstance().draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
 
-            VRenderSystem.applyMVPAffine(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+            VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
         }
     }

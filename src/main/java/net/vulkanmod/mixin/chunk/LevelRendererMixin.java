@@ -569,8 +569,7 @@ public abstract class LevelRendererMixin {
                                             poseStack2.mulPoseMatrix(poseStack.last().pose());
                                             RenderSystem.applyModelViewMatrix();
                                             this.minecraft.debugRenderer.render(poseStack, bufferSource, d, e, g);
-                                            poseStack2.popPose();
-                                            RenderSystem.applyModelViewMatrix();
+
                                             bufferSource.endBatch(Sheets.translucentCullBlockSheet());
                                             bufferSource.endBatch(Sheets.bannerSheet());
                                             bufferSource.endBatch(Sheets.shieldSheet());
@@ -585,7 +584,24 @@ public abstract class LevelRendererMixin {
                                             this.renderBuffers.crumblingBufferSource().endBatch();
                                             //Lines and partcules must be drawn before and  after the chunkLayer respectively to be properly Visible
                                             //Not sure if transparencyChain is needed as the layers seem to render fine without depth Clearing.Copying
-                                             {
+                                            if (this.transparencyChain != null) {
+                                                RenderStateShard.WEATHER_TARGET.setupRenderState();
+                                                profilerFiller.popPush("weather");
+                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
+                                                this.renderWorldBorder(camera);
+                                                RenderStateShard.WEATHER_TARGET.clearRenderState();
+                                                this.transparencyChain.process(f);
+                                                this.minecraft.getMainRenderTarget().bindWrite(false);
+                                            } else {
+                                                RenderSystem.depthMask(false);
+                                                profilerFiller.popPush("weather");
+                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
+                                                this.renderWorldBorder(camera);
+                                                RenderSystem.depthMask(true);
+                                            }
+                                            poseStack2.popPose();
+                                            RenderSystem.applyModelViewMatrix();
+                                            {
                                                 profilerFiller.popPush("translucent");
                                                 if (this.translucentTarget != null) {
                                                     this.translucentTarget.clear(Minecraft.ON_OSX);
@@ -620,21 +636,7 @@ public abstract class LevelRendererMixin {
                                                 }
                                             }
 
-                                            if (this.transparencyChain != null) {
-                                                RenderStateShard.WEATHER_TARGET.setupRenderState();
-                                                profilerFiller.popPush("weather");
-                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
-                                                this.renderWorldBorder(camera);
-                                                RenderStateShard.WEATHER_TARGET.clearRenderState();
-                                                this.transparencyChain.process(f);
-                                                this.minecraft.getMainRenderTarget().bindWrite(false);
-                                            } else {
-                                                RenderSystem.depthMask(false);
-                                                profilerFiller.popPush("weather");
-                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
-                                                this.renderWorldBorder(camera);
-                                                RenderSystem.depthMask(true);
-                                            }
+
 
                                             this.renderDebug(camera);
                                             RenderSystem.depthMask(true);
