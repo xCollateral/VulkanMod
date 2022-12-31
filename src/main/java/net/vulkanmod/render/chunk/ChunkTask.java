@@ -19,10 +19,13 @@ import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.client.renderer.chunk.VisibilitySet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.AbstractGlassBlock;
+import net.minecraft.world.level.block.GlassBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.RHandler;
 
@@ -207,7 +210,7 @@ public class ChunkTask {
                 BlockRenderDispatcher blockRenderDispatcher = WorldRenderer.minecraft.getBlockRenderer();
                 final BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.translucent());
 
-
+                renderSection.vbo.translucent=false;
                 for (BlockPos blockPos3 : blockPos1) {
 //                    BlockPos blockPos3 = (BlockPos)var15.next();
                     BlockState blockState = renderChunkRegion.getBlockState(blockPos3);
@@ -233,7 +236,8 @@ public class ChunkTask {
 
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
                         //                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
-
+//                        if(blockState.getBlock() instanceof AbstractGlassBlock) renderSection.vbo.translucent = true;
+                        if(!blockState.canOcclude()) renderSection.vbo.translucent = true;
                         if(!bufferBuilder2.building()) bufferBuilder2.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                         poseStack.pushPose();
                         poseStack.translate(blockPos3.getX() & 15, blockPos3.getY() & 15, blockPos3.getZ() & 15);
@@ -326,12 +330,12 @@ public class ChunkTask {
             float f2 = (float)vec3.z;
 
             final BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
-            if(bufferbuilder.isCurrentBatchEmpty()){
+            /*if(bufferbuilder.isCurrentBatchEmpty()){
                 this.cancelled.set(true);
                 return CompletableFuture.completedFuture(Result.CANCELLED);
-            }
+            }*/
             if (renderSection.vbo.translucent && !this.compiledSection.isCompletelyEmpty && this.compiledSection.renderTypes==(RenderType.translucent())) {
-                if(!bufferbuilder.building()) bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                 bufferbuilder.restoreSortState(this.compiledSection.transparencyState);
                 bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
                 this.compiledSection.transparencyState = bufferbuilder.getSortState();

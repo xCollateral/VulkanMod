@@ -1,29 +1,48 @@
 package net.vulkanmod.mixin.chunk;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
+import com.mojang.math.Vector3d;
 import com.mojang.math.Vector3f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
+import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FogType;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.render.SkyBoxVBO;
 import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -32,6 +51,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 
 @Mixin(value = LevelRenderer.class, priority = 999)
@@ -49,7 +71,7 @@ public abstract class LevelRendererMixin {
 
     /** @author /*** @reason */
 
-    @Overwrite BufferBuilder.RenderedBuffer drawStars(BufferBuilder bufferBuilder) {return null;};
+    @Overwrite BufferBuilder.RenderedBuffer drawStars(BufferBuilder bufferBuilder) {return null;}
 
     @Shadow protected abstract boolean doesMobEffectBlockSky(Camera camera);
 
@@ -61,6 +83,50 @@ public abstract class LevelRendererMixin {
     @Shadow protected abstract void deinitTransparency();
 
 //    private WorldRenderer worldRenderer;
+
+    @Shadow private @Nullable ClientLevel level;
+    @Shadow @Final private BlockEntityRenderDispatcher blockEntityRenderDispatcher;
+    @Shadow @Final private Minecraft minecraft;
+    @Shadow @Final private EntityRenderDispatcher entityRenderDispatcher;
+    @Shadow private @Nullable Frustum capturedFrustum;
+    @Shadow @Final private Vector3d frustumPos;
+    @Shadow private Frustum cullingFrustum;
+    @Shadow private boolean captureFrustum;
+
+    @Shadow protected abstract void captureFrustum(Matrix4f matrix4f, Matrix4f matrix4f2, double d, double e, double f, Frustum frustum);
+
+    @Shadow private int renderedEntities;
+    @Shadow private int culledEntities;
+    @Shadow private @Nullable RenderTarget itemEntityTarget;
+    @Shadow private @Nullable RenderTarget weatherTarget;
+
+    @Shadow protected abstract boolean shouldShowEntityOutlines();
+
+    @Shadow private @Nullable RenderTarget entityTarget;
+    @Shadow @Final private RenderBuffers renderBuffers;
+
+    @Shadow protected abstract void checkPoseStack(PoseStack poseStack);
+
+    @Shadow @Final private ObjectArrayList<LevelRenderer.RenderChunkInfo> renderChunksInFrustum;
+    @Shadow @Final private Set<BlockEntity> globalBlockEntities;
+    @Shadow private @Nullable PostChain entityEffect;
+
+    @Shadow protected abstract void renderHitOutline(PoseStack poseStack, VertexConsumer vertexConsumer, Entity entity, double d, double e, double f, BlockPos blockPos, BlockState blockState);
+
+    @Shadow private @Nullable PostChain transparencyChain;
+    @Shadow private @Nullable RenderTarget translucentTarget;
+    @Shadow private @Nullable RenderTarget particlesTarget;
+    @Shadow private @Nullable RenderTarget cloudsTarget;
+
+    @Shadow public abstract void renderClouds(PoseStack poseStack, Matrix4f matrix4f, float f, double d, double e, double g);
+
+    @Shadow protected abstract void renderSnowAndRain(LightTexture lightTexture, float f, double d, double e, double g);
+
+    @Shadow protected abstract void renderWorldBorder(Camera camera);
+
+    @Shadow protected abstract void renderDebug(Camera camera);
+
+    @Shadow protected abstract void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource);
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(Minecraft minecraft, EntityRenderDispatcher entityRenderDispatcher, BlockEntityRenderDispatcher blockEntityRenderDispatcher, RenderBuffers renderBuffers, CallbackInfo ci) {
@@ -329,8 +395,316 @@ public abstract class LevelRendererMixin {
     }
     @Inject(method = "renderLevel", at=@At(value="RETURN"))
     private void renderChunkLayer(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-        deinitTransparency();
-        WorldRenderer.renderChunkLayer(RenderType.translucent(), poseStack, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, matrix4f);
+//        deinitTransparency();
+//        WorldRenderer.renderChunkLayer(RenderType.translucent(), poseStack, camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, matrix4f);
+    }
+
+    @Overwrite
+    public void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f) {
+        RenderSystem.setShaderGameTime(this.level.getGameTime(), f);
+        this.blockEntityRenderDispatcher.prepare(this.level, camera, this.minecraft.hitResult);
+        this.entityRenderDispatcher.prepare(this.level, camera, this.minecraft.crosshairPickEntity);
+        ProfilerFiller profilerFiller = this.level.getProfiler();
+        profilerFiller.popPush("light_update_queue");
+        this.level.pollLightUpdates();
+        profilerFiller.popPush("light_updates");
+        boolean bl2 = this.level.isLightUpdateQueueEmpty();
+        this.level.getChunkSource().getLightEngine().runUpdates(Integer.MAX_VALUE, bl2, true);
+        final Vec3 vec3 = camera.getPosition();
+        final double d = vec3.x();
+        final double e = vec3.y();
+        final double g = vec3.z();
+        Matrix4f matrix4f2 = poseStack.last().pose();
+        profilerFiller.popPush("culling");
+        boolean bl3 = this.capturedFrustum != null;
+        Frustum frustum;
+        if (bl3) {
+            frustum = this.capturedFrustum;
+            frustum.prepare(this.frustumPos.x, this.frustumPos.y, this.frustumPos.z);
+        } else {
+            frustum = this.cullingFrustum;
+        }
+
+        this.minecraft.getProfiler().popPush("captureFrustum");
+        if (this.captureFrustum) {
+            this.captureFrustum(matrix4f2, matrix4f, vec3.x, vec3.y, vec3.z, bl3 ? new Frustum(matrix4f2, matrix4f) : frustum);
+            this.captureFrustum = false;
+        }
+
+        profilerFiller.popPush("clear");
+        FogRenderer.setupColor(camera, f, this.minecraft.level, this.minecraft.options.getEffectiveRenderDistance(), gameRenderer.getDarkenWorldAmount(f));
+        FogRenderer.levelFogColor();
+        RenderSystem.clear(16640, Minecraft.ON_OSX);
+        float h = gameRenderer.getRenderDistance();
+        boolean bl4 = this.minecraft.level.effects().isFoggyAt(Mth.floor(d), Mth.floor(e)) || this.minecraft.gui.getBossOverlay().shouldCreateWorldFog();
+        profilerFiller.popPush("sky");
+        RenderSystem.setShader(GameRenderer::getPositionShader);
+        this.renderSky(poseStack, matrix4f, f, camera, bl4, () -> {
+            FogRenderer.setupFog(camera, FogRenderer.FogMode.FOG_SKY, h, bl4, f);
+        });
+        if(!Config.noFog) {
+            profilerFiller.popPush("fog");
+            FogRenderer.setupFog(camera, FogRenderer.FogMode.FOG_TERRAIN, Math.max(h, 32.0F), bl4, f);
+        }
+        profilerFiller.popPush("terrain_setup");
+        this.setupRender(camera, frustum, bl3, this.minecraft.player.isSpectator());
+        profilerFiller.popPush("compilechunks");
+        this.compileChunks(camera);
+        profilerFiller.popPush("terrain");
+        this.renderChunkLayer(RenderType.solid(), poseStack, d, e, g, matrix4f);
+        this.renderChunkLayer(RenderType.cutoutMipped(), poseStack, d, e, g, matrix4f);
+        this.renderChunkLayer(RenderType.cutout(), poseStack, d, e, g, matrix4f);
+        if (this.level.effects().constantAmbientLight()) {
+            Lighting.setupNetherLevel(poseStack.last().pose());
+        } else {
+            Lighting.setupLevel(poseStack.last().pose());
+        }
+
+        profilerFiller.popPush("entities");
+        this.renderedEntities = 0;
+        this.culledEntities = 0;
+        if (this.itemEntityTarget != null) {
+            this.itemEntityTarget.clear(Minecraft.ON_OSX);
+            this.itemEntityTarget.copyDepthFrom(this.minecraft.getMainRenderTarget());
+            this.minecraft.getMainRenderTarget().bindWrite(false);
+        }
+
+        if (this.weatherTarget != null) {
+            this.weatherTarget.clear(Minecraft.ON_OSX);
+        }
+
+        if (this.shouldShowEntityOutlines()) {
+            this.entityTarget.clear(Minecraft.ON_OSX);
+            this.minecraft.getMainRenderTarget().bindWrite(false);
+        }
+
+        boolean bl5 = false;
+        MultiBufferSource.BufferSource bufferSource = this.renderBuffers.bufferSource();
+        Iterator<Entity> var26 = this.level.entitiesForRendering().iterator();
+
+        while (true) {
+            Entity entity;
+            int m;
+            do {
+                BlockPos blockPos;
+                do {
+                    do {
+                        do {
+                            if (!var26.hasNext()) {
+                                bufferSource.endLastBatch();
+                                this.checkPoseStack(poseStack);
+                                bufferSource.endBatch(RenderType.entitySolid(TextureAtlas.LOCATION_BLOCKS));
+                                bufferSource.endBatch(RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS));
+                                bufferSource.endBatch(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS));
+                                bufferSource.endBatch(RenderType.entitySmoothCutout(TextureAtlas.LOCATION_BLOCKS));
+                                profilerFiller.popPush("blockentities");
+                                ObjectListIterator<LevelRenderer.RenderChunkInfo> var40 = this.renderChunksInFrustum.iterator();
+
+                                while (true) {
+                                    List<BlockEntity> list;
+                                    do {
+                                        if (!var40.hasNext()) {
+                                            synchronized (this.globalBlockEntities) {
+
+                                                for (BlockEntity blockEntity2 : this.globalBlockEntities) {
+                                                    BlockPos blockPos3 = blockEntity2.getBlockPos();
+                                                    poseStack.pushPose();
+                                                    poseStack.translate(blockPos3.getX() - d, blockPos3.getY() - e, blockPos3.getZ() - g);
+                                                    this.blockEntityRenderDispatcher.render(blockEntity2, f, poseStack, bufferSource);
+                                                    poseStack.popPose();
+                                                }
+                                            }
+
+                                            this.checkPoseStack(poseStack);
+                                            bufferSource.endBatch(RenderType.solid());
+                                            bufferSource.endBatch(RenderType.endPortal());
+                                            bufferSource.endBatch(RenderType.endGateway());
+                                            bufferSource.endBatch(Sheets.solidBlockSheet());
+                                            bufferSource.endBatch(Sheets.cutoutBlockSheet());
+                                            bufferSource.endBatch(Sheets.bedSheet());
+                                            bufferSource.endBatch(Sheets.shulkerBoxSheet());
+                                            bufferSource.endBatch(Sheets.signSheet());
+                                            bufferSource.endBatch(Sheets.chestSheet());
+                                            this.renderBuffers.outlineBufferSource().endOutlineBatch();
+                                            if (bl5) {
+                                                this.entityEffect.process(f);
+                                                this.minecraft.getMainRenderTarget().bindWrite(false);
+                                            }
+
+                                            profilerFiller.popPush("destroyProgress");
+
+                                            for (Long2ObjectMap.Entry<SortedSet<BlockDestructionProgress>> sortedSetEntry : this.destructionProgress.long2ObjectEntrySet()) {
+                                                blockPos = BlockPos.of(sortedSetEntry.getLongKey());
+                                                double o = blockPos.getX() - d;
+                                                double p = blockPos.getY() - e;
+                                                double q = blockPos.getZ() - g;
+                                                if (!(o * o + p * p + q * q > 1024.0)) {
+                                                    SortedSet<BlockDestructionProgress> sortedSet2 = sortedSetEntry.getValue();
+                                                    if (sortedSet2 != null && !sortedSet2.isEmpty()) {
+                                                        int r = sortedSet2.last().getProgress();
+                                                        poseStack.pushPose();
+                                                        poseStack.translate(blockPos.getX() - d, blockPos.getY() - e, blockPos.getZ() - g);
+                                                        PoseStack.Pose pose2 = poseStack.last();
+                                                        VertexConsumer vertexConsumer2 = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(r)), pose2.pose(), pose2.normal());
+                                                        this.minecraft.getBlockRenderer().renderBreakingTexture(this.level.getBlockState(blockPos), blockPos, this.level, poseStack, vertexConsumer2);
+                                                        poseStack.popPose();
+                                                    }
+                                                }
+                                            }
+
+                                            this.checkPoseStack(poseStack);
+                                            HitResult hitResult = this.minecraft.hitResult;
+                                            if (bl && hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+                                                profilerFiller.popPush("outline");
+                                                BlockPos blockPos4 = ((BlockHitResult) hitResult).getBlockPos();
+                                                BlockState blockState = this.level.getBlockState(blockPos4);
+                                                if (!blockState.isAir() && this.level.getWorldBorder().isWithinBounds(blockPos4)) {
+                                                    VertexConsumer vertexConsumer3 = bufferSource.getBuffer(RenderType.lines());
+                                                    this.renderHitOutline(poseStack, vertexConsumer3, camera.getEntity(), d, e, g, blockPos4, blockState);
+                                                }
+                                            }
+
+                                            PoseStack poseStack2 = RenderSystem.getModelViewStack();
+                                            poseStack2.pushPose();
+                                            poseStack2.mulPoseMatrix(poseStack.last().pose());
+                                            RenderSystem.applyModelViewMatrix();
+                                            this.minecraft.debugRenderer.render(poseStack, bufferSource, d, e, g);
+                                            poseStack2.popPose();
+                                            RenderSystem.applyModelViewMatrix();
+                                            bufferSource.endBatch(Sheets.translucentCullBlockSheet());
+                                            bufferSource.endBatch(Sheets.bannerSheet());
+                                            bufferSource.endBatch(Sheets.shieldSheet());
+                                            bufferSource.endBatch(RenderType.armorGlint());
+                                            bufferSource.endBatch(RenderType.armorEntityGlint());
+                                            bufferSource.endBatch(RenderType.glint());
+                                            bufferSource.endBatch(RenderType.glintDirect());
+                                            bufferSource.endBatch(RenderType.glintTranslucent());
+                                            bufferSource.endBatch(RenderType.entityGlint());
+                                            bufferSource.endBatch(RenderType.entityGlintDirect());
+                                            bufferSource.endBatch(RenderType.waterMask());
+                                            this.renderBuffers.crumblingBufferSource().endBatch();
+                                            //Lines and partcules must be drawn before and  after the chunkLayer respectively to be properly Visible
+                                            //Not sure if transparencyChain is needed as the layers seem to render fine without depth Clearing.Copying
+                                             {
+                                                profilerFiller.popPush("translucent");
+                                                if (this.translucentTarget != null) {
+                                                    this.translucentTarget.clear(Minecraft.ON_OSX);
+                                                }
+
+
+                                                profilerFiller.popPush("string");
+//                                                this.renderChunkLayer(RenderType.tripwire(), poseStack, d, e, g, matrix4f);
+                                                profilerFiller.popPush("particles");
+                                                 deinitTransparency();
+                                                 this.minecraft.particleEngine.render(poseStack, bufferSource, lightTexture, camera, f);
+                                                 WorldRenderer.renderChunkLayer(RenderType.translucent(), poseStack, d, e, g, matrix4f);
+                                                bufferSource.endBatch(RenderType.lines());
+                                                bufferSource.endBatch();
+
+                                            }
+
+                                            poseStack2.pushPose();
+                                            poseStack2.mulPoseMatrix(poseStack.last().pose());
+                                            RenderSystem.applyModelViewMatrix();
+                                            if (this.minecraft.options.getCloudsType() != CloudStatus.OFF) {
+                                                if (this.transparencyChain != null) {
+                                                    this.cloudsTarget.clear(Minecraft.ON_OSX);
+                                                    RenderStateShard.CLOUDS_TARGET.setupRenderState();
+                                                    profilerFiller.popPush("clouds");
+                                                    this.renderClouds(poseStack, matrix4f, f, d, e, g);
+                                                    RenderStateShard.CLOUDS_TARGET.clearRenderState();
+                                                } else {
+                                                    profilerFiller.popPush("clouds");
+                                                    RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
+                                                    this.renderClouds(poseStack, matrix4f, f, d, e, g);
+                                                }
+                                            }
+
+                                            if (this.transparencyChain != null) {
+                                                RenderStateShard.WEATHER_TARGET.setupRenderState();
+                                                profilerFiller.popPush("weather");
+                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
+                                                this.renderWorldBorder(camera);
+                                                RenderStateShard.WEATHER_TARGET.clearRenderState();
+                                                this.transparencyChain.process(f);
+                                                this.minecraft.getMainRenderTarget().bindWrite(false);
+                                            } else {
+                                                RenderSystem.depthMask(false);
+                                                profilerFiller.popPush("weather");
+                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
+                                                this.renderWorldBorder(camera);
+                                                RenderSystem.depthMask(true);
+                                            }
+
+                                            this.renderDebug(camera);
+                                            RenderSystem.depthMask(true);
+                                            RenderSystem.disableBlend();
+                                            poseStack2.popPose();
+                                            RenderSystem.applyModelViewMatrix();
+                                            FogRenderer.setupNoFog();
+                                            return;
+                                        }
+
+                                        LevelRenderer.RenderChunkInfo renderChunkInfo = var40.next();
+                                        list = renderChunkInfo.chunk.getCompiledChunk().getRenderableBlockEntities();
+                                    } while (list.isEmpty());
+
+                                    for (BlockEntity o : list) {
+                                        BlockPos blockPos2 = o.getBlockPos();
+                                        MultiBufferSource multiBufferSource2 = bufferSource;
+                                        poseStack.pushPose();
+                                        poseStack.translate(blockPos2.getX() - d, blockPos2.getY() - e, blockPos2.getZ() - g);
+                                        SortedSet<BlockDestructionProgress> sortedSet = this.destructionProgress.get(blockPos2.asLong());
+                                        if (sortedSet != null && !sortedSet.isEmpty()) {
+                                            m = sortedSet.last().getProgress();
+                                            if (m >= 0) {
+                                                PoseStack.Pose pose = poseStack.last();
+                                                VertexConsumer vertexConsumer = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(m)), pose.pose(), pose.normal());
+                                                multiBufferSource2 = (renderType) -> {
+                                                    VertexConsumer vertexConsumer2 = bufferSource.getBuffer(renderType);
+                                                    return renderType.affectsCrumbling() ? VertexMultiConsumer.create(vertexConsumer, vertexConsumer2) : vertexConsumer2;
+                                                };
+                                            }
+                                        }
+
+                                        this.blockEntityRenderDispatcher.render(o, f, poseStack, multiBufferSource2);
+                                        poseStack.popPose();
+                                    }
+                                }
+                            }
+
+                            entity = var26.next();
+                        } while (!this.entityRenderDispatcher.shouldRender(entity, frustum, d, e, g) && !entity.hasIndirectPassenger(this.minecraft.player));
+
+                        blockPos = entity.blockPosition();
+                    } while (!this.level.isOutsideBuildHeight(blockPos.getY()) && !this.isChunkCompiled(blockPos));
+                } while (entity == camera.getEntity() && !camera.isDetached() && (!(camera.getEntity() instanceof LivingEntity) || !((LivingEntity) camera.getEntity()).isSleeping()));
+            } while (entity instanceof LocalPlayer && camera.getEntity() != entity);
+
+            ++this.renderedEntities;
+            if (entity.tickCount == 0) {
+                entity.xOld = entity.getX();
+                entity.yOld = entity.getY();
+                entity.zOld = entity.getZ();
+            }
+
+            Object multiBufferSource;
+            if (this.shouldShowEntityOutlines() && this.minecraft.shouldEntityAppearGlowing(entity)) {
+                bl5 = true;
+                OutlineBufferSource outlineBufferSource = this.renderBuffers.outlineBufferSource();
+                multiBufferSource = outlineBufferSource;
+                int i = entity.getTeamColor();
+//                int j = true;
+                int k = i >> 16 & 255;
+                m = i >> 8 & 255;
+                int n = i & 255;
+                outlineBufferSource.setColor(k, m, n, 255);
+            } else {
+                multiBufferSource = bufferSource;
+            }
+
+            this.renderEntity(entity, d, e, g, f, poseStack, (MultiBufferSource) multiBufferSource);
+        }
     }
 
     /**

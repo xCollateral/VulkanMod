@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.world.phys.AABB;
-import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -64,8 +63,8 @@ public class VBO {
 
         indirectCommand = VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) //ALIGN and SIZEOF are NULL due to a bug in LWJGL
                 .indexCount(parameters.indexCount())
-                .vertexOffset(configureVertexFormat(buffer.vertexBuffer()))
-                .firstIndex(configureIndexBuffer(buffer.indexBuffer()))
+                .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : addSubIncr.i2>>5)
+                .firstIndex(configureIndexBuffer(parameters.sequentialIndex(), buffer.indexBuffer()))
                 .firstInstance(0)
                 .instanceCount(this.indexCount != 0 ? 1 : 0); //Cull if Empty
         ;
@@ -103,9 +102,20 @@ public class VBO {
         }
     }
 
-    private int configureIndexBuffer(ByteBuffer data) {
+    private int configureIndexBuffer(boolean seqIdx, ByteBuffer data) {
         {
-            if(indexBuffer==null || indexBuffer.size_t <data.remaining())
+            if(seqIdx)
+            {
+                AutoIndexBuffer autoIndexBuffer;
+                if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
+                    autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
+                } else {
+                    autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
+                    this.indexCount = (vertexCount - 2) * 3;
+                }
+                data=autoIndexBuffer.getBuffer();
+            }
+            if(seqIdx || indexBuffer==null || indexBuffer.size_t <data.remaining())
             {
                 if(indexBuffer != null) VirtualBufferIdx.addFreeableRange(indexBuffer);
                 indexBuffer=VirtualBufferIdx.addSubIncr(data.remaining());

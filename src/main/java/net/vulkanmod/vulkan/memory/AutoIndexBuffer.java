@@ -10,6 +10,12 @@ public class AutoIndexBuffer {
     DrawType drawType;
     IndexBuffer indexBuffer;
 
+    public ByteBuffer getBuffer() {
+        return buffer;
+    }
+
+    private ByteBuffer buffer;
+
     public AutoIndexBuffer(int vertexCount, DrawType type) {
         this.drawType = type;
 
@@ -19,7 +25,6 @@ public class AutoIndexBuffer {
     private void createIndexBuffer(int vertexCount) {
         this.vertexCount = vertexCount;
         int size;
-        ByteBuffer buffer;
 
         switch (drawType) {
             case QUADS -> {

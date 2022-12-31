@@ -206,16 +206,18 @@ public class Options {
                         Use to Adjust VBO Alignment
                         Can only be Adjusted in Powers of 2
                         Value is Equal to 2^Value (e.g. 2^16=65536)
-                        Used to reduce Fragmentation when suballocating VBOs
-                        reduce this value to reduce memory usage/inefficiency
-                        but in exchange increases fragmentation which may lead to glitches/weird issues""")),
+                        Larger values increase memory usage but may reduce Fragmentation when suballocating VBOs
+                        """)),
                 new SwitchOption("noFog",
                         value -> {
 
                             Config.noFog=value;
 
                         }, () -> Config.noFog)
-                        .setTooltip(Component.nullToEmpty("")),
+                        .setTooltip(Component.nullToEmpty("""
+                        Disables all forms of Fog when enabled
+                        Uses an alternate shader with all fog effects removed
+                        May increase performance slightly""")),
         };
 
     }
