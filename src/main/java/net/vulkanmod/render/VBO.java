@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.world.phys.AABB;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -147,12 +146,12 @@ public class VBO {
             VirtualBufferIdx.addFreeableRange(indexBuffer);
             indexBuffer = null;
         }
-        indirectCommand.free();
-        indirectCommand=null;
 
         this.vertexCount = 0;
         this.indexCount = 0;
-        RHandler.uniqueVBOs.remove(this);
+        RHandler.drawCommands.remove(indirectCommand);
+        indirectCommand.free();
+        indirectCommand=null;
         preInitialised=true;
     }
 

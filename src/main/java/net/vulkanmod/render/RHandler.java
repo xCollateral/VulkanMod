@@ -4,12 +4,11 @@ package net.vulkanmod.render;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.core.Vec3i;
 
 import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -18,7 +17,7 @@ public class RHandler
 
 //    private static final LevelRenderer worldRenderer = Minecraft.getInstance().levelRenderer;
     //    public static ObjectArrayList<VBO> drawCommands=new ObjectArrayList<>(1024);
-    public static ObjectArrayList<VBO> uniqueVBOs=new ObjectArrayList<>(1024);
+    public static ObjectArrayList<VkDrawIndexedIndirectCommand> drawCommands =new ObjectArrayList<>(1024);
     public static int loadedVBOs;
     public static int totalVBOs;
     public static double camX;

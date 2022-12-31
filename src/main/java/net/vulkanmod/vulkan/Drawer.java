@@ -44,7 +44,7 @@ public class Drawer {
 
     private static final PointerBuffer imageAvailableSemaphores = MemoryUtil.memAllocPointer(MAX_FRAMES_IN_FLIGHT);
     private static final PointerBuffer renderFinishedSemaphores = MemoryUtil.memAllocPointer(MAX_FRAMES_IN_FLIGHT);
-    private static final PointerBuffer inFlightFences = MemoryUtil.memAllocPointer(MAX_FRAMES_IN_FLIGHT);
+    public static final PointerBuffer inFlightFences = MemoryUtil.memAllocPointer(MAX_FRAMES_IN_FLIGHT);
 
     private static final int commandBuffersCount = Vulkan.getSwapChainFramebuffers().size();
     private static final boolean[] activeCommandBuffers = new boolean[Vulkan.getSwapChainFramebuffers().size()];

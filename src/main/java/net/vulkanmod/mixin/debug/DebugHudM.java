@@ -70,7 +70,7 @@ public abstract class DebugHudM {
         strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
-        strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
+        strings.add("Loaded VBOs: " + RHandler.drawCommands.size());
         strings.add("");
 
         strings.add("\u00018 Vertex-Buffers");

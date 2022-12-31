@@ -38,6 +38,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -347,7 +348,7 @@ public class WorldRenderer {
             return;
         }*/
 
-        RHandler.uniqueVBOs.clear();
+        RHandler.drawCommands.clear();
 
         //TODO later: find a better way
         for(QueueChunkInfo chunkInfo : sectionsInFrustum) {
@@ -362,7 +363,7 @@ public class WorldRenderer {
             }
             //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
             //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
-            if (!renderSection.vbo.preInitialised) RHandler.uniqueVBOs.add(renderSection.vbo);
+            if (!renderSection.vbo.preInitialised) RHandler.drawCommands.add(renderSection.vbo.indirectCommand);
         }
 
         minecraft.getProfiler().popPush("upload");
@@ -439,8 +440,8 @@ public class WorldRenderer {
 
     public static void resetAllBuffers(int size) {
         TaskDispatcher.resetting=true;
-        RHandler.uniqueVBOs.clear();
-        vkDeviceWaitIdle(Vulkan.getDevice());
+        RHandler.drawCommands.clear();
+        nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
         VirtualBuffer.reset(size);
         VirtualBufferIdx.reset(size/8);
         TaskDispatcher.resetting=false;
@@ -583,7 +584,7 @@ public class WorldRenderer {
             VK10.nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(commandBuffer, VirtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
         }
-        for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
+        for (int i = RHandler.drawCommands.size() - 1; i >= 0; i--) {
 
 
 //            BlockPos blockpos = a.origin;
@@ -591,8 +592,7 @@ public class WorldRenderer {
 //            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
 //            Drawer.pushConstants(pipeline);
             ////
-            VBO vbo = RHandler.uniqueVBOs.get(i);
-            if(vbo.indexCount!=0) Drawer.drawIndexedBindless(vbo.indirectCommand);
+            Drawer.drawIndexedBindless(RHandler.drawCommands.get(i));
 
 //            flag1 = true;
         }
