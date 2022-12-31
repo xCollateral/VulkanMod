@@ -60,9 +60,9 @@ public class SkyBoxVBO {
 
             AutoIndexBuffer autoIndexBuffer;
             if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
-                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
+                autoIndexBuffer = Drawer.getQuadsIndexBuffer();
             } else {
-                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
+                autoIndexBuffer = Drawer.getTriangleFanIndexBuffer();
                 this.indexCount = (vertexCount - 2) * 3;
             }
 
@@ -84,7 +84,7 @@ public class SkyBoxVBO {
 
             VRenderSystem.applyMVP(MV, P);
 
-            Drawer.getInstance().draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
+            Drawer.draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
 
             VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 

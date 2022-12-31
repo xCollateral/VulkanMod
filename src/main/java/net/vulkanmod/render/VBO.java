@@ -29,12 +29,12 @@ public class VBO {
     public boolean translucent=false;
     //    private VertexBuffer vertexBuffer;
     private VkBufferPointer indexBuffer;
-    private int indexCount;
+    public int indexCount;
     private int vertexCount;
     private VertexFormat.Mode mode;
 //    private VertexFormat vertexFormat;
 
-    private boolean autoIndexed = false;
+    private final boolean autoIndexed = false;
 
     public boolean preInitialised = true;
     public VkDrawIndexedIndirectCommand indirectCommand;
@@ -61,13 +61,13 @@ public class VBO {
 //        this.configureVertexFormat(buffer.vertexBuffer());
 //        this.configureIndexBuffer(buffer.indexBuffer());
 
-        indirectCommand = VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) //ALIGN and SIZEOF are NULL due to a bug in LWJGL
+        indirectCommand = indirectCommand==null ? VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) : indirectCommand;//ALIGN and SIZEOF are NULL due to a bug in LWJGL
+        indirectCommand
                 .indexCount(parameters.indexCount())
                 .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : addSubIncr.i2>>5)
                 .firstIndex(configureIndexBuffer(parameters.sequentialIndex(), buffer.indexBuffer()))
                 .firstInstance(0)
                 .instanceCount(this.indexCount != 0 ? 1 : 0); //Cull if Empty
-        ;
 
         if(!buffer.released) buffer.release();
 
@@ -108,9 +108,9 @@ public class VBO {
             {
                 AutoIndexBuffer autoIndexBuffer;
                 if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
-                    autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
+                    autoIndexBuffer = Drawer.getQuadsIndexBuffer();
                 } else {
-                    autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
+                    autoIndexBuffer = Drawer.getTriangleFanIndexBuffer();
                     this.indexCount = (vertexCount - 2) * 3;
                 }
                 data=autoIndexBuffer.getBuffer();
@@ -148,6 +148,7 @@ public class VBO {
             indexBuffer = null;
         }
         indirectCommand.free();
+        indirectCommand=null;
 
         this.vertexCount = 0;
         this.indexCount = 0;

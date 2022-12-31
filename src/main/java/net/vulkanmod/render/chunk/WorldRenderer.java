@@ -569,12 +569,12 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(pose, projection);
 
 
-        Drawer drawer = Drawer.getInstance();
+//        Drawer drawer = Drawer.getInstance();
         ShaderInstance rendertypeCutoutMippedShader = Config.noFog ? GameRenderer.getRendertypeCutoutMippedShader() : GameRenderer.getRendertypeTripwireShader();
         Pipeline pipeline = ((ShaderMixed) rendertypeCutoutMippedShader).getPipeline();
-        drawer.bindPipeline(pipeline);
+        Drawer.bindPipeline(pipeline);
 
-        drawer.uploadAndBindUBOs(pipeline);
+        Drawer.uploadAndBindUBOs(pipeline);
 
 //        Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
 //        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;
@@ -596,7 +596,8 @@ public class WorldRenderer {
 //            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
 //            Drawer.pushConstants(pipeline);
             ////
-            Drawer.drawIndexedBindless(RHandler.uniqueVBOs.get(i).indirectCommand);
+            VBO vbo = RHandler.uniqueVBOs.get(i);
+            if(vbo.indexCount!=0) Drawer.drawIndexedBindless(vbo.indirectCommand);
 
 //            flag1 = true;
         }

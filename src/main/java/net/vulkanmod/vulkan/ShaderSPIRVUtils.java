@@ -46,7 +46,8 @@ public class ShaderSPIRVUtils {
             throw new RuntimeException("Failed to create compiler options");
         }
 
-//        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+        shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
 
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 

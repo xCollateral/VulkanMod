@@ -46,8 +46,8 @@ public class BufferRendererM {
 //      Drawer.setModelViewMatrix(RenderSystem.getModelViewMatrix());
 //      Drawer.setProjectionMatrix(RenderSystem.getProjectionMatrix());
 
-        Drawer drawer = Drawer.getInstance();
-        drawer.draw(buffer.vertexBuffer(), glMode, parameters.format(), parameters.vertexCount());
+//        Drawer drawer = Drawer.getInstance();
+        Drawer.draw(buffer.vertexBuffer(), glMode, parameters.format(), parameters.vertexCount());
     }
 
 

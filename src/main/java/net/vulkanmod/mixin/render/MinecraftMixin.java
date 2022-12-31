@@ -66,15 +66,15 @@ public class MinecraftMixin {
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", shift = At.Shift.BEFORE))
     private void beginRender(boolean tick, CallbackInfo ci) {
-        Drawer drawer = Drawer.getInstance();
-        drawer.initiateRenderPass();
+//        Drawer drawer = Drawer.getInstance();
+        Drawer.initiateRenderPass();
     }
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
     private void submitRender(boolean tick, CallbackInfo ci) {
-        Drawer drawer = Drawer.getInstance();
-        drawer.endRenderPass();
-        drawer.submitDraw();
+//        Drawer drawer = Drawer.getInstance();
+        Drawer.endRenderPass();
+        Drawer.submitDraw();
     }
 
     @Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)

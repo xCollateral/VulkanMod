@@ -159,7 +159,7 @@ public class Vulkan {
     private static VkQueue graphicsQueue;
     private static VkQueue presentQueue;
 
-    private static final int frameQueueSize = Initializer.CONFIG.frameQueueSize;
+    static final int frameQueueSize = Initializer.CONFIG.frameQueueSize;
 
     private static long swapChain;
     private static List<Long> swapChainImages;
@@ -241,7 +241,7 @@ public class Vulkan {
         vkDeviceWaitIdle(device);
         vkDestroyCommandPool(device, commandPool, null);
         vkDestroyCommandPool(device, TransferQueue.getCommandPool(), null);
-
+        Drawer.cleanUp();
         TransferQueue.cleanUp();
 
         vkDestroyDevice(device, null);
@@ -465,6 +465,7 @@ public class Vulkan {
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
+            allocatorCreateInfo.vulkanApiVersion(VK_API_VERSION_1_1);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 

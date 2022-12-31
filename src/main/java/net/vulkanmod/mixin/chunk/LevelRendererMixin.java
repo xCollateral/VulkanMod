@@ -602,18 +602,16 @@ public abstract class LevelRendererMixin {
                                             poseStack2.popPose();
                                             RenderSystem.applyModelViewMatrix();
                                             {
-                                                profilerFiller.popPush("translucent");
-                                                if (this.translucentTarget != null) {
-                                                    this.translucentTarget.clear(Minecraft.ON_OSX);
-                                                }
 
 
-                                                profilerFiller.popPush("string");
+
+//                                                profilerFiller.popPush("string");
 //                                                this.renderChunkLayer(RenderType.tripwire(), poseStack, d, e, g, matrix4f);
+                                                deinitTransparency();
                                                 profilerFiller.popPush("particles");
-                                                 deinitTransparency();
-                                                 this.minecraft.particleEngine.render(poseStack, bufferSource, lightTexture, camera, f);
-                                                 WorldRenderer.renderChunkLayer(RenderType.translucent(), poseStack, d, e, g, matrix4f);
+                                                this.minecraft.particleEngine.render(poseStack, bufferSource, lightTexture, camera, f);
+                                                profilerFiller.popPush("translucent");
+                                                WorldRenderer.renderChunkLayer(RenderType.translucent(), poseStack, d, e, g, matrix4f);
                                                 bufferSource.endBatch(RenderType.lines());
                                                 bufferSource.endBatch();
 
