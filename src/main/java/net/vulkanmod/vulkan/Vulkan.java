@@ -420,6 +420,7 @@ public class Vulkan {
 
             VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
             deviceFeatures.samplerAnisotropy(true);
+            deviceFeatures.multiDrawIndirect(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 

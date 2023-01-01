@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
+import net.vulkanmod.render.RHandler;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.PushConstant;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -81,6 +82,7 @@ public class Drawer {
         imageAvailableSemaphores.free();
         renderFinishedSemaphores.free();
         inFlightFences.free();
+        RHandler.drawCommands.free();
     }
 
     public static void draw(ByteBuffer buffer, int drawMode, VertexFormat vertexFormat, int vertexCount)
@@ -464,6 +466,14 @@ public class Drawer {
 //            Profiler.Push("draw");
             vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
         }
+    }
+
+    public static void drawIndexedBindlessIndirect() {
+
+
+//            Profiler.Push("draw");
+        vkCmdDrawIndexedIndirect(commandBuffers.get(currentFrame), RHandler.drawCmdBuffer, 0, RHandler.uniqueVBOs.size(), 20);
+
     }
     public static void drawIndexedBindless(VkDrawIndexedIndirectCommand indirectCommand) {
 

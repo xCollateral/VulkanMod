@@ -4,10 +4,12 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.core.BlockPos;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.*;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
@@ -16,12 +18,12 @@ import java.nio.ByteBuffer;
 import static net.vulkanmod.vulkan.Vulkan.copyStagingtoLocalBuffer;
 
 @Environment(EnvType.CLIENT)
-public class VBO {
+public class VBO implements Comparable<VBO> {
     public static final int size_t = 32768;
     private final int index;
-    public float x;
-    public float y;
-    public float z;
+    public int x;
+    public int y;
+    public int z;
 //    public AABB bb;
 
     private VkBufferPointer addSubIncr;
@@ -60,10 +62,11 @@ public class VBO {
 //        this.configureVertexFormat(buffer.vertexBuffer());
 //        this.configureIndexBuffer(buffer.indexBuffer());
 
+        //Don't upload the VertexBuffer again if its just a sort (as its already been uploaded prior during initial upload)
         indirectCommand = indirectCommand==null ? VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) : indirectCommand;//ALIGN and SIZEOF are NULL due to a bug in LWJGL
         indirectCommand
                 .indexCount(parameters.indexCount())
-                .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : addSubIncr.i2>>5)
+                .vertexOffset(!parameters.indexOnly() | !sort? configureVertexFormat(buffer.vertexBuffer()) : addSubIncr.i2>>5)
                 .firstIndex(configureIndexBuffer(parameters.sequentialIndex(), buffer.indexBuffer()))
                 .firstInstance(0)
                 .instanceCount(this.indexCount != 0 ? 1 : 0); //Cull if Empty
@@ -86,10 +89,9 @@ public class VBO {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         {
 
-            if(addSubIncr==null || addSubIncr.size_t<data.remaining())
+            if(addSubIncr == null || addSubIncr.size_t < data.remaining() || !VirtualBuffer.isAlreadyLoaded(index))
             {
-                if(addSubIncr != null) VirtualBuffer.addFreeableRange(addSubIncr);
-                addSubIncr=VirtualBuffer.addSubIncr(data.remaining());
+                addSubIncr=VirtualBuffer.addSubIncr(index, data.remaining());
             }
 
 
@@ -114,10 +116,9 @@ public class VBO {
                 }
                 data=autoIndexBuffer.getBuffer();
             }
-            if(seqIdx || indexBuffer==null || indexBuffer.size_t <data.remaining())
+            if(indexBuffer==null || indexBuffer.size_t <data.remaining() || !VirtualBufferIdx.isAlreadyLoaded(index))
             {
-                if(indexBuffer != null) VirtualBufferIdx.addFreeableRange(indexBuffer);
-                indexBuffer=VirtualBufferIdx.addSubIncr(data.remaining());
+                indexBuffer=VirtualBufferIdx.addSubIncr(index, data.remaining());
             }
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(indexBuffer.size_t, data);
@@ -139,17 +140,17 @@ public class VBO {
     public void close() {
         if(preInitialised) return;
         if(vertexCount <= 0) return;
-        VirtualBuffer.addFreeableRange(addSubIncr);
+        VirtualBuffer.addFreeableRange(index, addSubIncr);
         addSubIncr=null;
 //        vertexBuffer = null;
         {
-            VirtualBufferIdx.addFreeableRange(indexBuffer);
+            VirtualBufferIdx.addFreeableRange(index, indexBuffer);
             indexBuffer = null;
         }
 
         this.vertexCount = 0;
         this.indexCount = 0;
-        RHandler.drawCommands.remove(indirectCommand);
+        RHandler.uniqueVBOs.remove(this);
         indirectCommand.free();
         indirectCommand=null;
         preInitialised=true;
@@ -161,6 +162,21 @@ public class VBO {
         this.y=y;
         this.z=z;
 //        this.bb=bb;
+    }
+    int diff(int num, int num2)  {
+        int a = num-num2;
+        int i1 = a >>> 31;
+
+        return (a^ (i1 ==1 ? -1 : 0))-i1;
+    }
+    @Override
+    public int compareTo(@NotNull VBO o) {
+        BlockPos v = WorldRenderer.minecraft.getCameraEntity().blockPosition();
+        int x=diff(v.getX(),o.x);
+        int z=diff(v.getZ(),o.z);
+        int x_=diff(v.getX(),this.x);
+        int z_=diff(v.getZ(),this.z);
+        return (z_+x_)-(z + x);
     }
 
     /*public VertexFormat getFormat() {

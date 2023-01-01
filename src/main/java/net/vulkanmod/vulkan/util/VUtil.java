@@ -1,9 +1,6 @@
 package net.vulkanmod.vulkan.util;
 
-import net.vulkanmod.vulkan.Vulkan;
 import org.joml.Matrix4f;
-import org.joml.Vector4f;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -11,8 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.util.vma.Vma.vmaMapMemory;
-import static org.lwjgl.util.vma.Vma.vmaUnmapMemory;
 
 public class VUtil {
     public static final int UINT32_MAX = 0xFFFFFFFF;
@@ -45,13 +40,41 @@ public class VUtil {
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
     }
+    public static void memcpy2(long dst, long src, long offset, long size) {
+//        dst.position((int)offset);
+//        dst.put(src);
 
+        MemoryUtil.memCopy((src), (dst)+offset, size);
+//        src.limit(src.capacity()).rewind();
+    }
     public static void memcpy(ByteBuffer dst, ByteBuffer src, long offset) {
         dst.position((int)offset);
 //        dst.put(src);
 
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
+    }
+    public static void memcpy(ByteBuffer dst, long src, long offset, int size) {
+        dst.position((int)offset);
+//        dst.put(src);
+
+        memCopy_(src, MemoryUtil.memAddress(dst), size);
+
+//        src.limit(src.capacity()).rewind();
+    }
+
+    //Stolen from LWJGL MultiReleaseMemCopy.memCopyAligned64()
+    private static void memCopy_(long src, long dst, int bytes) {
+        int i = 0;
+
+
+        for (; i <= bytes - 8; i += 8) MemoryUtil.memPutLong(dst + i, MemoryUtil.memGetLong(src + i));
+
+
+        if (i < bytes) {
+            long a = MemoryUtil.memGetLong(src + i);
+            MemoryUtil.memPutLong(dst + i, a ^ (a ^ MemoryUtil.memGetLong(dst + i)) & -1L << (bytes - i << 3));
+        }
     }
 
     public static void memcpy(ByteBuffer dst, ByteBuffer src, int size, long offset) {

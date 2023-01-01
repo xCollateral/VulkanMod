@@ -218,6 +218,15 @@ public class Options {
                         Disables all forms of Fog when enabled
                         Uses an alternate shader with all fog effects removed
                         May increase performance slightly""")),
+                new SwitchOption("multiDrawIndirect",
+                        value -> {
+
+                            Config.drawIndirect=value;
+
+                        }, () -> Config.drawIndirect)
+                        .setTooltip(Component.nullToEmpty("""
+                        Enable GPUMultiDrawIndirect
+                        May improve or worsen performance: Depends on hardware""")),
         };
 
     }

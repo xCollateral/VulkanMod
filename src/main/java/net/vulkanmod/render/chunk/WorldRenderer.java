@@ -38,6 +38,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -348,6 +349,7 @@ public class WorldRenderer {
             return;
         }*/
 
+        RHandler.uniqueVBOs.clear();
         RHandler.drawCommands.clear();
 
         //TODO later: find a better way
@@ -363,7 +365,7 @@ public class WorldRenderer {
             }
             //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
             //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
-            if (!renderSection.vbo.preInitialised) RHandler.drawCommands.add(renderSection.vbo.indirectCommand);
+            if (!renderSection.vbo.preInitialised) RHandler.uniqueVBOs.add(renderSection.vbo);
         }
 
         minecraft.getProfiler().popPush("upload");
@@ -440,7 +442,7 @@ public class WorldRenderer {
 
     public static void resetAllBuffers(int size) {
         TaskDispatcher.resetting=true;
-        RHandler.drawCommands.clear();
+        RHandler.uniqueVBOs.clear();
         nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
         if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
         VirtualBuffer.reset(size);
@@ -528,7 +530,16 @@ public class WorldRenderer {
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
         translucentSort(renderType, camX, camY, camZ); //may be better to place translucent textures ina separate renderpass and submit it together with the vbos
+        if(Config.drawIndirect)
+        {
+            RHandler.drawCommands.clear();
+            for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
 
+                RHandler.drawCommands.put(RHandler.uniqueVBOs.get(i).indirectCommand);
+
+            }
+            RHandler.AllocIndirectCmds();
+        }
         minecraft.getProfiler().push("filterempty");
         minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
@@ -556,9 +567,9 @@ public class WorldRenderer {
         originZ+= curPosZ;
         {
 
-            pose.m03 += Math.fma(pose.m00, (originX), Math.fma(pose.m01, -camY, pose.m02 * ((originZ))));
-            pose.m13 += Math.fma(pose.m10, (originX), Math.fma(pose.m11, -camY, pose.m12 * ((originZ))));
-            pose.m23 += Math.fma(pose.m20, (originX), Math.fma(pose.m21, -camY, pose.m22 * ((originZ))));
+            pose.m03 += pose.m00* (originX) + pose.m01* -camY +pose.m02 * originZ;
+            pose.m13 += pose.m10* (originX) + pose.m11* -camY +pose.m12 * originZ;
+            pose.m23 += pose.m20* (originX) + pose.m21* -camY +pose.m22 * originZ;
             pose.m33 += 0;
         }
         prevCamX=camX;
@@ -585,19 +596,18 @@ public class WorldRenderer {
             VK10.nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(commandBuffer, VirtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
         }
-        for (int i = RHandler.drawCommands.size() - 1; i >= 0; i--) {
+//        RHandler.uniqueVBOs.unstableSort(null);
 
+        if(!Config.drawIndirect) {
+            for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
 
-//            BlockPos blockpos = a.origin;
-
-//            VRenderSystem.setChunkOffset((a.x - (float)camX), (a.y - (float)camY), (a.z - (float)camZ));
-//            Drawer.pushConstants(pipeline);
-            ////
-            Drawer.drawIndexedBindless(RHandler.drawCommands.get(i));
-
-//            flag1 = true;
+                Drawer.drawIndexedBindless(RHandler.uniqueVBOs.get(i).indirectCommand);
+            }
         }
+        else Drawer.drawIndexedBindlessIndirect();
 
+
+//
         //Need to reset push constant in case the pipeline will still be used for rendering
 //        VRenderSystem.setChunkOffset(0, 0, 0);
 //        drawer.pushConstants(pipeline);

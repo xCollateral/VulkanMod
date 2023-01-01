@@ -70,7 +70,7 @@ public abstract class DebugHudM {
         strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
-        strings.add("Loaded VBOs: " + RHandler.drawCommands.size());
+        strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
         strings.add("");
 
         strings.add("\u00018 Vertex-Buffers");
@@ -91,6 +91,7 @@ public abstract class DebugHudM {
         strings.add("maxVBOSize: " + VirtualBuffer.allocMax);
         strings.add("unusedBytes: " + (VirtualBuffer.size_t-VirtualBuffer.usedBytes));
         strings.add("freeRanges: " + (VirtualBuffer.FreeRanges.size()));
+        strings.add("activeRanges: " + (VirtualBuffer.activeRanges.size()));
 
         strings.add("");
         strings.add("\u0008 Index-Buffers");
