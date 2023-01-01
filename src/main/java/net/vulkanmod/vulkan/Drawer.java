@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.RHandler;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.PushConstant;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -17,10 +18,15 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.*;
+import java.nio.LongBuffer;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memPutAddress;
@@ -28,16 +34,15 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
-//    private static Drawer INSTANCE = new Drawer();
 
     private static int currentFrame = 0;
-    private static final VkDevice device;
-    private static final int MAX_FRAMES_IN_FLIGHT = frameQueueSize;
-    public static final List<VkCommandBuffer> commandBuffers = new ArrayList<>(MAX_FRAMES_IN_FLIGHT);;
+    private static final VkDevice device = Vulkan.getDevice();
+    public static List<VkCommandBuffer> commandBuffers;
 
     private static final Set<Pipeline> usedPipelines = new HashSet<>();
 
-    private static final VertexBuffer[] vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];
+    private static final int MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
+    private static final VertexBuffer[] vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];;
     private static final AutoIndexBuffer quadsIndexBuffer = new AutoIndexBuffer(100000, AutoIndexBuffer.DrawType.QUADS);
     private static final AutoIndexBuffer triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
     private static final AutoIndexBuffer triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
@@ -62,18 +67,19 @@ public class Drawer {
     public static boolean rebuild = false;
     public static boolean skipRendering = false;
 
+    static
+    {
 
-
-
-    static {
-        device = Vulkan.getDevice();
-        Arrays.fill(vertexBuffers, new VertexBuffer(200000, MemoryTypes.HOST_MEM));
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            vertexBuffers[i] = new VertexBuffer(2000000, MemoryTypes.HOST_MEM);
+        }
 
 
 
         createSyncObjects();
 
-        Arrays.fill(activeCommandBuffers, false);
+        for(boolean bool : activeCommandBuffers) bool = false;
+
 
         allocateCommandBuffers();
     }
@@ -130,8 +136,6 @@ public class Drawer {
 
             IntBuffer width = stack.ints(0);
             IntBuffer height = stack.ints(0);
-//            IntBuffer width = stack.ints(0);
-//            IntBuffer height = stack.ints(0);
 
             glfwGetFramebufferSize(window, width, height);
             skipRendering =  Minecraft.getInstance().noRender = (width.get(0) == 0 && height.get(0) == 0);
@@ -159,7 +163,7 @@ public class Drawer {
             VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 
-            renderPassInfo.renderPass(Vulkan.getRenderPass());
+            renderPassInfo.renderPass(getRenderPass());
 
             VkRect2D renderArea = VkRect2D.callocStack(stack);
             renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
@@ -178,7 +182,7 @@ public class Drawer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            renderPassInfo.framebuffer(Vulkan.getSwapChainFramebuffers().get(currentFrame));
+            renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
 
             vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -214,7 +218,7 @@ public class Drawer {
     }
 
     private static void allocateCommandBuffers() {
-
+        commandBuffers = new ArrayList<>(commandBuffersCount);
 
         try(MemoryStack stack = stackPush()) {
 
@@ -562,7 +566,7 @@ public class Drawer {
             //Rect to clear
             VkRect2D renderArea = VkRect2D.callocStack(stack);
             renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
-            renderArea.extent(Vulkan.getSwapchainExtent());
+            renderArea.extent(getSwapchainExtent());
 
             VkClearRect.Buffer pRect = VkClearRect.callocStack(1, stack);
             pRect.get(0).rect(renderArea);
