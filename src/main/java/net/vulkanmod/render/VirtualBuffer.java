@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -79,7 +80,7 @@ public class VirtualBuffer {
 
     private static void freeThis(int i) {
         Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
-        if(size_t!=i){
+        {
             Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
             vkFreeMemory(Vulkan.getDevice(), bufferPtrBackingAlloc, null);
             vkDestroyBuffer(Vulkan.getDevice(), bufferPointerSuperSet, null);
