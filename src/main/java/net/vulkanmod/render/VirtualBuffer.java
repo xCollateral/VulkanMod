@@ -22,7 +22,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VirtualBuffer {
     private static long virtualBlockBufferSuperSet;
-    public static int size_t;
+    public static final int size_t = Integer.MAX_VALUE;
     public static int subIncr;
     public static int usedBytes;
     public static final ObjectArrayList<VkBufferPointer> FreeRanges = new ObjectArrayList<>(1024);
@@ -41,14 +41,14 @@ public class VirtualBuffer {
     public static final ObjectArrayList<VkBufferPointer> activeRanges = new ObjectArrayList<>(1024);
 
     static {
-        initsize_t = (lastViewDistance * lastViewDistance) * 24 * Config.baseAlignSize;
-        initBufferSuperSet(initsize_t);
+        initsize_t = (size_t);
+        initBufferSuperSet(size_t);
     }
     //Could just Set Allocation to 2GB and not bother with resizing as initially allocated space is treated as "Reserved Space" and not used space
     //However it would get in the way of other programs and naively assumes the GPU has 2GB available which may cause issues with older GPUs/iGPUs
     public static void reset(int i)
     {
-        if(i==0) i=size_t;
+//        if(i==0) i=size_t;
 
 //        Drawer.skipRendering=true;
 
@@ -69,20 +69,20 @@ public class VirtualBuffer {
 
 
 
-        bound=false;
+//        bound=false;
 
 
 
-        initBufferSuperSet(i);
+//        initBufferSuperSet(i);
 //        Drawer.skipRendering=false;
     }
 
     private static void freeThis(int i) {
         Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
         {
-            Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
-            vkFreeMemory(Vulkan.getDevice(), bufferPtrBackingAlloc, null);
-            vkDestroyBuffer(Vulkan.getDevice(), bufferPointerSuperSet, null);
+//            Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
+//            vkFreeMemory(Vulkan.getDevice(), bufferPtrBackingAlloc, null);
+//            vkDestroyBuffer(Vulkan.getDevice(), bufferPointerSuperSet, null);
         }
     }
 
@@ -146,7 +146,7 @@ public class VirtualBuffer {
             Vma.vmaCreateVirtualBlock(blockCreateInfo, block);
             virtualBlockBufferSuperSet = block.get(0);
 
-            size_t=size;
+//            size_t=size;
             bound=true;
 
 

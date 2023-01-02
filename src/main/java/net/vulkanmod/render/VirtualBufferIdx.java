@@ -21,7 +21,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VirtualBufferIdx {
     private static long virtualBlockBufferSuperSet;
-    public static int size_t;
+    public static final int size_t = Integer.MAX_VALUE/8;
     public static int subIncr;
     public static int usedBytes;
     public static final ObjectArrayList<VkBufferPointer> FreeRanges = new ObjectArrayList<>(1024);
@@ -39,7 +39,7 @@ public class VirtualBufferIdx {
     public static final Int2ObjectArrayMap<VkBufferPointer> activeRanges = new Int2ObjectArrayMap<>(1024);
 
     static {
-        size_t = (lastViewDistance * lastViewDistance) * 24 * Config.baseAlignSize/8;
+//        size_t = (lastViewDistance * lastViewDistance) * 24 * Config.baseAlignSize/8;
         initBufferSuperSet(size_t);
     }
     public static void reset(int i)
@@ -62,22 +62,22 @@ public class VirtualBufferIdx {
 
 
 
-        size_t=i;
+//        size_t=i;
 //
 //        bound=false;
 
 
 
-        initBufferSuperSet(i);
+//        initBufferSuperSet(i);
 //        Drawer.skipRendering=false;
     }
 
     private static void freeThis(int i) {
         Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
         {
-            Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
-            vkFreeMemory(Vulkan.getDevice(), bufferPtrBackingAlloc, null);
-            vkDestroyBuffer(Vulkan.getDevice(), bufferPointerSuperSet, null);
+//            Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
+//            vkFreeMemory(Vulkan.getDevice(), bufferPtrBackingAlloc, null);
+//            vkDestroyBuffer(Vulkan.getDevice(), bufferPointerSuperSet, null);
         }
     }
 
@@ -142,7 +142,7 @@ public class VirtualBufferIdx {
             Vma.vmaCreateVirtualBlock(blockCreateInfo, block);
             virtualBlockBufferSuperSet = block.get(0);
 
-            size_t=size;
+//            size_t=size;
             bound=true;
 
         }

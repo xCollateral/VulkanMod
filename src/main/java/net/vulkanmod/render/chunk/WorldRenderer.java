@@ -444,8 +444,9 @@ public class WorldRenderer {
         TaskDispatcher.resetting=true;
         Drawer.skipRendering=true;
         RHandler.uniqueVBOs.clear();
-        nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
-        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
+//        nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
+        vkDeviceWaitIdle(Vulkan.getDevice()); //Use a heavier Wait to avoid potential crashes
+//        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
         VirtualBuffer.reset(size);
         VirtualBufferIdx.reset(size/8);
         TaskDispatcher.resetting=false;
