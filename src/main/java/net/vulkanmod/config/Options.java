@@ -202,7 +202,7 @@ public class Options {
 
                             WorldRenderer.allChanged(0);
                         }, () -> Config.vboAlignment)
-                        .setTooltip(Component.nullToEmpty("Current Value: "+ (1<<Config.vboAlignment)+" \n (Refreshes if Exiting/Reentering options Screen)"+"\n\n"+"""
+                        .setTooltip(Component.nullToEmpty("Current Value: "+ (1<<Config.vboAlignment)+" "+"""
                         Use to Adjust VBO Alignment
                         Acts as a "Reserve Space" to allow VBO Resizing
                         Larger values reduces fragmentation and reallocations but increases memory usage""")),

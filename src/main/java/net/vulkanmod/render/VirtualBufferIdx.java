@@ -53,23 +53,7 @@ public class VirtualBufferIdx {
         FreeRanges.clear();
         activeRanges.clear();
         freeThis(i);
-//        if(size_t==i) return;
 
-       /* for(VBO a : RHandler.uniqueVBOs)
-        {
-            a.close();
-        }*/
-
-
-
-//        size_t=i;
-//
-//        bound=false;
-
-
-
-//        initBufferSuperSet(i);
-//        Drawer.skipRendering=false;
     }
 
     private static void freeThis(int i) {
@@ -99,13 +83,7 @@ public class VirtualBufferIdx {
     }
 
     private static void allocMem(long size, MemoryStack stack, PointerBuffer pBuffer, PointerBuffer pAllocation) {
-//        VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-//        allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
-//        allocationInfo.requiredFlags(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
 
-
-//        VkMemoryRequirements memRequirements = VkMemoryRequirements.mallocStack(stack);
-//        vkGetBufferMemoryRequirements(Vulkan.getDevice(), pBuffer.get(0), memRequirements);
         VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = VkMemoryDedicatedAllocateInfo.mallocStack(stack)
                 .buffer(pBuffer.get(0))
                 .image(0)
@@ -160,7 +138,7 @@ public class VirtualBufferIdx {
 //        size_t= size;
     }
 
-
+    //TODO: draw Call Coalescing: Use two unaligned blocks and attempt to merge them together if fit within the same (relative) alignment
     static VkBufferPointer addSubIncr(int index, int actualSize) {
 
 
@@ -186,10 +164,23 @@ public class VirtualBufferIdx {
             LongBuffer pOffset = a!=null ? stack.longs(a.i2()) : null;
             subIncr += alignedSize;
             usedBytes+=alignedSize;
-            if(vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-                throw new IllegalStateException("Out of Mem!: " + usedBytes +"-->"+(usedBytes+alignedSize));
-            }
+            vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset);
+
             long allocation = pAlloc.get(0);
+
+            if(allocation==0)
+            {
+                System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+alignedSize)+"-->"+alignedSize+"-->"+size_t);
+                System.out.println("Out of Mem!: " + usedBytes +"-->"+(usedBytes+alignedSize));
+                WorldRenderer.setNeedsUpdate();
+                WorldRenderer.allChanged(size_t);
+                pAlloc=stack.mallocPointer(1);
+                Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, stack.longs(0));
+                allocation=pAlloc.get(0);
+
+            }
+
+
 //            Vma.vmaSetVirtualAllocationUserData(virtualBlockBufferSuperSet, allocation, 0);
             subAllocs++;
             VmaVirtualAllocationInfo vmaVirtualAllocationInfo = setOffsetRangesStats(allocation, stack);
@@ -216,6 +207,7 @@ public class VirtualBufferIdx {
         return null;
     }
 
+    //Not Supported on LWJGL 3.3.1
     private static void updateStatistics(MemoryStack stack) {
         VmaDetailedStatistics vmaStatistics = VmaDetailedStatistics.malloc(stack);
         vmaCalculateVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics);

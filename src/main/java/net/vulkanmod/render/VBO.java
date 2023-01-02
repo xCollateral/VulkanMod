@@ -5,8 +5,6 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.AABB;
-import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -21,23 +19,19 @@ import static net.vulkanmod.vulkan.Vulkan.copyStagingtoLocalBuffer;
 
 @Environment(EnvType.CLIENT)
 public class VBO implements Comparable<VBO> {
-    public static final int size_t = 32768;
     private final int index;
-    public int x;
-    public int y;
-    public int z;
-    public AABB bb;
 
-    private VkBufferPointer addSubIncr;
+    public int x;
+
+    public int y;
+
+    public int z;
+    private VkBufferPointer fakeVertexBuffer;
     public boolean translucent=false;
-    //    private VertexBuffer vertexBuffer;
-    private VkBufferPointer indexBuffer;
+    private VkBufferPointer fakeIndexBuffer;
     public int indexCount;
     private int vertexCount;
     private VertexFormat.Mode mode;
-//    private VertexFormat vertexFormat;
-
-    private final boolean autoIndexed = false;
 
     public boolean preInitialised = true;
     public VkDrawIndexedIndirectCommand indirectCommand;
@@ -61,14 +55,13 @@ public class VBO implements Comparable<VBO> {
 
         this.mode = parameters.mode();
         preInitialised=false;
-//        this.configureVertexFormat(buffer.vertexBuffer());
-//        this.configureIndexBuffer(buffer.indexBuffer());
+
 
         //Don't upload the VertexBuffer again if its just a sort (as its already been uploaded prior during initial upload)
         indirectCommand = indirectCommand==null ? VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) : indirectCommand;//ALIGN and SIZEOF are NULL due to a bug in LWJGL
         indirectCommand
                 .indexCount(parameters.indexCount())
-                .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : addSubIncr.i2()>>5)
+                .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : fakeVertexBuffer.i2()>>5)
                 .firstIndex(configureIndexBuffer(parameters.sequentialIndex(), buffer.indexBuffer()))
                 .firstInstance(0)
                 .instanceCount(this.indexCount != 0 ? 1 : 0); //Cull if Empty
@@ -88,20 +81,20 @@ public class VBO implements Comparable<VBO> {
     }
 
     private int configureVertexFormat(ByteBuffer data) {
-//        boolean bl = !parameters.format().equals(this.vertexFormat);
+
         {
 
-            if(addSubIncr == null || !VirtualBuffer.isAlreadyLoaded(index, data.remaining()))
+            if(fakeVertexBuffer == null || !VirtualBuffer.isAlreadyLoaded(index, data.remaining()))
             {
-                addSubIncr=VirtualBuffer.addSubIncr(index, data.remaining());
+                fakeVertexBuffer =VirtualBuffer.addSubIncr(index, data.remaining());
             }
 
 
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(data.remaining(), data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, addSubIncr.i2(), addSubIncr.size_t());
-            return addSubIncr.i2()>>5;
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, fakeVertexBuffer.i2(), fakeVertexBuffer.size_t());
+            return fakeVertexBuffer.i2()>>5;
         }
     }
 
@@ -118,16 +111,16 @@ public class VBO implements Comparable<VBO> {
                 }
                 data=autoIndexBuffer.getBuffer();
             }
-            if(indexBuffer==null || !VirtualBufferIdx.isAlreadyLoaded(index, data.remaining()))
+            if(fakeIndexBuffer ==null || !VirtualBufferIdx.isAlreadyLoaded(index, data.remaining()))
             {
-                indexBuffer=VirtualBufferIdx.addSubIncr(index, data.remaining());
+                fakeIndexBuffer =VirtualBufferIdx.addSubIncr(index, data.remaining());
             }
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-            stagingBuffer.copyBuffer(indexBuffer.size_t(), data);
+            stagingBuffer.copyBuffer(fakeIndexBuffer.size_t(), data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, indexBuffer.i2(), indexBuffer.size_t());
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, fakeIndexBuffer.i2(), fakeIndexBuffer.size_t());
 
-            return indexBuffer.i2()>>1;
+            return fakeIndexBuffer.i2()>>1;
         }
 
     }
@@ -142,13 +135,12 @@ public class VBO implements Comparable<VBO> {
     public void close() {
         if(preInitialised) return;
         if(vertexCount <= 0) return;
-        VirtualBuffer.addFreeableRange(index, addSubIncr);
-        addSubIncr=null;
-//        vertexBuffer = null;
-        {
-            VirtualBufferIdx.addFreeableRange(index, indexBuffer);
-            indexBuffer = null;
-        }
+        VirtualBuffer.addFreeableRange(index, fakeVertexBuffer);
+        fakeVertexBuffer =null;
+
+            VirtualBufferIdx.addFreeableRange(index, fakeIndexBuffer);
+            fakeIndexBuffer = null;
+
 
         this.vertexCount = 0;
         this.indexCount = 0;
@@ -159,12 +151,14 @@ public class VBO implements Comparable<VBO> {
     }
 
     public void updateOrigin(int x, int y, int z) {
-//        this.origin=origin;
+
         this.x=x;
         this.y=y;
         this.z=z;
-//        this.bb=bb;
+
     }
+
+    //Failed attempt to use VBO Sorting to fix Broken Water Transparency
     int diff(int num, int num2)  {
         int a = num-num2;
         int i1 = a >>> 31;
@@ -180,9 +174,4 @@ public class VBO implements Comparable<VBO> {
         int z_=diff(v.getZ(),this.z);
         return (z_+x_)-(z + x);
     }
-
-    /*public VertexFormat getFormat() {
-        return this.vertexFormat;
-    }*/
-
 }

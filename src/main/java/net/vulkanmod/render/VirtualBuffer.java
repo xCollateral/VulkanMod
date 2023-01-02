@@ -1,6 +1,5 @@
 package net.vulkanmod.render;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -14,8 +13,6 @@ import org.lwjgl.vulkan.VkMemoryDedicatedAllocateInfo;
 
 import java.nio.LongBuffer;
 
-import static net.vulkanmod.render.chunk.WorldRenderer.lastViewDistance;
-import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -44,13 +41,10 @@ public class VirtualBuffer {
         initsize_t = (size_t);
         initBufferSuperSet(size_t);
     }
-    //Could just Set Allocation to 2GB and not bother with resizing as initially allocated space is treated as "Reserved Space" and not used space
-    //However it would get in the way of other programs and naively assumes the GPU has 2GB available which may cause issues with older GPUs/iGPUs
+
     public static void reset(int i)
     {
-//        if(i==0) i=size_t;
 
-//        Drawer.skipRendering=true;
 
         subIncr=0;
         subAllocs=0;
@@ -58,23 +52,7 @@ public class VirtualBuffer {
         FreeRanges.clear();
         activeRanges.clear();
         freeThis(i);
-//        if(size_t==i) return;
-
-       /* for(VBO a : RHandler.uniqueVBOs)
-        {
-            a.close();
-        }*/
-
-
-
-
-
-//        bound=false;
-
-
-
-//        initBufferSuperSet(i);
-//        Drawer.skipRendering=false;
+//
     }
 
     private static void freeThis(int i) {
@@ -96,21 +74,12 @@ public class VirtualBuffer {
                 .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                 .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
-//
-//            vkGetBufferMemoryRequirements(Vulkan.getDevice(), )
-//            vkAllocateMemory(d)
 
         nvkCreateBuffer(Vulkan.getDevice(), bufferInfo.address(), NULL, pBuffer.address());
     }
 
     private static void allocMem(long size, MemoryStack stack, PointerBuffer pBuffer, PointerBuffer pAllocation) {
-//        VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-//        allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
-//        allocationInfo.requiredFlags(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
-
-
-//        VkMemoryRequirements memRequirements = VkMemoryRequirements.mallocStack(stack);
-//        vkGetBufferMemoryRequirements(Vulkan.getDevice(), pBuffer.get(0), memRequirements);
+//
         VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = VkMemoryDedicatedAllocateInfo.mallocStack(stack)
                 .buffer(pBuffer.get(0))
                 .image(0)
@@ -166,11 +135,9 @@ public class VirtualBuffer {
 //        size_t= size;
     }
 
-    //TODO: draw Call Coalescing: if get/grab two unaligned blocks and attempt to merge them together if fit within the same (relative) alignment
+    //TODO: draw Call Coalescing: Use two unaligned blocks and attempt to merge them together if fit within the same (relative) alignment
     static VkBufferPointer addSubIncr(int index, int actualSize) {
         int alignedSize=alignAs(actualSize);
-//        VkBufferPointer bufferPointer = checkforFreeable(size);
-//        if(bufferPointer!=null) return reallocSubIncr(bufferPointer);
 
         if(size_t<=usedBytes+alignedSize)
         {
@@ -187,6 +154,7 @@ public class VirtualBuffer {
                     .alignment(Config.vboAlignmentActual)
                     .flags((a!=null) ? 0 : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
+
             PointerBuffer pAlloc = stack.mallocPointer(1);
 
             LongBuffer pOffset = a!=null ? stack.longs(a.i2()) : null;
@@ -196,21 +164,12 @@ public class VirtualBuffer {
 
             long allocation = pAlloc.get(0);
 
-//            Vma.vmaSetVirtualAllocationUserData(virtualBlockBufferSuperSet, allocation, 0);
+
             subAllocs++;
             VmaVirtualAllocationInfo allocCreateInfo1 = VmaVirtualAllocationInfo.malloc(stack);
 
             if(allocation==0)
             {
-                /*VirtualBuffer.reset(size_t*2);
-                VmaVirtualAllocationCreateInfo allocCreateInfo2 = VmaVirtualAllocationCreateInfo.malloc(stack)
-                        .size(size)
-                        .alignment(0)
-                        .flags(VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
-                        .pUserData(NULL);
-//                pOffset.put(0, 0);
-                Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo2, pAlloc, null);
-                allocation = pAlloc.get(0);*/
                 System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+alignedSize)+"-->"+alignedSize+"-->"+size_t+initsize_t);
                 WorldRenderer.setNeedsUpdate();
                 WorldRenderer.allChanged(size_t+initsize_t);
@@ -254,6 +213,7 @@ public class VirtualBuffer {
         return null;
     }
 
+    //Not Supported on LWJGL 3.3.1
     private static void updateStatistics(MemoryStack stack) {
         VmaDetailedStatistics vmaStatistics = VmaDetailedStatistics.malloc(stack);
         vmaCalculateVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics);
@@ -302,9 +262,4 @@ public class VirtualBuffer {
         FreeRanges.add(bufferPointer);
     }
 
-    private static VmaVirtualAllocationInfo setOffsetRangesStats(long allocation, MemoryStack stack) {
-        VmaVirtualAllocationInfo allocCreateInfo = VmaVirtualAllocationInfo.malloc(stack);
-        Vma.vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocCreateInfo);
-        return allocCreateInfo;
-    }
 }

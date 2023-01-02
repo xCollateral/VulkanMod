@@ -145,11 +145,11 @@ public class Drawer {
         if(skipRendering) return;
 
 //        nvkWaitForFences(device, inFlightFences.capacity(), inFlightFences.address0(), 1, VUtil.UINT64_MAX);
-        nvkWaitForFences(device, 1, inFlightFences.address(currentFrame), 0, -1);
+        nvkWaitForFences(device, 1, inFlightFences.address(currentFrame), 1, -1);
 
 //        CompletableFuture.runAsync(MemoryManager::freeBuffers);
-        MemoryManager.getInstance().setCurrentFrame(currentFrame);
-        MemoryManager.getInstance().freeBuffers();
+//        MemoryManager.getInstance().setCurrentFrame(currentFrame);
+//        MemoryManager.getInstance().freeBuffers();
 
         resetDescriptors();
 
@@ -363,8 +363,7 @@ public class Drawer {
 //        for(Long fence : inFlightFences) {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
-        //TODO: vkDeviceWaitIdle Dosen;t effect SwapChain operatiosn/vkAcquireNextImageKHR Semaphores (For Some reason)
-//        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(device);
 //        vkQueueWaitIdle(Vulkan.getPresentQueue());
 
         for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -474,15 +473,11 @@ public class Drawer {
 
     public static void drawIndexedBindlessIndirect() {
 
-
-//            Profiler.Push("draw");
         vkCmdDrawIndexedIndirect(commandBuffers.get(currentFrame), RHandler.drawCmdBuffer, 0, RHandler.uniqueVBOs.size(), 20);
 
     }
     public static void drawIndexedBindless(VkDrawIndexedIndirectCommand indirectCommand) {
 
-
-//            Profiler.Push("draw");
             vkCmdDrawIndexed(commandBuffers.get(currentFrame), indirectCommand.indexCount(), indirectCommand.instanceCount(), indirectCommand.firstIndex(), indirectCommand.vertexOffset(), indirectCommand.firstInstance());
 
     }

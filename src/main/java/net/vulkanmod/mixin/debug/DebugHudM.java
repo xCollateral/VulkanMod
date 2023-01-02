@@ -74,7 +74,7 @@ public abstract class DebugHudM {
         strings.add("Retired VBOs: " + RHandler.retiredVBOs.size());
         strings.add("");
 
-        strings.add("\u00018 Vertex-Buffers");
+        strings.add("Vertex-Buffers");
         strings.add("");
 
         strings.add("Used Bytes: " + (VirtualBuffer.usedBytes >> 20) + "MB");
@@ -84,18 +84,18 @@ public abstract class DebugHudM {
         strings.add("subAllocs: " + VirtualBuffer.subAllocs);
 //        strings.add("Blocks: " + VirtualBuffer.blocks);
 //        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
-        strings.add("subIncr: " + VirtualBuffer.subIncr);
+
         strings.add("minRange: " + VirtualBuffer.unusedRangesS);
         strings.add("maxRange: " + VirtualBuffer.unusedRangesM);
         strings.add("unusedRangesCount: " + VirtualBuffer.unusedRangesCount);
         strings.add("minVBOSize: " + VirtualBuffer.allocMin);
         strings.add("maxVBOSize: " + VirtualBuffer.allocMax);
-        strings.add("unusedBytes: " + (VirtualBuffer.size_t-VirtualBuffer.usedBytes));
+        strings.add("unusedBytes: " + (VirtualBuffer.size_t- VirtualBuffer.usedBytes >> 20) + "MB");
         strings.add("freeRanges: " + (VirtualBuffer.FreeRanges.size()));
         strings.add("activeRanges: " + (VirtualBuffer.activeRanges.size()));
 
         strings.add("");
-        strings.add("\u0008 Index-Buffers");
+        strings.add("Index-Buffers");
         strings.add("");
 
         strings.add("Used Bytes: " + (VirtualBufferIdx.usedBytes >> 20) + "MB");
@@ -105,14 +105,15 @@ public abstract class DebugHudM {
         strings.add("subAllocs: " + VirtualBufferIdx.subAllocs);
 //        strings.add("Blocks: " + VirtualBufferIdx.blocks);
 //        strings.add("BlocksBytes: " + VirtualBufferIdx.blockBytes);
-        strings.add("subIncr: " + VirtualBufferIdx.subIncr);
+//        strings.add("subIncr: " + VirtualBufferIdx.subIncr);
         strings.add("minRange: " + VirtualBufferIdx.unusedRangesS);
         strings.add("maxRange: " + VirtualBufferIdx.unusedRangesM);
         strings.add("unusedRangesCount: " + VirtualBufferIdx.unusedRangesCount);
         strings.add("minIndexSize: " + VirtualBufferIdx.allocMin);
         strings.add("maxIndexSize: " + VirtualBufferIdx.allocMax);
-        strings.add("unusedBytes: " + (VirtualBufferIdx.size_t- VirtualBufferIdx.usedBytes));
+        strings.add("unusedBytes: " + (VirtualBufferIdx.size_t- VirtualBufferIdx.usedBytes >> 20) + "MB");
         strings.add("freeRanges: " + (VirtualBufferIdx.FreeRanges.size()));
+        strings.add("activeRanges: " + (VirtualBufferIdx.activeRanges.size()));
 
         return strings;
     }

@@ -339,18 +339,10 @@ public class WorldRenderer {
         RenderRegionCache renderregioncache = new RenderRegionCache();
         BlockPos cameraPos = camera.getBlockPosition();
         List<RenderSection> list = Lists.newArrayList();
-        /*double d0 = camera.getPosition().x - xTransparentOld2;
-        double d1 = camera.getPosition().y - yTransparentOld2;
-        double d2 = camera.getPosition().x - zTransparentOld2;
-        if (d0 * d0 + d1 * d1 + d2 * d2 <= 1.0D) {
-            xTransparentOld2=d0;
-            yTransparentOld2=d1;
-            zTransparentOld2=d2;
-            return;
-        }*/
+
 
         RHandler.uniqueVBOs.clear();
-        RHandler.drawCommands.clear();
+
 
         //TODO later: find a better way
         for(QueueChunkInfo chunkInfo : sectionsInFrustum) {
@@ -504,7 +496,7 @@ public class WorldRenderer {
 
     public static void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
 
-        //        if(renderType!=RenderType.translucent()) return;
+
 //        //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 //        RenderType solid = RenderType.solid();
@@ -560,15 +552,12 @@ public class WorldRenderer {
 //        ObjectListIterator<RenderSection> iterator = sections.listIterator(flag ? 0 : sections.size());
 
         VertexFormat vertexformat = renderType.format();
-        //TODO: ViewBobbing dosen't function properly if Affine
+
         Matrix4f pose = poseStack.last().pose();
 
-//        curPosX=curPosX-(float)camX;
 
-        curPosX= (prevCamX - camX);
-        curPosZ= (prevCamZ - camZ);
-        originX+= curPosX;
-        originZ+= curPosZ;
+        originX+= (prevCamX - camX);;
+        originZ+= (prevCamZ - camZ);;
         {
 
             pose.m03 += pose.m00* (originX) + pose.m01* -camY +pose.m02 * originZ;

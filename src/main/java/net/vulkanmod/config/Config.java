@@ -13,10 +13,8 @@ import java.util.Collections;
 public class Config {
 
     public static int baseAlignSize = 65536;
-    public static int vboAlignment = 8;
+    public static int vboAlignment = 13;
     public static int vboAlignmentActual;
-
-    public static boolean doChunkPreTranslation=false;
     public static boolean noFog=true;
     public static boolean drawIndirect=false;
     public int frameQueueSize = 2;
