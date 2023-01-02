@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -39,7 +38,7 @@ public class VirtualBuffer {
 //    public static int allocBytes;
 
     private static final int initsize_t;
-    public static final Int2ObjectArrayMap<VkBufferPointer> activeRanges = new Int2ObjectArrayMap<>(1024);
+    public static final ObjectArrayList<VkBufferPointer> activeRanges = new ObjectArrayList<>(1024);
 
     static {
         initsize_t = (lastViewDistance * lastViewDistance) * 24 * Config.baseAlignSize;
@@ -169,7 +168,7 @@ public class VirtualBuffer {
 
     //TODO: draw Call Coalescing: if get/grab two unaligned blocks and attempt to merge them together if fit within the same (relative) alignment
     static VkBufferPointer addSubIncr(int index, int actualSize) {
-        int alignedSize=(actualSize);
+        int alignedSize=alignAs(actualSize);
 //        VkBufferPointer bufferPointer = checkforFreeable(size);
 //        if(bufferPointer!=null) return reallocSubIncr(bufferPointer);
 
@@ -185,12 +184,12 @@ public class VirtualBuffer {
             var a = (checkforFreeable(alignedSize));
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size(alignedSize)
-                    .alignment(0)
-                    .flags((a!=null) ? VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
+                    .alignment(Config.vboAlignmentActual)
+                    .flags((a!=null) ? 0 : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
             PointerBuffer pAlloc = stack.mallocPointer(1);
 
-            LongBuffer pOffset = a!=null ? stack.longs(a.i2) : null;
+            LongBuffer pOffset = a!=null ? stack.longs(a.i2()) : null;
             subIncr += alignedSize;
             usedBytes+=alignedSize;
             Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset);
@@ -223,24 +222,32 @@ public class VirtualBuffer {
             vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocCreateInfo1);
 
             updateStatistics(stack);
-            VkBufferPointer vkBufferPointer = new VkBufferPointer(pAlloc.get(0), (int) allocCreateInfo1.offset(), (int) allocCreateInfo1.size(), actualSize);
-            activeRanges.put(index, vkBufferPointer);
+            VkBufferPointer vkBufferPointer = new VkBufferPointer(index, (int) allocCreateInfo1.offset(), (int) allocCreateInfo1.size(), pAlloc.get(0));
+            activeRanges.add(vkBufferPointer);
             return vkBufferPointer;
         }
     }
 
-    public static boolean isAlreadyLoaded(int index) {
-        return activeRanges.containsKey(index);
+    public static boolean isAlreadyLoaded(int index, int remaining) {
+        VkBufferPointer vkBufferPointer = getActiveRangeFromIdx(index);
+        if(vkBufferPointer==null) return false;
+        if(vkBufferPointer.size_t()>=remaining)
+        {
+            return true;
+        }
+        addFreeableRange(index, vkBufferPointer);
+        return false;
+
     }
 
     private static int alignAs(int size) {
-        return size + (32 - (size-1&32-1) - 1);
+        return size + (Config.vboAlignmentActual - (size-1&Config.vboAlignmentActual-1) - 1);
     }
 
     private static VkBufferPointer checkforFreeable(int size) {
         for (int i = 0; i < FreeRanges.size(); i++) {
             VkBufferPointer bufferPointer = FreeRanges.get(i);
-            if (bufferPointer.size_t >= size) {
+            if (bufferPointer.size_t() >= size) {
                 return FreeRanges.remove(i);
             }
         }
@@ -267,13 +274,28 @@ public class VirtualBuffer {
     {
         if(usedBytes==0)return;
         if(bufferPointer==null) return;
-        if(bufferPointer.allocation==0) return;
+        if(bufferPointer.allocation()==0) return;
 //        if(bufferPointer.sizes==0) return;
-        Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation);
-        activeRanges.remove(index);
+        Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
+        for (int i = 0; i < activeRanges.size(); i++) {
+            VkBufferPointer vkBufferPointer = activeRanges.get(i);
+            if (vkBufferPointer.index() == index) {
+                activeRanges.remove(i);
+                break;
+            }
+        }
         subAllocs--;
-        usedBytes-=bufferPointer.size_t;
+        usedBytes-=bufferPointer.size_t();
         addToFreeableRanges(bufferPointer);
+    }
+
+    private static VkBufferPointer getActiveRangeFromIdx(int index) {
+        for (VkBufferPointer vkBufferPointer : activeRanges) {
+            if (vkBufferPointer.index() == index) {
+                return vkBufferPointer;
+            }
+        }
+        return null;
     }
 
     private static void addToFreeableRanges(VkBufferPointer bufferPointer) {

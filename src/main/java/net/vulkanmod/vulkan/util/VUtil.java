@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.libc.LibCString.nmemcpy;
 
 public class VUtil {
     public static final int UINT32_MAX = 0xFFFFFFFF;
@@ -54,27 +55,13 @@ public class VUtil {
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
     }
-    public static void memcpy(ByteBuffer dst, long src, long offset, int size) {
+    public static void memcpy2(ByteBuffer dst, long src, long offset, int size) {
         dst.position((int)offset);
-//        dst.put(src);
 
-        memCopy_(src, MemoryUtil.memAddress(dst), size);
-
-//        src.limit(src.capacity()).rewind();
-    }
-
-    //Stolen from LWJGL MultiReleaseMemCopy.memCopyAligned64()
-    private static void memCopy_(long src, long dst, int bytes) {
-        int i = 0;
+        //Almost Always above 384 bytes if Draw Commands exceed 19 VBOs or more
+        nmemcpy(MemoryUtil.memAddress(dst), src, size);
 
 
-        for (; i <= bytes - 8; i += 8) MemoryUtil.memPutLong(dst + i, MemoryUtil.memGetLong(src + i));
-
-
-        if (i < bytes) {
-            long a = MemoryUtil.memGetLong(src + i);
-            MemoryUtil.memPutLong(dst + i, a ^ (a ^ MemoryUtil.memGetLong(dst + i)) & -1L << (bytes - i << 3));
-        }
     }
 
     public static void memcpy(ByteBuffer dst, ByteBuffer src, int size, long offset) {

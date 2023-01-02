@@ -71,6 +71,7 @@ public abstract class DebugHudM {
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
         strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
+        strings.add("Retired VBOs: " + RHandler.retiredVBOs.size());
         strings.add("");
 
         strings.add("\u00018 Vertex-Buffers");

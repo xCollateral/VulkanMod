@@ -164,7 +164,7 @@ public class VirtualBufferIdx {
     static VkBufferPointer addSubIncr(int index, int actualSize) {
 
 
-        int alignedSize=(actualSize);
+        int alignedSize=alignAs(actualSize);
 
         if(size_t<=usedBytes+alignedSize)
         {
@@ -178,12 +178,12 @@ public class VirtualBufferIdx {
             var a = checkforFreeable(alignedSize);
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size(alignedSize)
-                    .alignment(0)
-                    .flags(a!=null ? VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
+                    .alignment(Config.vboAlignmentActual)
+                    .flags(a!=null ? 0 : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
             PointerBuffer pAlloc = stack.mallocPointer(1);
 
-            LongBuffer pOffset = a!=null ? stack.longs(a.i2) : null;
+            LongBuffer pOffset = a!=null ? stack.longs(a.i2()) : null;
             subIncr += alignedSize;
             usedBytes+=alignedSize;
             if(vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
@@ -196,20 +196,20 @@ public class VirtualBufferIdx {
 
             updateStatistics(stack);
 
-            VkBufferPointer vkBufferPointer = new VkBufferPointer(pAlloc.get(0), (int) vmaVirtualAllocationInfo.offset(), (int) vmaVirtualAllocationInfo.size(), actualSize);
+            VkBufferPointer vkBufferPointer = new VkBufferPointer(index, (int) vmaVirtualAllocationInfo.offset(), (int) vmaVirtualAllocationInfo.size(), pAlloc.get(0));
             activeRanges.put(index, vkBufferPointer);
             return vkBufferPointer;
         }
     }
 
     private static int alignAs(int size) {
-        return size + ((2) - (size-1& (2) -1) - 1);
+        return size + ((Config.vboAlignmentActual) - (size-1& (Config.vboAlignmentActual) -1) - 1);
     }
 
     private static VkBufferPointer checkforFreeable(int size) {
         for (int i = 0; i < FreeRanges.size(); i++) {
             VkBufferPointer bufferPointer = FreeRanges.get(i);
-            if (bufferPointer.size_t >= size) {
+            if (bufferPointer.size_t() >= size) {
                 return FreeRanges.remove(i);
             }
         }
@@ -236,12 +236,12 @@ public class VirtualBufferIdx {
     {
         if(usedBytes==0)return;
         if(bufferPointer==null) return;
-        if(bufferPointer.allocation==0) return;
+        if(bufferPointer.allocation()==0) return;
 //        if(bufferPointer.sizes==0) return;
-        Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation);
+        Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
         activeRanges.remove(index);
         subAllocs--;
-        usedBytes-=bufferPointer.size_t;
+        usedBytes-=bufferPointer.size_t();
         addToFreeableRanges(bufferPointer);
     }
 
@@ -255,7 +255,14 @@ public class VirtualBufferIdx {
         return allocCreateInfo;
     }
 
-    public static boolean isAlreadyLoaded(int index) {
-        return activeRanges.containsKey(index);
+    public static boolean isAlreadyLoaded(int index, int remaining) {
+        VkBufferPointer vkBufferPointer = activeRanges.get(index);
+        if(vkBufferPointer==null) return false;
+        if(vkBufferPointer.size_t()>=remaining)
+        {
+            return true;
+        }
+        addFreeableRange(index, vkBufferPointer);
+        return false;
     }
 }

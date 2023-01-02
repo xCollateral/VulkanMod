@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
 import net.vulkanmod.render.chunk.TaskDispatcher;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
@@ -25,7 +26,7 @@ public class VBO implements Comparable<VBO> {
     public int x;
     public int y;
     public int z;
-//    public AABB bb;
+    public AABB bb;
 
     private VkBufferPointer addSubIncr;
     public boolean translucent=false;
@@ -67,7 +68,7 @@ public class VBO implements Comparable<VBO> {
         indirectCommand = indirectCommand==null ? VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20)) : indirectCommand;//ALIGN and SIZEOF are NULL due to a bug in LWJGL
         indirectCommand
                 .indexCount(parameters.indexCount())
-                .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : addSubIncr.i2>>5)
+                .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : addSubIncr.i2()>>5)
                 .firstIndex(configureIndexBuffer(parameters.sequentialIndex(), buffer.indexBuffer()))
                 .firstInstance(0)
                 .instanceCount(this.indexCount != 0 ? 1 : 0); //Cull if Empty
@@ -90,7 +91,7 @@ public class VBO implements Comparable<VBO> {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         {
 
-            if(addSubIncr == null || addSubIncr.size_t < data.remaining() || !VirtualBuffer.isAlreadyLoaded(index))
+            if(addSubIncr == null || !VirtualBuffer.isAlreadyLoaded(index, data.remaining()))
             {
                 addSubIncr=VirtualBuffer.addSubIncr(index, data.remaining());
             }
@@ -99,8 +100,8 @@ public class VBO implements Comparable<VBO> {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(data.remaining(), data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, addSubIncr.i2, addSubIncr.size_t);
-            return addSubIncr.i2>>5;
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, addSubIncr.i2(), addSubIncr.size_t());
+            return addSubIncr.i2()>>5;
         }
     }
 
@@ -117,16 +118,16 @@ public class VBO implements Comparable<VBO> {
                 }
                 data=autoIndexBuffer.getBuffer();
             }
-            if(indexBuffer==null || indexBuffer.size_t <data.remaining() || !VirtualBufferIdx.isAlreadyLoaded(index))
+            if(indexBuffer==null || !VirtualBufferIdx.isAlreadyLoaded(index, data.remaining()))
             {
                 indexBuffer=VirtualBufferIdx.addSubIncr(index, data.remaining());
             }
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-            stagingBuffer.copyBuffer(indexBuffer.size_t, data);
+            stagingBuffer.copyBuffer(indexBuffer.size_t(), data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, indexBuffer.i2, indexBuffer.size_t);
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, indexBuffer.i2(), indexBuffer.size_t());
 
-            return indexBuffer.i2>>1;
+            return indexBuffer.i2()>>1;
         }
 
     }

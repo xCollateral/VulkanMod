@@ -40,6 +40,7 @@ public class RHandler
     private static final int MAX_VBOS = 2048;
     public static VkDrawIndexedIndirectCommand.Buffer drawCommands=VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20* MAX_VBOS), MAX_VBOS);
     public static  long drawCmdBuffer;
+    public static ObjectArrayList<VBO> retiredVBOs = new ObjectArrayList<>(1024);
     private static  long drawCmdAlloc;
     private static final int size_t=0x10000;
 //    public static final long indirectDrawCommandsBuffer=1;
@@ -133,7 +134,7 @@ public class RHandler
         //packedIndirectCmdBuffer.rewind();
         StagingBuffer stagingVkBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
 
-        VUtil.memcpy(memByteBuffer(stagingVkBuffer.data.get(0), stagingVkBuffer.getBufferSize()), drawCommands.address0(), stagingVkBuffer.getUsedBytes(), uniqueVBOs.size()*20);
+        VUtil.memcpy2(memByteBuffer(stagingVkBuffer.data.get(0), stagingVkBuffer.getBufferSize()), drawCommands.address0(), stagingVkBuffer.getUsedBytes(), uniqueVBOs.size()*20);
 
         stagingVkBuffer.offset = stagingVkBuffer.usedBytes;
         stagingVkBuffer.usedBytes += uniqueVBOs.size()*20;
@@ -193,4 +194,20 @@ public class RHandler
     public static void freeVBO(int index) {
         getVBOFromIndex(index).close();
     }
+
+    /*public static void checkOccludedSections() {
+        RHandler.retiredVBOs.clear();
+        RHandler.uniqueVBOs.clear();
+        for (VkBufferPointer bufferPointer : VirtualBuffer.activeRanges) {
+            final VBO vbo = WorldRenderer.chunkGrid.chunks[bufferPointer.index()].vbo;
+            if (!vbo.preInitialised)
+            {
+                if (!WorldRenderer.frustumAlt_(vbo.bb)) {
+                    RHandler.retiredVBOs.add(vbo);
+                } else {
+                    RHandler.uniqueVBOs.add(vbo);
+                }
+            }
+        }
+    }*/
 }

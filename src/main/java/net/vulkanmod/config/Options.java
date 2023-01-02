@@ -204,10 +204,8 @@ public class Options {
                         }, () -> Config.vboAlignment)
                         .setTooltip(Component.nullToEmpty("Current Value: "+ (1<<Config.vboAlignment)+" \n (Refreshes if Exiting/Reentering options Screen)"+"\n\n"+"""
                         Use to Adjust VBO Alignment
-                        Can only be Adjusted in Powers of 2
-                        Value is Equal to 2^Value (e.g. 2^16=65536)
-                        Larger values increase memory usage but may reduce Fragmentation when suballocating VBOs
-                        """)),
+                        Acts as a "Reserve Space" to allow VBO Resizing
+                        Larger values reduces fragmentation and reallocations but increases memory usage""")),
                 new SwitchOption("noFog",
                         value -> {
 
@@ -226,6 +224,7 @@ public class Options {
                         }, () -> Config.drawIndirect)
                         .setTooltip(Component.nullToEmpty("""
                         Enable GPUMultiDrawIndirect
+                        Allows the GPU Driver to handle DrawCalls instead of the CPU
                         May improve or worsen performance: Depends on hardware""")),
         };
 
