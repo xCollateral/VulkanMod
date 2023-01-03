@@ -12,6 +12,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.interfaces.FrustumMixed;
@@ -95,6 +96,9 @@ public class WorldRenderer {
     public static double curPosZ;
     private static double prevCamZ;
     private static boolean needsReset=true;
+    private static int prev;
+    private static boolean hasDirty=true;
+    private static boolean needsUpdate2=true;
 
     static  {
         minecraft = Minecraft.getInstance();
@@ -342,18 +346,19 @@ public class WorldRenderer {
 
 
         RHandler.uniqueVBOs.clear();
-
+        hasDirty=false;
 
         //TODO later: find a better way
         for(QueueChunkInfo chunkInfo : sectionsInFrustum) {
             RenderSection renderSection = chunkInfo.chunk;
-            ChunkPos chunkpos = new ChunkPos(renderSection.getOrigin());
-            if (renderSection.isDirty()
-                    && level.getChunk(chunkpos.x, chunkpos.z).isClientLightReady())
-            {
-//
+            if (renderSection.isDirty()) {
+                hasDirty=true;
+                if (((LevelChunk) (level.getChunk((renderSection.getOrigin())))).isClientLightReady()) {
+//                RHandler.dirtyVBOs.add(renderSection.vbo);
 
-                list.add(renderSection);
+                    renderSection.rebuildChunkAsync(taskDispatcher, renderregioncache);
+                    renderSection.setNotDirty();
+                }
             }
             //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
             //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
@@ -372,11 +377,6 @@ public class WorldRenderer {
             p.start();
         }
 
-
-        for(RenderSection renderSection : list) {
-            renderSection.rebuildChunkAsync(taskDispatcher, renderregioncache);
-            renderSection.setNotDirty();
-        }
 
         minecraft.getProfiler().pop();
 
@@ -526,16 +526,18 @@ public class WorldRenderer {
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
         translucentSort(renderType, camX, camY, camZ); //may be better to place translucent textures ina separate renderpass and submit it together with the vbos
-        if(Config.drawIndirect)
-        {
-            RHandler.drawCommands.clear();
-            for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
+        if (Config.drawIndirect)
+            if (RHandler.uniqueVBOs.size() != prev || needsUpdate2) {
+                needsUpdate2=false;
+                prev = RHandler.uniqueVBOs.size();
+                RHandler.drawCommands.clear();
+                for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
 
-                RHandler.drawCommands.put(RHandler.uniqueVBOs.get(i).indirectCommand);
+                    RHandler.drawCommands.put(RHandler.uniqueVBOs.get(i).indirectCommand);
 
+                }
+                RHandler.AllocIndirectCmds();
             }
-            RHandler.AllocIndirectCmds();
-        }
         minecraft.getProfiler().push("filterempty");
         minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
@@ -669,6 +671,7 @@ public class WorldRenderer {
 
     public static void setNeedsUpdate() {
         needsUpdate = true;
+        needsUpdate2 = true;
     }
 
     public static void setSectionDirty(int x, int y, int z, boolean flag) {
