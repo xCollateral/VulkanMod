@@ -3,9 +3,6 @@ package net.vulkanmod.render.chunk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -16,19 +13,19 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
+import net.vulkanmod.render.VBO;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class RenderSection {
-    private final int index;
+    final int index;
 
     private final RenderSection[] neighbours = new RenderSection[6];
+    public final VBO vbo;
     private ChunkAreaManager.Tree chunkAreaTree;
     private ChunkArea chunkArea;
     private int lastFrame = -1;
@@ -41,13 +38,13 @@ public class RenderSection {
     @Nullable
     private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-    private final Map<RenderType, VertexBuffer> buffers =
+    /*private final Map<RenderType, VertexBuffer> buffers =
             //TODO later: find something better
             new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) -> {
         return renderType;
     }, (renderType) -> {
         return new VertexBuffer();
-    })));
+    })));*/
     private AABB bb;
     private boolean dirty = true;
     final BlockPos.MutableBlockPos origin = new BlockPos.MutableBlockPos(-1, -1, -1);
@@ -64,16 +61,21 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
+        vbo = new VBO(index, x, y, z);
     }
 
     public void setOrigin(int x, int y, int z) {
         this.reset();
-        this.origin.set(x, y, z);
-        this.bb = new AABB((double)x, (double)y, (double)z, (double)(x + 16), (double)(y + 16), (double)(z + 16));
 
-        for(Direction direction : Direction.values()) {
-            this.relativeOrigins[direction.ordinal()].set(this.origin).move(direction, 16);
-        }
+        this.origin.set(x, y, z);
+        this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
+        vbo.updateOrigin(x,y,z);
+        this.relativeOrigins[Direction.DOWN.ordinal()].set(this.origin).move(Direction.DOWN, 16);
+        this.relativeOrigins[Direction.UP.ordinal()].set(this.origin).move(Direction.UP, 16);
+        this.relativeOrigins[Direction.NORTH.ordinal()].set(this.origin).move(Direction.NORTH, 16);
+        this.relativeOrigins[Direction.SOUTH.ordinal()].set(this.origin).move(Direction.SOUTH, 16);
+        this.relativeOrigins[Direction.WEST.ordinal()].set(this.origin).move(Direction.WEST, 16);
+        this.relativeOrigins[Direction.EAST.ordinal()].set(this.origin).move(Direction.EAST, 16);
 
     }
 
@@ -83,13 +85,14 @@ public class RenderSection {
             this.lastResortTransparencyTask.cancel();
         }
 
-        if (!compiledSection1.renderTypes.contains(renderType)) {
+        if (!vbo.translucent || compiledSection1.renderTypes != (renderType)) {
             return false;
         } else {
             this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);
             taskDispatcher.schedule(this.lastResortTransparencyTask);
             return true;
         }
+
     }
 
     public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
@@ -106,7 +109,7 @@ public class RenderSection {
         boolean flag = this.cancelTasks();
         BlockPos blockpos = this.origin.immutable();
 //         int i = 1;
-        RenderChunkRegion renderchunkregion = renderRegionCache.createRegion(WorldRenderer.getLevel(), blockpos.offset(-1, -1, -1), blockpos.offset(16, 16, 16), 1);
+        RenderChunkRegion renderchunkregion = renderRegionCache.createRegion(WorldRenderer.level, blockpos.offset(-1, -1, -1), blockpos.offset(16, 16, 16), 1);
         boolean flag1 = this.compiledSection == CompiledSection.UNCOMPILED;
         if (flag1 && flag) {
             this.initialCompilationCancelCount.incrementAndGet();
@@ -153,9 +156,9 @@ public class RenderSection {
         return this.origin;
     }
 
-    public VertexBuffer getBuffer(RenderType renderType) {
-        return buffers.get(renderType);
-    }
+//    public VertexBuffer getBuffer(RenderType renderType) {
+//        return buffers.get(renderType);
+//    }
 
     public void setNeighbour(int index, @Nullable RenderSection chunk) {
         this.neighbours[index] = chunk;
@@ -208,6 +211,7 @@ public class RenderSection {
         this.cancelTasks();
         this.compiledSection = CompiledSection.UNCOMPILED;
         this.dirty = true;
+//        vbo.close();
     }
 
     public void setDirty(boolean playerChanged) {
@@ -227,7 +231,8 @@ public class RenderSection {
 
     public void releaseBuffers() {
         this.reset();
-        this.buffers.values().forEach(VertexBuffer::close);
+//        this.buffers.values().forEach(VertexBuffer::close);
+
     }
 
     public static class CompiledSection {
@@ -236,20 +241,27 @@ public class RenderSection {
                 return false;
             }
         };
-        final Set<RenderType> renderTypes = new ObjectArraySet<>();
+        final RenderType renderTypes = RenderType.translucent();
         boolean isCompletelyEmpty = true;
         final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
         VisibilitySet visibilitySet = new VisibilitySet();
         @Nullable
         BufferBuilder.SortState transparencyState;
 
+        public CompiledSection() {}
+        public CompiledSection(ChunkTask.BuildTask.CompileResults compileResults) {
+            this.visibilitySet = compileResults.visibilitySet;
+            this.renderableBlockEntities.addAll(compileResults.blockEntities);
+            this.transparencyState = compileResults.transparencyState;
+        }
+
         public boolean hasNoRenderableLayers() {
             return this.isCompletelyEmpty;
         }
 
-        public boolean isEmpty(RenderType p_112759_) {
-            return !this.renderTypes.contains(p_112759_);
-        }
+//        public boolean isEmpty(RenderType p_112759_) {
+//            return !this.renderTypes.contains(p_112759_);
+//        }
 
         public List<BlockEntity> getRenderableBlockEntities() {
             return this.renderableBlockEntities;

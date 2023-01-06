@@ -166,8 +166,8 @@ public class Pipeline {
             depthStencil.depthWriteEnable(state.depthState.depthMask);
             depthStencil.depthCompareOp(state.depthState.function);
             depthStencil.depthBoundsTestEnable(false);
-            depthStencil.minDepthBounds(0.0f); // Optional
-            depthStencil.maxDepthBounds(1.0f); // Optional
+            depthStencil.minDepthBounds(1.0f); // Optional
+            depthStencil.maxDepthBounds(0.0f); // Optional
             depthStencil.stencilTestEnable(false);
 
             // ===> COLOR BLENDING <===

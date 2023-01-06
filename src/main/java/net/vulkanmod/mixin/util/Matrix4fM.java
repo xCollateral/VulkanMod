@@ -4,11 +4,26 @@ import com.mojang.math.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
 import java.nio.FloatBuffer;
 
 @Mixin(Matrix4f.class)
 public class Matrix4fM {
+
+    @Shadow protected float m03;
+    @Shadow protected float m00;
+    @Shadow protected float m01;
+    @Shadow protected float m02;
+    @Shadow protected float m13;
+    @Shadow protected float m10;
+    @Shadow protected float m11;
+    @Shadow protected float m12;
+    @Shadow protected float m23;
+    @Shadow protected float m20;
+    @Shadow protected float m21;
+    @Shadow protected float m22;
+    @Shadow protected float m33;
 
     /**
      * @author
@@ -47,6 +62,19 @@ public class Matrix4fM {
 //        matrix4f.m23 = zFar * zNear / (zNear - zFar);
 
         return matrix4f;
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+
+    @Overwrite
+    public void multiplyWithTranslation(float f, float g, float h) {
+        this.m03 += this.m00 * f + this.m01 * g + this.m02 * h;
+        this.m13 += this.m10 * f + this.m11 * g + this.m12 * h;
+        this.m23 += this.m20 * f + this.m21 * g + this.m22 * h;
+        this.m33 +=0;
     }
 
     /**

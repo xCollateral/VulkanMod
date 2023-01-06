@@ -36,10 +36,10 @@ public class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
     @Shadow private @Nullable static ShaderInstance positionTexColorNormalShader;
     @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeSolidShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeSolidShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCutoutMippedShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTranslucentMovingBlockShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTranslucentNoCrumblingShader;
     @Shadow private @Nullable static ShaderInstance rendertypeArmorCutoutNoCullShader;
@@ -129,18 +129,18 @@ public class GameRendererMixin {
 //         list1.add(Pair.of(new ShaderInstance(manager, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (p_172687_) -> {
 //            positionTexLightmapColorShader = p_172687_;
 //         }));
-            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_solid", DefaultVertexFormat.BLOCK), (p_172684_) -> {
+           /* list1.add(Pair.of(new ShaderInstance(manager, "rendertype_solid", DefaultVertexFormat.BLOCK), (p_172684_) -> {
                 rendertypeSolidShader = p_172684_;
-            }));
+            }));*/
             list1.add(Pair.of(new ShaderInstance(manager, "rendertype_cutout_mipped", DefaultVertexFormat.BLOCK), (p_172681_) -> {
                 rendertypeCutoutMippedShader = p_172681_;
             }));
-            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_cutout", DefaultVertexFormat.BLOCK), (p_172678_) -> {
+            /*list1.add(Pair.of(new ShaderInstance(manager, "rendertype_cutout", DefaultVertexFormat.BLOCK), (p_172678_) -> {
                 rendertypeCutoutShader = p_172678_;
-            }));
-            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent", DefaultVertexFormat.BLOCK), (p_172675_) -> {
+            }));*/
+           /* list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent", DefaultVertexFormat.BLOCK), (p_172675_) -> {
                 rendertypeTranslucentShader = p_172675_;
-            }));
+            }));*/
          list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (p_172672_) -> {
             rendertypeTranslucentMovingBlockShader = p_172672_;
          }));

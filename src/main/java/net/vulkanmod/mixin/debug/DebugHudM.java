@@ -11,6 +11,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.vulkanmod.render.RHandler;
+import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
@@ -28,7 +30,7 @@ import java.util.List;
 
 import static net.vulkanmod.Initializer.getVersion;
 
-@Mixin(DebugScreenOverlay.class)
+@Mixin(value = DebugScreenOverlay.class, priority = 999)
 public abstract class DebugHudM {
 
     @Shadow @Final private Minecraft minecraft;
@@ -58,13 +60,60 @@ public abstract class DebugHudM {
         strings.add(String.format("Allocated: % 2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
-        strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
+        strings.add("DeviceMemory: " + (MemoryManager.getInstance().getDeviceMemoryMB()>>20) + "MB");
+        strings.add("DeviceMemory2: " + (RHandler.virtualBuffer.usedBytes>>20)+"+"+(RHandler.virtualBufferIdx.usedBytes>>20) + "MB");
+        strings.add("ReservedMemory: " + (RHandler.virtualBuffer.size_t>>20)+"+"+(RHandler.virtualBufferIdx.size_t>>20) + "MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
         strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
+        strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
+        strings.add("Retired VBOs: " + RHandler.retiredVBOs.size());
+        strings.add("Draw Commands: " + RHandler.drawCommands.position());
+        strings.add("");
+
+        strings.add("Vertex-Buffers");
+        strings.add("");
+
+        strings.add("Used Bytes: " + (RHandler.virtualBuffer.usedBytes >> 20) + "MB");
+        strings.add("Max Size: " + (RHandler.virtualBuffer.size_t >> 20) + "MB");
+//        strings.add("Allocs: " + VirtualBuffer.allocs);
+//        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
+        strings.add("subAllocs: " + RHandler.virtualBuffer.subAllocs);
+//        strings.add("Blocks: " + VirtualBuffer.blocks);
+//        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
+
+        strings.add("minRange: " + RHandler.virtualBuffer.unusedRangesS);
+        strings.add("maxRange: " + RHandler.virtualBuffer.unusedRangesM);
+        strings.add("unusedRangesCount: " + RHandler.virtualBuffer.unusedRangesCount);
+        strings.add("minVBOSize: " + RHandler.virtualBuffer.allocMin);
+        strings.add("maxVBOSize: " + RHandler.virtualBuffer.allocMax);
+        strings.add("unusedBytes: " + (RHandler.virtualBuffer.size_t- RHandler.virtualBuffer.usedBytes >> 20) + "MB");
+        strings.add("freeRanges: " + (RHandler.virtualBuffer.FreeRanges.size()));
+        strings.add("activeRanges: " + (RHandler.virtualBuffer.activeRanges.size()));
+
+        strings.add("");
+        strings.add("Index-Buffers");
+        strings.add("");
+
+        strings.add("Used Bytes: " + (RHandler.virtualBufferIdx.usedBytes >> 20) + "MB");
+        strings.add("Max Size: " + (RHandler.virtualBufferIdx.size_t >> 20) + "MB");
+//        strings.add("Allocs: " + RHandler.virtualBufferIdx.allocs);
+//        strings.add("allocBytes: " + RHandler.virtualBufferIdx.allocBytes);
+        strings.add("subAllocs: " + RHandler.virtualBufferIdx.subAllocs);
+//        strings.add("Blocks: " + RHandler.virtualBufferIdx.blocks);
+//        strings.add("BlocksBytes: " + RHandler.virtualBufferIdx.blockBytes);
+//        strings.add("subIncr: " + RHandler.virtualBufferIdx.subIncr);
+        strings.add("minRange: " + RHandler.virtualBufferIdx.unusedRangesS);
+        strings.add("maxRange: " + RHandler.virtualBufferIdx.unusedRangesM);
+        strings.add("unusedRangesCount: " + RHandler.virtualBufferIdx.unusedRangesCount);
+        strings.add("minIndexSize: " + RHandler.virtualBufferIdx.allocMin);
+        strings.add("maxIndexSize: " + RHandler.virtualBufferIdx.allocMax);
+        strings.add("unusedBytes: " + (RHandler.virtualBufferIdx.size_t- RHandler.virtualBufferIdx.usedBytes >> 20) + "MB");
+        strings.add("freeRanges: " + (RHandler.virtualBufferIdx.FreeRanges.size()));
+        strings.add("activeRanges: " + (RHandler.virtualBufferIdx.activeRanges.size()));
 
         return strings;
     }

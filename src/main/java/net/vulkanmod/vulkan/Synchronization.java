@@ -11,19 +11,19 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class Synchronization {
     private static final int allocSize = 10000;
-    private static final LongBuffer fences = MemoryUtil.memAllocLong(allocSize);
-    private static final PointerBuffer freeableCmdBuffers = MemoryUtil.memAllocPointer(allocSize);
-    private static int idx = 0;
+//    private static final LongBuffer fences = MemoryUtil.memAllocLong(allocSize);
+//    private static final PointerBuffer freeableCmdBuffers = MemoryUtil.memAllocPointer(allocSize);
+//    private static int idx = 0;
 
     public synchronized static void addFence(long fence) {
-        fences.put(idx, fence);
-        idx++;
+        /*fences.put(idx, fence);
+        idx++;*/
     }
 
     public synchronized static void waitFences() {
 //        TransferQueue.resetCurrent();
 
-        if(idx == 0) return;
+       /* if(idx == 0) return;
 
         VkDevice device = Vulkan.getDevice();
 
@@ -57,7 +57,7 @@ public class Synchronization {
         TransferQueue.resetCurrent();
 
         fences.limit(allocSize);
-        idx = 0;
+        idx = 0;*/
     }
 
 }

@@ -8,7 +8,7 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
 import net.minecraft.CrashReport;
-import net.minecraft.Util;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.util.thread.ProcessorMailbox;
@@ -18,6 +18,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 public class TaskDispatcher {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -28,12 +29,13 @@ public class TaskDispatcher {
     private final Queue<ChunkTask> toBatchLowPriority = Queues.newLinkedBlockingDeque();
     private int highPriorityQuota = 2;
     private final LinkedBlockingDeque<ChunkBufferBuilderPack> freeBuffers;
-    private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
+    public final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
     private volatile int toBatchCount;
     private volatile int freeBufferCount;
     final ChunkBufferBuilderPack fixedBuffers;
     private final ProcessorMailbox<Runnable> mailbox;
     private final Executor executor;
+    public static boolean resetting=false; //Stop/forcibly abort Async Uploads from crashing the game before the SubAllocator Is Ready (In case of Reset/Resize e.g.)
 
     public TaskDispatcher(Executor executor, ChunkBufferBuilderPack fixedBuffers) {
         int j = Math.max((Runtime.getRuntime().availableProcessors() - 1) >> 1, 1);
@@ -64,35 +66,32 @@ public class TaskDispatcher {
     }
 
     private void runTask() {
-        if (!this.freeBuffers.isEmpty()) {
-            ChunkTask task = this.pollTask();
-            if (task != null) {
-                ChunkBufferBuilderPack chunkbufferbuilderpack = this.freeBuffers.poll();
+        if (!toBatchLowPriority.isEmpty() || !toBatchHighPriority.isEmpty()) {
+            if (!this.freeBuffers.isEmpty()) {
+                ChunkTask task = this.pollTask();
+              {
+                    ChunkBufferBuilderPack chunkbufferbuilderpack = this.freeBuffers.poll();
 
-                this.toBatchCount = this.toBatchHighPriority.size() + this.toBatchLowPriority.size();
-                this.freeBufferCount = this.freeBuffers.size();
+                    this.toBatchCount = this.toBatchHighPriority.size() + this.toBatchLowPriority.size();
+                    this.freeBufferCount = this.freeBuffers.size();
 
-                CompletableFuture.supplyAsync(Util.wrapThreadWithTaskName(task.name(), () -> {
-                    return task.doTask(chunkbufferbuilderpack);
-                }), this.executor).thenCompose((p_194416_) -> {
-                    return p_194416_;
-                }).whenComplete((result, throwable) -> {
-                    if (throwable != null) {
-                        Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Batching chunks"));
-                    } else {
-                        this.mailbox.tell(() -> {
-                            if (result == ChunkTask.Result.SUCCESSFUL) {
-                                chunkbufferbuilderpack.clearAll();
-                            } else {
-                                chunkbufferbuilderpack.discardAll();
-                            }
+                    this.executor.execute(() -> task.doTask(chunkbufferbuilderpack).whenComplete((result, throwable) -> {
+                        if (throwable != null) {
+                            Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Batching chunks"));
+                        } else {
+                            this.mailbox.tell(() -> {
+                                if (result == ChunkTask.Result.SUCCESSFUL) {
+                                    chunkbufferbuilderpack.clearAll();
+                                } else {
+                                    chunkbufferbuilderpack.discardAll();
+                                }
 
-                            this.freeBuffers.add(chunkbufferbuilderpack);
-                            this.freeBufferCount = this.freeBuffers.size();
-                            this.runTask();
-                        });
-                    }
-                });
+                                this.freeBuffers.add(chunkbufferbuilderpack);
+                                this.freeBufferCount = this.freeBuffers.size();
+                                this.runTask();
+                            });
+                        }
+                    }));
 
 //                if(chunkbufferbuilderpack == null) return;
 //                CompletableFuture<ChunkTask.Result> future = task.doTask(chunkbufferbuilderpack);
@@ -115,11 +114,12 @@ public class TaskDispatcher {
 //
 //                this.executor.execute(this::runTask);
 
+                }
             }
         }
     }
 
-    @Nullable
+
     private ChunkTask pollTask() {
         if (this.highPriorityQuota <= 0) {
             ChunkTask chunkTask = this.toBatchLowPriority.poll();
@@ -166,10 +166,11 @@ public class TaskDispatcher {
 
     public void uploadAllPendingUploads() {
 
-        if(!this.toUpload.isEmpty()) WorldRenderer.getInstance().setNeedsUpdate();
-
+        if(resetting) return; //Stop Async Upload Crash When Changing/Updating Size
+        if(!this.toUpload.isEmpty()) WorldRenderer.setNeedsUpdate();
+        if(resetting) return; //Stop Async Upload Crash When Changing/Updating Size
         Runnable runnable;
-        while((runnable = this.toUpload.poll()) != null) {
+        while(!resetting && (runnable = this.toUpload.poll()) != null) {
             runnable.run();
         }
 

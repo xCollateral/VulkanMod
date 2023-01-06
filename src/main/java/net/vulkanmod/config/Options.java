@@ -3,9 +3,8 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 
 public class Options {
@@ -185,7 +184,48 @@ public class Options {
                             return Component.nullToEmpty(t);
                         },
                         value -> config.advCulling = value,
-                        () -> config.advCulling)
+                        () -> config.advCulling),
+                new RangeOption("baseAlignSize", 16384,
+                        131072, 4096,
+                        value -> {
+
+                            Config.baseAlignSize = value;
+                            WorldRenderer.allChanged(0);
+                        }, () -> Config.baseAlignSize)
+                        .setTooltip(Component.nullToEmpty("Adjust Base Modifier Size for Chunk/VBO Allocations")),
+                new RangeOption("vboAlignment", 0,
+                        16, 1,
+                        value -> {
+                            /*Config.prevValue = Config.prevValue < Config.vboAlignment ? value >> 1 : value << 1;*/
+                            Config.vboAlignment=value;
+                            Config.vboAlignmentActual=1<<value;
+
+                            WorldRenderer.allChanged(0);
+                        }, () -> Config.vboAlignment)
+                        .setTooltip(Component.nullToEmpty("Current Value: "+ (1<<Config.vboAlignment)+" "+"""
+                        Use to Adjust VBO Alignment
+                        Acts as a "Reserve Space" to allow VBO Resizing
+                        Larger values reduces fragmentation and reallocations but increases memory usage""")),
+                new SwitchOption("noFog",
+                        value -> {
+
+                            Config.noFog=value;
+
+                        }, () -> Config.noFog)
+                        .setTooltip(Component.nullToEmpty("""
+                        Disables all forms of Fog when enabled
+                        Uses an alternate shader with all fog effects removed
+                        May increase performance slightly""")),
+                new SwitchOption("multiDrawIndirect",
+                        value -> {
+
+                            Config.drawIndirect=value;
+
+                        }, () -> Config.drawIndirect)
+                        .setTooltip(Component.nullToEmpty("""
+                        Enable GPUMultiDrawIndirect
+                        Allows the GPU Driver to handle DrawCalls instead of the CPU
+                        May improve or worsen performance: Depends on hardware""")),
         };
 
     }

@@ -17,7 +17,7 @@ public class ChunkGrid {
     protected int chunkGridSizeX;
     protected int chunkGridSizeZ;
     public RenderSection[] chunks;
-    private ChunkAreaManager chunkAreaManager;
+    private final ChunkAreaManager chunkAreaManager;
 
     private int prevSecX;
     private int prevSecZ;

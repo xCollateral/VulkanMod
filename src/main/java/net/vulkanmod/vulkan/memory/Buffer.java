@@ -6,14 +6,18 @@ public abstract class Buffer {
     protected long id;
     protected long allocation;
 
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
     protected int bufferSize;
-    protected int usedBytes;
-    protected int offset;
+    public int usedBytes;
+    public int offset;
 
 //    protected Buffer.Type type;
     protected MemoryType type;
     protected int usage;
-    protected PointerBuffer data;
+    public PointerBuffer data;
 
     protected Buffer(int usage, MemoryType type) {
         //TODO: check usage
@@ -42,7 +46,7 @@ public abstract class Buffer {
 
     public long getId() {return id; }
 
-    protected void setBufferSize(int size) { this.bufferSize = size; }
+    public void setBufferSize(int size) { this.bufferSize = size; }
 
     protected void setId(long id) { this.id = id; }
 
