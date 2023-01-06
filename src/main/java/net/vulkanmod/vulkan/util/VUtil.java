@@ -11,6 +11,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.libc.LibCString.nmemcpy;
 
 public class VUtil {
+    public static final long alignedINT32_T = Integer.toUnsignedLong(Integer.MIN_VALUE);
     public static final int UINT32_MAX = 0xFFFFFFFF;
     public static final long UINT64_MAX = 0xFFFFFFFFFFFFFFFFL;
     public static final long tmOut = 10000;

@@ -3,6 +3,7 @@ package net.vulkanmod.render.chunk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import com.mojang.blaze3d.shaders.Shader;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
@@ -341,8 +342,8 @@ public class WorldRenderer {
 
         minecraft.getProfiler().push("populate_chunks_to_compile");
         RenderRegionCache renderregioncache = new RenderRegionCache();
-        BlockPos cameraPos = camera.getBlockPosition();
-        List<RenderSection> list = Lists.newArrayList();
+//        BlockPos cameraPos = camera.getBlockPosition();
+//        List<RenderSection> list = Lists.newArrayList();
 
 
         RHandler.uniqueVBOs.clear();
@@ -371,18 +372,18 @@ public class WorldRenderer {
         minecraft.getProfiler().popPush("schedule_async_compile");
 
         //debug
-        Profiler p = null;
+        /*Profiler p = null;
         if(!list.isEmpty()) {
             p = Profiler.getProfiler("compileChunks");
             p.start();
-        }
+        }*/
 
 
         minecraft.getProfiler().pop();
 
-        if(!list.isEmpty()) {
+       /* if(!list.isEmpty()) {
             p.round();
-        }
+        }*/
 
     }
 

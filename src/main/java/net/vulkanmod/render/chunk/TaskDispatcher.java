@@ -8,7 +8,7 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
 import net.minecraft.CrashReport;
-import net.minecraft.Util;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.util.thread.ProcessorMailbox;
@@ -18,6 +18,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 public class TaskDispatcher {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -65,35 +66,32 @@ public class TaskDispatcher {
     }
 
     private void runTask() {
-        if (!this.freeBuffers.isEmpty()) {
-            ChunkTask task = this.pollTask();
-            if (task != null) {
-                ChunkBufferBuilderPack chunkbufferbuilderpack = this.freeBuffers.poll();
+        if (!toBatchLowPriority.isEmpty() || !toBatchHighPriority.isEmpty()) {
+            if (!this.freeBuffers.isEmpty()) {
+                ChunkTask task = this.pollTask();
+              {
+                    ChunkBufferBuilderPack chunkbufferbuilderpack = this.freeBuffers.poll();
 
-                this.toBatchCount = this.toBatchHighPriority.size() + this.toBatchLowPriority.size();
-                this.freeBufferCount = this.freeBuffers.size();
+                    this.toBatchCount = this.toBatchHighPriority.size() + this.toBatchLowPriority.size();
+                    this.freeBufferCount = this.freeBuffers.size();
 
-                CompletableFuture.supplyAsync(Util.wrapThreadWithTaskName(task.name(), () -> {
-                    return task.doTask(chunkbufferbuilderpack);
-                }), this.executor).thenCompose((p_194416_) -> {
-                    return p_194416_;
-                }).whenComplete((result, throwable) -> {
-                    if (throwable != null) {
-                        Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Batching chunks"));
-                    } else {
-                        this.mailbox.tell(() -> {
-                            if (result == ChunkTask.Result.SUCCESSFUL) {
-                                chunkbufferbuilderpack.clearAll();
-                            } else {
-                                chunkbufferbuilderpack.discardAll();
-                            }
+                    this.executor.execute(() -> task.doTask(chunkbufferbuilderpack).whenComplete((result, throwable) -> {
+                        if (throwable != null) {
+                            Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Batching chunks"));
+                        } else {
+                            this.mailbox.tell(() -> {
+                                if (result == ChunkTask.Result.SUCCESSFUL) {
+                                    chunkbufferbuilderpack.clearAll();
+                                } else {
+                                    chunkbufferbuilderpack.discardAll();
+                                }
 
-                            this.freeBuffers.add(chunkbufferbuilderpack);
-                            this.freeBufferCount = this.freeBuffers.size();
-                            this.runTask();
-                        });
-                    }
-                });
+                                this.freeBuffers.add(chunkbufferbuilderpack);
+                                this.freeBufferCount = this.freeBuffers.size();
+                                this.runTask();
+                            });
+                        }
+                    }));
 
 //                if(chunkbufferbuilderpack == null) return;
 //                CompletableFuture<ChunkTask.Result> future = task.doTask(chunkbufferbuilderpack);
@@ -116,11 +114,12 @@ public class TaskDispatcher {
 //
 //                this.executor.execute(this::runTask);
 
+                }
             }
         }
     }
 
-    @Nullable
+
     private ChunkTask pollTask() {
         if (this.highPriorityQuota <= 0) {
             ChunkTask chunkTask = this.toBatchLowPriority.poll();

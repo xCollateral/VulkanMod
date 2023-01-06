@@ -473,7 +473,7 @@ public class Drawer {
 
     public static void drawIndexedBindlessIndirect() {
 
-        vkCmdDrawIndexedIndirect(commandBuffers.get(currentFrame), RHandler.drawCmdBuffer, 0, RHandler.uniqueVBOs.size(), 20);
+        VK12.vkCmdDrawIndexedIndirect(commandBuffers.get(currentFrame), RHandler.drawCmdBuffer, 0, RHandler.drawCommands.position(), 20);
 
     }
     public static void drawIndexedBindless(VkDrawIndexedIndirectCommand indirectCommand) {

@@ -30,7 +30,7 @@ public class RHandler
     public static double camX;
     public static double camY;
     public static double camZ;
-    private static final int MAX_VBOS = 2048;
+    private static final int MAX_VBOS = 4096;
     public static VkDrawIndexedIndirectCommand.Buffer drawCommands=VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20* MAX_VBOS), MAX_VBOS);
     public static  long drawCmdBuffer;
     public static ObjectArrayList<VBO> retiredVBOs = new ObjectArrayList<>(1024);
@@ -90,12 +90,12 @@ public class RHandler
 
         StagingBuffer stagingVkBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
 
-        VUtil.memcpy2(memByteBuffer(stagingVkBuffer.data.get(0), stagingVkBuffer.getBufferSize()), drawCommands.address0(), stagingVkBuffer.getUsedBytes(), uniqueVBOs.size()*20);
+        VUtil.memcpy2(memByteBuffer(stagingVkBuffer.data.get(0), stagingVkBuffer.getBufferSize()), drawCommands.address0(), stagingVkBuffer.getUsedBytes(), drawCommands.position()*20);
 
         stagingVkBuffer.offset = stagingVkBuffer.usedBytes;
-        stagingVkBuffer.usedBytes += uniqueVBOs.size()*20;
+        stagingVkBuffer.usedBytes += drawCommands.position()*20;
 
-        copyStagingtoLocalBuffer(stagingVkBuffer.getId(), stagingVkBuffer.offset, drawCmdBuffer, 0, uniqueVBOs.size() *20L);
+        copyStagingtoLocalBuffer(stagingVkBuffer.getId(), stagingVkBuffer.offset, drawCmdBuffer, 0, drawCommands.position() *20L);
     }
 
 

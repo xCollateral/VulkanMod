@@ -72,6 +72,7 @@ public abstract class DebugHudM {
         strings.add("");
         strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
         strings.add("Retired VBOs: " + RHandler.retiredVBOs.size());
+        strings.add("Draw Commands: " + RHandler.drawCommands.position());
         strings.add("");
 
         strings.add("Vertex-Buffers");

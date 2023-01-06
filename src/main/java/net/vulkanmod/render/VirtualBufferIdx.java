@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.*;
@@ -14,14 +15,13 @@ import org.lwjgl.vulkan.VkMemoryDedicatedAllocateInfo;
 
 import java.nio.LongBuffer;
 
-import static net.vulkanmod.render.chunk.WorldRenderer.lastViewDistance;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VirtualBufferIdx {
     private static long virtualBlockBufferSuperSet;
-    public static final int size_t = Integer.MAX_VALUE/8;
+    public static final long size_t = VUtil.alignedINT32_T /8;
     public static int subIncr;
     public static int usedBytes;
     public static final ObjectArrayList<VkBufferPointer> FreeRanges = new ObjectArrayList<>(1024);
@@ -40,11 +40,11 @@ public class VirtualBufferIdx {
 
     static {
 //        size_t = (lastViewDistance * lastViewDistance) * 24 * Config.baseAlignSize/8;
-        initBufferSuperSet(size_t);
+        initBufferSuperSet();
     }
     public static void reset(int i)
     {
-        if(i==0) i=size_t;
+        if(i==0) i= (int) size_t;
 //        Drawer.skipRendering=true;
 
         subIncr=0;
@@ -66,12 +66,12 @@ public class VirtualBufferIdx {
     }
 
 
-    private static void createBuffer(long size, MemoryStack stack, PointerBuffer pBuffer) {
+    private static void createBuffer(MemoryStack stack, PointerBuffer pBuffer) {
 
         VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.callocStack(stack)
                 .sType$Default()
                 .pNext(NULL)
-                .size(size)
+                .size(size_t)
                 .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                 .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
@@ -82,7 +82,7 @@ public class VirtualBufferIdx {
         nvkCreateBuffer(Vulkan.getDevice(), bufferInfo.address(), NULL, pBuffer.address());
     }
 
-    private static void allocMem(long size, MemoryStack stack, PointerBuffer pBuffer, PointerBuffer pAllocation) {
+    private static void allocMem(MemoryStack stack, PointerBuffer pBuffer, PointerBuffer pAllocation) {
 
         VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = VkMemoryDedicatedAllocateInfo.mallocStack(stack)
                 .buffer(pBuffer.get(0))
@@ -94,27 +94,27 @@ public class VirtualBufferIdx {
         VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.mallocStack(stack)
                 .sType$Default()
                 .pNext(vkMemoryDedicatedAllocateInfo.address())
-                .allocationSize(size)
+                .allocationSize(size_t)
                 .memoryTypeIndex(0);
 
 //            Vma.vmaCreateBuffer(Vulkan.getAllocator(), bufferInfo, allocationInfo, pBuffer, pAllocation, null);
         nvkAllocateMemory(Vulkan.getDevice(), allocInfo.address(), NULL, pAllocation.address0());
     }
 
-    private static void initBufferSuperSet(int size) {
+    private static void initBufferSuperSet() {
 
 
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
             VmaVirtualBlockCreateInfo blockCreateInfo = VmaVirtualBlockCreateInfo.malloc(stack)
-                    .size(size)
+                    .size(size_t)
                     .flags(0/*VMA_VIRTUAL_BLOCK_CREATE_LINEAR_ALGORITHM_BIT*/)
                     .pAllocationCallbacks(null);
             PointerBuffer pAlloc = stack.mallocPointer(1);
             PointerBuffer pBuffer = stack.mallocPointer(1);
 
-            createBackingBuffer(size, stack, pAlloc, pBuffer);
+            createBackingBuffer(stack, pAlloc, pBuffer);
 
             PointerBuffer block = stack.pointers(virtualBlockBufferSuperSet);
             Vma.vmaCreateVirtualBlock(blockCreateInfo, block);
@@ -126,9 +126,9 @@ public class VirtualBufferIdx {
         }
     }
 
-    private static void createBackingBuffer(int size, MemoryStack stack, PointerBuffer pAlloc, PointerBuffer pBuffer) {
-        createBuffer(size, stack, pBuffer);
-        allocMem(size, stack, pBuffer, pAlloc);
+    private static void createBackingBuffer(MemoryStack stack, PointerBuffer pAlloc, PointerBuffer pBuffer) {
+        createBuffer(stack, pBuffer);
+        allocMem(stack, pBuffer, pAlloc);
 
         vkBindBufferMemory(Vulkan.getDevice(), pBuffer.get(0), pAlloc.get(0), 0);
 
@@ -148,7 +148,7 @@ public class VirtualBufferIdx {
         {
             System.out.println(size_t+"-->"+usedBytes+alignedSize+"-->"+size_t*2);
             WorldRenderer.setNeedsUpdate();
-            WorldRenderer.allChanged(size_t*2);
+            WorldRenderer.allChanged((int) (size_t*2));
 
         }
         try(MemoryStack stack = MemoryStack.stackPush())
@@ -173,7 +173,7 @@ public class VirtualBufferIdx {
                 System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+alignedSize)+"-->"+alignedSize+"-->"+size_t);
                 System.out.println("Out of Mem!: " + usedBytes +"-->"+(usedBytes+alignedSize));
                 WorldRenderer.setNeedsUpdate();
-                WorldRenderer.allChanged(size_t);
+                WorldRenderer.allChanged((int) size_t);
                 pAlloc=stack.mallocPointer(1);
                 Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, stack.longs(0));
                 allocation=pAlloc.get(0);
