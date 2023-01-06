@@ -84,16 +84,16 @@ public class VBO implements Comparable<VBO> {
 
         {
 
-            if(fakeVertexBuffer == null || !VirtualBuffer.isAlreadyLoaded(index, data.remaining()))
+            if(fakeVertexBuffer == null || !RHandler.virtualBuffer.isAlreadyLoaded(index, data.remaining()))
             {
-                fakeVertexBuffer =VirtualBuffer.addSubIncr(index, data.remaining());
+                fakeVertexBuffer =RHandler.virtualBuffer.addSubIncr(index, data.remaining());
             }
 
 
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(data.remaining(), data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBuffer.bufferPointerSuperSet, fakeVertexBuffer.i2(), fakeVertexBuffer.size_t());
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, RHandler.virtualBuffer.bufferPointerSuperSet, fakeVertexBuffer.i2(), fakeVertexBuffer.size_t());
             return fakeVertexBuffer.i2()>>5;
         }
     }
@@ -111,14 +111,14 @@ public class VBO implements Comparable<VBO> {
                 }
                 data=autoIndexBuffer.getBuffer();
             }
-            if(fakeIndexBuffer ==null || !VirtualBufferIdx.isAlreadyLoaded(index, data.remaining()))
+            if(fakeIndexBuffer ==null || !RHandler.virtualBufferIdx.isAlreadyLoaded(index, data.remaining()))
             {
-                fakeIndexBuffer =VirtualBufferIdx.addSubIncr(index, data.remaining());
+                fakeIndexBuffer =RHandler.virtualBufferIdx.addSubIncr(index, data.remaining());
             }
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(fakeIndexBuffer.size_t(), data);
 
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, VirtualBufferIdx.bufferPointerSuperSet, fakeIndexBuffer.i2(), fakeIndexBuffer.size_t());
+            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, RHandler.virtualBufferIdx.bufferPointerSuperSet, fakeIndexBuffer.i2(), fakeIndexBuffer.size_t());
 
             return fakeIndexBuffer.i2()>>1;
         }
@@ -135,10 +135,10 @@ public class VBO implements Comparable<VBO> {
     public void close() {
         if(preInitialised) return;
         if(vertexCount <= 0) return;
-        VirtualBuffer.addFreeableRange(index, fakeVertexBuffer);
+        RHandler.virtualBuffer.addFreeableRange(index, fakeVertexBuffer);
         fakeVertexBuffer =null;
 
-            VirtualBufferIdx.addFreeableRange(index, fakeIndexBuffer);
+            RHandler.virtualBufferIdx.addFreeableRange(index, fakeIndexBuffer);
             fakeIndexBuffer = null;
 
 

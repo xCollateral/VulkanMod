@@ -440,8 +440,8 @@ public class WorldRenderer {
 //        nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
         vkDeviceWaitIdle(Vulkan.getDevice()); //Use a heavier Wait to avoid potential crashes
 //        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
-        VirtualBuffer.reset(size);
-        VirtualBufferIdx.reset(size/8);
+        RHandler.virtualBuffer.reset(size);
+        RHandler.virtualBufferIdx.reset(size/8);
         TaskDispatcher.resetting=false;
         Drawer.skipRendering=false;
 
@@ -586,11 +586,11 @@ public class WorldRenderer {
         try(MemoryStack stack = stackPush()) {
             VkCommandBuffer commandBuffer = Drawer.commandBuffers.get(Drawer.getCurrentFrame());
 
-            long vertexBuffers = stack.npointer(VirtualBuffer.bufferPointerSuperSet);
+            long vertexBuffers = stack.npointer(RHandler.virtualBuffer.bufferPointerSuperSet);
             long offsets = stack.npointer(0);
 //            Profiler.Push("bindVertex");
             VK10.nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, VirtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(commandBuffer, RHandler.virtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
         }
 //        RHandler.uniqueVBOs.unstableSort(null);
 

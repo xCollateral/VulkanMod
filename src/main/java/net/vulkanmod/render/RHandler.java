@@ -33,6 +33,9 @@ public class RHandler
     private static final int MAX_VBOS = 4096;
     public static VkDrawIndexedIndirectCommand.Buffer drawCommands=VkDrawIndexedIndirectCommand.create(MemoryUtil.nmemAlignedAlloc(8, 20* MAX_VBOS), MAX_VBOS);
     public static  long drawCmdBuffer;
+
+    public static final VirtualBuffer virtualBuffer=new VirtualBuffer(VUtil.alignedINT32_T, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(VUtil.alignedINT32_T/8, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     public static ObjectArrayList<VBO> retiredVBOs = new ObjectArrayList<>(1024);
     private static  long drawCmdAlloc;
     private static final int size_t=0x10000;
