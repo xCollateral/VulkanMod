@@ -179,7 +179,8 @@ public class VulkanImage {
 
 
             PointerBuffer vmaAllocation = stack.pointers(0L);
-            long pTextureImage1 = createImg(width, vmaAllocation, height).get(0);
+            long pTextureImage1 = createImg(width, vmaAllocation, height, true, VK_FORMAT_R8G8B8A8_UNORM).get(0);
+
             VkSubresourceLayout subresourceLayout = blitImage(pTextureImage1, image, width, height, stack);
 
 
@@ -210,12 +211,12 @@ public class VulkanImage {
                 vmaUnmapMemory(Vulkan.getAllocator(), allocation1);
 
 
-            //            MemoryManager.getInstance().freeBuffer(pStagingBuffer.get(0), pStagingAllocation.get(0));
+                        MemoryManager.getInstance().freeImage(pTextureImage1, allocation1);
         }
 
     }
 
-    private static PointerBuffer createImg(int width, PointerBuffer vmaAllocation, int height) {
+    private static PointerBuffer createImg(int width, PointerBuffer vmaAllocation, int height, boolean host, int format) {
         try (MemoryStack stack = stackPush()) {
 
             PointerBuffer vkImage = stack.mallocPointer(1);
@@ -229,20 +230,25 @@ public class VulkanImage {
             imageInfo.extent().depth(1);
             imageInfo.mipLevels(1);
             imageInfo.arrayLayers(1);
-            imageInfo.format(VK_FORMAT_R8G8B8A8_UNORM);
+            imageInfo.format(format);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-            imageInfo.tiling(VK_IMAGE_TILING_LINEAR);
-            imageInfo.usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+            imageInfo.tiling(host ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL);
+            imageInfo.usage(host ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
             imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
 //            imageInfo.pQueueFamilyIndices(stack.ints(0, 1));
 
-            VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.callocStack(stack);
-            allocationInfo.flags(VMA_ALLOCATION_CREATE_MAPPED_BIT);
-            allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
-            allocationInfo.requiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            VmaAllocationCreateInfo allocationInfo = host ? VmaAllocationCreateInfo.callocStack(stack)
+            .flags(VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT )
+            .usage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+            .requiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
 
-            allocationInfo.pool(NULL);
+            .pool(NULL) : VmaAllocationCreateInfo.callocStack(stack)
+                    .flags(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT )
+                    .usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                    .requiredFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+                    .memoryTypeBits(0)
+                    .pool(NULL);
 //            allocationInfo.requiredFlags(memProperties);
 
             long allocator = Vulkan.getAllocator();
@@ -257,6 +263,8 @@ public class VulkanImage {
     }
 
     private static VkSubresourceLayout blitImage(long dst, long src, int width, int height, MemoryStack stack) {
+        PointerBuffer vmaAllocation = stack.pointers(0L);
+        long RGBImgTmp = createImg(width, vmaAllocation, height, false, VK_FORMAT_R8G8B8A8_UNORM).get(0);
 
         TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
 
@@ -273,15 +281,32 @@ public class VulkanImage {
                 .dstSubresource(vkImageSubresourceLayers)
                 .extent(VkExtent3D.malloc().set(width, height, 1));
 
+        VkOffset3D.Buffer set = VkOffset3D.callocStack(2, stack);
+        set.get(0).set(0,0,0);
+        set.get(1).set(width, height, 1);
+
+
+        VkImageBlit.Buffer imgBlt_ = VkImageBlit.callocStack(1, stack)
+                .srcSubresource(vkImageSubresourceLayers)
+                .srcOffsets(set)
+                .dstSubresource(vkImageSubresourceLayers)
+                .dstOffsets(set);
+
 
         transitionImageLayout(commandBuffer.getHandle(), src, VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+
 //
         transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 
+        vkCmdBlitImage(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt_, VK_FILTER_NEAREST);
 
-        vkCmdCopyImage(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt);
+        transitionImageLayout(commandBuffer.getHandle(), RGBImgTmp, VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+
+
+        vkCmdCopyImage(commandBuffer.getHandle(), RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt);
 
 //        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
 //                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);
@@ -295,6 +320,8 @@ public class VulkanImage {
         long fence = TransferQueue.endCommands(commandBuffer);
 
         vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+
+        MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
 
         return subResourceLayout;
     }
@@ -647,13 +674,13 @@ public class VulkanImage {
                 sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
                 destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
-            }else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
+            }else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
 
-                barrier.srcAccessMask(VK_ACCESS_MEMORY_READ_BIT);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                barrier.dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
 
-                sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT ;
-                destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT ;
+                destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
             } else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 
