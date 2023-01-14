@@ -1,10 +1,8 @@
 package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.util.Pair;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -13,7 +11,6 @@ import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -122,7 +119,7 @@ public class MemoryManager {
     }
 
     public void createImage(int width, int height, int mipLevel, int format, int tiling, int usage, int memProperties,
-                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
+                            LongBuffer pTextureImage, PointerBuffer pTextureImageMemory, int initalLayout) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -136,7 +133,7 @@ public class MemoryManager {
             imageInfo.arrayLayers(1);
             imageInfo.format(format);
             imageInfo.tiling(tiling);
-            imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            imageInfo.initialLayout(initalLayout);
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
             imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
@@ -144,9 +141,14 @@ public class MemoryManager {
 
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
             //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
+            allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
             allocationInfo.requiredFlags(memProperties);
 
-            vmaCreateImage(allocator, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+            int i = vmaCreateImage(allocator, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+            if(i !=VK_SUCCESS)
+            {   throw new RuntimeException("Failed to create image: "+i);
+
+            }
 
 //            if(vkCreateImage(device, imageInfo, null, pTextureImage) != VK_SUCCESS) {
 //                throw new RuntimeException("Failed to create image");
