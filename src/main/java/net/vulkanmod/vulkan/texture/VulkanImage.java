@@ -196,8 +196,8 @@ public class VulkanImage {
     //            consumer.accept(data);
     //            vkUnmapMemory(Vulkan.getDevice(), allocation);
 
-            long rowPitch = subresourceLayout.rowPitch();
-            long arrayPitch = subresourceLayout.arrayPitch();
+            int rowPitch = (int) subresourceLayout.rowPitch();
+            int arrayPitch = (int) subresourceLayout.arrayPitch();
             long depthPitch = subresourceLayout.depthPitch();
             long offset = subresourceLayout.offset();
             System.out.println(rowPitch);
@@ -205,6 +205,7 @@ public class VulkanImage {
             System.out.println(depthPitch);
             System.out.println(offset);
             vmaMapMemory(Vulkan.getAllocator(), allocation1, data);
+            //int rowPitch1 = (rowPitch % (rowPitch & arrayPitch) -((rowPitch/4)& height))/4;
             BGR2RGB(MemoryUtil.memAddress0(buffer), width, data.get(0), height, rowPitch);
                 vmaUnmapMemory(Vulkan.getAllocator(), allocation1);
 
@@ -299,7 +300,11 @@ public class VulkanImage {
     }
 
     private static void BGR2RGB(long srcDst, int width, long src, long height, long rowPitch) {
-        LibCString.nmemcpy(srcDst, src, (width*height*4));
+        for (int i = 0; i <height; i++) {
+            LibCString.nmemcpy(srcDst, src, (width* 4L));
+            src+=((rowPitch));
+            srcDst+=(width * 4L);
+        }
     }
 
     private void transferDstLayout() {
