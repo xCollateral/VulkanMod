@@ -15,25 +15,25 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
-import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memByteBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
-    private static VkDevice device = Vulkan.getDevice();
+    private static final VkDevice device = Vulkan.getDevice();
 
     private long id;
     private long textureImageMemory;
     private long allocation;
     private long textureImageView;
 
-    private Byte2LongMap samplers;
+    private final Byte2LongMap samplers;
     private long textureSampler;
 
-    private int mipLevels;
-    private int width;
-    private int height;
-    private int formatSize;
+    private final int mipLevels;
+    private final int width;
+    private final int height;
+    private final int formatSize;
 
     private int currentLayout;
     private TransferQueue.CommandBuffer commandBuffer;
@@ -101,7 +101,7 @@ public class VulkanImage {
 
     private void uploadTexture(int width, int height, int formatSize, ByteBuffer buffer) {
         try(MemoryStack stack = stackPush()) {
-            long imageSize = width * height * formatSize;
+            long imageSize = (long) width * height * formatSize;
 
             commandBuffer = TransferQueue.beginCommands();
             transferDstLayout();
@@ -110,7 +110,7 @@ public class VulkanImage {
 
             stagingBuffer.copyBuffer((int)imageSize, buffer);
 
-            copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, (int)stagingBuffer.getOffset(), 0, 0);
+            copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, stagingBuffer.getOffset(), 0, 0);
         }
 
     }
@@ -144,17 +144,17 @@ public class VulkanImage {
     }
 
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int formatSize, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
-        long imageSize = buffer.limit();
+        int imageSize = buffer.limit();
 
         commandBuffer = TransferQueue.getCommandBuffer();
         transferDstLayout();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
 
-        stagingBuffer.copyBuffer((int)imageSize, buffer);
+        stagingBuffer.copyBuffer(imageSize, buffer);
 
         copyBufferToImageAsync(stagingBuffer.getBufferId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4), unpackRowLength, height);
+                stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4, unpackRowLength, height);
 
         long fence = TransferQueue.endIfNeeded(commandBuffer);
         if (fence != -1) Synchronization.addFence(fence);
@@ -162,7 +162,7 @@ public class VulkanImage {
 
     public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
         try(MemoryStack stack = stackPush()) {
-            long imageSize = width * height * formatSize;
+            int imageSize = width * height * formatSize;
 
             LongBuffer pStagingBuffer = stack.mallocLong(1);
             PointerBuffer pStagingAllocation = stack.pointers(0L);
@@ -172,15 +172,24 @@ public class VulkanImage {
                     pStagingBuffer,
                     pStagingAllocation);
 
-            copyImageToBuffer(pStagingBuffer.get(0), image, 0, width, height, 0, 0, 0, 0, 0);
+            copyImageToBuffer(pStagingBuffer.get(0), image, width, height);
 
             MemoryManager.getInstance().MapAndCopy(pStagingAllocation.get(0), imageSize,
-                    (data) -> VUtil.memcpy(buffer, data.getByteBuffer(0, (int)imageSize))
+                    (data) -> BGR2RGB(buffer, imageSize, data.get(0))
             );
 
             MemoryManager.getInstance().freeBuffer(pStagingBuffer.get(0), pStagingAllocation.get(0));
         }
 
+    }
+
+    private static void BGR2RGB(ByteBuffer dst, int imageSize, long src) {
+        long srcDst = MemoryUtil.memAddress0(dst);
+        for (int i = 0; i < imageSize; i+=4) {
+            MemoryUtil.memPutByte(srcDst + i, MemoryUtil.memGetByte(src +i+2));
+            MemoryUtil.memPutByte(srcDst+i+1, MemoryUtil.memGetByte(src +i+1));
+            MemoryUtil.memPutByte(srcDst+i+2, MemoryUtil.memGetByte(src + i));
+        }
     }
 
     private void transferDstLayout() {
@@ -391,6 +400,30 @@ public class VulkanImage {
         }
     }
 
+    private static void copyImageToBuffer(long buffer, long image, int width, int height) {
+
+        try(MemoryStack stack = stackPush()) {
+
+            TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            region.bufferOffset(0);
+            region.bufferRowLength(0);   // Tightly packed
+            region.bufferImageHeight(0);  // Tightly packed
+            region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            region.imageSubresource().mipLevel(0);
+            region.imageSubresource().baseArrayLayer(0);
+            region.imageSubresource().layerCount(1);
+            region.imageOffset().set(0, 0, 0);
+            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+
+            vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
+
+            long fence = TransferQueue.endCommands(commandBuffer);
+
+            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+        }
+    }
     private static void copyImageToBuffer(long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
 
         try(MemoryStack stack = stackPush()) {
