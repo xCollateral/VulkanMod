@@ -53,14 +53,6 @@ public class VUtil {
         src.limit(src.capacity()).rewind();
     }
 
-    public static void memcpy(long dst, long src, int size, long offset) {
-//        dst.position((int)offset);
-//        src.limit(size);
-//        dst.put(src);
-
-        MemoryUtil.memCopy(src+offset, dst, size);
-//        src.limit(src.capacity()).rewind();
-    }
     public static void memcpy(ByteBuffer dst, ByteBuffer src, int size, long offset) {
         dst.position((int)offset);
         src.limit(size);

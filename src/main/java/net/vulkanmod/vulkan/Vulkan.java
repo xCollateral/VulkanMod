@@ -52,8 +52,8 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
     static {
@@ -667,13 +667,12 @@ public class Vulkan {
             PointerBuffer pDepthImageMemory = stack.mallocPointer(1);
 
             MemoryManager.getInstance().createImage(
-                    swapChainExtent.width(), swapChainExtent.height(), 1,
+                    swapChainExtent.width(), swapChainExtent.height(),
                     depthFormat,
-                    VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pDepthImage,
-                    pDepthImageMemory, VK_IMAGE_LAYOUT_UNDEFINED);
+                    pDepthImageMemory, false);
 
             depthImage = pDepthImage.get(0);
             depthImageMemory = pDepthImageMemory.get(0);

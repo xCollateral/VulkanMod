@@ -6,11 +6,11 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.libc.LibCString;
-import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -19,7 +19,6 @@ import java.nio.LongBuffer;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
@@ -28,7 +27,7 @@ public class VulkanImage {
     private static final VkDevice device = Vulkan.getDevice();
 
     private long id;
-    private long textureImageMemory;
+//    private long textureImageMemory;
     private long allocation;
     private long textureImageView;
 
@@ -36,9 +35,6 @@ public class VulkanImage {
     private long textureSampler;
 
     private final int mipLevels;
-    private final int width;
-    private final int height;
-    private final int formatSize;
 
     private int currentLayout;
     private TransferQueue.CommandBuffer commandBuffer;
@@ -50,9 +46,9 @@ public class VulkanImage {
 
     public VulkanImage(int mipLevels, int width, int height, int formatSize, boolean blur, boolean clamp) {
         this.mipLevels = mipLevels;
-        this.width = width;
-        this.height = height;
-        this.formatSize = formatSize;
+//        this.width = width;
+//        this.height = height;
+//        this.formatSize = formatSize;
 
         this.samplers = new Byte2LongOpenHashMap(8);
 
@@ -71,11 +67,11 @@ public class VulkanImage {
 
     public static VulkanImage createWhiteTexture() {
         int i = 0xFFFFFFFF;
-        ByteBuffer buffer = MemoryUtil.memAlloc(4);
+        ByteBuffer buffer = MemoryUtil.memAlignedAlloc(8, 4);
         buffer.putInt(0, i);
 
         VulkanImage image = new VulkanImage(1, 1, 4, false, false, buffer);
-        MemoryUtil.memFree(buffer);
+        MemoryUtil.memAlignedFree(buffer);
         return image;
     }
 
@@ -87,12 +83,12 @@ public class VulkanImage {
             //LongBuffer pAllocation = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(0L);
 
-            MemoryManager.getInstance().createImage(width, height, miplevel,
-                    VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+            MemoryManager.getInstance().createImage(width, height,
+                    VK_FORMAT_R8G8B8A8_UNORM,
                     VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pTextureImage,
-                    pAllocation, VK_IMAGE_LAYOUT_UNDEFINED);
+                    pAllocation, false);
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);
@@ -105,18 +101,16 @@ public class VulkanImage {
     }
 
     private void uploadTexture(int width, int height, int formatSize, ByteBuffer buffer) {
-        try(MemoryStack stack = stackPush()) {
-            long imageSize = (long) width * height * formatSize;
+        long imageSize = (long) width * height * formatSize;
 
-            commandBuffer = TransferQueue.beginCommands();
-            transferDstLayout();
+        commandBuffer = TransferQueue.beginCommands();
+        transferDstLayout();
 
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
 
-            stagingBuffer.copyBuffer((int)imageSize, buffer);
+        stagingBuffer.copyBuffer((int)imageSize, buffer);
 
-            copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, stagingBuffer.getOffset(), 0, 0);
-        }
+        copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, stagingBuffer.getOffset(), 0, 0);
 
     }
 
@@ -165,110 +159,54 @@ public class VulkanImage {
         if (fence != -1) Synchronization.addFence(fence);
     }
 
-    public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
+    public static void downloadTexture(int width, int height, long buffer, long image) {
         try(MemoryStack stack = stackPush()) {
-            int imageSize = width * height * formatSize;
+            int imageSize = width * height * 4;
 
-//            LongBuffer pStagingBuffer = stack.mallocLong(1);
-//            PointerBuffer pStagingAllocation = stack.pointers(0L);
-//            MemoryManager.getInstance().createBuffer(imageSize,
-//                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-//                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-//                    pStagingBuffer,
-//                    pStagingAllocation);
-
-
-            PointerBuffer vmaAllocation = stack.pointers(0L);
-            long pTextureImage1 = createImg(width, vmaAllocation, height, true, VK_FORMAT_R8G8B8A8_UNORM).get(0);
-
-            VkSubresourceLayout subresourceLayout = blitImage(pTextureImage1, image, width, height, stack);
-
-
-
-//            copyImageToBuffer2(pStagingBuffer.get(0), pTextureImage1, width, height);
+            LongBuffer pTextureImage = stack.mallocLong(1);
+            PointerBuffer vmaAllocation = stack.mallocPointer(1);
+            MemoryManager.getInstance().createImage(
+                    width,
+                    height,
+                    VK_FORMAT_R8G8B8A8_UNORM,
+                    VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation, true);
+            long pTextureImage1 = pTextureImage.get(0);
+            long rowPitch = blitImageSwizzleBGR2RGB(pTextureImage1, image, width, height, stack);
 
 
             long allocation1 = vmaAllocation.get(0);
 
 
-                PointerBuffer data = stack.mallocPointer(1);
+            PointerBuffer data = stack.mallocPointer(1);
 
-    //            vkMapMemory(Vulkan.getDevice(), allocation, 0, bufferSize, 0, data);
-    //            consumer.accept(data);
-    //            vkUnmapMemory(Vulkan.getDevice(), allocation);
 
-            int rowPitch = (int) subresourceLayout.rowPitch();
-            int arrayPitch = (int) subresourceLayout.arrayPitch();
-            long depthPitch = subresourceLayout.depthPitch();
-            long offset = subresourceLayout.offset();
-            System.out.println(rowPitch);
-            System.out.println(arrayPitch);
-            System.out.println(depthPitch);
-            System.out.println(offset);
             vmaMapMemory(Vulkan.getAllocator(), allocation1, data);
-            //int rowPitch1 = (rowPitch % (rowPitch & arrayPitch) -((rowPitch/4)& height))/4;
-            BGR2RGB(MemoryUtil.memAddress0(buffer), width, data.get(0), height, rowPitch);
-                vmaUnmapMemory(Vulkan.getAllocator(), allocation1);
+
+            rowPitchMemcpy(width, height, buffer, data.get(0), (int) rowPitch);
+
+            vmaUnmapMemory(Vulkan.getAllocator(), allocation1);
 
 
-                        MemoryManager.getInstance().freeImage(pTextureImage1, allocation1);
+            MemoryManager.getInstance().freeImage(pTextureImage1, allocation1);
         }
 
     }
 
-    private static PointerBuffer createImg(int width, PointerBuffer vmaAllocation, int height, boolean host, int format) {
-        try (MemoryStack stack = stackPush()) {
+    private static long blitImageSwizzleBGR2RGB(long dst, long src, int width, int height, MemoryStack stack) {
+        PointerBuffer vmaAllocation = stack.mallocPointer(1);
+        LongBuffer RGBImgTmp_ = stack.mallocLong(1);
+        MemoryManager.getInstance().createImage(
+                width,
+                height,
+                VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, RGBImgTmp_, vmaAllocation, false);
 
-            PointerBuffer vkImage = stack.mallocPointer(1);
-            //LongBuffer pAllocation = stack.mallocLong(1);
-
-            VkImageCreateInfo imageInfo = VkImageCreateInfo.callocStack(stack);
-            imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-            imageInfo.imageType(VK_IMAGE_TYPE_2D);
-            imageInfo.extent().width(width);
-            imageInfo.extent().height(height);
-            imageInfo.extent().depth(1);
-            imageInfo.mipLevels(1);
-            imageInfo.arrayLayers(1);
-            imageInfo.format(format);
-            imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-            imageInfo.tiling(host ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL);
-            imageInfo.usage(host ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-            imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
-            imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-//            imageInfo.pQueueFamilyIndices(stack.ints(0, 1));
-
-            VmaAllocationCreateInfo allocationInfo = host ? VmaAllocationCreateInfo.callocStack(stack)
-            .flags(VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT )
-            .usage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
-            .requiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-
-            .pool(NULL) : VmaAllocationCreateInfo.callocStack(stack)
-                    .flags(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT )
-                    .usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
-                    .requiredFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-                    .memoryTypeBits(0)
-                    .pool(NULL);
-//            allocationInfo.requiredFlags(memProperties);
-
-            long allocator = Vulkan.getAllocator();
-
-            int i = nvmaCreateImage(allocator, imageInfo.address(), allocationInfo.address(), vkImage.address0(), memAddress(vmaAllocation), NULL);
-            if (i != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create image: " + i);
-
-            }
-            return vkImage;
-        }
-    }
-
-    private static VkSubresourceLayout blitImage(long dst, long src, int width, int height, MemoryStack stack) {
-        PointerBuffer vmaAllocation = stack.pointers(0L);
-        long RGBImgTmp = createImg(width, vmaAllocation, height, false, VK_FORMAT_R8G8B8A8_UNORM).get(0);
-
+        long RGBImgTmp = RGBImgTmp_.get(0);
         TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
 
-        VkImageSubresourceLayers vkImageSubresourceLayers = VkImageSubresourceLayers.callocStack(stack)
+        final VkImageSubresourceLayers vkImageSubresourceLayers = VkImageSubresourceLayers.mallocStack(stack)
                 .set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
 
 //        VkOffset3D.Buffer set = VkOffset3D.callocStack(2, stack);
@@ -276,22 +214,27 @@ public class VulkanImage {
 //        set.get(1).set(width, height, 1);
 
 
-        VkImageCopy.Buffer imgBlt = VkImageCopy.callocStack(1, stack)
-                .srcSubresource(vkImageSubresourceLayers)
-                .dstSubresource(vkImageSubresourceLayers)
-                .extent(VkExtent3D.malloc().set(width, height, 1));
+        VkImageCopy.Buffer imgCpy = VkImageCopy.callocStack(1, stack);
+        imgCpy.srcSubresource(vkImageSubresourceLayers);
+        imgCpy.dstSubresource(vkImageSubresourceLayers);
+        imgCpy.extent(VkExtent3D.malloc().set(width, height, 1));
 
-        VkOffset3D.Buffer set = VkOffset3D.callocStack(2, stack);
+        VkOffset3D.Buffer set = VkOffset3D.mallocStack(2, stack);
         set.get(0).set(0,0,0);
         set.get(1).set(width, height, 1);
 
 
-        VkImageBlit.Buffer imgBlt_ = VkImageBlit.callocStack(1, stack)
-                .srcSubresource(vkImageSubresourceLayers)
-                .srcOffsets(set)
-                .dstSubresource(vkImageSubresourceLayers)
-                .dstOffsets(set);
+        VkImageBlit.Buffer imgBlt = VkImageBlit.mallocStack(1, stack);
+        imgBlt.srcSubresource(vkImageSubresourceLayers);
+        imgBlt.srcOffsets(set);
+        imgBlt.dstSubresource(vkImageSubresourceLayers);
+        imgBlt.dstOffsets(set);
 
+        //there is a missing transition here but can't track down which image it is
+        //Can't blit directly to memcpyable linear tiled image directly hence using 3 instead of 2 vkimages handles
+        //using CopyImage instead of CopyImageToBuffer as it might be slightly faster
+        //Can't use BGRA to BGR/RGB conversion as most GPUs do not support 3 colour channel formats with no alpha: 
+        //Manual memcpy to remove alpha offsets is possible but is far too slow and causes lag in game 
 
         transitionImageLayout(commandBuffer.getHandle(), src, VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
@@ -300,37 +243,41 @@ public class VulkanImage {
         transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 
-        vkCmdBlitImage(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt_, VK_FILTER_NEAREST);
+        vkCmdBlitImage(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt, VK_FILTER_NEAREST);
 
         transitionImageLayout(commandBuffer.getHandle(), RGBImgTmp, VK_FORMAT_R8G8B8A8_UNORM,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
 
-        vkCmdCopyImage(commandBuffer.getHandle(), RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt);
+        vkCmdCopyImage(commandBuffer.getHandle(), RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
 
 //        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
 //                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);
 
-        VkImageSubresource subResource = VkImageSubresource.callocStack(stack)
-                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        VkSubresourceLayout subResourceLayout = VkSubresourceLayout.mallocStack(stack);
 
-        vkGetImageSubresourceLayout(device, dst, subResource, subResourceLayout);
-
-        long fence = TransferQueue.endCommands(commandBuffer);
-
-        vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+        vkWaitForFences(device, TransferQueue.endCommands(commandBuffer), true, VUtil.UINT64_MAX);
 
         MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
 
-        return subResourceLayout;
+        return getRowPitch(dst, stack).rowPitch();
     }
 
-    private static void BGR2RGB(long srcDst, int width, long src, long height, long rowPitch) {
+    @NotNull
+    private static VkSubresourceLayout getRowPitch(long dst, MemoryStack stack) {
+        VkImageSubresource subResource = VkImageSubresource.callocStack(stack);
+        subResource.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+
+        VkSubresourceLayout subResourceLayout = VkSubresourceLayout.mallocStack(stack);
+
+        vkGetImageSubresourceLayout(device, dst, subResource, subResourceLayout);
+        return subResourceLayout;
+    }
+    //Linear tiling images have the ability to be mapped and copied from the Host like a vkBuffer, but loses Resolution alignment,
+    //so must skip the "RowPitch" each row to align the saved Bitmap properly
+    private static void rowPitchMemcpy(int width, int height, long srcDst, long src, long rowPitch) {
+        final int widthSize = width * 4;
         for (int i = 0; i <height; i++) {
-            LibCString.nmemcpy(srcDst, src, (width* 4L));
-            src+=((rowPitch));
-            srcDst+=(width * 4L);
+            LibCString.nmemcpy(srcDst+= widthSize, src+=((rowPitch)), widthSize);
         }
     }
 
