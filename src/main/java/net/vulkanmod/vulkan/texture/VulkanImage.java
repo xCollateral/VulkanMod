@@ -23,7 +23,6 @@ public class VulkanImage {
     private static VkDevice device = Vulkan.getDevice();
 
     private long id;
-    private long textureImageMemory;
     private long allocation;
     private long textureImageView;
 
@@ -489,6 +488,10 @@ public class VulkanImage {
 
     private static boolean hasStencilComponent(int format) {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+    }
+
+    public void free() {
+        MemoryManager.getInstance().freeImage(this.id, this.allocation);
     }
 
     public long getId() { return id;}
