@@ -110,7 +110,7 @@ public class VulkanImage {
 
         stagingBuffer.copyBuffer((int)imageSize, buffer);
 
-        copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, stagingBuffer.getOffset(), 0, 0);
+        copyBufferToImage(stagingBuffer.getBufferId(), id, 0, width, height, 0, 0, (int) stagingBuffer.getOffset(), 0, 0);
 
     }
 
@@ -153,7 +153,7 @@ public class VulkanImage {
         stagingBuffer.copyBuffer(imageSize, buffer);
 
         copyBufferToImageAsync(stagingBuffer.getBufferId(), id, mipLevel, width, height, xOffset, yOffset,
-                stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4, unpackRowLength, height);
+                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * 4), unpackRowLength, height);
 
         long fence = TransferQueue.endIfNeeded(commandBuffer);
         if (fence != -1) Synchronization.addFence(fence);
@@ -489,56 +489,6 @@ public class VulkanImage {
         }
     }
 
-    private static void copyImageToBuffer2(long buffer, long image, int width, int height) {
-
-        try(MemoryStack stack = stackPush()) {
-
-            TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
-
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
-            region.bufferOffset(0);
-            region.bufferRowLength(0);   // Tightly packed
-            region.bufferImageHeight(0);  // Tightly packed
-            region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            region.imageSubresource().mipLevel(0);
-            region.imageSubresource().baseArrayLayer(0);
-            region.imageSubresource().layerCount(1);
-            region.imageOffset().set(0, 0, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
-            //Chek SrcLayout
-//            transitionImageLayout(commandBuffer.getHandle(), image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 0);
-
-            vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
-
-            long fence = TransferQueue.endCommands(commandBuffer);
-
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
-        }
-    }
-    private static void copyImageToBuffer(long buffer, long image, int width, int height) {
-
-        try(MemoryStack stack = stackPush()) {
-
-            TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
-
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
-            region.bufferOffset(0);
-            region.bufferRowLength(0);   // Tightly packed
-            region.bufferImageHeight(0);  // Tightly packed
-            region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            region.imageSubresource().mipLevel(0);
-            region.imageSubresource().baseArrayLayer(0);
-            region.imageSubresource().layerCount(1);
-            region.imageOffset().set(0, 0, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
-
-            vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
-
-            long fence = TransferQueue.endCommands(commandBuffer);
-
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
-        }
-    }
     private static void copyImageToBuffer(long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
 
         try(MemoryStack stack = stackPush()) {
@@ -596,57 +546,46 @@ public class VulkanImage {
 
             int sourceStage;
             int destinationStage;
+            final int srcDistStage=oldLayout+newLayout;
 
-            if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-
-                barrier.srcAccessMask(VK13.VK_ACCESS_NONE);
-                barrier.dstAccessMask(VK13.VK_ACCESS_NONE);
-
-                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-            } else if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-
-                barrier.srcAccessMask(VK13.VK_ACCESS_NONE);
-                barrier.dstAccessMask(VK13.VK_ACCESS_NONE);
-
-                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ;
-                destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-            }  else if(oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-
-                barrier.srcAccessMask(VK13.VK_ACCESS_NONE);
-                barrier.dstAccessMask(VK13.VK_ACCESS_NONE);
-
-                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-            }else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
-
-                sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT ;
-                destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
-            } else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
-
-                sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-            } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-
-                barrier.srcAccessMask(0);
-                barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
-
-                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-
-            } else {
-                throw new IllegalArgumentException("Unsupported layout transition");
+            switch (srcDistStage) {
+                case VK_IMAGE_LAYOUT_UNDEFINED + VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> {
+                    barrier.srcAccessMask(VK13.VK_ACCESS_NONE);
+                    barrier.dstAccessMask(VK13.VK_ACCESS_NONE);
+                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                }
+                case VK_IMAGE_LAYOUT_UNDEFINED + VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
+                    barrier.srcAccessMask(VK13.VK_ACCESS_NONE);
+                    barrier.dstAccessMask(VK13.VK_ACCESS_NONE);
+                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                }
+                case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR + VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
+                    barrier.srcAccessMask(VK13.VK_ACCESS_NONE);
+                    barrier.dstAccessMask(VK13.VK_ACCESS_NONE);
+                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                }
+                case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
+                    barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                    barrier.dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+                }
+                case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
+                    barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                    barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                }
+                case VK_IMAGE_LAYOUT_UNDEFINED + VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL -> {
+                    barrier.srcAccessMask(0);
+                    barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+                }
+                default -> throw new IllegalArgumentException("Unsupported layout transition");
             }
 
             vkCmdPipelineBarrier(commandBuffer,
