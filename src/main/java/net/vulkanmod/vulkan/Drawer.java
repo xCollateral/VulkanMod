@@ -16,10 +16,7 @@ import org.lwjgl.vulkan.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
@@ -381,9 +378,25 @@ public class Drawer {
 
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
+        Vulkan.recreateSwapChain();
+
         createSyncObjects();
 
-        Vulkan.recreateSwapChain();
+        if(MAX_FRAMES_IN_FLIGHT != getSwapChainImages().size()) {
+            MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
+
+            Arrays.stream(this.vertexBuffers).iterator().forEachRemaining(
+                    Buffer::freeBuffer
+            );
+            this.vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];
+            for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+                this.vertexBuffers[i] = new VertexBuffer(2000000, MemoryTypes.HOST_MEM);
+            }
+
+            this.uniformBuffers.free();
+            this.uniformBuffers = new UniformBuffers(200000);
+        }
+
         currentFrame = 0;
     }
 

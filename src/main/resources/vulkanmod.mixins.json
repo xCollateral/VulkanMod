@@ -21,6 +21,8 @@
     "gui.DebugHudM",
     "gui.InGameHudM",
 
+    "matrix.Matrix4fM",
+
     "render.BakedQuadFactoryM",
     "render.BufferBuilderM",
     "render.BufferRendererM",
