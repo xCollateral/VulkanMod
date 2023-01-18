@@ -49,12 +49,26 @@ public class MemoryManager {
         return INSTANCE;
     }
 
+    public static void addMemBarrier(VkCommandBuffer handle, int vkAccessShaderReadBit, int vkAccessShaderWriteBit, long storageBuffer, int i, MemoryStack stack) {
+
+        VkBufferMemoryBarrier.Buffer vkBufferMemoryBarrier = VkBufferMemoryBarrier.callocStack(1, stack);
+        vkBufferMemoryBarrier.get(0).sType$Default()
+                .buffer(storageBuffer)
+                .size(854*480*4)
+                .srcAccessMask(vkAccessShaderReadBit)
+                .dstAccessMask(vkAccessShaderWriteBit)
+                .dstQueueFamilyIndex(0)
+                .offset(0);
+
+        vkCmdPipelineBarrier(handle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, null, vkBufferMemoryBarrier, null);
+    }
+
     public void setCurrentFrame(int frame) {
         Validate.isTrue(frame < Frames, "Out of bounds frame index");
         this.currentFrame = frame;
     }
 
-    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
+    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory, int allocationUsage) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -65,7 +79,7 @@ public class MemoryManager {
             //bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 //
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-            //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
+            allocationInfo.usage(allocationUsage);
             allocationInfo.requiredFlags(properties);
 
             int result = vmaCreateBuffer(allocator, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
@@ -104,7 +118,7 @@ public class MemoryManager {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(size, usage, properties, pBuffer, pAllocation);
+            this.createBuffer(size, usage, properties, pBuffer, pAllocation, VMA_MEMORY_USAGE_CPU_ONLY);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));

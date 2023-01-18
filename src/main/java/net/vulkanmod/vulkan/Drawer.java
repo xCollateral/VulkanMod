@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -486,12 +485,12 @@ public class Drawer {
         usedPipelines.add(pipeline);
     }
 
-    public void pushConstants(Pipeline pipeline) {
+    public void pushConstants(Pipeline pipeline, int shaderstage) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         PushConstant pushConstant = pipeline.getPushConstant();
         pushConstant.update();
-        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstant.getBuffer());
+        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), shaderstage, 0, pushConstant.getBuffer());
     }
 
     public static void setDepthBias(float units, float factor) {

@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.bytes.Byte2LongOpenHashMap;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.shader.PushConstant;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
@@ -38,6 +39,12 @@ public class VulkanImage {
 
     private int currentLayout;
     private TransferQueue.CommandBuffer commandBuffer;
+
+    private static final ComputePipeline computePipeline;
+
+    static {
+        computePipeline=new ComputePipeline("core/swizzle");
+    }
 
     public VulkanImage(int width, int height, int formatSize, boolean blur, boolean clamp, ByteBuffer buffer) {
         this(1, width, height, formatSize, blur, clamp);
@@ -128,7 +135,7 @@ public class VulkanImage {
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
                     pStagingBuffer,
-                    pStagingAllocation);
+                    pStagingAllocation, VMA_MEMORY_USAGE_CPU_ONLY);
 
             MemoryManager.getInstance().MapAndCopy(pStagingAllocation.get(0), imageSize,
                     (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), buffer, imageSize)
@@ -163,6 +170,16 @@ public class VulkanImage {
         try(MemoryStack stack = stackPush()) {
             int imageSize = width * height * 4;
 
+            TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+
+            vkCmdBindPipeline(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.compPipeline);
+
+            computePipeline.pushConstant.update();
+
+
+
+            vkCmdPushConstants(commandBuffer.getHandle(), computePipeline.compPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, computePipeline.pushConstant.getBuffer());
+
             LongBuffer pTextureImage = stack.mallocLong(1);
             PointerBuffer vmaAllocation = stack.mallocPointer(1);
             MemoryManager.getInstance().createImage(
@@ -172,7 +189,7 @@ public class VulkanImage {
                     VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation, true);
             long pTextureImage1 = pTextureImage.get(0);
-            long rowPitch = blitImageSwizzleBGR2RGB(pTextureImage1, image, width, height, stack);
+            long rowPitch = blitImageSwizzleBGR2RGB(pTextureImage1, image, width, height, stack, commandBuffer);
 
 
             long allocation1 = vmaAllocation.get(0);
@@ -193,18 +210,17 @@ public class VulkanImage {
 
     }
 
-    private static long blitImageSwizzleBGR2RGB(long dst, long src, int width, int height, MemoryStack stack) {
-        PointerBuffer vmaAllocation = stack.mallocPointer(1);
-        LongBuffer RGBImgTmp_ = stack.mallocLong(1);
-        MemoryManager.getInstance().createImage(
-                width,
-                height,
-                VK_FORMAT_R8G8B8A8_UNORM,
-                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, RGBImgTmp_, vmaAllocation, false);
-
-        long RGBImgTmp = RGBImgTmp_.get(0);
-        TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+    private static long blitImageSwizzleBGR2RGB(long dst, long src, int width, int height, MemoryStack stack, TransferQueue.CommandBuffer commandBuffer) {
+//        PointerBuffer vmaAllocation = stack.mallocPointer(1);
+//        LongBuffer RGBImgTmp_ = stack.mallocLong(1);
+//        MemoryManager.getInstance().createImage(
+//                width,
+//                height,
+//                VK_FORMAT_R8G8B8A8_UNORM,
+//                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+//                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, RGBImgTmp_, vmaAllocation, false);
+//
+//        long RGBImgTmp = RGBImgTmp_.get(0);
 
         final VkImageSubresourceLayers vkImageSubresourceLayers = VkImageSubresourceLayers.mallocStack(stack)
                 .set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
@@ -217,18 +233,20 @@ public class VulkanImage {
         VkImageCopy.Buffer imgCpy = VkImageCopy.callocStack(1, stack);
         imgCpy.srcSubresource(vkImageSubresourceLayers);
         imgCpy.dstSubresource(vkImageSubresourceLayers);
-        imgCpy.extent(VkExtent3D.malloc().set(width, height, 1));
+        imgCpy.extent(VkExtent3D.malloc(stack).set(width, height, 1));
 
         VkOffset3D.Buffer set = VkOffset3D.mallocStack(2, stack);
         set.get(0).set(0,0,0);
         set.get(1).set(width, height, 1);
 
 
-        VkImageBlit.Buffer imgBlt = VkImageBlit.mallocStack(1, stack);
-        imgBlt.srcSubresource(vkImageSubresourceLayers);
-        imgBlt.srcOffsets(set);
-        imgBlt.dstSubresource(vkImageSubresourceLayers);
-        imgBlt.dstOffsets(set);
+        VkBufferImageCopy.Buffer imgBlt = VkBufferImageCopy.mallocStack(1, stack);
+        imgBlt.bufferOffset(0);
+        imgBlt.bufferImageHeight(height);
+        imgBlt.bufferRowLength(width);
+        imgBlt.imageOffset(set.get(0));
+        imgBlt.imageExtent(VkExtent3D.malloc(stack).set(width, height, 1));
+        imgBlt.imageSubresource(vkImageSubresourceLayers);
 
         //there is a missing transition here but can't track down which image it is
         //Can't blit directly to memcpyable linear tiled image directly hence using 3 instead of 2 vkimages handles
@@ -243,13 +261,18 @@ public class VulkanImage {
         transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 
-        vkCmdBlitImage(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt, VK_FILTER_NEAREST);
+        vkCmdCopyImageToBuffer(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.storageBuffer, imgBlt);
 
-        transitionImageLayout(commandBuffer.getHandle(), RGBImgTmp, VK_FORMAT_R8G8B8A8_UNORM,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+        computePipeline.updateDescriptorSets(stack);
+        vkCmdBindDescriptorSets(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE,
+                computePipeline.compPipelineLayout, 0, stack.longs(computePipeline.compDescriptorSet), null);
 
+        vkCmdDispatch(commandBuffer.getHandle(), 1, 1, 1);
 
-        vkCmdCopyImage(commandBuffer.getHandle(), RGBImgTmp, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
+//        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
+        vkQueueWaitIdle(Vulkan.getGraphicsQueue());
+
+        vkCmdCopyBufferToImage(commandBuffer.getHandle(), computePipeline.storageBuffer, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt);
 
 //        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
 //                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);
@@ -257,7 +280,7 @@ public class VulkanImage {
 
         vkWaitForFences(device, TransferQueue.endCommands(commandBuffer), true, VUtil.UINT64_MAX);
 
-        MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
+//        MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
 
         return getRowPitch(dst, stack).rowPitch();
     }

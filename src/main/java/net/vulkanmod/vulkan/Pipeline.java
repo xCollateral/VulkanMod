@@ -42,21 +42,21 @@ public class Pipeline {
     public static final BlendState NO_BLEND_STATE = new BlendState(false, 0, 0, 0, 0);
 
     private static final VkDevice device = Vulkan.getDevice();
-    private static final long pipelineCache = createPipelineCache();
+    static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
 
     private String path;
     private long descriptorSetLayout;
-    private long pipelineLayout;
+    long pipelineLayout;
     private Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
     private VertexFormat vertexFormat;
 
     private final long[] descriptorPools = new long[imagesSize];
-    private int descriptorCount = 500;
+    int descriptorCount = 500;
 
     private final List<UBO> UBOs = new ArrayList<>();
     private final List<String> samplers = new ArrayList<>();
-    private final PushConstant pushConstant = new PushConstant();
+    final PushConstant pushConstant = new PushConstant();
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
 
@@ -67,10 +67,21 @@ public class Pipeline {
         this.path = path;
 
         createDescriptorSetLayout(path);
-        createPipelineLayout();
+        createPipelineLayout(VK_SHADER_STAGE_VERTEX_BIT);
         graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
                 (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
         createDescriptorPool(descriptorCount);
+        //allocateDescriptorSets();
+
+    }
+    public Pipeline(String path) {
+        this.path = path;
+
+        //createDescriptorSetLayout(path);
+//        createPipelineLayout(VK_SHADER_STAGE_COMPUTE_BIT);
+//        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
+//                (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
+//        createDescriptorPool(descriptorCount);
         //allocateDescriptorSets();
 
     }
@@ -309,7 +320,7 @@ public class Pipeline {
         }
     }
 
-    private void createPipelineLayout() {
+    void createPipelineLayout(int shaderStageVertexBit) {
         try(MemoryStack stack = stackPush()) {
             // ===> PIPELINE LAYOUT CREATION <===
 
@@ -321,7 +332,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(pushConstant.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+                pushConstantRange.stageFlags(shaderStageVertexBit);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -336,7 +347,7 @@ public class Pipeline {
         }
     }
 
-    private void createDescriptorPool(int descriptorCount) {
+    void createDescriptorPool(int descriptorCount) {
 
         try(MemoryStack stack = stackPush()) {
             int size =  UBOs.size() + samplers.size();
@@ -540,7 +551,7 @@ public class Pipeline {
         };
     }
 
-    private static long createShaderModule(ByteBuffer spirvCode) {
+    static long createShaderModule(ByteBuffer spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
 

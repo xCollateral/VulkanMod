@@ -39,6 +39,8 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Supplier;
 
+import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
+
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
@@ -593,7 +595,7 @@ public class WorldRenderer {
             BlockPos blockpos = renderSection.getOrigin();
 
             VRenderSystem.setChunkOffset((float) ((double) blockpos.getX() - camX), (float) ((double) blockpos.getY() - camY), (float) ((double) blockpos.getZ() - camZ));
-            drawer.pushConstants(pipeline);
+            drawer.pushConstants(pipeline, VK_SHADER_STAGE_VERTEX_BIT);
 ////
             vertexbuffer.draw();
 
@@ -602,7 +604,7 @@ public class WorldRenderer {
 
         //Need to reset push constant in case the pipeline will still be used for rendering
         VRenderSystem.setChunkOffset(0, 0, 0);
-        drawer.pushConstants(pipeline);
+        drawer.pushConstants(pipeline, VK_SHADER_STAGE_VERTEX_BIT);
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
