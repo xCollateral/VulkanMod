@@ -198,11 +198,11 @@ public class VulkanImage {
             PointerBuffer data = stack.mallocPointer(1);
 
 
-            vmaMapMemory(Vulkan.getAllocator(), allocation1, data);
+            vmaMapMemory(Vulkan.getAllocator(), computePipeline.storageBufferMem, data);
 
             rowPitchMemcpy(width, height, buffer, data.get(0), (int) rowPitch);
 
-            vmaUnmapMemory(Vulkan.getAllocator(), allocation1);
+            vmaUnmapMemory(Vulkan.getAllocator(), computePipeline.storageBufferMem);
 
 
             MemoryManager.getInstance().freeImage(pTextureImage1, allocation1);
@@ -272,8 +272,8 @@ public class VulkanImage {
 //        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
         vkQueueWaitIdle(Vulkan.getGraphicsQueue());
 
-        vkCmdCopyBufferToImage(commandBuffer.getHandle(), computePipeline.storageBuffer, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt);
-
+//        vkCmdCopyBufferToImage(commandBuffer.getHandle(), computePipeline.storageBuffer, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt);
+//
 //        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
 //                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);
 
@@ -299,9 +299,8 @@ public class VulkanImage {
     //so must skip the "RowPitch" each row to align the saved Bitmap properly
     private static void rowPitchMemcpy(int width, int height, long srcDst, long src, long rowPitch) {
         final int widthSize = width * 4;
-        for (int i = 0; i <height; i++) {
-            LibCString.nmemcpy(srcDst+= widthSize, src+=((rowPitch)), widthSize);
-        }
+       LibCString.nmemcpy(srcDst, src, 854*480*4);
+
     }
 
     private void transferDstLayout() {

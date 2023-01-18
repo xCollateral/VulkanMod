@@ -25,7 +25,7 @@ public class ComputePipeline  {
 
     public final long storageBuffer;
     public final long compDescriptorSet;
-    private long storageBufferMem;
+    public long storageBufferMem;
     public final long compPipelineLayout;
 
 //    private final UBO ubo = new UBO(0, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -37,7 +37,7 @@ public class ComputePipeline  {
 //        super(path);
         compdescriptorSetLayout = createDescriptorSetLayout(path);
 
-        storageBuffer = getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        storageBuffer = getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
         pushConstant.addField(Field.createField("float", "ScreenSize", 2, pushConstant));
         pushConstant.allocateBuffer();
