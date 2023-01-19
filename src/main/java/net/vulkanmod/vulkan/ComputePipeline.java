@@ -37,7 +37,7 @@ public class ComputePipeline  {
 //        super(path);
         compdescriptorSetLayout = createDescriptorSetLayout(path);
 
-        storageBuffer = getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        storageBuffer = getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         pushConstant.addField(Field.createField("float", "ScreenSize", 2, pushConstant));
         pushConstant.allocateBuffer();
@@ -66,6 +66,7 @@ public class ComputePipeline  {
     //
                 VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
                 allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+                allocationInfo.memoryTypeBits(0);
                 allocationInfo.requiredFlags(memFlags);
 
                 int result = vmaCreateBuffer(Vulkan.getAllocator(), bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);

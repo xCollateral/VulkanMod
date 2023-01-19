@@ -60,7 +60,7 @@ public class MemoryManager {
                 .dstQueueFamilyIndex(0)
                 .offset(0);
 
-        vkCmdPipelineBarrier(handle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, null, vkBufferMemoryBarrier, null);
+        vkCmdPipelineBarrier(handle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, null, vkBufferMemoryBarrier, null);
     }
 
     public void setCurrentFrame(int frame) {

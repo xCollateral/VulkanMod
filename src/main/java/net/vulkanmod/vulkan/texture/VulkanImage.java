@@ -5,9 +5,9 @@ import it.unimi.dsi.fastutil.bytes.Byte2LongOpenHashMap;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.shader.PushConstant;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Vector2f;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -174,7 +174,6 @@ public class VulkanImage {
 
             vkCmdBindPipeline(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.compPipeline);
 
-            computePipeline.pushConstant.update();
 
 
 
@@ -182,12 +181,10 @@ public class VulkanImage {
 
             LongBuffer pTextureImage = stack.mallocLong(1);
             PointerBuffer vmaAllocation = stack.mallocPointer(1);
-            MemoryManager.getInstance().createImage(
-                    width,
-                    height,
-                    VK_FORMAT_R8G8B8A8_UNORM,
-                    VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation, true);
+            MemoryManager.getInstance().createBuffer(
+                    imageSize,
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
             long pTextureImage1 = pTextureImage.get(0);
             long rowPitch = blitImageSwizzleBGR2RGB(pTextureImage1, image, width, height, stack, commandBuffer);
 
@@ -198,14 +195,14 @@ public class VulkanImage {
             PointerBuffer data = stack.mallocPointer(1);
 
 
-            vmaMapMemory(Vulkan.getAllocator(), computePipeline.storageBufferMem, data);
+            vmaMapMemory(Vulkan.getAllocator(), allocation1, data);
 
             rowPitchMemcpy(width, height, buffer, data.get(0), (int) rowPitch);
 
-            vmaUnmapMemory(Vulkan.getAllocator(), computePipeline.storageBufferMem);
+            vmaUnmapMemory(Vulkan.getAllocator(), allocation1);
 
 
-            MemoryManager.getInstance().freeImage(pTextureImage1, allocation1);
+            MemoryManager.getInstance().freeBuffer(pTextureImage1, allocation1);
         }
 
     }
@@ -230,10 +227,10 @@ public class VulkanImage {
 //        set.get(1).set(width, height, 1);
 
 
-        VkImageCopy.Buffer imgCpy = VkImageCopy.callocStack(1, stack);
-        imgCpy.srcSubresource(vkImageSubresourceLayers);
-        imgCpy.dstSubresource(vkImageSubresourceLayers);
-        imgCpy.extent(VkExtent3D.malloc(stack).set(width, height, 1));
+        VkBufferCopy.Buffer imgCpy = VkBufferCopy.callocStack(1, stack);
+        imgCpy.srcOffset(0);
+        imgCpy.dstOffset(0);
+        imgCpy.size(width*height*4L);
 
         VkOffset3D.Buffer set = VkOffset3D.mallocStack(2, stack);
         set.get(0).set(0,0,0);
@@ -258,21 +255,19 @@ public class VulkanImage {
                 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
 //
-        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
-                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 
         vkCmdCopyImageToBuffer(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.storageBuffer, imgBlt);
-
         computePipeline.updateDescriptorSets(stack);
         vkCmdBindDescriptorSets(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE,
                 computePipeline.compPipelineLayout, 0, stack.longs(computePipeline.compDescriptorSet), null);
 
-        vkCmdDispatch(commandBuffer.getHandle(), 1, 1, 1);
 
-//        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
+        vkCmdDispatch(commandBuffer.getHandle(), 512, 1, 1);
+
+//        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
         vkQueueWaitIdle(Vulkan.getGraphicsQueue());
 
-//        vkCmdCopyBufferToImage(commandBuffer.getHandle(), computePipeline.storageBuffer, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgBlt);
+        vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.storageBuffer, dst, imgCpy);
 //
 //        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
 //                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);
@@ -282,7 +277,7 @@ public class VulkanImage {
 
 //        MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
 
-        return getRowPitch(dst, stack).rowPitch();
+        return 0;
     }
 
     @NotNull
@@ -298,8 +293,7 @@ public class VulkanImage {
     //Linear tiling images have the ability to be mapped and copied from the Host like a vkBuffer, but loses Resolution alignment,
     //so must skip the "RowPitch" each row to align the saved Bitmap properly
     private static void rowPitchMemcpy(int width, int height, long srcDst, long src, long rowPitch) {
-        final int widthSize = width * 4;
-       LibCString.nmemcpy(srcDst, src, 854*480*4);
+        LibCString.nmemcpy(srcDst, src, width*height*4L);
 
     }
 
