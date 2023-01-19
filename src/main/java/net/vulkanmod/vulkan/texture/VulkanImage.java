@@ -7,7 +7,6 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Vector2f;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -18,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
-import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -40,10 +38,10 @@ public class VulkanImage {
     private int currentLayout;
     private TransferQueue.CommandBuffer commandBuffer;
 
-    private static final ComputePipeline computePipeline;
+    public static final ComputePipeline computePipeline;
 
     static {
-        computePipeline=new ComputePipeline("core/swizzle");
+        computePipeline=new ComputePipeline("core/swizzle", getSwapchainExtent().width()* getSwapchainExtent().height()*4);
     }
 
     public VulkanImage(int width, int height, int formatSize, boolean blur, boolean clamp, ByteBuffer buffer) {
@@ -177,7 +175,7 @@ public class VulkanImage {
 
 
 
-            vkCmdPushConstants(commandBuffer.getHandle(), computePipeline.compPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, computePipeline.pushConstant.getBuffer());
+            //vkCmdPushConstants(commandBuffer.getHandle(), computePipeline.compPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, stack.malloc(8).putInt(0, width).putInt(1, height));
 
             LongBuffer pTextureImage = stack.mallocLong(1);
             PointerBuffer vmaAllocation = stack.mallocPointer(1);
@@ -257,15 +255,14 @@ public class VulkanImage {
 //
 
         vkCmdCopyImageToBuffer(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.storageBuffer, imgBlt);
-        computePipeline.updateDescriptorSets(stack);
-        vkCmdBindDescriptorSets(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE,
-                computePipeline.compPipelineLayout, 0, stack.longs(computePipeline.compDescriptorSet), null);
+
+        nvkCmdBindDescriptorSets(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.compPipelineLayout, 0, 1, stack.npointer(computePipeline.compDescriptorSet), 0, 0);
 
 
         vkCmdDispatch(commandBuffer.getHandle(), 512, 1, 1);
 
 //        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
-        vkQueueWaitIdle(Vulkan.getGraphicsQueue());
+
 
         vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.storageBuffer, dst, imgCpy);
 //

@@ -8,6 +8,7 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.PushConstant;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -139,13 +140,9 @@ public class Drawer {
             IntBuffer height = stack.ints(0);
 
             glfwGetFramebufferSize(window, width, height);
-            if (width.get(0) == 0 && height.get(0) == 0) {
-                skipRendering = true;
-                Minecraft.getInstance().noRender = true;
-            } else {
-                skipRendering = false;
-                Minecraft.getInstance().noRender = false;
-            }
+            skipRendering = Minecraft.getInstance().noRender = width.get(0) == 0 && height.get(0) == 0;
+
+            if(!skipRendering) VulkanImage.computePipeline.resizeBuffer(width.get(0) * height.get(0) * 4);
         }
 
         if(skipRendering) return;
