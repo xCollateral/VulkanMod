@@ -6,7 +6,6 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -248,7 +247,7 @@ public class VulkanImage {
 
 //
 
-        vkCmdCopyImageToBuffer(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.storageBuffer, imgBlt);
+        vkCmdCopyImageToBuffer(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.ssboStorageBuffer, imgBlt);
 
         nvkCmdBindDescriptorSets(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.compPipelineLayout, 0, 1, stack.npointer(computePipeline.compDescriptorSet), 0, 0);
 
@@ -261,7 +260,7 @@ public class VulkanImage {
 //        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
 
 
-        vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.storageBuffer, dst, imgCpy);
+        vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.ssboStorageBuffer, dst, imgCpy);
 //
 //        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
 //                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);

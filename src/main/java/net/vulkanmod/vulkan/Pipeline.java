@@ -309,7 +309,7 @@ public class Pipeline {
         }
     }
 
-    void createPipelineLayout() {
+    private void createPipelineLayout() {
         try(MemoryStack stack = stackPush()) {
             // ===> PIPELINE LAYOUT CREATION <===
 
@@ -321,7 +321,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(pushConstant.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK10.VK_SHADER_STAGE_VERTEX_BIT);
+                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -388,8 +388,6 @@ public class Pipeline {
         graphicsPipelines.clear();
 
         vkDestroyPipelineLayout(device, pipelineLayout, null);
-
-//        VulkanImage.computePipeline.close();
     }
 
     public long createDescriptorSets(VkCommandBuffer commandBuffer, int frame, UniformBuffers uniformBuffers) {

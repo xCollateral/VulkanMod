@@ -4,7 +4,7 @@
 layout (local_size_x = 32) in;
 
 
-layout(std430, binding = 0) buffer image
+layout(std430, binding = 0) restrict buffer Img
 {
    uvec4 imageData[];
 };
@@ -22,8 +22,8 @@ void main()
 		
 		{
 			const uvec4 R = (imageData[xOffs]&255)<<16;
-			const uvec4 G = (((imageData[xOffs]&(65535))>>8)&255)<<8;
-			const uvec4 B = ((imageData[xOffs]&(16777215))>>16);
+			const uvec4 G = (imageData[xOffs]&65535)>>8<<8;
+			const uvec4 B = (imageData[xOffs]&16777215)>>16;
 			
 			imageData[xOffs]=(R|G|B|A);
 		}

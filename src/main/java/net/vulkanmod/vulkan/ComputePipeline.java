@@ -19,17 +19,18 @@ import static org.lwjgl.vulkan.VK11.VK_PIPELINE_CREATE_DISPATCH_BASE;
 
 public class ComputePipeline  {
 
+    private final VkDevice device = Vulkan.getDevice();
     public final long compPipeline;
     private final long compdescriptorSetLayout;
     private final long compdescriptorSetPool;
     private int size;
 
-    public long storageBuffer;
+    public long ssboStorageBuffer;
     public final long compDescriptorSet;
     public long storageBufferMem;
     public final long compPipelineLayout;
     private long compShaderModule;
-    private boolean closed = true;
+    private boolean closed;
 
 
     //Should extend Pipeline as this class is a mess and has a lot of copied functions,
@@ -40,7 +41,7 @@ public class ComputePipeline  {
 //        super(path);
         compdescriptorSetLayout = createDescriptorSetLayout(path);
 
-        storageBuffer = getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size);
+        ssboStorageBuffer = getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size);
 
 //        pushConstant.addField(Field.createField("float", "ScreenSize", 2, pushConstant));
 //        pushConstant.allocateBuffer();
@@ -109,7 +110,7 @@ public class ComputePipeline  {
                 LongBuffer pDescriptorPool = stack.mallocLong(1);
 
 
-                    if(vkCreateDescriptorPool(Vulkan.getDevice(), poolInfo, null, pDescriptorPool) != VK_SUCCESS) {
+                    if(vkCreateDescriptorPool(device, poolInfo, null, pDescriptorPool) != VK_SUCCESS) {
                         throw new RuntimeException("Failed to create descriptor pool");
                     }
                     return pDescriptorPool.get(0);
@@ -149,7 +150,7 @@ public class ComputePipeline  {
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
-            if(vkCreateComputePipelines(Vulkan.getDevice(), pipelineCache, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
+            if(vkCreateComputePipelines(device, pipelineCache, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create graphics pipeline");
             }
 
@@ -166,18 +167,9 @@ public class ComputePipeline  {
             pipelineLayoutInfo.sType$Default();
             pipelineLayoutInfo.pSetLayouts(stack.longs(compdescriptorSetLayout));
 
-            {
-                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
-                pushConstantRange.size(8);
-                pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_COMPUTE_BIT);
-
-                pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
-            }
-
             LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
 
-            if(vkCreatePipelineLayout(Vulkan.getDevice(), pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
+            if(vkCreatePipelineLayout(device, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create pipeline layout");
             }
 
@@ -206,7 +198,7 @@ public class ComputePipeline  {
 
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
-            if(vkCreateDescriptorSetLayout(Vulkan.getDevice(), layoutInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
+            if(vkCreateDescriptorSetLayout(device, layoutInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create descriptor set layout");
             }
             return pDescriptorSetLayout.get(0);
@@ -225,7 +217,7 @@ public class ComputePipeline  {
 
             LongBuffer pDescriptorSet = stack.mallocLong(1);
 
-            int result = vkAllocateDescriptorSets(Vulkan.getDevice(), allocInfo, pDescriptorSet);
+            int result = vkAllocateDescriptorSets(device, allocInfo, pDescriptorSet);
 
             if (result != VK_SUCCESS) {
                 throw new RuntimeException("Failed to allocate descriptor sets. Result:" + result);
@@ -241,22 +233,22 @@ public class ComputePipeline  {
         VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.callocStack(1, stack);
         bufferInfos.offset(0);
         bufferInfos.range(size);
-        bufferInfos.buffer(storageBuffer);
+        bufferInfos.buffer(ssboStorageBuffer);
 
 
 
-        VkWriteDescriptorSet.Buffer uboDescriptorWrite = VkWriteDescriptorSet.callocStack(1, stack);
-        uboDescriptorWrite.sType$Default();
-        uboDescriptorWrite.dstBinding(0);
-        uboDescriptorWrite.dstArrayElement(0);
-        uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-        uboDescriptorWrite.descriptorCount(1);
-        uboDescriptorWrite.pBufferInfo(bufferInfos);
-        uboDescriptorWrite.dstSet(compDescriptorSet);
+        VkWriteDescriptorSet.Buffer ssboDescriptorWrite = VkWriteDescriptorSet.callocStack(1, stack);
+        ssboDescriptorWrite.sType$Default();
+        ssboDescriptorWrite.dstBinding(0);
+        ssboDescriptorWrite.dstArrayElement(0);
+        ssboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        ssboDescriptorWrite.descriptorCount(1);
+        ssboDescriptorWrite.pBufferInfo(bufferInfos);
+        ssboDescriptorWrite.dstSet(compDescriptorSet);
 
 
 
-        vkUpdateDescriptorSets(Vulkan.getDevice(), uboDescriptorWrite, null);
+        vkUpdateDescriptorSets(device, ssboDescriptorWrite, null);
 
 
     }
@@ -267,8 +259,8 @@ public class ComputePipeline  {
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
-            vmaDestroyBuffer(Vulkan.getAllocator(), storageBuffer, storageBufferMem);
-            storageBuffer=getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size);
+            vmaDestroyBuffer(Vulkan.getAllocator(), ssboStorageBuffer, storageBufferMem);
+            ssboStorageBuffer =getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size);
             updateDescriptorSets(stack, size);
         }
     }
@@ -278,10 +270,10 @@ public class ComputePipeline  {
     {
         this.closed=true;
 //        vmaDestroyBuffer(Vulkan.getAllocator(), storageBuffer, storageBufferMem);
-        vkDestroyShaderModule(Vulkan.getDevice(), compShaderModule, null);
-        vkDestroyDescriptorSetLayout(Vulkan.getDevice(), compdescriptorSetLayout, null);
-        vkDestroyDescriptorPool(Vulkan.getDevice(), compdescriptorSetPool, null);
-        vkDestroyPipeline(Vulkan.getDevice(), compPipeline, null);
+        vkDestroyShaderModule(device, compShaderModule, null);
+        vkDestroyDescriptorSetLayout(device, compdescriptorSetLayout, null);
+        vkDestroyDescriptorPool(device, compdescriptorSetPool, null);
+        vkDestroyPipeline(device, compPipeline, null);
 //        vkDestroyPipelineLayout(Vulkan.getDevice(), compPipelineLayout, null);
 
     }

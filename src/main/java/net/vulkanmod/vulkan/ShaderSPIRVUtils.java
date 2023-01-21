@@ -25,7 +25,7 @@ public class ShaderSPIRVUtils {
         if(vkCapabilitiesDevice.Vulkan13 & vkCapabilitiesDevice.Vulkan12 & vkCapabilitiesDevice.Vulkan11)
         {
             vkEnv =shaderc_env_version_vulkan_1_3;
-            spvVer=shaderc_spirv_version_1_5;
+            spvVer=shaderc_spirv_version_1_6;
         }
         else if(!vkCapabilitiesDevice.Vulkan13 & vkCapabilitiesDevice.Vulkan12 &  vkCapabilitiesDevice.Vulkan11)
         {
@@ -68,9 +68,8 @@ public class ShaderSPIRVUtils {
         }
 
 
-
         shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, vkEnv);
-        shaderc_compile_options_set_target_spirv(options, spvVer);
+        shaderc_compile_options_set_target_spirv(options, shaderKind == ShaderKind.COMPUTE_SHADER && vkEnv == shaderc_env_version_vulkan_1_3 ? shaderc_spirv_version_1_5 : spvVer);
         shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
