@@ -47,16 +47,16 @@ public class Pipeline {
 
     private String path;
     private long descriptorSetLayout;
-    long pipelineLayout;
+    private long pipelineLayout;
     private Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
     private VertexFormat vertexFormat;
 
     private final long[] descriptorPools = new long[imagesSize];
-    int descriptorCount = 500;
+    private int descriptorCount = 500;
 
     private final List<UBO> UBOs = new ArrayList<>();
     private final List<String> samplers = new ArrayList<>();
-    final PushConstant pushConstant = new PushConstant();
+    private final PushConstant pushConstant = new PushConstant();
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
 
@@ -67,21 +67,10 @@ public class Pipeline {
         this.path = path;
 
         createDescriptorSetLayout(path);
-        createPipelineLayout(VK_SHADER_STAGE_VERTEX_BIT);
+        createPipelineLayout();
         graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
                 (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
         createDescriptorPool(descriptorCount);
-        //allocateDescriptorSets();
-
-    }
-    public Pipeline(String path) {
-        this.path = path;
-
-        //createDescriptorSetLayout(path);
-//        createPipelineLayout(VK_SHADER_STAGE_COMPUTE_BIT);
-//        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
-//                (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
-//        createDescriptorPool(descriptorCount);
         //allocateDescriptorSets();
 
     }
@@ -320,7 +309,7 @@ public class Pipeline {
         }
     }
 
-    void createPipelineLayout(int shaderStageVertexBit) {
+    void createPipelineLayout() {
         try(MemoryStack stack = stackPush()) {
             // ===> PIPELINE LAYOUT CREATION <===
 
@@ -332,7 +321,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(pushConstant.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(shaderStageVertexBit);
+                pushConstantRange.stageFlags(VK10.VK_SHADER_STAGE_VERTEX_BIT);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -347,7 +336,7 @@ public class Pipeline {
         }
     }
 
-    void createDescriptorPool(int descriptorCount) {
+    private void createDescriptorPool(int descriptorCount) {
 
         try(MemoryStack stack = stackPush()) {
             int size =  UBOs.size() + samplers.size();

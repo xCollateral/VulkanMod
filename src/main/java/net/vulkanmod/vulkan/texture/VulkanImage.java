@@ -183,7 +183,7 @@ public class VulkanImage {
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
             long pTextureImage1 = pTextureImage.get(0);
-            long rowPitch = blitImageSwizzleBGR2RGB(pTextureImage1, image, width, height, stack, commandBuffer);
+            blitImageSwizzleBGR2RGB(pTextureImage1, image, width, height, stack, commandBuffer);
 
 
             long allocation1 = vmaAllocation.get(0);
@@ -194,7 +194,7 @@ public class VulkanImage {
 
             vmaMapMemory(Vulkan.getAllocator(), allocation1, data);
 
-            rowPitchMemcpy(width, height, buffer, data.get(0), (int) rowPitch);
+            LibCString.nmemcpy(buffer, data.get(0), width * height *4L);
 
             vmaUnmapMemory(Vulkan.getAllocator(), allocation1);
 
@@ -204,7 +204,7 @@ public class VulkanImage {
 
     }
 
-    private static long blitImageSwizzleBGR2RGB(long dst, long src, int width, int height, MemoryStack stack, TransferQueue.CommandBuffer commandBuffer) {
+    private static void blitImageSwizzleBGR2RGB(long dst, long src, int width, int height, MemoryStack stack, TransferQueue.CommandBuffer commandBuffer) {
 //        PointerBuffer vmaAllocation = stack.mallocPointer(1);
 //        LongBuffer RGBImgTmp_ = stack.mallocLong(1);
 //        MemoryManager.getInstance().createImage(
@@ -224,7 +224,7 @@ public class VulkanImage {
 //        set.get(1).set(width, height, 1);
 
 
-        VkBufferCopy.Buffer imgCpy = VkBufferCopy.callocStack(1, stack);
+        VkBufferCopy.Buffer imgCpy = VkBufferCopy.mallocStack(1, stack);
         imgCpy.srcOffset(0);
         imgCpy.dstOffset(0);
         imgCpy.size(width*height*4L);
@@ -242,11 +242,6 @@ public class VulkanImage {
         imgBlt.imageExtent(VkExtent3D.malloc(stack).set(width, height, 1));
         imgBlt.imageSubresource(vkImageSubresourceLayers);
 
-        //there is a missing transition here but can't track down which image it is
-        //Can't blit directly to memcpyable linear tiled image directly hence using 3 instead of 2 vkimages handles
-        //using CopyImage instead of CopyImageToBuffer as it might be slightly faster
-        //Can't use BGRA to BGR/RGB conversion as most GPUs do not support 3 colour channel formats with no alpha: 
-        //Manual memcpy to remove alpha offsets is possible but is far too slow and causes lag in game 
 
         transitionImageLayout(commandBuffer.getHandle(), src, VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
@@ -262,7 +257,7 @@ public class VulkanImage {
             int i1 = ((width * height)/32/128)+1;
             vkCmdDispatch(commandBuffer.getHandle(), i1, 1, 1);
         }
-
+        //Not sure if membarrier is needed due to not using async Compute/Seperate Compute Queue
 //        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
 
 
@@ -276,23 +271,6 @@ public class VulkanImage {
 
 //        MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
 
-        return 0;
-    }
-
-    @NotNull
-    private static VkSubresourceLayout getRowPitch(long dst, MemoryStack stack) {
-        VkImageSubresource subResource = VkImageSubresource.callocStack(stack);
-        subResource.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-
-        VkSubresourceLayout subResourceLayout = VkSubresourceLayout.mallocStack(stack);
-
-        vkGetImageSubresourceLayout(device, dst, subResource, subResourceLayout);
-        return subResourceLayout;
-    }
-    //Linear tiling images have the ability to be mapped and copied from the Host like a vkBuffer, but loses Resolution alignment,
-    //so must skip the "RowPitch" each row to align the saved Bitmap properly
-    private static void rowPitchMemcpy(int width, int height, long srcDst, long src, long rowPitch) {
-        LibCString.nmemcpy(srcDst, src, width*height*4L);
 
     }
 

@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 
 import static net.vulkanmod.vulkan.Vulkan.*;
@@ -497,12 +496,12 @@ public class Drawer {
         usedPipelines.add(pipeline);
     }
 
-    public void pushConstants(Pipeline pipeline, int shaderstage) {
+    public void pushConstants(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         PushConstant pushConstant = pipeline.getPushConstant();
         pushConstant.update();
-        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), shaderstage, 0, pushConstant.getBuffer());
+        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstant.getBuffer());
     }
 
     public static void setDepthBias(float units, float factor) {
