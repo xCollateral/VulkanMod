@@ -399,6 +399,8 @@ public class Pipeline {
         graphicsPipelines.clear();
 
         vkDestroyPipelineLayout(device, pipelineLayout, null);
+
+//        VulkanImage.computePipeline.close();
     }
 
     public long createDescriptorSets(VkCommandBuffer commandBuffer, int frame, UniformBuffers uniformBuffers) {

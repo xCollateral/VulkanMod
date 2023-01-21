@@ -41,7 +41,7 @@ public class VulkanImage {
     public static final ComputePipeline computePipeline;
 
     static {
-        computePipeline=new ComputePipeline("core/swizzle", getSwapchainExtent().width()* getSwapchainExtent().height()*4);
+        computePipeline=new ComputePipeline("extra/swizzle", getSwapchainExtent().width()* getSwapchainExtent().height()*4);
     }
 
     public VulkanImage(int width, int height, int formatSize, boolean blur, boolean clamp, ByteBuffer buffer) {
@@ -258,8 +258,11 @@ public class VulkanImage {
 
         nvkCmdBindDescriptorSets(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.compPipelineLayout, 0, 1, stack.npointer(computePipeline.compDescriptorSet), 0, 0);
 
-
-        vkCmdDispatch(commandBuffer.getHandle(), 512, 1, 1);
+        if(!Vulkan.isRGB)
+        {
+            int i1 = ((width * height)/32/128)+1;
+            vkCmdDispatch(commandBuffer.getHandle(), i1, 1, 1);
+        }
 
 //        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
 

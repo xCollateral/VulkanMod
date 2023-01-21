@@ -14,6 +14,7 @@ import static net.vulkanmod.vulkan.ShaderSPIRVUtils.compileShaderFile;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK10.vkDestroyShaderModule;
 import static org.lwjgl.vulkan.VK11.VK_PIPELINE_CREATE_DISPATCH_BASE;
 
 public class ComputePipeline  {
@@ -27,11 +28,12 @@ public class ComputePipeline  {
     public final long compDescriptorSet;
     public long storageBufferMem;
     public final long compPipelineLayout;
+    private long compShaderModule;
+    private boolean closed = true;
 
-//    private final UBO ubo = new UBO(0, VK_SHADER_STAGE_COMPUTE_BIT);
-//    public final PushConstant pushConstant = new PushConstant();
 
-
+    //Should extend Pipeline as this class is a mess and has a lot of copied functions,
+    //but ComputePipelines use differnt flags and Vulkan functions and are not interchangable with Graphics Piplelines
     public ComputePipeline(String path, int size)
     {
         this.size=size;
@@ -50,7 +52,7 @@ public class ComputePipeline  {
         {
             updateDescriptorSets(stack, size);
         }
-
+        this.closed=false;
 
     }
 
@@ -64,13 +66,13 @@ public class ComputePipeline  {
 
 
                 VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.callocStack(stack);
-                bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+                bufferInfo.sType$Default();
                 bufferInfo.size(size);
                 bufferInfo.usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-                //bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+                bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
     //
                 VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-                allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+                allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE | usage);
                 allocationInfo.memoryTypeBits(0);
                 allocationInfo.requiredFlags(memFlags);
 
@@ -78,26 +80,6 @@ public class ComputePipeline  {
                 if(result != VK_SUCCESS) {
                     throw new RuntimeException("Failed to create buffer:" + result);
                 }
-
-    //            LongBuffer pBufferMem = MemoryUtil.memLongBuffer(MemoryUtil.memAddressSafe(pBufferMemory), 1);
-    //
-    //            if(vkCreateBuffer(device, bufferInfo, null, pBuffer) != VK_SUCCESS) {
-    //                throw new RuntimeException("Failed to create vertex buffer");
-    //            }
-    //
-    //            VkMemoryRequirements memRequirements = VkMemoryRequirements.mallocStack(stack);
-    //            vkGetBufferMemoryRequirements(device, pBuffer.get(0), memRequirements);
-    //
-    //            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.callocStack(stack);
-    //            allocInfo.sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-    //            allocInfo.allocationSize(memRequirements.size());
-    //            allocInfo.memoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits(), properties));
-    //
-    //            if(vkAllocateMemory(device, allocInfo, null, pBufferMem) != VK_SUCCESS) {
-    //                throw new RuntimeException("Failed to allocate vertex buffer memory");
-    //            }
-    //
-    //            vkBindBufferMemory(device, pBuffer.get(0), pBufferMem.get(0), 0);
 
 
             storageBuffer = pBuffer.get(0);
@@ -113,17 +95,13 @@ public class ComputePipeline  {
 
 
                 VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.callocStack(1, stack);
-
-
-
-                    VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
-                    uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-                    uniformBufferPoolSize.descriptorCount(1);
+                poolSizes.type(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+                poolSizes.descriptorCount(1);
 
 
 
                 VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.callocStack(stack);
-                poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+                poolInfo.sType$Default();
                 poolInfo.pPoolSizes(poolSizes);
                 poolInfo.maxSets(1);
                 //poolInfo.flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
@@ -145,29 +123,27 @@ public class ComputePipeline  {
 //                SPIRV vertShaderSPIRV = compileShader(path + ".vsh", "vertex");
 //                SPIRV fragShaderSPIRV = compileShader(path + ".fsh", "fragment");
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            ShaderSPIRVUtils.SPIRV vertShaderSPIRV = compileShaderFile(path + ".csh", ShaderSPIRVUtils.ShaderKind.COMPUTE_SHADER);
+            ShaderSPIRVUtils.SPIRV compShaderSPIRV = compileShaderFile(path + ".csh", ShaderSPIRVUtils.ShaderKind.COMPUTE_SHADER);
 
-            long compShaderModule = createShaderModule(vertShaderSPIRV.bytecode());
+            compShaderModule = createShaderModule(compShaderSPIRV.bytecode());
 
             ByteBuffer entryPoint = stack.UTF8("main");
 
 
 
             VkPipelineShaderStageCreateInfo compShaderStageInfo = VkPipelineShaderStageCreateInfo.callocStack(stack);
-
-            compShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+            compShaderStageInfo.sType$Default();
             compShaderStageInfo.stage(VK_SHADER_STAGE_COMPUTE_BIT);
             compShaderStageInfo.module(compShaderModule);
             compShaderStageInfo.pName(entryPoint);
+
+
 
             VkComputePipelineCreateInfo.Buffer pipelineInfo = VkComputePipelineCreateInfo.callocStack(1, stack);
             pipelineInfo.sType$Default();
             pipelineInfo.flags(VK_PIPELINE_CREATE_DISPATCH_BASE);
             pipelineInfo.stage(compShaderStageInfo);
-
-
             pipelineInfo.layout(compPipelineLayout);
-
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
 
@@ -187,7 +163,7 @@ public class ComputePipeline  {
             // ===> PIPELINE LAYOUT CREATION <===
 
             VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.callocStack(stack);
-            pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+            pipelineLayoutInfo.sType$Default();
             pipelineLayoutInfo.pSetLayouts(stack.longs(compdescriptorSetLayout));
 
             {
@@ -216,20 +192,16 @@ public class ComputePipeline  {
         try(MemoryStack stack = stackPush()) {
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.callocStack(1, stack);
-                bindings.binding(0);
-                bindings.descriptorCount(1);
-                bindings.descriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-                bindings.pImmutableSamplers(null);
-                bindings.stageFlags(VK_SHADER_STAGE_COMPUTE_BIT);
-
-
-
-
+            bindings.binding(0);
+            bindings.descriptorCount(1);
+            bindings.descriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            bindings.pImmutableSamplers(null);
+            bindings.stageFlags(VK_SHADER_STAGE_COMPUTE_BIT);
 
 
 
             VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.callocStack(stack);
-            layoutInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
+            layoutInfo.sType$Default();
             layoutInfo.pBindings(bindings);
 
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
@@ -244,14 +216,12 @@ public class ComputePipeline  {
     private long allocateDescriptorSet() {
         try(MemoryStack stack = stackPush()) {
 
-//                LongBuffer layout = stack.mallocLong(2);
-//                layout.put(descriptorSetLayout);
-
-
             VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.callocStack(stack);
-            allocInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+            allocInfo.sType$Default();
             allocInfo.descriptorPool(compdescriptorSetPool);
             allocInfo.pSetLayouts(stack.longs(compdescriptorSetLayout));
+
+
 
             LongBuffer pDescriptorSet = stack.mallocLong(1);
 
@@ -272,14 +242,19 @@ public class ComputePipeline  {
         bufferInfos.offset(0);
         bufferInfos.range(size);
         bufferInfos.buffer(storageBuffer);
-        VkWriteDescriptorSet.Buffer uboDescriptorWrite = VkWriteDescriptorSet.callocStack(1, stack)
-                .sType$Default()
-                .dstBinding(0)
-                .dstArrayElement(0)
-                .descriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-                .descriptorCount(1)
-                .pBufferInfo(bufferInfos)
-                .dstSet(compDescriptorSet);
+
+
+
+        VkWriteDescriptorSet.Buffer uboDescriptorWrite = VkWriteDescriptorSet.callocStack(1, stack);
+        uboDescriptorWrite.sType$Default();
+        uboDescriptorWrite.dstBinding(0);
+        uboDescriptorWrite.dstArrayElement(0);
+        uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        uboDescriptorWrite.descriptorCount(1);
+        uboDescriptorWrite.pBufferInfo(bufferInfos);
+        uboDescriptorWrite.dstSet(compDescriptorSet);
+
+
 
         vkUpdateDescriptorSets(Vulkan.getDevice(), uboDescriptorWrite, null);
 
@@ -288,7 +263,7 @@ public class ComputePipeline  {
 
     public void resizeBuffer(int size)
     {
-        if(this.size==size) return; this.size=size;
+        if(this.closed || this.size==size) return; this.size=size;
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
@@ -301,11 +276,13 @@ public class ComputePipeline  {
 
     public void close()
     {
-        vmaDestroyBuffer(Vulkan.getAllocator(), storageBuffer, storageBufferMem);
+        this.closed=true;
+//        vmaDestroyBuffer(Vulkan.getAllocator(), storageBuffer, storageBufferMem);
+        vkDestroyShaderModule(Vulkan.getDevice(), compShaderModule, null);
         vkDestroyDescriptorSetLayout(Vulkan.getDevice(), compdescriptorSetLayout, null);
         vkDestroyDescriptorPool(Vulkan.getDevice(), compdescriptorSetPool, null);
-        vkDestroyPipelineLayout(Vulkan.getDevice(), compPipelineLayout, null);
         vkDestroyPipeline(Vulkan.getDevice(), compPipeline, null);
+//        vkDestroyPipelineLayout(Vulkan.getDevice(), compPipelineLayout, null);
 
     }
 
