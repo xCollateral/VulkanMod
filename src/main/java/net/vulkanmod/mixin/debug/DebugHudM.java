@@ -20,7 +20,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
@@ -73,31 +76,77 @@ public abstract class DebugHudM {
         return bytesToMegabytes(ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed());
     }
 
-    /**
-     * @author
-     */
-    @Overwrite
-    public void drawGameInformation(PoseStack matrices) {
-        List<String> list = this.getGameInformation();
-        list.add("");
-        boolean bl = this.minecraft.getSingleplayerServer() != null;
-        list.add("Debug: Pie [shift]: " + (this.minecraft.options.renderDebugCharts ? "visible" : "hidden") + (bl ? " FPS + TPS" : " FPS") + " [alt]: " + (this.minecraft.options.renderFpsChart ? "visible" : "hidden"));
-        list.add("For help: press F3 + Q");
+//    /**
+//     * @author
+//     */
+//    @Overwrite
+//    public void drawGameInformation(PoseStack matrices) {
+//        List<String> list = this.getGameInformation();
+//        list.add("");
+//        boolean bl = this.minecraft.getSingleplayerServer() != null;
+//        list.add("Debug: Pie [shift]: " + (this.minecraft.options.renderDebugCharts ? "visible" : "hidden") + (bl ? " FPS + TPS" : " FPS") + " [alt]: " + (this.minecraft.options.renderFpsChart ? "visible" : "hidden"));
+//        list.add("For help: press F3 + Q");
+//
+//        RenderSystem.enableBlend();
+//        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.font.lineHeight;
+//            int k = this.font.width(string);
+//            int l = 2;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.fill(matrices, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
+//        }
+//        GuiBatchRenderer.endBatch();
+//
+//        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.font.lineHeight;
+//            int k = this.font.width(string);
+//            int l = 2;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, 2.0f, (float)m, 0xE0E0E0);
+//        }
+//        bufferSource.endBatch();
+//    }
+
+    @Inject(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V",
+            at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z",
+                    shift = At.Shift.AFTER,
+                    ordinal = 2))
+    protected void renderStuffOne(PoseStack poseStack, CallbackInfo ci)
+    {
 
         RenderSystem.enableBlend();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+    }
 
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.font.lineHeight;
-            int k = this.font.width(string);
-            int l = 2;
-            int m = 2 + j * i;
 
-            GuiBatchRenderer.fill(matrices, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
-        }
+    @Redirect(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/components/DebugScreenOverlay;fill(Lcom/mojang/blaze3d/vertex/PoseStack;IIIII)V"))
+    protected void renderStuffRedirectTwo(PoseStack poseStack, int m, int k, int j, int e, int d)
+    {
+        GuiBatchRenderer.fill(poseStack, m, k, j, e, d);
+    }
+    @Redirect(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Font;draw(Lcom/mojang/blaze3d/vertex/PoseStack;Ljava/lang/String;FFI)I"))
+    protected int renderStuffRedirectThree(Font instance, PoseStack $$0, String $$1, float $$2, float $$3, int $$4)
+    {
+        return 0;
+    }
+
+    @Inject(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V", at = @At("TAIL"),
+            locals = LocalCapture.CAPTURE_FAILHARD)
+    public void renderStuff3(PoseStack poseStack, CallbackInfo ci, List<String> list)
+    {
         GuiBatchRenderer.endBatch();
 
         MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
@@ -109,7 +158,7 @@ public abstract class DebugHudM {
             int l = 2;
             int m = 2 + j * i;
 
-            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, 2.0f, (float)m, 0xE0E0E0);
+            GuiBatchRenderer.drawString(this.font, bufferSource, poseStack, string, 2.0f, (float)m, 0xE0E0E0);
         }
         bufferSource.endBatch();
     }

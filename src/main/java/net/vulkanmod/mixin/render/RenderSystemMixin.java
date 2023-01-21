@@ -7,7 +7,6 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
@@ -15,9 +14,7 @@ import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Pipeline;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -364,18 +361,18 @@ public abstract class RenderSystemMixin {
     /**
      * @author
      */
-    @Overwrite
-    public static void setProjectionMatrix(Matrix4f p_157426_) {
-        Matrix4f matrix4f = p_157426_.copy();
+    @Overwrite(remap = false)
+    public static void setProjectionMatrix(Matrix4f projectionMatrix) {
+        Matrix4f matrix4f = new Matrix4f(projectionMatrix);
         if (!isOnRenderThread()) {
             recordRenderCall(() -> {
-                projectionMatrix = matrix4f;
+                RenderSystemMixin.projectionMatrix = matrix4f;
                 //Vulkan
                 VRenderSystem.applyProjectionMatrix(matrix4f);
                 VRenderSystem.calculateMVP();
             });
         } else {
-            projectionMatrix = matrix4f;
+            RenderSystemMixin.projectionMatrix = matrix4f;
             //Vulkan
             VRenderSystem.applyProjectionMatrix(matrix4f);
             VRenderSystem.calculateMVP();
@@ -386,9 +383,9 @@ public abstract class RenderSystemMixin {
     /**
      * @author
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static void setTextureMatrix(Matrix4f matrix4f) {
-        Matrix4f matrix4f2 = matrix4f.copy();
+        Matrix4f matrix4f2 = new Matrix4f(matrix4f);
         if (!RenderSystem.isOnRenderThread()) {
             RenderSystem.recordRenderCall(() -> {
                 textureMatrix = matrix4f2;
@@ -418,7 +415,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void applyModelViewMatrix() {
-        Matrix4f matrix4f = modelViewStack.last().pose().copy();
+        Matrix4f matrix4f = new Matrix4f(modelViewStack.last().pose());
         if (!isOnRenderThread()) {
             recordRenderCall(() -> {
                 modelViewMatrix = matrix4f;

@@ -57,6 +57,10 @@ public class UniformBuffers {
         System.out.println("resized UniformBuffer to: " + newSize);
     }
 
+    public void free() {
+        uniformBuffers.forEach(Buffer::freeBuffer);
+    }
+
     public void reset() {
         usedBytes = 0;
     }

@@ -2,8 +2,11 @@ package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.gl.TextureMap;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -11,6 +14,15 @@ import java.nio.IntBuffer;
 
 @Mixin(GlStateManager.class)
 public class GlStateManagerM {
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _bindTexture(int i) {
+        VulkanImage texture = TextureMap.getTexture(i);
+        if(texture != null) VTextureSelector.bindTexture(texture);
+    }
 
     /**
      * @author
@@ -52,6 +64,22 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _texSubImage2D(int target, int level, int offsetX, int offsetY, int width, int height, int format, int type, long pixels) {
 
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _texParameter(int i, int j, int k) {
+        //TODO
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _texParameter(int i, int j, float f) {
+        //TODO
     }
 
     /**
