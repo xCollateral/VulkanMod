@@ -86,12 +86,12 @@ public class VulkanImage {
             //LongBuffer pAllocation = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(0L);
 
-            MemoryManager.getInstance().createImage(width, height,
-                    VK_FORMAT_R8G8B8A8_UNORM,
+            MemoryManager.getInstance().createImage(width, height, 1,
+                    VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pTextureImage,
-                    pAllocation, false);
+                    pAllocation);
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);
@@ -131,7 +131,7 @@ public class VulkanImage {
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
                     pStagingBuffer,
-                    pStagingAllocation, VMA_MEMORY_USAGE_CPU_ONLY);
+                    pStagingAllocation);
 
             MemoryManager.getInstance().MapAndCopy(pStagingAllocation.get(0), imageSize,
                     (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), buffer, imageSize)
@@ -180,7 +180,7 @@ public class VulkanImage {
             MemoryManager.getInstance().createBuffer(
                     imageSize,
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation);
             long pTextureImage1 = pTextureImage.get(0);
             blitImageSwizzleBGR2RGB(pTextureImage1, image, width, height, stack, commandBuffer);
 

@@ -600,6 +600,18 @@ public class Pipeline {
 
     public long getLayout() { return pipelineLayout; }
 
+    public void reload() {
+        vkDestroyShaderModule(device, vertShaderModule, null);
+        vkDestroyShaderModule(device, fragShaderModule, null);
+        for (Map.Entry<PipelineState, Long> entry : graphicsPipelines.entrySet()) {
+            PipelineState state = entry.getKey();
+            long pipeline = entry.getValue();
+            vkDestroyPipeline(device, pipeline, null);
+        }
+        graphicsPipelines.clear();
+        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
+                (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
+    }
     private class DescriptorSetsUnit {
         private long descriptorSet;
 

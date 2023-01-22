@@ -20,7 +20,7 @@ import static org.lwjgl.vulkan.VK11.VK_PIPELINE_CREATE_DISPATCH_BASE;
 public class ComputePipeline  {
 
     private final VkDevice device = Vulkan.getDevice();
-    public final long compPipeline;
+    public long compPipeline;
     private final long compdescriptorSetLayout;
     private final long compdescriptorSetPool;
     private int size;
@@ -73,7 +73,8 @@ public class ComputePipeline  {
                 bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
     //
                 VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-                allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE | usage);
+                allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+                allocationInfo.flags(usage);
                 allocationInfo.memoryTypeBits(0);
                 allocationInfo.requiredFlags(memFlags);
 
@@ -279,6 +280,9 @@ public class ComputePipeline  {
     }
 
 
-
-
+    public void reload() {
+        vkDestroyShaderModule(device, compShaderModule, null);
+        vkDestroyPipeline(device, compPipeline, null);
+        compPipeline = createComputePipeline("extra/swizzle");
+    }
 }

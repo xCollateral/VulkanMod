@@ -1,8 +1,10 @@
 package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.Pair;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -11,11 +13,11 @@ import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -68,7 +70,7 @@ public class MemoryManager {
         this.currentFrame = frame;
     }
 
-    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory, int allocationUsage) {
+    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -79,7 +81,7 @@ public class MemoryManager {
             //bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 //
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-            allocationInfo.usage(allocationUsage);
+            //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
             allocationInfo.requiredFlags(properties);
 
             int result = vmaCreateBuffer(allocator, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
@@ -118,7 +120,7 @@ public class MemoryManager {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(size, usage, properties, pBuffer, pAllocation, VMA_MEMORY_USAGE_CPU_ONLY);
+            this.createBuffer(size, usage, properties, pBuffer, pAllocation);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
@@ -133,47 +135,32 @@ public class MemoryManager {
         }
     }
 
-    public void createImage(int width, int height, int format, int usage, int memProperties,
-                            LongBuffer pTextureImage, PointerBuffer pTextureImageMemory, boolean host) {
+    public void createImage(int width, int height, int mipLevel, int format, int tiling, int usage, int memProperties,
+                                   LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
 
         try(MemoryStack stack = stackPush()) {
 
             VkImageCreateInfo imageInfo = VkImageCreateInfo.callocStack(stack);
-            imageInfo.sType$Default();
+            imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
             imageInfo.imageType(VK_IMAGE_TYPE_2D);
             imageInfo.extent().width(width);
             imageInfo.extent().height(height);
             imageInfo.extent().depth(1);
-            imageInfo.mipLevels(1);
+            imageInfo.mipLevels(mipLevel);
             imageInfo.arrayLayers(1);
             imageInfo.format(format);
-            imageInfo.tiling(host ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL);
-            imageInfo.initialLayout(host ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED);
+            imageInfo.tiling(tiling);
+            imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-            imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
-            imageInfo.queueFamilyIndexCount(2);
+            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
             imageInfo.pQueueFamilyIndices(stack.ints(0,1));
 
-            final VmaAllocationCreateInfo allocationInfo = host
-                    ? VmaAllocationCreateInfo.callocStack(stack)
-                    .flags(VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT )
-                    .usage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
-                    .requiredFlags(memProperties)
-                    .pool(NULL)
+            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
+            //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
+            allocationInfo.requiredFlags(memProperties);
 
-                    : VmaAllocationCreateInfo.callocStack(stack)
-                    .flags(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT )
-                    .usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
-                    .requiredFlags(memProperties)
-                    .memoryTypeBits(0)
-                    .pool(NULL);
-
-            int i = vmaCreateImage(allocator, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
-            if(i !=VK_SUCCESS)
-            {   throw new RuntimeException("Failed to create image: "+i);
-
-            }
+            vmaCreateImage(allocator, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
 
 //            if(vkCreateImage(device, imageInfo, null, pTextureImage) != VK_SUCCESS) {
 //                throw new RuntimeException("Failed to create image");

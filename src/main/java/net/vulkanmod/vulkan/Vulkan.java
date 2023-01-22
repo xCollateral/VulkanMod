@@ -687,12 +687,12 @@ public class Vulkan {
             PointerBuffer pDepthImageMemory = stack.mallocPointer(1);
 
             MemoryManager.getInstance().createImage(
-                    swapChainExtent.width(), swapChainExtent.height(),
-                    depthFormat,
+                    swapChainExtent.width(), swapChainExtent.height(),1,
+                    depthFormat, VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pDepthImage,
-                    pDepthImageMemory, false);
+                    pDepthImageMemory);
 
             depthImage = pDepthImage.get(0);
             depthImageMemory = pDepthImageMemory.get(0);
