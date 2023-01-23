@@ -4,6 +4,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
@@ -45,6 +46,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.vkDestroySwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkGetSwapchainImagesKHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
@@ -56,7 +58,16 @@ public class Vulkan {
 //    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
+    public static boolean isRGB;
+
+    static final int vkVersion;
+
     static {
+
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            vkVersion = getVkVersion(stack);
+        }
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
             VALIDATION_LAYERS.add("VK_LAYER_KHRONOS_validation");
@@ -239,6 +250,9 @@ public class Vulkan {
 
     public static void cleanUp() {
         vkDeviceWaitIdle(device);
+
+        VulkanImage.computePipeline.close();
+
         vkDestroyCommandPool(device, commandPool, null);
         vkDestroyCommandPool(device, TransferQueue.getCommandPool(), null);
 
@@ -262,10 +276,10 @@ public class Vulkan {
 
             appInfo.sType(VK_STRUCTURE_TYPE_APPLICATION_INFO);
             appInfo.pApplicationName(stack.UTF8Safe("VulkanMod"));
-            appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
+            appInfo.applicationVersion(vkVersion);
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
-            appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_1);
+            appInfo.engineVersion(vkVersion);
+            appInfo.apiVersion(vkVersion);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -441,7 +455,7 @@ public class Vulkan {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVersion);
 
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 
@@ -465,6 +479,7 @@ public class Vulkan {
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
+            allocatorCreateInfo.vulkanApiVersion(vkVersion);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
@@ -474,6 +489,12 @@ public class Vulkan {
 
             allocator = pAllocator.get(0);
         }
+    }
+
+    private static int getVkVersion(MemoryStack stack) {
+        var a = stack.npointer(0);
+        VK11.nvkEnumerateInstanceVersion(a);
+        return MemoryUtil.memGetInt(a);
     }
 
     private static void createCommandPool() {
@@ -594,14 +615,17 @@ public class Vulkan {
             VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(2, stack);
             VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(2, stack);
 
+            VKCapabilitiesDevice capabilities = device.getCapabilities();
+            final boolean storeNone = capabilities.VK_EXT_load_store_op_none;
+
             // Color attachments
             VkAttachmentDescription colorAttachment = attachments.get(0);
             colorAttachment.format(swapChainImageFormat);
             colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
-            colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            colorAttachment.loadOp(storeNone ? EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT : VK_ATTACHMENT_LOAD_OP_CLEAR);
+            colorAttachment.storeOp(storeNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_STORE);
+            colorAttachment.stencilLoadOp(storeNone ? EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT : VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+            colorAttachment.stencilStoreOp(storeNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_DONT_CARE);
             colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             colorAttachment.finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -616,10 +640,10 @@ public class Vulkan {
             VkAttachmentDescription depthAttachment = attachments.get(1);
             depthAttachment.format(findDepthFormat());
             depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-            depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.loadOp(storeNone ? EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT : VK_ATTACHMENT_LOAD_OP_CLEAR);
+            depthAttachment.storeOp(storeNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.stencilLoadOp(storeNone ? EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT : VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+            depthAttachment.stencilStoreOp(storeNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_DONT_CARE);
             depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             depthAttachment.finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
@@ -633,13 +657,13 @@ public class Vulkan {
             subpass.pColorAttachments(VkAttachmentReference.callocStack(1, stack).put(0, colorAttachmentRef));
             subpass.pDepthStencilAttachment(depthAttachmentRef);
 
-            VkSubpassDependency.Buffer dependency = VkSubpassDependency.callocStack(1, stack);
-            dependency.srcSubpass(VK_SUBPASS_EXTERNAL);
-            dependency.dstSubpass(0);
-            dependency.srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
-            dependency.srcAccessMask(0);
-            dependency.dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
-            dependency.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+//            VkSubpassDependency.Buffer dependency = VkSubpassDependency.callocStack(1, stack);
+//            dependency.srcSubpass(VK_SUBPASS_EXTERNAL);
+//            dependency.dstSubpass(0);
+//            dependency.srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
+//            dependency.srcAccessMask(0);
+//            dependency.dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
+//            dependency.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 
             VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.callocStack(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
@@ -667,9 +691,8 @@ public class Vulkan {
             PointerBuffer pDepthImageMemory = stack.mallocPointer(1);
 
             MemoryManager.getInstance().createImage(
-                    swapChainExtent.width(), swapChainExtent.height(), 1,
-                    depthFormat,
-                    VK_IMAGE_TILING_OPTIMAL,
+                    swapChainExtent.width(), swapChainExtent.height(),1,
+                    depthFormat, VK_IMAGE_TILING_OPTIMAL,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pDepthImage,
@@ -726,7 +749,7 @@ public class Vulkan {
         List<VkSurfaceFormatKHR> list = availableFormats.stream().toList();
 
         VkSurfaceFormatKHR format = list.get(0);
-        boolean flag = true;
+        isRGB = true;
 
         for (VkSurfaceFormatKHR availableFormat : list) {
             if (availableFormat.format() == VK_FORMAT_R8G8B8A8_UNORM && availableFormat.colorSpace() == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -734,11 +757,11 @@ public class Vulkan {
 
             if (availableFormat.format() == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace() == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 format = availableFormat;
-                flag = false;
+                isRGB = false;
             }
         }
 
-        if(flag) System.out.println("Non-optimal surface format.");
+        if(isRGB) System.out.println("Non-optimal surface format.");
         return format;
     }
 

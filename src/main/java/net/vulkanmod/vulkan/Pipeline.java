@@ -42,7 +42,7 @@ public class Pipeline {
     public static final BlendState NO_BLEND_STATE = new BlendState(false, 0, 0, 0, 0);
 
     private static final VkDevice device = Vulkan.getDevice();
-    private static final long pipelineCache = createPipelineCache();
+    static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
 
     private String path;
@@ -540,7 +540,7 @@ public class Pipeline {
         };
     }
 
-    private static long createShaderModule(ByteBuffer spirvCode) {
+    static long createShaderModule(ByteBuffer spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -600,6 +600,18 @@ public class Pipeline {
 
     public long getLayout() { return pipelineLayout; }
 
+    public void reload() {
+        vkDestroyShaderModule(device, vertShaderModule, null);
+        vkDestroyShaderModule(device, fragShaderModule, null);
+        for (Map.Entry<PipelineState, Long> entry : graphicsPipelines.entrySet()) {
+            PipelineState state = entry.getKey();
+            long pipeline = entry.getValue();
+            vkDestroyPipeline(device, pipeline, null);
+        }
+        graphicsPipelines.clear();
+        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
+                (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
+    }
     private class DescriptorSetsUnit {
         private long descriptorSet;
 

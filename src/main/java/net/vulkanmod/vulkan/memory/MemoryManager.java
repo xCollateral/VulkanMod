@@ -51,6 +51,20 @@ public class MemoryManager {
         return INSTANCE;
     }
 
+    public static void addMemBarrier(VkCommandBuffer handle, int vkAccessShaderReadBit, int vkAccessShaderWriteBit, long storageBuffer, int i, MemoryStack stack) {
+
+        VkBufferMemoryBarrier.Buffer vkBufferMemoryBarrier = VkBufferMemoryBarrier.callocStack(1, stack);
+        vkBufferMemoryBarrier.get(0).sType$Default()
+                .buffer(storageBuffer)
+                .size(i)
+                .srcAccessMask(vkAccessShaderReadBit)
+                .dstAccessMask(vkAccessShaderWriteBit)
+                .dstQueueFamilyIndex(0)
+                .offset(0);
+
+        vkCmdPipelineBarrier(handle, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, null, vkBufferMemoryBarrier, null);
+    }
+
     public void setCurrentFrame(int frame) {
         Validate.isTrue(frame < Frames, "Out of bounds frame index");
         this.currentFrame = frame;

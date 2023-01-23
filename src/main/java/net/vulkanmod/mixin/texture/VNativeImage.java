@@ -76,15 +76,9 @@ public abstract class VNativeImage {
     public void downloadTexture(int level, boolean removeAlpha) {
         RenderSystem.assertOnRenderThread();
 
-        VulkanImage.downloadTexture(this.width, this.height, 4, this.buffer, Vulkan.getSwapChainImages().get(Drawer.getCurrentFrame()));
+        VulkanImage.downloadTexture(this.width, this.height, this.pixels, Vulkan.getSwapChainImages().get(Drawer.getCurrentFrame()));
 
-        if (removeAlpha && this.format.hasAlpha()) {
-            for (int i = 0; i < this.height; ++i) {
-                for (int j = 0; j < this.getWidth(); ++j) {
-                    this.setPixelRGBA(j, i, this.getPixelRGBA(j, i) | 255 << this.format.alphaOffset());
-                }
-            }
-        }
+
 
     }
 
