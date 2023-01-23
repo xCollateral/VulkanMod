@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
@@ -31,7 +32,7 @@ public class ComputePipeline  {
     public final long compPipelineLayout;
     private long compShaderModule;
     private boolean closed;
-
+    public final PointerBuffer data = MemoryUtil.memAllocPointer(1);
 
     //Should extend Pipeline as this class is a mess and has a lot of copied functions,
     //but ComputePipelines use differnt flags and Vulkan functions and are not interchangable with Graphics Piplelines
@@ -41,7 +42,7 @@ public class ComputePipeline  {
 //        super(path);
         compdescriptorSetLayout = createDescriptorSetLayout(path);
 
-        ssboStorageBuffer = getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size);
+        ssboStorageBuffer = getStorageBuffer(size);
 
 //        pushConstant.addField(Field.createField("float", "ScreenSize", 2, pushConstant));
 //        pushConstant.allocateBuffer();
@@ -55,9 +56,12 @@ public class ComputePipeline  {
         }
         this.closed=false;
 
+
+        vmaMapMemory(Vulkan.getAllocator(), storageBufferMem, data);
+
     }
 
-    private long getStorageBuffer(int usage, int memFlags, int size) {
+    private long getStorageBuffer(int size) {
         final long storageBuffer;
         try(MemoryStack stack = stackPush())
         {
@@ -69,14 +73,14 @@ public class ComputePipeline  {
                 VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.callocStack(stack);
                 bufferInfo.sType$Default();
                 bufferInfo.size(size);
-                bufferInfo.usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+                bufferInfo.usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
                 bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
     //
                 VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-                allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-                allocationInfo.flags(usage);
+//                allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+                allocationInfo.flags(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT|VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT|VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT);
                 allocationInfo.memoryTypeBits(0);
-                allocationInfo.requiredFlags(memFlags);
+                allocationInfo.requiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
                 int result = vmaCreateBuffer(Vulkan.getAllocator(), bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
                 if(result != VK_SUCCESS) {
@@ -260,9 +264,11 @@ public class ComputePipeline  {
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
+            vmaUnmapMemory(Vulkan.getAllocator(), storageBufferMem);
             vmaDestroyBuffer(Vulkan.getAllocator(), ssboStorageBuffer, storageBufferMem);
-            ssboStorageBuffer =getStorageBuffer(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, size);
+            ssboStorageBuffer =getStorageBuffer(size);
             updateDescriptorSets(stack, size);
+            vmaMapMemory(Vulkan.getAllocator(), storageBufferMem, data);
         }
     }
 
@@ -270,6 +276,8 @@ public class ComputePipeline  {
     public void close()
     {
         this.closed=true;
+
+        data.free();
 //        vmaDestroyBuffer(Vulkan.getAllocator(), storageBuffer, storageBufferMem);
         vkDestroyShaderModule(device, compShaderModule, null);
         vkDestroyDescriptorSetLayout(device, compdescriptorSetLayout, null);

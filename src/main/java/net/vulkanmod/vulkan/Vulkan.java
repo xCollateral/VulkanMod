@@ -4,6 +4,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
@@ -249,6 +250,9 @@ public class Vulkan {
 
     public static void cleanUp() {
         vkDeviceWaitIdle(device);
+
+        VulkanImage.computePipeline.close();
+
         vkDestroyCommandPool(device, commandPool, null);
         vkDestroyCommandPool(device, TransferQueue.getCommandPool(), null);
 

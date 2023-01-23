@@ -56,13 +56,13 @@ public class MemoryManager {
         VkBufferMemoryBarrier.Buffer vkBufferMemoryBarrier = VkBufferMemoryBarrier.callocStack(1, stack);
         vkBufferMemoryBarrier.get(0).sType$Default()
                 .buffer(storageBuffer)
-                .size(854*480*4)
+                .size(i)
                 .srcAccessMask(vkAccessShaderReadBit)
                 .dstAccessMask(vkAccessShaderWriteBit)
                 .dstQueueFamilyIndex(0)
                 .offset(0);
 
-        vkCmdPipelineBarrier(handle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, null, vkBufferMemoryBarrier, null);
+        vkCmdPipelineBarrier(handle, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, null, vkBufferMemoryBarrier, null);
     }
 
     public void setCurrentFrame(int frame) {
