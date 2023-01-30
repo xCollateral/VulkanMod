@@ -1,13 +1,14 @@
 package net.vulkanmod.render.chunk;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import com.mojang.blaze3d.shaders.Shader;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -29,6 +30,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.vulkan.Drawer;
@@ -42,7 +44,6 @@ import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.Consumer;
 
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -97,6 +98,7 @@ public class WorldRenderer {
     private static double prevCamZ;
     private static boolean needsReset=true;
     private static int prev;
+    private static boolean hasDirty=true;
     private static boolean needsUpdate2=true;
 
     static  {
@@ -241,7 +243,7 @@ public class WorldRenderer {
 //        int added = 0;
 
         sectionsInFrustum.clear();
-        RHandler.uniqueVBOs.clear();
+
 //        this.solidChunks.clear();
 //        this.cutoutChunks.clear();
 //        this.cutoutMippedChunks.clear();
@@ -258,10 +260,6 @@ public class WorldRenderer {
             sectionsInFrustum.add(renderChunkInfo);
 
             translucentChunks.add(renderChunk);
-
-            //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
-            //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
-            if (!renderChunk.vbo.preInitialised) RHandler.uniqueVBOs.add(renderChunk.vbo);
 
 
 //            mainLoop++;
@@ -348,10 +346,14 @@ public class WorldRenderer {
 //        List<RenderSection> list = Lists.newArrayList();
 
 
+        RHandler.uniqueVBOs.clear();
+        hasDirty=false;
+
         //TODO later: find a better way
         for(QueueChunkInfo chunkInfo : sectionsInFrustum) {
             RenderSection renderSection = chunkInfo.chunk;
             if (renderSection.isDirty()) {
+                hasDirty=true;
                 if (((LevelChunk) (level.getChunk((renderSection.getOrigin())))).isClientLightReady()) {
 //                RHandler.dirtyVBOs.add(renderSection.vbo);
 
@@ -359,6 +361,9 @@ public class WorldRenderer {
                     renderSection.setNotDirty();
                 }
             }
+            //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
+            //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
+            if (!renderSection.vbo.preInitialised) RHandler.uniqueVBOs.add(renderSection.vbo);
         }
 
         minecraft.getProfiler().popPush("upload");
@@ -522,13 +527,17 @@ public class WorldRenderer {
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
         translucentSort(renderType, camX, camY, camZ); //may be better to place translucent textures ina separate renderpass and submit it together with the vbos
-
+        if (Config.drawIndirect)
             if (RHandler.uniqueVBOs.size() != prev || needsUpdate2) {
                 needsUpdate2=false;
                 prev = RHandler.uniqueVBOs.size();
                 RHandler.drawCommands.clear();
-                sortDrawCommands();
-                if (Config.drawIndirect) RHandler.AllocIndirectCmds();
+                for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
+
+                    RHandler.drawCommands.put(RHandler.uniqueVBOs.get(i).indirectCommand);
+
+                }
+                RHandler.AllocIndirectCmds();
             }
         minecraft.getProfiler().push("filterempty");
         minecraft.getProfiler().popPush(() -> {
@@ -586,8 +595,9 @@ public class WorldRenderer {
 //        RHandler.uniqueVBOs.unstableSort(null);
 
         if(!Config.drawIndirect) {
-            for (int i = 0; i < RHandler.drawCommands.position(); i++) {
-                Drawer.drawIndexedBindless(RHandler.drawCommands.get(i));
+            for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
+
+                Drawer.drawIndexedBindless(RHandler.uniqueVBOs.get(i).indirectCommand);
             }
         }
         else Drawer.drawIndexedBindlessIndirect();
@@ -603,30 +613,6 @@ public class WorldRenderer {
 
         VRenderSystem.copyMVP(RenderSystem.getModelViewMatrix());
 
-    }
-
-    private static void sortDrawCommands() {
-        int skips = 0;
-        int numTranslucent = 0;
-        for (ObjectListIterator<VBO> iterator = RHandler.uniqueVBOs.iterator(); iterator.hasNext(); ) {
-
-            VBO next = iterator.next();
-            while(next.translucent && iterator.hasNext())
-            {
-                iterator.next();
-                skips++;
-                numTranslucent++;
-            }
-
-            while (skips >0&&iterator.hasPrevious()) {
-                RHandler.drawCommands.put(iterator.previous().indirectCommand);
-                skips--;
-            }
-            if(numTranslucent !=0) {
-                iterator.skip(numTranslucent); numTranslucent =0;
-            }
-            RHandler.drawCommands.put(next.indirectCommand);
-        }
     }
 
     private static void translucentSort(RenderType renderType, double camX, double camY, double camZ) {
