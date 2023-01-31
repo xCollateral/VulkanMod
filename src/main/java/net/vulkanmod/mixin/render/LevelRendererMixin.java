@@ -25,6 +25,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
+    //TODO: remove class
 
     @Shadow @Final private Minecraft minecraft;
 

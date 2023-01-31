@@ -491,10 +491,12 @@ public class VulkanImage {
     }
 
     public void free() {
-        MemoryManager.getInstance().freeImage(this.id, this.allocation);
+//        MemoryManager.getInstance().freeImage(this.id, this.allocation);
+        MemoryManager.getInstance().addToFreeable(this);
     }
 
     public long getId() { return id;}
+    public long getAllocation() { return allocation;}
     public long getTextureImageView() { return textureImageView; }
     public long getTextureSampler() { return textureSampler; }
 }

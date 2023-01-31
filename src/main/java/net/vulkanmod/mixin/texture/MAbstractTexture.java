@@ -38,7 +38,13 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
      */
     @Overwrite
     public void releaseId() {
-        if(this.vulkanImage != null) this.vulkanImage.free();
+        if(this.vulkanImage != null) {
+            this.vulkanImage.free();
+            this.vulkanImage = null;
+        }
+//        else
+//            System.out.println("trying to free null image");
+
         if(!TextureMap.removeTexture(this.id));
 //            throw new RuntimeException("texture id not found");
     }
