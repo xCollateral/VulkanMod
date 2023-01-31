@@ -149,6 +149,10 @@ public class RenderSection {
 
     public boolean isDirty() { return this.dirty; }
 
+    public boolean isDirtyFromPlayer() {
+        return this.dirty && this.playerChanged;
+    }
+
     public BlockPos getOrigin() {
         return this.origin;
     }
