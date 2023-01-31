@@ -1,4 +1,0 @@
-accessWidener	v1	named
-#Accessible class net/minecraft/client/render/WorldRenderer$ChunkInfo
-accessible field net/minecraft/client/render/WorldRenderer$ChunkInfo chunk Lnet/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk;
-accessible class net/minecraft/client/gui/hud/InGameHud$HeartType

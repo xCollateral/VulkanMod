@@ -24,7 +24,7 @@
   "mixins": [
     "vulkanmod.mixins.json"
   ],
-  "accessWidener" : "vulkanmod.accesswidener.old",
+  "accessWidener" : "vulkanmod.accesswidener",
 
   "depends": {
     "fabricloader": ">=0.13.3",
