@@ -26,6 +26,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class RHandler
 {
+    public static final ObjectArrayList<VBO> translucentVBOs = new ObjectArrayList<>(1024);
     public static ObjectArrayList<VBO> uniqueVBOs =new ObjectArrayList<>(1024);
     public static double camX;
     public static double camY;

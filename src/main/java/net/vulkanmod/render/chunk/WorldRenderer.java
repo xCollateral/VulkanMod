@@ -1,9 +1,7 @@
 package net.vulkanmod.render.chunk;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import com.mojang.blaze3d.shaders.Shader;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
@@ -30,7 +28,6 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.vulkan.Drawer;
@@ -40,7 +37,6 @@ import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -100,6 +96,7 @@ public class WorldRenderer {
     private static int prev;
     private static boolean hasDirty=true;
     private static boolean needsUpdate2=true;
+    ;
 
     static  {
         minecraft = Minecraft.getInstance();
@@ -347,6 +344,7 @@ public class WorldRenderer {
 
 
         RHandler.uniqueVBOs.clear();
+        RHandler.translucentVBOs.clear();
         hasDirty=false;
 
         //TODO later: find a better way
@@ -363,7 +361,12 @@ public class WorldRenderer {
             }
             //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
             //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
-            if (!renderSection.vbo.preInitialised) RHandler.uniqueVBOs.add(renderSection.vbo);
+            if (!renderSection.vbo.preInitialised) {
+                if(!renderSection.vbo.translucent) {
+                    RHandler.uniqueVBOs.add(renderSection.vbo);
+                }
+                else RHandler.translucentVBOs.add(renderSection.vbo);
+            }
         }
 
         minecraft.getProfiler().popPush("upload");
@@ -437,6 +440,7 @@ public class WorldRenderer {
         TaskDispatcher.resetting=true;
         Drawer.skipRendering=true;
         RHandler.uniqueVBOs.clear();
+        RHandler.translucentVBOs.clear();
 //        nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
         vkDeviceWaitIdle(Vulkan.getDevice()); //Use a heavier Wait to avoid potential crashes
 //        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
@@ -532,10 +536,15 @@ public class WorldRenderer {
                 needsUpdate2=false;
                 prev = RHandler.uniqueVBOs.size();
                 RHandler.drawCommands.clear();
-                for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
+
+                for (int i = 0; i < RHandler.uniqueVBOs.size(); i++) {
 
                     RHandler.drawCommands.put(RHandler.uniqueVBOs.get(i).indirectCommand);
 
+                }
+                for(int x =RHandler.translucentVBOs.size()-1; x>=0;x--)
+                {
+                    RHandler.drawCommands.put(RHandler.translucentVBOs.get(x).indirectCommand);
                 }
                 RHandler.AllocIndirectCmds();
             }
@@ -594,10 +603,26 @@ public class WorldRenderer {
         }
 //        RHandler.uniqueVBOs.unstableSort(null);
 
+//        RHandler.translucentVBOs.clear();
+//        int t=0;
+//        int size = Math.max(RHandler.uniqueVBOs.size() - 1, 0);
+//        for (int i = 0; i < RHandler.uniqueVBOs.size(); i++) {
+//            VBO vbos = RHandler.uniqueVBOs.get(i);
+//            if (vbos.translucent) {
+////                translucentVBOs.add(vbos);
+//                RHandler.uniqueVBOs.remove(vbos);
+//                RHandler.translucentVBOs.add(vbos);
+//            }
+//        }
+//        RHandler.uniqueVBOs.addAll( Math.max(RHandler.uniqueVBOs.size() - 1, 0), RHandler.translucentVBOs);
         if(!Config.drawIndirect) {
-            for (int i = RHandler.uniqueVBOs.size() - 1; i >= 0; i--) {
+            for (int i = 0; i < RHandler.uniqueVBOs.size(); i++) {
 
                 Drawer.drawIndexedBindless(RHandler.uniqueVBOs.get(i).indirectCommand);
+            }
+            for (int i = RHandler.translucentVBOs.size() - 1; i >= 0; i--) {
+
+                Drawer.drawIndexedBindless(RHandler.translucentVBOs.get(i).indirectCommand);
             }
         }
         else Drawer.drawIndexedBindlessIndirect();

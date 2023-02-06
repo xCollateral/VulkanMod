@@ -144,7 +144,10 @@ public class VBO implements Comparable<VBO> {
 
         this.vertexCount = 0;
         this.indexCount = 0;
-        RHandler.uniqueVBOs.remove(this);
+        if(!this.translucent) {
+            RHandler.uniqueVBOs.remove(this);
+        }
+        else RHandler.translucentVBOs.remove(this);
         indirectCommand.free();
         indirectCommand=null;
         preInitialised=true;
