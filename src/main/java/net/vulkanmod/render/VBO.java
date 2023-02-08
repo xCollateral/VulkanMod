@@ -27,7 +27,7 @@ public class VBO implements Comparable<VBO> {
 
     public int z;
     private VkBufferPointer fakeVertexBuffer;
-    public boolean translucent=false;
+    public boolean translucentAlphaBlending =false; //if has translucent But applies a Tint/AlphaBlending (100% transparent is OK and can be treated as Solid)
     private VkBufferPointer fakeIndexBuffer;
     public int indexCount;
     private int vertexCount;
@@ -144,7 +144,7 @@ public class VBO implements Comparable<VBO> {
 
         this.vertexCount = 0;
         this.indexCount = 0;
-        if(!this.translucent) {
+        if(!this.translucentAlphaBlending) {
             RHandler.uniqueVBOs.remove(this);
         }
         else RHandler.translucentVBOs.remove(this);

@@ -85,7 +85,7 @@ public class RenderSection {
             this.lastResortTransparencyTask.cancel();
         }
 
-        if (!vbo.translucent || compiledSection1.renderTypes != (renderType)) {
+        if (!vbo.translucentAlphaBlending || compiledSection1.renderTypes != (renderType)) {
             return false;
         } else {
             this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);

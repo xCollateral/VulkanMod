@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -9,7 +8,6 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import net.minecraft.CrashReport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
@@ -19,13 +17,13 @@ import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.client.renderer.chunk.VisibilitySet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.block.AbstractGlassBlock;
-import net.minecraft.world.level.block.GlassBlock;
-import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.WaterFluid;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.RHandler;
 
@@ -210,7 +208,7 @@ public class ChunkTask {
                 BlockRenderDispatcher blockRenderDispatcher = WorldRenderer.minecraft.getBlockRenderer();
                 final BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.translucent());
 
-                renderSection.vbo.translucent=false;
+                renderSection.vbo.translucentAlphaBlending =false;
                 for (BlockPos blockPos3 : blockPos1) {
 //                    BlockPos blockPos3 = (BlockPos)var15.next();
                     BlockState blockState = renderChunkRegion.getBlockState(blockPos3);
@@ -229,7 +227,7 @@ public class ChunkTask {
                     FluidState fluidState = blockState2.getFluidState();
                     if (!fluidState.isEmpty()) {
                         //                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
-                        renderSection.vbo.translucent= true;
+                        if(blockState2.getMaterial()== Material.WATER) renderSection.vbo.translucentAlphaBlending = true;
                         if(!bufferBuilder2.building()) bufferBuilder2.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                         blockRenderDispatcher.renderLiquid(blockPos3, renderChunkRegion, bufferBuilder2, blockState2, fluidState);
                     }
@@ -237,7 +235,7 @@ public class ChunkTask {
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
                         //                        bufferBuilder = chunkBufferBuilderPack.builder(renderType);
 //                        if(blockState.getBlock() instanceof AbstractGlassBlock) renderSection.vbo.translucent = true;
-                        if(!blockState.canOcclude()) renderSection.vbo.translucent = true;
+                        if(!checkTransparency(blockState) && !blockState.canOcclude()) renderSection.vbo.translucentAlphaBlending = true;
                         if(!bufferBuilder2.building()) bufferBuilder2.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                         poseStack.pushPose();
                         poseStack.translate(blockPos3.getX() & 15, blockPos3.getY() & 15, blockPos3.getZ() & 15);
@@ -267,6 +265,10 @@ public class ChunkTask {
             }
             compileResults.visibilitySet = visGraph.resolve();
             return compileResults;
+        }
+
+        private boolean checkTransparency(BlockState blockState) {
+            return !(blockState.getBlock() instanceof BeaconBeamBlock); //Ignore Stained Glass Only
         }
 
         private <E extends BlockEntity> void handleBlockEntity(RenderSection.CompiledSection compiledSection, Set<BlockEntity> set, E entity) {
@@ -333,7 +335,7 @@ public class ChunkTask {
                 this.cancelled.set(true);
                 return CompletableFuture.completedFuture(Result.CANCELLED);
             }*/
-            if (renderSection.vbo.translucent && !this.compiledSection.isCompletelyEmpty && this.compiledSection.renderTypes==(RenderType.translucent())) {
+            if (renderSection.vbo.translucentAlphaBlending && !this.compiledSection.isCompletelyEmpty && this.compiledSection.renderTypes==(RenderType.translucent())) {
                 final BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
                 if(!bufferbuilder.building()) bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                 bufferbuilder.restoreSortState(this.compiledSection.transparencyState);

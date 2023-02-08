@@ -69,7 +69,8 @@ public abstract class DebugHudM {
         strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("");
-        strings.add("Loaded VBOs: " + RHandler.uniqueVBOs.size());
+        strings.add("Loaded VBOs: " + "S:"+RHandler.uniqueVBOs.size()+"->"+"T:"+RHandler.translucentVBOs.size());
+        strings.add("Total VBOs: " + (RHandler.uniqueVBOs.size()+RHandler.translucentVBOs.size()));
         strings.add("Retired VBOs: " + RHandler.retiredVBOs.size());
         strings.add("Draw Commands: " + RHandler.drawCommands.position());
         strings.add("");

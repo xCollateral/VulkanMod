@@ -362,7 +362,7 @@ public class WorldRenderer {
             //based on the 1.18.2 applyfrustum Function: Hence why performance is likely bad
             //Could use GPU-based culling in tandem with draw-indirect, which would require a Compute Shader, which apparently isn't particularly hard or difficult to do
             if (!renderSection.vbo.preInitialised) {
-                if(!renderSection.vbo.translucent) {
+                if(!renderSection.vbo.translucentAlphaBlending) {
                     RHandler.uniqueVBOs.add(renderSection.vbo);
                 }
                 else RHandler.translucentVBOs.add(renderSection.vbo);
