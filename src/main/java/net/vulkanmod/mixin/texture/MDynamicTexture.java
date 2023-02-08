@@ -2,6 +2,7 @@ package net.vulkanmod.mixin.texture;
 
 import com.mojang.blaze3d.pipeline.RenderCall;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.vulkanmod.gl.TextureMap;
 import net.vulkanmod.interfaces.VAbstractTextureI;
@@ -12,9 +13,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(DynamicTexture.class)
-public class MDynamicTexture {
+public abstract class MDynamicTexture {
 
     @Shadow private NativeImage pixels;
+
+    @Shadow public abstract void upload();
 
     @Redirect(method = "<init>*", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/TextureUtil;prepareImage(III)V"))
     private void redirect(int id, int width, int height) {
@@ -23,10 +26,20 @@ public class MDynamicTexture {
 
     }
 
+//    @Redirect(method = "<init>(Lcom/mojang/blaze3d/platform/NativeImage;)V", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;recordRenderCall(Lcom/mojang/blaze3d/pipeline/RenderCall;)V"))
+//    private void redirect2(RenderCall renderCall) {
+//
+//        createTexture();
+//    }
+
     @Redirect(method = "<init>(Lcom/mojang/blaze3d/platform/NativeImage;)V", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;recordRenderCall(Lcom/mojang/blaze3d/pipeline/RenderCall;)V"))
     private void redirect2(RenderCall renderCall) {
 
-        createTexture();
+        RenderSystem.recordRenderCall(() -> {
+            createTexture();
+            this.upload();
+        });
+
     }
 
     private void createTexture() {

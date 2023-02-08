@@ -44,6 +44,7 @@ public abstract class MTextureManager {
         AbstractTexture abstractTexture = this.getTexture(id, MissingTextureAtlasSprite.getTexture());
         if (abstractTexture != MissingTextureAtlasSprite.getTexture()) {
             //TODO: delete
+            abstractTexture.releaseId();
         }
     }
 }
