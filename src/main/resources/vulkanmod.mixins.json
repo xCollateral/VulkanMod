@@ -23,6 +23,7 @@
     "render.BakedQuadFactoryM",
     "render.BufferBuilderM",
     "render.BufferRendererM",
+    "render.BufferVertexConsumerM",
     "render.FramebufferMixin",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
