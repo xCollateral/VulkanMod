@@ -1,9 +1,10 @@
 package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.Pair;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -12,6 +13,7 @@ import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -28,9 +30,10 @@ public class MemoryManager {
 
     private int currentFrame = 0;
 
-    private ObjectArrayList<Buffer.BufferInfo>[] freeableBuffers = new ObjectArrayList[Frames];
-    private ObjectArrayList<VulkanImage>[] freeableImages = new ObjectArrayList[Frames];
+    private ObjectArrayList<Buffer.BufferInfo>[] freeableBuffers2 = new ObjectArrayList[Frames];
+//    private static Map<Long, Boolean[]> buffersInUse = new HashMap<>();
 
+//    private final LongOpenHashSet buffers = new LongOpenHashSet();
     private final Long2ReferenceOpenHashMap<Buffer> buffers = new Long2ReferenceOpenHashMap<>();
 
     private long deviceMemory = 0;
@@ -40,13 +43,26 @@ public class MemoryManager {
         INSTANCE = this;
 
         for(int i = 0; i < Frames; ++i) {
-            freeableBuffers[i] = new ObjectArrayList<>();
-            freeableImages[i] = new ObjectArrayList<>();
+            freeableBuffers2[i] = new ObjectArrayList<>();
         }
     }
 
     public static MemoryManager getInstance() {
         return INSTANCE;
+    }
+
+    public static void addMemBarrier(VkCommandBuffer handle, int vkAccessShaderReadBit, int vkAccessShaderWriteBit, long storageBuffer, int i, MemoryStack stack) {
+
+        VkBufferMemoryBarrier.Buffer vkBufferMemoryBarrier = VkBufferMemoryBarrier.callocStack(1, stack);
+        vkBufferMemoryBarrier.get(0).sType$Default()
+                .buffer(storageBuffer)
+                .size(i)
+                .srcAccessMask(vkAccessShaderReadBit)
+                .dstAccessMask(vkAccessShaderWriteBit)
+                .dstQueueFamilyIndex(0)
+                .offset(0);
+
+        vkCmdPipelineBarrier(handle, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, null, vkBufferMemoryBarrier, null);
     }
 
     public void setCurrentFrame(int frame) {
@@ -225,35 +241,16 @@ public class MemoryManager {
 
         checkBuffer(bufferInfo);
 
-        freeableBuffers[currentFrame].add(bufferInfo);
-
-    }
-
-    public void addToFreeable(VulkanImage image) {
-
-        freeableImages[currentFrame].add(image);
+        freeableBuffers2[currentFrame].add(bufferInfo);
 
     }
 
     public void freeBuffers() {
 
-        List<Buffer.BufferInfo> bufferList = freeableBuffers[currentFrame];
+        List<Buffer.BufferInfo> bufferList = freeableBuffers2[currentFrame];
         for(Buffer.BufferInfo bufferInfo : bufferList) {
 
             freeBuffer(bufferInfo);
-        }
-
-        bufferList.clear();
-
-        this.freeImages();
-    }
-
-    private void freeImages() {
-
-        List<VulkanImage> bufferList = freeableImages[currentFrame];
-        for(VulkanImage image : bufferList) {
-
-            freeImage(image.getId(), image.getAllocation());
         }
 
         bufferList.clear();

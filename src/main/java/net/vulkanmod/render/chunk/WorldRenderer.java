@@ -11,7 +11,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.PrioritizeChunkUpdates;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.vulkanmod.Initializer;
@@ -368,27 +367,27 @@ public class WorldRenderer {
             ChunkPos chunkpos = new ChunkPos(renderSection.getOrigin());
             if (renderSection.isDirty()
                     && this.level.getChunk(chunkpos.x, chunkpos.z).isClientLightReady()) {
-                boolean flag = false;
-                if (this.minecraft.options.prioritizeChunkUpdates().get() != PrioritizeChunkUpdates.NEARBY) {
-                    if (this.minecraft.options.prioritizeChunkUpdates().get() == PrioritizeChunkUpdates.PLAYER_AFFECTED) {
-                        flag = renderSection.isDirtyFromPlayer();
-                    }
-                } else {
-                    BlockPos blockpos1 = renderSection.getOrigin().offset(8, 8, 8);
-                    flag = blockpos1.distSqr(cameraPos) < 768.0D || renderSection.isDirtyFromPlayer();
-                }
-
-                if (flag) {
-                    this.minecraft.getProfiler().push("build_near_sync");
-                    renderSection.rebuildChunkSync(this.taskDispatcher, renderregioncache);
-                    renderSection.setNotDirty();
-                    this.minecraft.getProfiler().pop();
-                } else {
-                    list.add(renderSection);
-                }
+//                boolean flag = false;
+//                if (this.minecraft.options.prioritizeChunkUpdates != PrioritizeChunkUpdates.NEARBY) {
+//                    if (this.minecraft.options.prioritizeChunkUpdates == PrioritizeChunkUpdates.PLAYER_AFFECTED) {
+//                        flag = renderSection.isDirtyFromPlayer();
+//                    }
+//                } else {
+//                    BlockPos blockpos1 = renderSection.getOrigin().offset(8, 8, 8);
+//                    flag = blockpos1.distSqr(cameraPos) < 768.0D || renderSection.isDirtyFromPlayer();
+//                }
+//
+//                if (flag) {
+//                    this.minecraft.getProfiler().push("build_near_sync");
+//                    this.chunkRenderDispatcher.rebuildChunkSync(renderSection, renderregioncache);
+//                    renderSection.setNotDirty();
+//                    this.minecraft.getProfiler().pop();
+//                } else {
+//                    list.add(renderSection);
+//                }
                 list.add(renderSection);
             }
-
+            ;
         }
 
         this.minecraft.getProfiler().popPush("upload");
@@ -406,7 +405,6 @@ public class WorldRenderer {
 
         for(RenderSection renderSection : list) {
             renderSection.rebuildChunkAsync(this.taskDispatcher, renderregioncache);
-//            renderSection.rebuildChunkSync(this.taskDispatcher, renderregioncache);
             renderSection.setNotDirty();
         }
 

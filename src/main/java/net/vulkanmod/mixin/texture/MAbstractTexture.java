@@ -1,6 +1,5 @@
 package net.vulkanmod.mixin.texture;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.vulkanmod.gl.TextureMap;
 import net.vulkanmod.interfaces.VAbstractTextureI;
@@ -22,11 +21,7 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
      */
     @Overwrite
     public void bind() {
-        if (!RenderSystem.isOnRenderThreadOrInit()) {
-            RenderSystem.recordRenderCall(this::bindTexture);
-        } else {
-            this.bindTexture();
-        }
+        this.bindTexture();
     }
 
     /**
@@ -43,15 +38,12 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
      */
     @Overwrite
     public void releaseId() {
-        if(this.vulkanImage != null) {
-            this.vulkanImage.free();
-            this.vulkanImage = null;
+        //Lazy workaround to fix World Creation Menu (5122) related crashes
+        if(TextureMap.removeTexture(this.id) && this.id!=-1)
+        {
+            if(this.vulkanImage != null) this.vulkanImage.free();
         }
-//        else
-//            System.out.println("trying to free null image");
-
-        if(!TextureMap.removeTexture(this.id));
-//            throw new RuntimeException("texture id not found");
+        else System.out.println("texture id not found: "+this.id);
     }
 
     public void setId(int i) {

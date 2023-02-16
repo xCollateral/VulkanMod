@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.TimerQuery;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.main.GameConfig;
 import net.minecraft.client.particle.ParticleEngine;
@@ -19,6 +18,7 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,9 +31,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Mixin(Minecraft.class)
-public class MinecraftMixin {
+public abstract class MinecraftMixin {
 
     @Shadow @Final public ParticleEngine particleEngine;
     @Shadow @Final public GameRenderer gameRenderer;
@@ -58,6 +59,8 @@ public class MinecraftMixin {
     @Shadow @Final private PaintingTextureManager paintingTextures;
 
     @Shadow public boolean noRender;
+
+    @Shadow protected abstract CompletableFuture<Void> reloadResourcePacks(boolean bl);
 
     @Inject(method = "<init>", at = @At("RETURN"))
     public void test(GameConfig gameConfig, CallbackInfo ci) {
@@ -117,6 +120,12 @@ public class MinecraftMixin {
             this.virtualScreen.close();
             this.window.close();
         }
+    }
+
+    @Overwrite
+    public CompletableFuture<Void> reloadResourcePacks() {
+        VulkanImage.computePipeline.reload();
+        return this.reloadResourcePacks(false);
     }
 
     @Redirect(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;emergencySave()V"))

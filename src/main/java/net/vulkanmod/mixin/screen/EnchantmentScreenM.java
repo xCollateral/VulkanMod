@@ -69,8 +69,8 @@ public class EnchantmentScreenM extends AbstractContainerScreen<EnchantmentMenu>
         int l = (this.height - this.imageHeight) / 2;
         this.blit(poseStack, k, l, 0, 0, this.imageWidth, this.imageHeight);
         int m = (int)this.minecraft.getWindow().getGuiScale();
-//        RenderSystem.viewport((this.width - 320) / 2 * m, (this.height - 240) / 2 * m, 320 * m, 240 * m);
-        Drawer.setViewport((this.width - 320) / 2 * m, (this.height - 240) / 2 * m, 320 * m, 240 * m);
+        RenderSystem.viewport((this.width - 320) / 2 * m, (this.height - 240) / 2 * m, 320 * m, 240 * m);
+        Drawer.setViewport((this.width - 320) / 2 * k, (this.height - 240) / 2 * k, 320 * k, 240 * k);
 
         Matrix4f matrix4f = Matrix4f.createTranslateMatrix(-0.34f, 0.23f, 0.0f);
         matrix4f.multiply(Matrix4f.perspective(90.0, 1.3333334f, 9.0f, 80.0f));
