@@ -7,59 +7,52 @@
   "mixins": [
   ],
   "client": [
+    "WindowMixin",
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
+    "chunk.ItemBlockRenderTypesM",
     "chunk.LevelRendererMixin",
     "chunk.VisibilitySetMixin",
-
     "debug.ChunkBorderRendererM",
     "debug.DebugHudM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
-
     "gui.ChatHudM",
     "gui.DebugHudM",
     "gui.InGameHudM",
-
-    "matrix.Matrix4fM",
-
     "render.BakedQuadFactoryM",
     "render.BufferBuilderM",
     "render.BufferRendererM",
-    "render.VertexBufferM",
-    "render.VertexConsumerM",
+    "render.BufferVertexConsumerM",
     "render.FramebufferMixin",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
     "render.GlStateManagerM",
     "render.IndexTypeMixin",
+    "render.LevelRendererMixin",
     "render.MinecraftMixin",
     "render.RenderSystemMixin",
     "render.ShaderMixin",
+    "render.VertexBufferM",
+    "render.VertexConsumerM",
     "render.VertexFormatMixin",
     "render.WindowFramebufferMixin",
-    "render.LevelRendererMixin",
-
     "screen.EnchantmentScreenM",
     "screen.OptionsScreenM",
     "screen.SplashOverlayM",
-
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
     "texture.MLightMap",
+    "texture.ModelLoaderM",
     "texture.MOverlayTexture",
     "texture.MPlayerSkinTexture",
     "texture.MSimpleTexture",
     "texture.MSpriteAtlasTexture",
     "texture.MTextureManager",
     "texture.VNativeImage",
-    "texture.ModelLoaderM",
-
     "util.Matrix4fM",
-    "util.ScreenshotRecorderM",
-
-    "WindowMixin"
+    "util.ScreenshotRecorderM"
   ],
   "injectors": {
     "defaultRequire": 1

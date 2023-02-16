@@ -1,8 +1,6 @@
 package net.vulkanmod.mixin.texture;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.vulkanmod.gl.TextureMap;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -14,7 +12,6 @@ import org.spongepowered.asm.mixin.Shadow;
 public abstract class MAbstractTexture implements VAbstractTextureI {
     @Shadow protected boolean blur;
     @Shadow protected boolean mipmap;
-    @Shadow protected int id;
     protected VulkanImage vulkanImage;
 
     /**
@@ -22,11 +19,7 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
      */
     @Overwrite
     public void bind() {
-        if (!RenderSystem.isOnRenderThreadOrInit()) {
-            RenderSystem.recordRenderCall(this::bindTexture);
-        } else {
-            this.bindTexture();
-        }
+        this.bindTexture();
     }
 
     /**
@@ -34,28 +27,7 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
      */
     @Overwrite
     public int getId() {
-        if(this.vulkanImage != null) return TextureMap.getId(this.vulkanImage);
         return -1;
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite
-    public void releaseId() {
-        if(this.vulkanImage != null) {
-            this.vulkanImage.free();
-            this.vulkanImage = null;
-        }
-//        else
-//            System.out.println("trying to free null image");
-
-        if(!TextureMap.removeTexture(this.id));
-//            throw new RuntimeException("texture id not found");
-    }
-
-    public void setId(int i) {
-        this.id = i;
     }
 
     /**
@@ -83,7 +55,5 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
 
     public void setVulkanImage(VulkanImage image) {
         this.vulkanImage = image;
-
-        TextureMap.addTexture(this.vulkanImage);
     }
 }

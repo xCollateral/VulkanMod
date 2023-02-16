@@ -15,11 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(VertexBuffer.class)
 public class VertexBufferM {
 
-    private VBO vbo;
+//    private VBO vbo;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void constructor(CallbackInfo ci) {
-        vbo = new VBO();
+        /*vbo = new VBO(this.index, this.origin);*/
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_glGenBuffers()I"))
@@ -49,7 +49,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void upload(BufferBuilder.RenderedBuffer buffer) {
-        vbo.upload_(buffer);
+        /*vbo.upload_(buffer);*/
     }
 
     /**
@@ -57,7 +57,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {
-        vbo._drawWithShader(viewMatrix, projectionMatrix, shader);
+//        vbo._drawWithShader(viewMatrix, projectionMatrix, shader);
     }
 
     /**
@@ -65,7 +65,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void draw() {
-        vbo.drawChunkLayer();
+        /*vbo.drawChunkLayer();*/
     }
 
     /**
@@ -73,6 +73,6 @@ public class VertexBufferM {
      */
     @Overwrite
     public void close() {
-        vbo.close();
+        /*vbo.close();*/
     }
 }

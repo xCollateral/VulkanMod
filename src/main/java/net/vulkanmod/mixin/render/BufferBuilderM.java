@@ -103,7 +103,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 //            super.vertex(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
 //        }
 //    }
-
+//TODO--->!
     /**
      * @author
      */
@@ -113,31 +113,35 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
             this.putFloat(0, x);
             this.putFloat(4, y);
             this.putFloat(8, z);
-            this.putByte(12, (byte)((int)(red * 255.0F)));
-            this.putByte(13, (byte)((int)(green * 255.0F)));
-            this.putByte(14, (byte)((int)(blue * 255.0F)));
-            this.putByte(15, (byte)((int)(alpha * 255.0F)));
+            int R = ((int) (red*255)&255);
+            int G = ((int) (green*255)<<8);
+            int B = ((int) (blue*255)<<16);
+            int A = ((int)(alpha*255)<<24);
+            this.putInt(12, R | G | B | A);
+
+
             this.putFloat(16, u);
             this.putFloat(20, v);
-            byte i;
+            int i=24;
             if (this.fullFormat) {
-                this.putShort(24, (short)(overlay & '\uffff'));
-                this.putShort(26, (short)(overlay >> 16 & '\uffff'));
+                this.putInt(24, overlay);
                 i = 28;
-            } else {
-                i = 24;
             }
 
-            this.putShort(i, (short)(light & '\uffff'));
-            this.putShort(i + 2, (short)(light >> 16 & '\uffff'));
-            this.putByte(i + 4, BufferVertexConsumer.normalIntValue(normalX));
-            this.putByte(i + 5, BufferVertexConsumer.normalIntValue(normalY));
-            this.putByte(i + 6, BufferVertexConsumer.normalIntValue(normalZ));
+            this.putInt(i, (light));
+            this.putInt(i + 4, (int) (normalX * 127) & 255 | ((int) (normalY * 127) & 255) <<8 | ((int) (normalZ * 127) & 255) << 16);
             this.nextElementByte += i + 8;
             this.endVertex();
         } else {
             super.vertex(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
         }
+    }
+
+    private void putLong(long index, long value) {
+        MemoryUtil.memPutLong(this.ptr + this.nextElementByte + index, value);
+    }
+    private void putInt(int index, int value) {
+        MemoryUtil.memPutInt(this.ptr + this.nextElementByte + index, value);
     }
 
     public void putByte(int index, byte value) {

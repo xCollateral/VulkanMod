@@ -2,3 +2,28 @@ accessWidener	v1	named
 
 accessible field net/minecraft/client/renderer/LevelRenderer$RenderChunkInfo chunk Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;
 accessible class net/minecraft/client/gui/Gui$HeartType
+accessible class net/minecraft/client/renderer/LevelRenderer$RenderChunkStorage
+accessible field net/minecraft/client/renderer/chunk/ChunkRenderDispatcher toUpload Ljava/util/Queue;
+accessible field net/minecraft/client/renderer/LevelRenderer viewArea Lnet/minecraft/client/renderer/ViewArea;
+accessible field com/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer released Z
+accessible field com/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer released Z
+accessible field com/mojang/math/Matrix4f m00 F
+accessible field com/mojang/math/Matrix4f m01 F
+accessible field com/mojang/math/Matrix4f m02 F
+accessible field com/mojang/math/Matrix4f m03 F
+accessible field com/mojang/math/Matrix4f m10 F
+accessible field com/mojang/math/Matrix4f m11 F
+accessible field com/mojang/math/Matrix4f m12 F
+accessible field com/mojang/math/Matrix4f m13 F
+accessible field com/mojang/math/Matrix4f m20 F
+accessible field com/mojang/math/Matrix4f m21 F
+accessible field com/mojang/math/Matrix4f m22 F
+accessible field com/mojang/math/Matrix4f m23 F
+accessible field com/mojang/math/Matrix4f m30 F
+accessible field com/mojang/math/Matrix4f m31 F
+accessible field com/mojang/math/Matrix4f m32 F
+accessible field com/mojang/math/Matrix4f m33 F
+accessible class net/minecraft/client/renderer/RenderStateShard$OutputStateShard
+accessible field net/minecraft/client/renderer/RenderStateShard PARTICLES_TARGET Lnet/minecraft/client/renderer/RenderStateShard$OutputStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard CLOUDS_TARGET Lnet/minecraft/client/renderer/RenderStateShard$OutputStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard WEATHER_TARGET Lnet/minecraft/client/renderer/RenderStateShard$OutputStateShard;

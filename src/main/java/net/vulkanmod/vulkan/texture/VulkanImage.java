@@ -23,6 +23,7 @@ public class VulkanImage {
     private static VkDevice device = Vulkan.getDevice();
 
     private long id;
+    private long textureImageMemory;
     private long allocation;
     private long textureImageView;
 
@@ -490,13 +491,7 @@ public class VulkanImage {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    public void free() {
-//        MemoryManager.getInstance().freeImage(this.id, this.allocation);
-        MemoryManager.getInstance().addToFreeable(this);
-    }
-
     public long getId() { return id;}
-    public long getAllocation() { return allocation;}
     public long getTextureImageView() { return textureImageView; }
     public long getTextureSampler() { return textureSampler; }
 }

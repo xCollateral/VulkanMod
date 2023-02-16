@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "vulkanmod",
-  "version": "0.2.2",
+  "version": "0.2.0+1",
 
   "name": "VulkanMod",
   "description": "Bring Vulkan to Minecraft!",
@@ -15,16 +15,16 @@
 
   "icon": "assets/vulkanmod/Vlogo.png",
 
-  "environment": "*",
+  "environment": "client",
   "entrypoints": {
-    "main": [
+    "client": [
       "net.vulkanmod.Initializer"
     ]
   },
   "mixins": [
     "vulkanmod.mixins.json"
   ],
-  "accessWidener" : "vulkanmod.accesswidener",
+  "accessWidener" : "vulkanmod.accesswidener.old",
 
   "depends": {
     "fabricloader": ">=0.13.3",

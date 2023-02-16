@@ -39,46 +39,46 @@ public abstract class DebugHudM {
 
     @Shadow protected abstract List<String> getSystemInformation();
 
-//    /**
-//     * @author
-//     */
-//    @Overwrite
-//    public void drawGameInformation(PoseStack matrices) {
-//        List<String> list = this.getGameInformation();
-//        list.add("");
-//        boolean bl = this.minecraft.getSingleplayerServer() != null;
-//        list.add("Debug: Pie [shift]: " + (this.minecraft.options.renderDebugCharts ? "visible" : "hidden") + (bl ? " FPS + TPS" : " FPS") + " [alt]: " + (this.minecraft.options.renderFpsChart ? "visible" : "hidden"));
-//        list.add("For help: press F3 + Q");
-//
-//        RenderSystem.enableBlend();
-//        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-//        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-//
-//        for (int i = 0; i < list.size(); ++i) {
-//            String string = list.get(i);
-//            if (Strings.isNullOrEmpty(string)) continue;
-//            int j = this.font.lineHeight;
-//            int k = this.font.width(string);
-//            int l = 2;
-//            int m = 2 + j * i;
-//
-//            GuiBatchRenderer.fill(matrices, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
-//        }
-//        GuiBatchRenderer.endBatch();
-//
-//        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-//        for (int i = 0; i < list.size(); ++i) {
-//            String string = list.get(i);
-//            if (Strings.isNullOrEmpty(string)) continue;
-//            int j = this.font.lineHeight;
-//            int k = this.font.width(string);
-//            int l = 2;
-//            int m = 2 + j * i;
-//
-//            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, 2.0f, (float)m, 0xE0E0E0);
-//        }
-//        bufferSource.endBatch();
-//    }
+    /**
+     * @author
+     */
+    @Overwrite
+    public void drawGameInformation(PoseStack matrices) {
+        List<String> list = this.getGameInformation();
+        list.add("");
+        boolean bl = this.minecraft.getSingleplayerServer() != null;
+        list.add("Debug: Pie [shift]: " + (this.minecraft.options.renderDebugCharts ? "visible" : "hidden") + (bl ? " FPS + TPS" : " FPS") + " [alt]: " + (this.minecraft.options.renderFpsChart ? "visible" : "hidden"));
+        list.add("For help: press F3 + Q");
+
+        RenderSystem.enableBlend();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+
+        for (int i = 0; i < list.size(); ++i) {
+            String string = list.get(i);
+            if (Strings.isNullOrEmpty(string)) continue;
+            int j = this.font.lineHeight;
+            int k = this.font.width(string);
+            int l = 2;
+            int m = 2 + j * i;
+
+            GuiBatchRenderer.fill(matrices, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
+        }
+        GuiBatchRenderer.endBatch();
+
+        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+        for (int i = 0; i < list.size(); ++i) {
+            String string = list.get(i);
+            if (Strings.isNullOrEmpty(string)) continue;
+            int j = this.font.lineHeight;
+            int k = this.font.width(string);
+            int l = 2;
+            int m = 2 + j * i;
+
+            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, 2.0f, (float)m, 0xE0E0E0);
+        }
+        bufferSource.endBatch();
+    }
 
     /**
      * @author
