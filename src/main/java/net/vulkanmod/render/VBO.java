@@ -35,6 +35,7 @@ public class VBO implements Comparable<VBO> {
 
     public boolean preInitialised = true;
     public VkDrawIndexedIndirectCommand indirectCommand;
+    boolean hasAbort=false;
 
     public VBO(int index, int x, int y, int z) {
         this.index=index;

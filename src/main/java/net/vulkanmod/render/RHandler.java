@@ -105,6 +105,15 @@ public class RHandler
 
     public static CompletableFuture<Void> uploadVBO(VBO vbo, BufferBuilder.RenderedBuffer buffers, boolean sort)
     {
+        if(sort && vbo.hasAbort)
+        {
+            vbo.hasAbort=false; buffers.release(); return CompletableFuture.completedFuture(null);
+        }
+        if(!sort && vbo.indexCount == buffers.drawState().indexCount())
+        {
+            vbo.hasAbort=true; buffers.release(); return CompletableFuture.completedFuture(null);
+        }
+
         return CompletableFuture.runAsync(() ->
                 vbo.upload_(buffers, sort), WorldRenderer.taskDispatcher.toUpload::add);
     }
