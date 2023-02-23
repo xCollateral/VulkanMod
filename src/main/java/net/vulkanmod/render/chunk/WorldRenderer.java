@@ -570,13 +570,7 @@ public class WorldRenderer {
 
         originX+= (prevCamX - camX);;
         originZ+= (prevCamZ - camZ);;
-        {
-
-            pose.m03 += pose.m00* (originX) + pose.m01* -camY +pose.m02 * originZ;
-            pose.m13 += pose.m10* (originX) + pose.m11* -camY +pose.m12 * originZ;
-            pose.m23 += pose.m20* (originX) + pose.m21* -camY +pose.m22 * originZ;
-            pose.m33 += 0;
-        }
+        pose.multiplyWithTranslation((float) originX, (float) -camY, (float) originZ);
         prevCamX=camX;
         prevCamZ=camZ;
         VRenderSystem.applyMVP(pose, projection);
