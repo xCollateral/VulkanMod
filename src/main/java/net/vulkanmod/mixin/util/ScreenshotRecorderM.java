@@ -3,6 +3,11 @@ package net.vulkanmod.mixin.util;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Screenshot;
+import net.vulkanmod.render.chunk.TaskDispatcher;
+import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -14,12 +19,10 @@ public class ScreenshotRecorderM {
      */
     @Overwrite
     public static NativeImage takeScreenshot(RenderTarget framebuffer) {
-        int i = framebuffer.width;
-        int j = framebuffer.height;
 
-        NativeImage nativeimage = new NativeImage(i, j, false);
+        final NativeImage nativeimage = new NativeImage(framebuffer.width, framebuffer.height, false);
         //RenderSystem.bindTexture(p_92282_.getColorTextureId());
-        nativeimage.downloadTexture(0, true);
+        VulkanImage.downloadTexture(framebuffer.width, framebuffer.height, nativeimage.pixels, Vulkan.getSwapChainImages().get(Drawer.getCurrentFrame()));
         //nativeimage.flipY();
         return nativeimage;
     }

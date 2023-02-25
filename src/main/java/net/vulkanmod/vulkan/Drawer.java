@@ -134,13 +134,15 @@ public class Drawer {
 
         try (MemoryStack stack = stackPush()) {
 
-            IntBuffer width = stack.ints(0);
-            IntBuffer height = stack.ints(0);
+            IntBuffer pWidth = stack.mallocInt(1);
+            IntBuffer pHeight = stack.mallocInt(1);
 
-            glfwGetFramebufferSize(window, width, height);
-            skipRendering = Minecraft.getInstance().noRender = width.get(0) == 0 && height.get(0) == 0;
+            glfwGetFramebufferSize(window, pWidth, pHeight);
+            final int width = pWidth.get(0);
+            final int height = pHeight.get(0);
+            skipRendering = Minecraft.getInstance().noRender = width == 0 && height == 0;
 
-            if(!skipRendering) VulkanImage.computePipeline.resizeBuffer(width.get(0) * height.get(0) * 4);
+            if(!skipRendering) VulkanImage.computePipeline.resizeBufferImage(width * height * 4, width, height);
         }
 
         if(skipRendering) return;

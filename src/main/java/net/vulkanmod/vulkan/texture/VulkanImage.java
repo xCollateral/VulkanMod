@@ -10,6 +10,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.libc.LibCString;
+import org.lwjgl.util.vma.Vma;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -17,7 +18,6 @@ import java.nio.LongBuffer;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -39,7 +39,7 @@ public class VulkanImage {
     public static final ComputePipeline computePipeline;
 
     static {
-        computePipeline=new ComputePipeline("extra/swizzle", getSwapchainExtent().width()* getSwapchainExtent().height()*4);
+        computePipeline=new ComputePipeline("extra/swizzle", getSwapchainExtent(), getSwapchainExtent().width()*getSwapchainExtent().height()*4);
     }
 
     public VulkanImage(int width, int height, int formatSize, boolean blur, boolean clamp, ByteBuffer buffer) {
@@ -177,23 +177,105 @@ public class VulkanImage {
 
             //vkCmdPushConstants(commandBuffer.getHandle(), computePipeline.compPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, stack.malloc(8).putInt(0, width).putInt(1, height));
 
-//            LongBuffer pTextureImage = stack.mallocLong(1);
-//            PointerBuffer vmaAllocation = stack.mallocPointer(1);
-//            MemoryManager.getInstance().createBuffer(
-//                    imageSize,
-//                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-//                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pTextureImage, vmaAllocation);
-//            long pTextureImage1 = pTextureImage.get(0);
-            blitImageSwizzleBGR2RGB(image, width, height, stack, commandBuffer);
+            LongBuffer pTextureImage = stack.mallocLong(1);
+            PointerBuffer vmaAllocation = stack.mallocPointer(1);
+            MemoryManager.getInstance().createImage(width, height, 1,
+                    VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_LINEAR,
+                    VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                    pTextureImage,
+                    vmaAllocation);
+            long pTextureImage1 = pTextureImage.get(0);
+
+
+            //        PointerBuffer vmaAllocation = stack.mallocPointer(1);
+//        LongBuffer RGBImgTmp_ = stack.mallocLong(1);
+//        MemoryManager.getInstance().createImage(
+//                width,
+//                height,
+//                VK_FORMAT_R8G8B8A8_UNORM,
+//                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+//                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, RGBImgTmp_, vmaAllocation, false);
+//
+//        long RGBImgTmp = RGBImgTmp_.get(0);
+
+            final VkImageSubresourceLayers vkImageSubresourceLayers = VkImageSubresourceLayers.mallocStack(stack)
+                    .set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
+
+//        VkOffset3D.Buffer set = VkOffset3D.callocStack(2, stack);
+//        set.get(0).set(0,0,0);
+//        set.get(1).set(width, height, 1);
+
+
+            VkOffset3D.Buffer set = VkOffset3D.mallocStack(2, stack);
+            set.get(0).set(0,0,0);
+            set.get(1).set(width, height, 1);
+
+
+            VkImageCopy.Buffer imgCpy = VkImageCopy.mallocStack(1, stack);
+            imgCpy.srcOffset(set.get(0));
+            imgCpy.dstOffset(set.get(0));
+            imgCpy.srcSubresource(vkImageSubresourceLayers);
+            imgCpy.dstSubresource(vkImageSubresourceLayers);
+            imgCpy.extent(VkExtent3D.malloc(stack).set(width, height, 1));
+
+
+            transitionImageLayout(commandBuffer.getHandle(), image, VK_FORMAT_B8G8R8A8_UNORM,
+                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+
+        transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+
+//
+
+            vkCmdCopyImage(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.ssioStorageImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
+            if(!Vulkan.isRGB)
+            {
+                int i1 = ((width * height)/32/128)+1;
+                vkCmdDispatch(commandBuffer.getHandle(), width/32 +1, height/32 +1, 1);
+            }
+            transitionImageLayout(commandBuffer.getHandle(), pTextureImage1, VK_FORMAT_B8G8R8A8_UNORM,
+                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+            //Not sure if membarrier is needed due to not using async Compute/Seperate Compute Queue
+//        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
+
+            transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+
+            vkCmdCopyImage(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pTextureImage1, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
+
+//        vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.ssboStorageBuffer, dst, imgCpy);
+//
+        transitionImageLayout(commandBuffer.getHandle(), image, VK_FORMAT_B8G8R8A8_UNORM,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1);
+
+            long pFence = TransferQueue.endCommands(commandBuffer);
+
+            VkImageSubresource vkImageSubresource = VkImageSubresource.malloc(stack)
+                .mipLevel(0)
+                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                .arrayLayer(0);
+            VkSubresourceLayout vkSubresourceLayout = VkSubresourceLayout.malloc(stack);
+            vkGetImageSubresourceLayout(Vulkan.getDevice(), pTextureImage1, vkImageSubresource, vkSubresourceLayout);
+            final PointerBuffer pVoid = stack.mallocPointer(1);
+            Vma.vmaMapMemory(Vulkan.getAllocator(), vmaAllocation.get(0), pVoid);
+            long l = pVoid.get(0);
+            long rowPitch = vkSubresourceLayout.rowPitch();
+
+            vkWaitForFences(device, pFence, false, VUtil.UINT64_MAX);
+
+
+            for (int i = 0; i <height; i++) {
+                LibCString.nmemcpy(buffer, l, (width* 4L));
+                l+= rowPitch;
+                buffer+=(width * 4L);
+            }
+            Vma.vmaUnmapMemory(Vulkan.getAllocator(), vmaAllocation.get(0));
 
 
 
-            LibCString.nmemcpy(buffer, computePipeline.data.get(0), width * height *4L);
 
-
-
-
-//            MemoryManager.getInstance().freeBuffer(pTextureImage1, allocation1);
+            MemoryManager.getInstance().freeImage(pTextureImage1, vmaAllocation.get(0));
         }
 
     }
@@ -218,31 +300,30 @@ public class VulkanImage {
 //        set.get(1).set(width, height, 1);
 
 
-        VkBufferCopy.Buffer imgCpy = VkBufferCopy.mallocStack(1, stack);
-        imgCpy.srcOffset(0);
-        imgCpy.dstOffset(0);
-        imgCpy.size(width*height*4L);
+
 
         VkOffset3D.Buffer set = VkOffset3D.mallocStack(2, stack);
         set.get(0).set(0,0,0);
         set.get(1).set(width, height, 1);
 
 
-        VkBufferImageCopy.Buffer imgBlt = VkBufferImageCopy.mallocStack(1, stack);
-        imgBlt.bufferOffset(0);
-        imgBlt.bufferImageHeight(height);
-        imgBlt.bufferRowLength(width);
-        imgBlt.imageOffset(set.get(0));
-        imgBlt.imageExtent(VkExtent3D.malloc(stack).set(width, height, 1));
-        imgBlt.imageSubresource(vkImageSubresourceLayers);
+        VkImageCopy.Buffer imgCpy = VkImageCopy.mallocStack(1, stack);
+        imgCpy.srcOffset(set.get(0));
+        imgCpy.dstOffset(set.get(0));
+        imgCpy.srcSubresource(vkImageSubresourceLayers);
+        imgCpy.dstSubresource(vkImageSubresourceLayers);
+        imgCpy.extent(VkExtent3D.malloc(stack).set(width, height, 1));
 
 
         transitionImageLayout(commandBuffer.getHandle(), src, VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
+//        transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
+//                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+
 //
 
-        vkCmdCopyImageToBuffer(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.ssboStorageBuffer, imgBlt);
+        vkCmdCopyImage(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.ssioStorageImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
 
         if(!Vulkan.isRGB)
         {
@@ -255,11 +336,11 @@ public class VulkanImage {
 
 //        vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.ssboStorageBuffer, dst, imgCpy);
 //
-//        transitionImageLayout(commandBuffer.getHandle(), dst, VK_FORMAT_R8G8B8A8_UNORM,
-//                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1);
+//        transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
+//                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
 
-        vkWaitForFences(device, TransferQueue.endCommands(commandBuffer), true, VUtil.UINT64_MAX);
+
 
 //        MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
 
@@ -553,10 +634,10 @@ public class VulkanImage {
                     destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
                 }
                 case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
-                    barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                    barrier.dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
-                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ;
-                    destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+                    barrier.srcAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
+                    barrier.dstAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT ;
+                    destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
                 }
                 case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
                     barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);

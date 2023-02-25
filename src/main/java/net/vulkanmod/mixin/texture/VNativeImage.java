@@ -74,9 +74,9 @@ public abstract class VNativeImage {
      */
     @Overwrite
     public void downloadTexture(int level, boolean removeAlpha) {
-        RenderSystem.assertOnRenderThread();
-
-        VulkanImage.downloadTexture(this.width, this.height, this.pixels, Vulkan.getSwapChainImages().get(Drawer.getCurrentFrame()));
+//        RenderSystem.assertOnRenderThread();
+//
+//         VulkanImage.downloadTexture(this.width, this.height, this.pixels, Vulkan.getSwapChainImages().get(Drawer.getCurrentFrame()));
 
 
 
