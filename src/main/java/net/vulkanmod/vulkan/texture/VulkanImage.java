@@ -162,7 +162,7 @@ public class VulkanImage {
         if (fence != -1) Synchronization.addFence(fence);
     }
 
-    public static void downloadTexture(int width, int height, long buffer, long image) {
+    public static void downloadTextureAsync(int width, int height, long buffer, long image) {
         try(MemoryStack stack = stackPush()) {
             int imageSize = width * height * 4;
 
@@ -634,10 +634,10 @@ public class VulkanImage {
                     destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
                 }
                 case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
-                    barrier.srcAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
-                    barrier.dstAccessMask(VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT);
-                    sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT ;
-                    destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+                    barrier.srcAccessMask(VK_ACCESS_UNIFORM_READ_BIT);
+                    barrier.dstAccessMask(VK_ACCESS_SHADER_WRITE_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT ;
+                    destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
                 }
                 case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
                     barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);

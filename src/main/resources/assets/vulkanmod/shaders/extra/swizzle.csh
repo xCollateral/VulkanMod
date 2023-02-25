@@ -4,16 +4,15 @@
 layout (local_size_x = 32, local_size_y = 32) in;
 
 
-layout(binding = 0, rgba8ui) uniform restrict uimage2D Img;
+layout(binding = 0, rgba8) uniform restrict image2D Img;
 
 //const uint defSize=1u;
-const uvec4 A = uvec4(255<<24);
+const uint A = 255u;
 
 void main()
 {
-	const uint xx = (gl_GlobalInvocationID.x);
-	const uint yy = (gl_GlobalInvocationID.y);
-	//const uint yy=gl_GlobalInvocationID.y*WORKGROUP_SIZE;
+	const ivec2 xy = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+	
 	
 	
 	//for(int xOffs=xx;xOffs<xx+defSize;xOffs++)
@@ -23,7 +22,7 @@ void main()
 		{
 		
 			
-			imageStore(Img, ivec2(xx, yy), imageLoad(Img, ivec2(xx, yy)).bgra);
+			imageStore(Img, xy, vec4(imageLoad(Img, xy).bgr, A));
 		}
 	}
 	
