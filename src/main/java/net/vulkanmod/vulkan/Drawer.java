@@ -142,7 +142,7 @@ public class Drawer {
             final int height = pHeight.get(0);
             skipRendering = Minecraft.getInstance().noRender = width == 0 && height == 0;
 
-            if(!skipRendering) VulkanImage.computePipeline.resizeBufferImage(width * height * 4, width, height);
+//            if(!skipRendering) VulkanImage.computePipeline.resizeBufferImage(width * height * 4, width, height);
         }
 
         if(skipRendering) return;

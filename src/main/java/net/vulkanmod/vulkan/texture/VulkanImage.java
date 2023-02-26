@@ -39,7 +39,7 @@ public class VulkanImage {
     public static final ComputePipeline computePipeline;
 
     static {
-        computePipeline=new ComputePipeline("extra/swizzle", getSwapchainExtent(), getSwapchainExtent().width()*getSwapchainExtent().height()*4);
+        computePipeline=new ComputePipeline("extra/swizzle");
     }
 
     public VulkanImage(int width, int height, int formatSize, boolean blur, boolean clamp, ByteBuffer buffer) {
@@ -167,7 +167,7 @@ public class VulkanImage {
             int imageSize = width * height * 4;
 
             TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
-
+            computePipeline.setImage();
             vkCmdBindPipeline(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.compPipeline);
 
             nvkCmdBindDescriptorSets(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.compPipelineLayout, 0, 1, stack.npointer(computePipeline.compDescriptorSet), 0, 0);
@@ -223,12 +223,6 @@ public class VulkanImage {
             transitionImageLayout(commandBuffer.getHandle(), image, VK_FORMAT_B8G8R8A8_UNORM,
                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
-        transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
-                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-
-//
-
-            vkCmdCopyImage(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.ssioStorageImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
             if(!Vulkan.isRGB)
             {
                 int i1 = ((width * height)/32/128)+1;
@@ -236,17 +230,12 @@ public class VulkanImage {
             }
             transitionImageLayout(commandBuffer.getHandle(), pTextureImage1, VK_FORMAT_B8G8R8A8_UNORM,
                     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-            //Not sure if membarrier is needed due to not using async Compute/Seperate Compute Queue
-//        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
 
-            transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
-
-            vkCmdCopyImage(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pTextureImage1, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
+            vkCmdCopyImage(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pTextureImage1, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
 
 //        vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.ssboStorageBuffer, dst, imgCpy);
 //
-        transitionImageLayout(commandBuffer.getHandle(), image, VK_FORMAT_B8G8R8A8_UNORM,
+            transitionImageLayout(commandBuffer.getHandle(), image, VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1);
 
             long pFence = TransferQueue.endCommands(commandBuffer);
@@ -277,73 +266,6 @@ public class VulkanImage {
 
             MemoryManager.getInstance().freeImage(pTextureImage1, vmaAllocation.get(0));
         }
-
-    }
-
-    private static void blitImageSwizzleBGR2RGB(long src, int width, int height, MemoryStack stack, TransferQueue.CommandBuffer commandBuffer) {
-//        PointerBuffer vmaAllocation = stack.mallocPointer(1);
-//        LongBuffer RGBImgTmp_ = stack.mallocLong(1);
-//        MemoryManager.getInstance().createImage(
-//                width,
-//                height,
-//                VK_FORMAT_R8G8B8A8_UNORM,
-//                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-//                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, RGBImgTmp_, vmaAllocation, false);
-//
-//        long RGBImgTmp = RGBImgTmp_.get(0);
-
-        final VkImageSubresourceLayers vkImageSubresourceLayers = VkImageSubresourceLayers.mallocStack(stack)
-                .set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
-
-//        VkOffset3D.Buffer set = VkOffset3D.callocStack(2, stack);
-//        set.get(0).set(0,0,0);
-//        set.get(1).set(width, height, 1);
-
-
-
-
-        VkOffset3D.Buffer set = VkOffset3D.mallocStack(2, stack);
-        set.get(0).set(0,0,0);
-        set.get(1).set(width, height, 1);
-
-
-        VkImageCopy.Buffer imgCpy = VkImageCopy.mallocStack(1, stack);
-        imgCpy.srcOffset(set.get(0));
-        imgCpy.dstOffset(set.get(0));
-        imgCpy.srcSubresource(vkImageSubresourceLayers);
-        imgCpy.dstSubresource(vkImageSubresourceLayers);
-        imgCpy.extent(VkExtent3D.malloc(stack).set(width, height, 1));
-
-
-        transitionImageLayout(commandBuffer.getHandle(), src, VK_FORMAT_B8G8R8A8_UNORM,
-                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
-
-//        transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
-//                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-
-//
-
-        vkCmdCopyImage(commandBuffer.getHandle(), src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, computePipeline.ssioStorageImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imgCpy);
-
-        if(!Vulkan.isRGB)
-        {
-            int i1 = ((width * height)/32/128)+1;
-            vkCmdDispatch(commandBuffer.getHandle(), i1, 1, 1);
-        }
-        //Not sure if membarrier is needed due to not using async Compute/Seperate Compute Queue
-//        MemoryManager.addMemBarrier(commandBuffer.getHandle(), VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT, computePipeline.storageBuffer, 0, stack);
-
-
-//        vkCmdCopyBuffer(commandBuffer.getHandle(), computePipeline.ssboStorageBuffer, dst, imgCpy);
-//
-//        transitionImageLayout(commandBuffer.getHandle(), computePipeline.ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM,
-//                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
-
-
-
-
-//        MemoryManager.getInstance().freeImage(RGBImgTmp, vmaAllocation.get(0));
-
 
     }
 

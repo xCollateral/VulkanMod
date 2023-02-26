@@ -22,33 +22,26 @@ public class ComputePipeline  {
 
     private final VkDevice device = Vulkan.getDevice();
 //    private long ssboStorageBuffer;
-    private int size;
-    private long imgView;
     public long compPipeline;
     private final long compdescriptorSetLayout;
     private final long compdescriptorSetPool;
 //    private VkExtent2D extent;
 
-    public long ssioStorageImage;
     public final long compDescriptorSet;
-//    public long storageBufferMem;
-    public long storageImageMem;
+
     public final long compPipelineLayout;
     private long compShaderModule;
-    private boolean closed;
-    public final PointerBuffer data = MemoryUtil.memAllocPointer(1);
 
     //Compute Pipelines are not interchangeable with Graphics Pipelines, hence why this is a seperate class
     //Is Hardcoded for simplicity; used only for Image Copies ATM
-    public ComputePipeline(String path, VkExtent2D extent, int size)
+    public ComputePipeline(String path)
     {
-        this.size =size;
-//        this.extent =extent;
+        //        this.extent =extent;
 //        super(path);
         compdescriptorSetLayout = createDescriptorSetLayout(path);
 
 //        ssboStorageBuffer = getStorageBuffer(size);
-        ssioStorageImage = getStorageImage(extent);
+//        ssioStorageImage = getStorageImage(extent);
 
 //        pushConstant.addField(Field.createField("float", "ScreenSize", 2, pushConstant));
 //        pushConstant.allocateBuffer();
@@ -56,56 +49,15 @@ public class ComputePipeline  {
         compPipeline = createComputePipeline(path);
         compdescriptorSetPool = createCompDescriptorPool();
         compDescriptorSet = allocateDescriptorSet();
-        imgView=Vulkan.createImageView(ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-        try(MemoryStack stack = MemoryStack.stackPush())
-        {
-            updateDescriptorSets(stack);
-        }
-        this.closed=false;
+//        imgView = Vulkan.getSwapChainImageViews().get(Drawer.getCurrentFrame());
+//        try(MemoryStack stack = MemoryStack.stackPush())
+//        {
+//            updateDescriptorSets(stack);
+//        }
 
 
 //        vmaMapMemory(Vulkan.getAllocator(), storageBufferMem, data);
 
-    }
-
-    private long getStorageImage(VkExtent2D extent2D) {
-        final long storageImage;
-        try(MemoryStack stack=MemoryStack.stackPush()){
-            LongBuffer pImage=stack.mallocLong(1);
-            PointerBuffer pImageMemory=stack.mallocPointer(1);
-
-
-            VkImageCreateInfo imageInfo = VkImageCreateInfo.callocStack(stack);
-            imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-            imageInfo.imageType(VK_IMAGE_TYPE_2D);
-            imageInfo.extent().width(extent2D.width());
-            imageInfo.extent().height(extent2D.height());
-            imageInfo.extent().depth(1);
-            imageInfo.mipLevels(1);
-            imageInfo.arrayLayers(1);
-            imageInfo.format(VK_FORMAT_B8G8R8A8_UNORM);
-            imageInfo.tiling(VK_IMAGE_TILING_OPTIMAL);
-            imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            imageInfo.usage(VK_IMAGE_USAGE_STORAGE_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-            imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-            imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
-            imageInfo.pQueueFamilyIndices(stack.ints(2));
-
-            VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-            allocationInfo.usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-//                allocationInfo.flags(VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT|VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT|VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT);
-                allocationInfo.memoryTypeBits(0);
-//                allocationInfo.requiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-            var r = vmaCreateImage(Vulkan.getAllocator(), imageInfo, allocationInfo, pImage, pImageMemory, null);
-            if(r != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create image: "+r);
-            }
-
-            storageImage = pImage.get(0);
-            storageImageMem = pImageMemory.get(0);
-        }
-        return storageImage;
     }
 
 
@@ -266,8 +218,8 @@ public class ComputePipeline  {
 //        bufferInfos.buffer(ssboStorageBuffer);
 
         VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.callocStack(1, stack);
-        imageInfos.imageView(imgView);
-        imageInfos.imageLayout(VK_IMAGE_LAYOUT_GENERAL);
+        imageInfos.imageView(Vulkan.getSwapChainImageViews().get(Drawer.getCurrentFrame()));
+        imageInfos.imageLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         imageInfos.sampler(MemoryUtil.NULL);
 
 
@@ -298,32 +250,11 @@ public class ComputePipeline  {
 
     }
 
-    public void resizeBufferImage(int size, int width, int height)
-    {
-        if(this.closed || this.size==size) return; this.size=size;
-
-        try(MemoryStack stack = MemoryStack.stackPush())
-        {
-//            this.extent=VkExtent2D.malloc(stack).set(width, height);
-
-            vkDestroyImageView(device, imgView, null);
-            vmaDestroyImage(Vulkan.getAllocator(), ssioStorageImage, storageImageMem);
-//            vmaDestroyBuffer(Vulkan.getAllocator(), ssboStorageBuffer, storageBufferMem);
-
-//            ssboStorageBuffer = getStorageBuffer(this.size);
-            ssioStorageImage = getStorageImage(VkExtent2D.malloc(stack).set(width, height));
-            imgView=Vulkan.createImageView(ssioStorageImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-            updateDescriptorSets(stack);
-
-        }
-    }
-
 
     public void close()
     {
-        this.closed=true;
 
-        data.free();
+
 //        vmaDestroyBuffer(Vulkan.getAllocator(), storageBuffer, storageBufferMem);
         vkDestroyShaderModule(device, compShaderModule, null);
         vkDestroyDescriptorSetLayout(device, compdescriptorSetLayout, null);
@@ -338,5 +269,12 @@ public class ComputePipeline  {
         vkDestroyShaderModule(device, compShaderModule, null);
         vkDestroyPipeline(device, compPipeline, null);
         compPipeline = createComputePipeline("extra/swizzle");
+    }
+
+    public void setImage() {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            updateDescriptorSets(stack);
+        }
     }
 }
