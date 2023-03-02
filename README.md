@@ -31,9 +31,12 @@ Demostration Video:
 
 ## Known Issues
 
-- Linux and macOS may not work.
+- Make sure your hardware supports Vulkan, using for instance [that tool for windows](https://github.com/skeeto/vulkan-test), or using the `vkcube` command on linux to make sure vulkan works.
+- MacOS may not work.
+- For Linux users, make sure you have the vulkan drivers and libs installed according to your hardware, more info [here](https://wiki.archlinux.org/title/Vulkan).
 
 ## Notes
-This is still a pre-alpha mod. Bugs are to be expected.
+This is still a pre-alpha mod. Bugs are to be expected. If you encounter a bug, please create an [issue](https://github.com/xCollateral/VulkanMod/issues) and post the crash log as a [Gist](https://gist.github.com/).
+Optionally, you can join the `#support` channel of the discord server to search for help.
 
 </div>
