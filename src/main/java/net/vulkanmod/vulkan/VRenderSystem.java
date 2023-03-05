@@ -7,9 +7,10 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.vulkanmod.vulkan.util.VUtil;
+import com.mojang.math.Matrix4f;
 import org.joml.Vector2f;
 import org.lwjgl.system.MemoryUtil;
 import oshi.SystemInfo;
@@ -164,9 +165,11 @@ public class VRenderSystem {
     }
 
     public static void setChunkOffset(float f1, float f2, float f3) {
-        ChunkOffset.putFloat(0, f1);
-        ChunkOffset.putFloat(4, f2);
-        ChunkOffset.putFloat(8, f3);
+        //TODO use MappedBuffer
+        long addr = MemoryUtil.memAddress0(ChunkOffset);
+        VUtil.UNSAFE.putFloat(addr, f1);
+        VUtil.UNSAFE.putFloat(addr + 4, f2);
+        VUtil.UNSAFE.putFloat(addr + 8, f3);
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {

@@ -2,22 +2,21 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.shader.PushConstant;
+import net.vulkanmod.vulkan.shader.PushConstants;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.joml.Matrix4f;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -32,7 +31,8 @@ public class Drawer {
     private static VkDevice device;
     private static List<VkCommandBuffer> commandBuffers;
 
-    private static Set<Pipeline> usedPipelines = new HashSet<>();
+    private Set<Pipeline> usedPipelines = new HashSet<>();
+    private Pipeline lastPipeline;
 
     private VertexBuffer[] vertexBuffers;
     private AutoIndexBuffer quadsIndexBuffer;
@@ -62,6 +62,12 @@ public class Drawer {
     public static boolean shouldRecreate = false;
     public static boolean rebuild = false;
     public static boolean skipRendering = false;
+
+    private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
+    private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
+    private static final long pBuffers = MemoryUtil.memAddress0(buffers);
+    private static final long pOffsets = MemoryUtil.memAddress0(offsets);
+
 
     public Drawer()
     {
@@ -244,7 +250,7 @@ public class Drawer {
         }
     }
 
-    private static void resetDescriptors() {
+    private void resetDescriptors() {
         for(Pipeline pipeline : usedPipelines) {
             pipeline.resetDescriptorPool(currentFrame);
         }
@@ -473,19 +479,15 @@ public class Drawer {
     }
 
     public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+        VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-        try(MemoryStack stack = stackPush()) {
-            VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+        VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
+        VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
+        nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
-            LongBuffer vertexBuffers = stack.longs(vertexBuffer.getId());
-            LongBuffer offsets = stack.longs(vertexBuffer.getOffset());
-//            Profiler.Push("bindVertex");
-            vkCmdBindVertexBuffers(commandBuffer, 0, vertexBuffers, offsets);
-
-            vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
 //            Profiler.Push("draw");
-            vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
-        }
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 
     public void bindPipeline(Pipeline pipeline) {
@@ -502,9 +504,11 @@ public class Drawer {
     public void pushConstants(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-        PushConstant pushConstant = pipeline.getPushConstant();
-        pushConstant.update();
-        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstant.getBuffer());
+        PushConstants pushConstants = pipeline.getPushConstants();
+        pushConstants.update();
+//        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstant.getBuffer());
+
+        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), pushConstants.getAddress());
     }
 
     public static void setDepthBias(float units, float factor) {

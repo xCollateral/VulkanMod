@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.matrix;
+package net.vulkanmod.mixin.math;
 
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;

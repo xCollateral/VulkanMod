@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.util;
+package net.vulkanmod.mixin.math;
 
 import com.mojang.math.Matrix4f;
 import org.lwjgl.system.MemoryStack;
@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import java.nio.FloatBuffer;
 
 @Mixin(Matrix4f.class)
-public class Matrix4fM {
+public class MojMatrix4fM {
 
     /**
      * @author

@@ -49,7 +49,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void upload(BufferBuilder.RenderedBuffer buffer) {
-        vbo.upload_(buffer);
+        vbo.upload(buffer);
     }
 
     /**

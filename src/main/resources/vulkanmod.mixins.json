@@ -21,7 +21,9 @@
     "gui.DebugHudM",
     "gui.InGameHudM",
 
-    "matrix.Matrix4fM",
+    "math.Matrix4fM",
+    "math.MojMatrix4fM",
+    "math.Vertex3fM",
 
     "render.BakedQuadFactoryM",
     "render.BufferBuilderM",
@@ -53,12 +55,18 @@
     "texture.MSimpleTexture",
     "texture.MSpriteAtlasTexture",
     "texture.MTextureManager",
-    "texture.VNativeImage",
-    "texture.ModelLoaderM",
+    "texture.MNativeImage",
 
-    "util.Matrix4fM",
     "util.ScreenshotRecorderM",
 
+    "model.ModelPartCubeM",
+    "model.ModelPartM",
+
+    "vertex.SpriteCoordinateExpanderM",
+    "vertex.VertexConsumersM$DoubleM",
+    "vertex.VertexConsumersM$SheetDecalM",
+
+    "ClientLevelM",
     "WindowMixin"
   ],
   "injectors": {
