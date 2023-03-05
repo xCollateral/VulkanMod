@@ -1,12 +1,10 @@
 package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.TextureMap;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -78,7 +76,7 @@ public class GlStateManagerM {
      * @author
      */
     @Overwrite(remap = false)
-    public static void _texParameter(int i, int j, float f) {
+    public static void _texParameter(int i, int j, float k) {
         //TODO
     }
 

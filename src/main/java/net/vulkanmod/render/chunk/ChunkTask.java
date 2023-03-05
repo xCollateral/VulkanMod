@@ -271,13 +271,13 @@ public class ChunkTask {
             PoseStack poseStack = new PoseStack();
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
-                Set<RenderType> set = new ReferenceArraySet(RenderType.chunkBufferLayers().size());
+                Set<RenderType> set = new ReferenceArraySet<>(RenderType.chunkBufferLayers().size());
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
-                Iterator var15 = BlockPos.betweenClosed(blockPos, blockPos2).iterator();
+//                Iterator var15 = BlockPos.betweenClosed(blockPos, blockPos2).iterator();
 
-                while(var15.hasNext()) {
-                    BlockPos blockPos3 = (BlockPos)var15.next();
+                for(BlockPos blockPos3 : BlockPos.betweenClosed(blockPos, blockPos2)) {
+//                    BlockPos blockPos3 = (BlockPos)var15.next();
                     BlockState blockState = renderChunkRegion.getBlockState(blockPos3);
                     if (blockState.isSolidRender(renderChunkRegion, blockPos3)) {
                         visGraph.setOpaque(blockPos3);
@@ -326,10 +326,10 @@ public class ChunkTask {
                     }
                 }
 
-                var15 = set.iterator();
+//                var15 = set.iterator();
 
-                while(var15.hasNext()) {
-                    RenderType renderType2 = (RenderType)var15.next();
+                for(RenderType renderType2 : set) {
+//                    RenderType renderType2 = (RenderType)var15.next();
                     BufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
                         compileResults.renderedLayers.put(renderType2, renderedBuffer);
