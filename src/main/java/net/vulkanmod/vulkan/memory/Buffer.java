@@ -10,7 +10,6 @@ public abstract class Buffer {
     protected int usedBytes;
     protected int offset;
 
-//    protected Buffer.Type type;
     protected MemoryType type;
     protected int usage;
     protected PointerBuffer data;

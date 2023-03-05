@@ -11,7 +11,7 @@ import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
-public class StagingBuffer extends Buffer{
+public class StagingBuffer extends Buffer {
 
     public StagingBuffer(int bufferSize) {
         super(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryTypes.HOST_MEM);
@@ -29,12 +29,10 @@ public class StagingBuffer extends Buffer{
     public void copyBuffer(int size, ByteBuffer byteBuffer) {
 
         if(size > this.bufferSize - this.usedBytes) {
-            resizeBuffer((int)(this.bufferSize + size) * 2);
+            resizeBuffer((this.bufferSize + size) * 2);
         }
 
-        MemoryManager.getInstance().Copy(this.data,
-                (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) this.bufferSize), byteBuffer, this.usedBytes)
-        );
+        VUtil.memcpy(this.data.getByteBuffer(0, this.bufferSize), byteBuffer, this.usedBytes);
 
         offset = usedBytes;
         usedBytes += size;

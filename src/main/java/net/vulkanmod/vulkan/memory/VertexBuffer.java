@@ -31,6 +31,10 @@ public class VertexBuffer extends Buffer {
 //        float floats[] = new float[(int) vertexSize / 4];
 //        byteBuffer.asFloatBuffer().get(floats);
 
+        //debug
+        if(bufferSize != byteBuffer.remaining())
+            System.nanoTime();
+
         if(bufferSize > this.bufferSize - this.usedBytes) {
             resizeBuffer((this.bufferSize + bufferSize) * 2);
         }
