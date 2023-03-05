@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.io.IOException;
 import java.util.List;
@@ -283,5 +285,9 @@ public class GameRendererMixin {
             p_172729_.getSecond().accept(shaderinstance);
         });
     }
+
+
+    @Redirect(method = "render", at = @At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void clear(int v, boolean a) { }
 
 }

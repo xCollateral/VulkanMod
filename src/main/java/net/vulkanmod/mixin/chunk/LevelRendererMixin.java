@@ -106,15 +106,22 @@ public abstract class LevelRendererMixin {
     public boolean isChunkCompiled(BlockPos blockPos) {
         return this.worldRenderer.isChunkCompiled(blockPos);
     }
-@Inject(method = "renderLevel", at=@At(value="INVOKE", ordinal =0, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"))
-private void renderChunkLayer(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
-{
-    Vec3 vec3 = camera.getPosition();
-    double d = vec3.x();
-    double e = vec3.y();
-    double g = vec3.z();
-    VBOUtil.updateCamTranslation(poseStack, d, e, g, matrix4f);
-}
+
+    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void clear(int i, boolean bl)
+    {
+
+    }
+
+    @Inject(method = "renderLevel", at=@At(value="INVOKE", ordinal =0, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"))
+    private void renderChunkLayer(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
+    {
+        Vec3 vec3 = camera.getPosition();
+        double d = vec3.x();
+        double e = vec3.y();
+        double g = vec3.z();
+        VBOUtil.updateCamTranslation(poseStack, d, e, g, matrix4f);
+    }
     /**
      * @author
      * @reason
@@ -205,7 +212,7 @@ private void renderChunkLayer(PoseStack poseStack, float f, long l, boolean bl, 
 
         }
     }
-    
+
     @Redirect(method = "renderSky", at=@At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawWithShader(Lcom/mojang/math/Matrix4f;Lcom/mojang/math/Matrix4f;Lnet/minecraft/client/renderer/ShaderInstance;)V"))
     private void drawWithShaderSkyBuffer(VertexBuffer instance, Matrix4f matrix4f, Matrix4f matrix4f2, ShaderInstance shaderInstance)
     {

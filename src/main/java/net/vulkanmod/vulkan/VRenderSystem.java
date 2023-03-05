@@ -227,7 +227,7 @@ public class VRenderSystem {
         Drawer.currentLogicOpState.setLogicOp(p_69836_);
     }
 
-    public static void clearColor(float f1, float f2, float f3, float f4) {
+    public static void setRenderPassColor(float f1, float f2, float f3, float f4) {
         clearColor.put(0, f1);
         clearColor.put(1, f2);
         clearColor.put(2, f3);

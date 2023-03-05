@@ -181,7 +181,7 @@ public class Drawer {
             renderPassInfo.renderArea(renderArea);
 
             VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
-            clearValues.get(0).color().float32(stack.floats(0.0f, 0.0f, 0.0f, 1.0f));
+            clearValues.get(0).color().float32(VRenderSystem.clearColor);
             clearValues.get(1).depthStencil().set(1.0f, 0);
             renderPassInfo.pClearValues(clearValues);
 
@@ -530,7 +530,9 @@ public class Drawer {
 //            VkClearValue colorValue = VkClearValue.callocStack(stack);
 //            colorValue.color().float32(VRenderSystem.clearColor);
 
-            //use fast Depth clears if possible
+
+            //Always use Fast Stencil Clears If Possible
+
             VkClearValue depthValue = VkClearValue.mallocStack(stack);
             depthValue.depthStencil().depth(1.0f).stencil(0);
 
@@ -556,7 +558,7 @@ public class Drawer {
     public static void setViewport(int x, int y, int width, int height) {
 
         try(MemoryStack stack = stackPush()) {
-            VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
+            VkViewport.Buffer viewport = VkViewport.mallocStack(1, stack);
             viewport.x(x);
             viewport.y(height + y);
             viewport.width(width);

@@ -312,7 +312,7 @@ public abstract class RenderSystemMixin {
         assertOnGameThreadOrInit();
 //      GlStateManager._clearColor(p_69425_, p_69426_, p_69427_, p_69428_);
         //Vulkan
-        VRenderSystem.clearColor(p_69425_, p_69426_, p_69427_, p_69428_);
+        VRenderSystem.setRenderPassColor(p_69425_, p_69426_, p_69427_, p_69428_);
     }
 
     /**
