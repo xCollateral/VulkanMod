@@ -1,21 +1,20 @@
 package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.vulkan.util.MappedBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class Vec1f extends Field {
+public class Vec1f extends Field<Float> {
 
-    protected Vec1f(String name, AlignedStruct struct) {
-        super(name, 1, 1, struct.getCurrentOffset());
-
-        struct.setCurrentOffset(offset + size);
-        setFunction();
+    public Vec1f(FieldInfo fieldInfo, long ptr) {
+        super(fieldInfo, ptr);
     }
 
     void setFunction() {
-        switch (this.name) {
+        switch (this.fieldInfo.name) {
             case "FogStart" -> this.set = RenderSystem::getShaderFogStart;
             case "FogEnd" -> this.set = RenderSystem::getShaderFogEnd;
             case "LineWidth" -> this.set = RenderSystem::getShaderLineWidth;
@@ -23,17 +22,8 @@ public class Vec1f extends Field {
         }
     }
 
-    void update(FloatBuffer fb) {
-        float f = (float) this.set.get();
-        fb.position(offset);
-        fb.put(f);
-    }
-
-    void update(ByteBuffer buffer) {
-        //update(buffer.asFloatBuffer());
-
-        float f = (float) this.set.get();
-        buffer.position(offset * 4);
-        buffer.putFloat(f);
+    void update() {
+        float f = this.set.get();
+        MemoryUtil.memPutFloat(this.basePtr, f);
     }
 }

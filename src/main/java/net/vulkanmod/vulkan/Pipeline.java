@@ -13,8 +13,9 @@ import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
+import net.vulkanmod.vulkan.shader.AlignedStruct;
 import net.vulkanmod.vulkan.shader.Field;
-import net.vulkanmod.vulkan.shader.PushConstant;
+import net.vulkanmod.vulkan.shader.PushConstants;
 import net.vulkanmod.vulkan.shader.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -56,7 +57,7 @@ public class Pipeline {
 
     private final List<UBO> UBOs = new ArrayList<>();
     private final List<String> samplers = new ArrayList<>();
-    private final PushConstant pushConstant = new PushConstant();
+    private PushConstants pushConstants;
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
 
@@ -317,9 +318,9 @@ public class Pipeline {
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
             pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout));
 
-            if(pushConstant.getSize() > 0) {
+            if(pushConstants != null) {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
-                pushConstantRange.size(pushConstant.getSize());
+                pushConstantRange.size(pushConstants.getSize());
                 pushConstantRange.offset(0);
                 pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
@@ -467,13 +468,13 @@ public class Pipeline {
 
                 offset += 4;
             }
-//            else if (usage == VertexFormatElement.Usage.PADDING)
-//            {
-////                posDescription.format(VK_FORMAT_R8_SNORM);
-////                posDescription.offset(offset);
-//
-////                offset += 1;
-//            }
+            else if (usage == VertexFormatElement.Usage.PADDING)
+            {
+//                posDescription.format(VK_FORMAT_R8_SNORM);
+//                posDescription.offset(offset);
+
+//                offset += 1;
+            }
 
             else {
                 throw new RuntimeException("Unknown format:");
@@ -491,8 +492,7 @@ public class Pipeline {
         int type = this.getTypeFromString(GsonHelper.getAsString(jsonobject, "type"));
         JsonArray fields = GsonHelper.getAsJsonArray(jsonobject, "fields");
 
-        UBO ubo = new UBO(binding, type);
-
+        AlignedStruct.Builder builder = new AlignedStruct.Builder();
 
         for (JsonElement jsonelement2 : fields) {
             JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement2, "uniform");
@@ -501,21 +501,23 @@ public class Pipeline {
             String type2 = GsonHelper.getAsString(jsonobject2, "type");
             int j = GsonHelper.getAsInt(jsonobject2, "count");
 
-            ubo.addField(Field.createField(type2, name, j, ubo));
+            builder.addFieldInfo(type2, name, j);
 
         }
+        UBO ubo = builder.buildUBO(binding, type);
 
-        UBOs.add(ubo);
+        this.UBOs.add(ubo);
     }
 
     private void parseSamplerNode(JsonElement jsonelement) {
         JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "UBO");
         String name = GsonHelper.getAsString(jsonobject, "name");
 
-        samplers.add(name);
+        this.samplers.add(name);
     }
 
     private void parsePushConstantNode(JsonArray jsonArray) {
+        AlignedStruct.Builder builder = new AlignedStruct.Builder();
 
         for(JsonElement jsonelement : jsonArray) {
             JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
@@ -524,10 +526,10 @@ public class Pipeline {
             String type2 = GsonHelper.getAsString(jsonobject2, "type");
             int j = GsonHelper.getAsInt(jsonobject2, "count");
 
-            pushConstant.addField(Field.createField(type2, name, j, pushConstant));
+            builder.addFieldInfo(type2, name, j);
         }
 
-        pushConstant.allocateBuffer();
+        this.pushConstants = builder.buildPushConstant();
     }
 
     private int getTypeFromString(String s) {
@@ -596,7 +598,7 @@ public class Pipeline {
         });
     }
 
-    public PushConstant getPushConstant() { return pushConstant; }
+    public PushConstants getPushConstants() { return this.pushConstants; }
 
     public long getLayout() { return pipelineLayout; }
 

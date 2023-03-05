@@ -1,51 +1,26 @@
 package net.vulkanmod.vulkan.shader;
 
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.joml.Vector2f;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 
-public class Vec2f extends Field {
+public class Vec2f extends Field<Vector2f> {
 
-    protected Vec2f(String name, AlignedStruct ubo) {
-        super(name, 2, 4, ubo.getCurrentOffset());
-
-        ubo.setCurrentOffset(offset + size);
-        setFunction();
+    public Vec2f(FieldInfo fieldInfo, long ptr) {
+        super(fieldInfo, ptr);
     }
 
     void setFunction() {
-        if (this.name.equals("ScreenSize")) this.set = VRenderSystem::getScreenSize;
+        if (this.fieldInfo.name.equals("ScreenSize")) this.set = VRenderSystem::getScreenSize;
     }
 
-    void update(FloatBuffer fb) {
-        Vector2f vec2 = (Vector2f) this.set.get();
-        float[] floats = new float[2];
+    void update() {
+        Vector2f vec2 = this.set.get();
 
-        floats[0] = vec2.x();
-        floats[1] = vec2.y();
-
-        fb.position(offset);
-
-        for(float f : floats) {
-            fb.put(f);
-        }
-    }
-
-    void update(ByteBuffer buffer) {
-        //update(buffer.asFloatBuffer());
-
-        Vector2f vec2 = (Vector2f) this.set.get();
-        float[] floats = new float[2];
-
-        floats[0] = vec2.x();
-        floats[1] = vec2.y();
-
-        buffer.position(offset * 4);
-
-        for(float f : floats) {
-            buffer.putFloat(f);
-        }
+        MemoryUtil.memPutFloat(this.basePtr, vec2.x());
+        MemoryUtil.memPutFloat(this.basePtr + 4, vec2.y());
     }
 }

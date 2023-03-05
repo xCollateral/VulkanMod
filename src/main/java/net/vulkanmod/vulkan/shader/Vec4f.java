@@ -1,45 +1,33 @@
 package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.vulkan.util.MappedBuffer;
+import org.joml.Vector2f;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class Vec4f extends Field {
+public class Vec4f extends Field<float[]> {
 
-    protected Vec4f(String name, AlignedStruct ubo) {
-        super(name, 4, 4, ubo.getCurrentOffset());
-
-        ubo.setCurrentOffset(offset + size);
-        setFunction();
+    public Vec4f(FieldInfo fieldInfo, long ptr) {
+        super(fieldInfo, ptr);
     }
 
     void setFunction() {
-        if (this.name.equals("ColorModulator")) this.set = RenderSystem::getShaderColor;
-        else if (this.name.equals("FogColor")) this.set = RenderSystem::getShaderFogColor;
+
+        if (this.fieldInfo.name.equals("ColorModulator")) this.set = RenderSystem::getShaderColor;
+        else if (this.fieldInfo.name.equals("FogColor")) this.set = RenderSystem::getShaderFogColor;
     }
 
-    void update(FloatBuffer fb) {
-        float[] floats = (float[]) this.set.get();
-        fb.position(offset);
+    void update() {
+        float[] floats = this.set.get();
 
-        for(float f : floats) {
-            fb.put(f);
-        }
+        MemoryUtil.memPutFloat(this.basePtr, floats[0]);
+        MemoryUtil.memPutFloat(this.basePtr + 4, floats[1]);
+        MemoryUtil.memPutFloat(this.basePtr + 8, floats[2]);
+        MemoryUtil.memPutFloat(this.basePtr + 12, floats[3]);
+
     }
 
-    void update(ByteBuffer buffer) {
-        //update(buffer.asFloatBuffer());
-
-        float[] floats = (float[]) this.set.get();
-        buffer.position(offset * 4);
-
-        for(float f : floats) {
-            buffer.putFloat(f);
-        }
-
-//        ByteBuffer src = (ByteBuffer) set.get();
-//        buffer.position(offset * 4);
-//        MemoryUtil.memCopy(src, buffer);
-    }
 }
