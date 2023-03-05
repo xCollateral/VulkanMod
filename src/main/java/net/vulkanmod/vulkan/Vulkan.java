@@ -553,7 +553,9 @@ public class Vulkan {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
+
             createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+
 
             createInfo.preTransform(swapChainSupport.capabilities.currentTransform());
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
@@ -724,7 +726,7 @@ public class Vulkan {
 
         throw new RuntimeException("Failed to find supported format");
     }
-
+    //Nvidia and AMD only support either VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D16_UNORM_S8_UINT respectively, (Not Both)
     private static int findDepthFormat() {
         return findSupportedFormat(
                 stackGet().ints(VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT),

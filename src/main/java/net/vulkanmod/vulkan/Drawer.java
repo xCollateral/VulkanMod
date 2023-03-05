@@ -518,64 +518,38 @@ public class Drawer {
         vkCmdSetDepthBias(commandBuffer, units, 0.0f, factor);
     }
 
-    public static void clearAttachments(int v) {
+    public static void fastClearDepthAttachment(int v) {
+
+
         if(skipRendering) return;
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         try(MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear, it seems it works like a buffer: color and depth attributes override themselves
-            VkClearValue colorValue = VkClearValue.callocStack(stack);
-            colorValue.color().float32(VRenderSystem.clearColor);
+//            VkClearValue colorValue = VkClearValue.callocStack(stack);
+//            colorValue.color().float32(VRenderSystem.clearColor);
 
-            VkClearValue depthValue = VkClearValue.callocStack(stack);
-            depthValue.depthStencil().depth(VRenderSystem.clearDepth);
+            //use fast Depth clears if possible
+            VkClearValue depthValue = VkClearValue.mallocStack(stack);
+            depthValue.depthStencil().depth(1.0f).stencil(0);
 
-            int attachmentsCount;
-            VkClearAttachment.Buffer pAttachments;
-            if (v == 0x100) {
-                attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                VkClearAttachment clearDepth = pAttachments.get(0);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else if (v == 0x4000) {
-                attachmentsCount = 1;
-
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.colorAttachment(0);
-                clearColor.clearValue(colorValue);
-            } else if (v == 0x4100) {
-                attachmentsCount = 2;
-
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.clearValue(colorValue);
-
-                VkClearAttachment clearDepth = pAttachments.get(1);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else {
-                throw new RuntimeException("unexpected value");
-            }
+            VkClearAttachment.Buffer clearDepth = VkClearAttachment.mallocStack(1, stack);
+            clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+            clearDepth.clearValue(depthValue);
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.callocStack(stack);
-            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
+            VkRect2D renderArea = VkRect2D.mallocStack(stack);
+            renderArea.offset(VkOffset2D.mallocStack(stack).set(0, 0));
             renderArea.extent(getSwapchainExtent());
 
-            VkClearRect.Buffer pRect = VkClearRect.callocStack(1, stack);
-            pRect.get(0).rect(renderArea);
-            pRect.get(0).layerCount(1);
+            VkClearRect.Buffer pRect = VkClearRect.mallocStack(1, stack);
+            pRect.rect(renderArea);
+            pRect.baseArrayLayer(0);
+            pRect.layerCount(1);
 
-            vkCmdClearAttachments(commandBuffer, pAttachments, pRect);
+            vkCmdClearAttachments(commandBuffer, clearDepth, pRect);
         }
     }
 

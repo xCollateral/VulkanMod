@@ -35,7 +35,7 @@ public class VRenderSystem {
 
     public static boolean cull = true;
 
-    public static float clearDepth = 1.0f;
+    public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
 
     public static ByteBuffer modelViewMatrix = MemoryUtil.memAlloc(16 * 4);
@@ -236,7 +236,7 @@ public class VRenderSystem {
     }
 
     public static void clear(int v) {
-        Drawer.clearAttachments(v);
+        Drawer.fastClearDepthAttachment(v);
     }
 
     public static void disableDepthTest() {
