@@ -10,7 +10,7 @@ import sun.misc.Unsafe;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class Vec3f extends Field<ByteBuffer> {
+public class Vec3f extends Field<MappedBuffer> {
 
     public Vec3f(FieldInfo fieldInfo, long ptr) {
         super(fieldInfo, ptr);
@@ -25,12 +25,10 @@ public class Vec3f extends Field<ByteBuffer> {
     }
 
     void update() {
-        ByteBuffer src = this.set.get();
+        MappedBuffer src = this.set.get();
 
-        FloatBuffer fb = src.asFloatBuffer();
-
-        VUtil.UNSAFE.putFloat(this.basePtr, fb.get(0));
-        VUtil.UNSAFE.putFloat(this.basePtr + 4, fb.get(1));
-        VUtil.UNSAFE.putFloat(this.basePtr + 8, fb.get(2));
+        VUtil.UNSAFE.putFloat(this.basePtr, VUtil.UNSAFE.getFloat(src.ptr));
+        VUtil.UNSAFE.putFloat(this.basePtr + 4, VUtil.UNSAFE.getFloat(src.ptr + 4));
+        VUtil.UNSAFE.putFloat(this.basePtr + 8, VUtil.UNSAFE.getFloat(src.ptr + 8));
     }
 }

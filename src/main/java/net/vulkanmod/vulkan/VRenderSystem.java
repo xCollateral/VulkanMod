@@ -9,6 +9,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import com.mojang.math.Matrix4f;
 import org.joml.Vector2f;
@@ -42,9 +43,9 @@ public class VRenderSystem {
     public static ByteBuffer TextureMatrix = MemoryUtil.memAlloc(16 * 4);
     public static ByteBuffer MVP = MemoryUtil.memAlloc(16 * 4);
 
-    public static ByteBuffer ChunkOffset = MemoryUtil.memAlloc(3 * 4);
-    public static ByteBuffer lightDirection0 = MemoryUtil.memAlloc(3 * 4);
-    public static ByteBuffer lightDirection1 = MemoryUtil.memAlloc(3 * 4);
+    public static MappedBuffer ChunkOffset = new MappedBuffer(3 * 4);
+    public static MappedBuffer lightDirection0 = new MappedBuffer(3 * 4);
+    public static MappedBuffer lightDirection1 = new MappedBuffer(3 * 4);
 
     public static ByteBuffer shaderColor = MemoryUtil.memAlloc(4 * 4);
     public static ByteBuffer shaderFogColor = MemoryUtil.memAlloc(4 * 4);
@@ -65,7 +66,7 @@ public class VRenderSystem {
 
     }
 
-    public static ByteBuffer getChunkOffset() { return ChunkOffset; }
+    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer; }
 
     public static int maxSupportedTextureSize() {
         return Vulkan.deviceProperties.limits().maxImageDimension2D();
@@ -165,11 +166,10 @@ public class VRenderSystem {
     }
 
     public static void setChunkOffset(float f1, float f2, float f3) {
-        //TODO use MappedBuffer
-        long addr = MemoryUtil.memAddress0(ChunkOffset);
-        VUtil.UNSAFE.putFloat(addr, f1);
-        VUtil.UNSAFE.putFloat(addr + 4, f2);
-        VUtil.UNSAFE.putFloat(addr + 8, f3);
+        long ptr = ChunkOffset.ptr;
+        VUtil.UNSAFE.putFloat(ptr, f1);
+        VUtil.UNSAFE.putFloat(ptr + 4, f2);
+        VUtil.UNSAFE.putFloat(ptr + 8, f3);
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
