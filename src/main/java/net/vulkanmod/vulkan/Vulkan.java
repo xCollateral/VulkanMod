@@ -167,6 +167,7 @@ public class Vulkan {
     private static VkExtent2D swapChainExtent;
     private static List<Long> swapChainImageViews;
     private static List<Long> swapChainFramebuffers;
+    public static boolean isBGRAformat = false;
 
     private static long depthImage;
     private static long depthImageMemory;
@@ -511,6 +512,7 @@ public class Vulkan {
 
 //            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), 2));
             IntBuffer imageCount = stack.ints(frameQueueSize);
+//            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), frameQueueSize));
 
             if(swapChainSupport.capabilities.maxImageCount() > 0 && imageCount.get(0) > swapChainSupport.capabilities.maxImageCount()) {
                 imageCount.put(0, swapChainSupport.capabilities.maxImageCount());
@@ -569,7 +571,6 @@ public class Vulkan {
 
             vkGetSwapchainImagesKHR(device, swapChain, imageCount, pSwapchainImages);
 
-//            Validate.isTrue(imageCount.get(0) > 5);
             swapChainImages = new ArrayList<>(imageCount.get(0));
 
             for(int i = 0;i < pSwapchainImages.capacity();i++) {
@@ -738,7 +739,7 @@ public class Vulkan {
             }
         }
 
-        if(flag) System.out.println("Non-optimal surface format.");
+        if(format.format() == VK_FORMAT_B8G8R8A8_UNORM) isBGRAformat = true;
         return format;
     }
 

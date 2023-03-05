@@ -6,6 +6,7 @@ import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.nio.ByteBuffer;
 
 @Mixin(NativeImage.class)
-public abstract class VNativeImage {
+public abstract class MNativeImage {
 
     @Shadow private long pixels;
     @Shadow private long size;
@@ -81,7 +82,12 @@ public abstract class VNativeImage {
         if (removeAlpha && this.format.hasAlpha()) {
             for (int i = 0; i < this.height; ++i) {
                 for (int j = 0; j < this.getWidth(); ++j) {
-                    this.setPixelRGBA(j, i, this.getPixelRGBA(j, i) | 255 << this.format.alphaOffset());
+                    int v = this.getPixelRGBA(j, i);
+
+                    if(Vulkan.isBGRAformat)
+                        v = VUtil.BGRAtoRGBA(v);
+
+                    this.setPixelRGBA(j, i, v | 255 << this.format.alphaOffset());
                 }
             }
         }
