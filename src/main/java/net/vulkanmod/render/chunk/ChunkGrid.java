@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.render.chunk.util.CircularIntList;
 import net.vulkanmod.render.chunk.util.Util;
@@ -9,6 +10,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 public class ChunkGrid {
 
@@ -456,15 +458,15 @@ public class ChunkGrid {
     }
 
     @Nullable
-    protected RenderSection getRenderChunkAt(BlockPos blockPos) {
-//      int i = Mth.intFloorDiv(blockPos.getX(), 16);
-//      int j = Mth.intFloorDiv(blockPos.getY() - this.level.getMinBuildHeight(), 16);
-//      int k = Mth.intFloorDiv(blockPos.getZ(), 16);
-
+    public RenderSection getRenderSectionAt(BlockPos blockPos) {
         int i = blockPos.getX() >> 4;
         int j = (blockPos.getY() - this.level.getMinBuildHeight()) >> 4;
         int k = blockPos.getZ() >> 4;
 
+        return this.getRenderSectionAt(i, j, k);
+    }
+
+    public RenderSection getRenderSectionAt(int i, int j, int k) {
         if (j >= 0 && j < this.chunkGridSizeY) {
             i = Mth.positiveModulo(i, this.chunkGridSizeX);
             k = Mth.positiveModulo(k, this.chunkGridSizeZ);
@@ -472,6 +474,18 @@ public class ChunkGrid {
         } else {
             return null;
         }
+    }
+    public List<RenderSection> getRenderSectionsAt(int x, int z) {
+        ObjectArrayList<RenderSection> list = new ObjectArrayList<>(24);
+
+        int i = Mth.positiveModulo(x, this.chunkGridSizeX);
+        int k = Mth.positiveModulo(z, this.chunkGridSizeZ);
+
+        for(int y1 = 0; y1 < chunkGridSizeY; ++y1) {
+            list.add(this.chunks[this.getChunkIndex(i, y1, k)]);
+        }
+
+        return list;
     }
 
     public void updateFrustumVisibility(VFrustum frustum) {

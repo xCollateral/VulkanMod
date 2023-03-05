@@ -12,6 +12,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.util.thread.ProcessorMailbox;
+import net.vulkanmod.render.VBO;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -177,7 +178,7 @@ public class TaskDispatcher {
 
     }
 
-    public CompletableFuture<Void> scheduleUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VertexBuffer vertexBuffer) {
+    public CompletableFuture<Void> scheduleUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer) {
         return CompletableFuture.runAsync(() -> {
         }, this.toUpload::add).thenCompose((p_199940_) -> {
             return this.doUploadChunkLayer(renderedBuffer, vertexBuffer);
@@ -186,7 +187,7 @@ public class TaskDispatcher {
 //        return CompletableFuture.completedFuture(null);
     }
 
-    private CompletableFuture<Void> doUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VertexBuffer vertexBuffer) {
+    private CompletableFuture<Void> doUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer) {
         vertexBuffer.upload(renderedBuffer);
         return CompletableFuture.completedFuture(null);
     }

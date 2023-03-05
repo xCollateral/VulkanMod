@@ -16,6 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
+import net.vulkanmod.render.VBO;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -41,15 +42,18 @@ public class RenderSection {
     @Nullable
     private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-    private final Map<RenderType, VertexBuffer> buffers =
+    private final Map<RenderType, VBO> buffers =
             //TODO later: find something better
             new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) -> {
         return renderType;
     }, (renderType) -> {
-        return new VertexBuffer();
+        return new VBO();
     })));
     private AABB bb;
     private boolean dirty = true;
+    private boolean lightReady = false;
+    private boolean init = true;
+
     final BlockPos.MutableBlockPos origin = new BlockPos.MutableBlockPos(-1, -1, -1);
     private final BlockPos.MutableBlockPos[] relativeOrigins = Util.make(new BlockPos.MutableBlockPos[6], (p_112831_) -> {
         for(int i = 0; i < p_112831_.length; ++i) {
@@ -73,6 +77,11 @@ public class RenderSection {
 
         for(Direction direction : Direction.values()) {
             this.relativeOrigins[direction.ordinal()].set(this.origin).move(direction, 16);
+        }
+
+        if(this.init) {
+            this.lightReady = WorldRenderer.getLevel().getChunk(x >> 4, z >> 4).isClientLightReady();
+            this.init = false;
         }
 
     }
@@ -157,7 +166,7 @@ public class RenderSection {
         return this.origin;
     }
 
-    public VertexBuffer getBuffer(RenderType renderType) {
+    public VBO getBuffer(RenderType renderType) {
         return buffers.get(renderType);
     }
 
@@ -212,11 +221,21 @@ public class RenderSection {
         this.cancelTasks();
         this.compiledSection = CompiledSection.UNCOMPILED;
         this.dirty = true;
+
     }
 
     public void setDirty(boolean playerChanged) {
         this.playerChanged = playerChanged || this.dirty && this.playerChanged;
         this.dirty = true;
+        WorldRenderer.getInstance().setNeedsUpdate();
+    }
+
+    public void setLightReady(boolean b) {
+        this.lightReady = b;
+    }
+
+    public boolean isLightReady() {
+        return this.lightReady;
     }
 
     public void setCompiledSection(CompiledSection compiledSection) {
@@ -231,7 +250,7 @@ public class RenderSection {
 
     public void releaseBuffers() {
         this.reset();
-        this.buffers.values().forEach(VertexBuffer::close);
+        this.buffers.values().forEach(VBO::close);
     }
 
     public static class CompiledSection {

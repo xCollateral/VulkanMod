@@ -31,7 +31,7 @@ public class VBO {
 
     public VBO() {}
 
-    public void upload_(BufferBuilder.RenderedBuffer buffer) {
+    public void upload(BufferBuilder.RenderedBuffer buffer) {
         BufferBuilder.DrawState parameters = buffer.drawState();
 
         this.indexCount = parameters.indexCount();

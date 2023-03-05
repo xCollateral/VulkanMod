@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk.util;
 
 import net.minecraft.core.Direction;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 
@@ -31,6 +32,17 @@ public class Util {
             FloatBuffer fb = stack.mallocFloat(16);
             in.store(fb);
             out = new Matrix4f(fb);
+        }
+        return out;
+    }
+
+    public static Matrix3f convertMatrix(com.mojang.math.Matrix3f in) {
+        Matrix3f out;
+
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            FloatBuffer fb = stack.mallocFloat(9);
+            in.store(fb);
+            out = new Matrix3f(fb);
         }
         return out;
     }
