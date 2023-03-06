@@ -96,17 +96,8 @@ public class Drawer {
 
         if(!(vertexCount > 0)) return;
 
-        AutoIndexBuffer autoIndexBuffer;
-        switch (drawMode) {
-            case 7 -> autoIndexBuffer = this.quadsIndexBuffer;
-            case 6 -> autoIndexBuffer = this.triangleFanIndexBuffer;
-            case 5 -> autoIndexBuffer = this.triangleStripIndexBuffer;
-            default -> throw new RuntimeException("unknown drawType");
-        }
 
-        autoIndexBuffer.checkCapacity(vertexCount);
-
-        drawAutoIndexed(buffer, this.vertexBuffers[currentFrame], autoIndexBuffer.getIndexBuffer(), drawMode, vertexFormat, vertexCount);
+        drawAutoIndexed(buffer, this.vertexBuffers[currentFrame], drawMode, vertexFormat, vertexCount);
 
     }
 
@@ -419,7 +410,8 @@ public class Drawer {
         drawIndexed(vertexBuffer, indexBuffer, indexCount);
     }
 
-    private void drawAutoIndexed(ByteBuffer buffer, VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int drawMode, VertexFormat vertexFormat, int vertexCount) {
+    private void drawAutoIndexed(ByteBuffer buffer, VertexBuffer vertexBuffer, int drawMode, VertexFormat vertexFormat, int vertexCount) {
+        if(drawMode!=7) return;
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
         Pipeline boundPipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
@@ -428,12 +420,20 @@ public class Drawer {
 
         uploadAndBindUBOs(boundPipeline);
 
-        int indexCount;
-        if(drawMode == 7) indexCount = vertexCount * 3 / 2;
-        else if(drawMode == 6 || drawMode == 5) indexCount = (vertexCount - 2) * 3;
-        else throw new RuntimeException("unknown drawMode: " + drawMode);
 
-        drawIndexed(vertexBuffer, indexBuffer, indexCount);
+        this.quadsIndexBuffer.checkCapacity(vertexCount);
+
+        int indexCount = vertexCount * 3 / 2;
+
+        VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+
+        VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
+        VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
+        nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
+
+        vkCmdBindIndexBuffer(commandBuffer, this.quadsIndexBuffer.getIndexBuffer().getId(), this.quadsIndexBuffer.getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
+//            Profiler.Push("draw");
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 
     public void uploadAndBindUBOs(Pipeline pipeline) {

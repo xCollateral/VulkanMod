@@ -585,7 +585,7 @@ public class WorldRenderer {
         drawer.bindPipeline(pipeline);
 
         drawer.uploadAndBindUBOs(pipeline);
-
+        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
 
         for(final VBO vbo : sections)
         {
