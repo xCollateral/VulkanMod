@@ -28,7 +28,6 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
-import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.Drawer;
@@ -85,6 +84,14 @@ public class WorldRenderer {
     private Frustum frustum;
 
     RenderRegionCache renderRegionCache;
+    public static double camX;
+//    private static double camY;
+    public static double camZ;
+    public static double originX;
+    public static double originZ;
+    private static double prevCamX;
+    private static double prevCamZ;
+    private Matrix4f translationOffset;
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -438,6 +445,7 @@ public class WorldRenderer {
     }
 
     public void allChanged() {
+        resetOrigin();
         if (this.level != null) {
 //            this.graphicsChanged();
             this.level.clearTintCaches();
@@ -470,6 +478,11 @@ public class WorldRenderer {
             }
 
         }
+    }
+
+    private void resetOrigin() {
+        originX=0;
+        originZ=0;
     }
 
     public void setLevel(@Nullable ClientLevel level) {
@@ -590,7 +603,16 @@ public class WorldRenderer {
 
         VertexFormat vertexformat = renderType.format();
 
-        VRenderSystem.applyMVP(poseStack.last().pose(), projection);
+
+        //Use seperate matrix to avoid Incorrect translations propagating to Particles/Lines Layer
+
+//        poseStack.pushPose();
+//        {
+//            final Matrix4f pose = poseStack.last().pose();
+//            pose.multiplyWithTranslation((float) originX, (float) -camY, (float) originZ);
+            VRenderSystem.applyMVP(this.translationOffset, projection);
+//        }
+//        poseStack.popPose();
 
 
         Drawer drawer = Drawer.getInstance();
@@ -607,32 +629,20 @@ public class WorldRenderer {
 //        Profiler.setCurrentProfiler(p1);
 
         while (checker.get()) {
-            RenderSection renderSection = getter.get();
-
-            VBO vertexbuffer = renderSection.getBuffer(renderType);
-
-//            p1.push("start");
-//            p1.push("set_push-const");
-            VRenderSystem.setChunkOffset((float) (vertexbuffer.getX() - camX), (float) (vertexbuffer.getY() - camY), (float) (vertexbuffer.getZ() - camZ));
-//            p1.push("push_const");
-            drawer.pushConstants(pipeline);
-////
-            vertexbuffer.drawChunkLayer();
-//            Profiler.Push("end");
-
-//            flag1 = true;
+            getter.get().getBuffer(renderType).drawChunkLayer();
         }
 
 //        p1.end();
 
         //Need to reset push constant in case the pipeline will still be used for rendering
-        VRenderSystem.setChunkOffset(0, 0, 0);
-        drawer.pushConstants(pipeline);
+//        VRenderSystem.setChunkOffset(0, 0, 0);
+//        drawer.pushConstants(pipeline);
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
-        VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+        VRenderSystem.copyMVP(RenderSystem.getModelViewMatrix());
+
 
     }
 
@@ -686,6 +696,34 @@ public class WorldRenderer {
         int i = this.chunkGrid.chunks.length;
         int j = this.sectionsInFrustum.size();
         return String.format("Chunks: %d/%d D: %d, %s", j, i, this.lastViewDistance, this.taskDispatcher == null ? "null" : this.taskDispatcher.getStats());
+    }
+
+    public void updateCamTranslation(PoseStack pose, double d, double e, double g, Matrix4f matrix4f)
+    {
+        VRenderSystem.applyMVP(pose.last().pose(), matrix4f);
+        WorldRenderer.camX =d;
+
+        WorldRenderer.camZ =g;
+
+
+        originX+= (prevCamX - camX);
+        originZ+= (prevCamZ - camZ);
+        pose.pushPose();
+        {
+            final Matrix4f pose_ = pose.last().pose();
+            pose_.multiplyWithTranslation((float) originX, (float) -e, (float) originZ);
+            this.translationOffset =pose_;
+
+        }
+        pose.popPose();
+//        pose.multiplyWithTranslation((float) originX, (float) -e, (float) originZ);
+        prevCamX=camX;
+        prevCamZ=camZ;
+//        VRenderSystem.applyMVP(pose, matrix4f);
+
+
+
+
     }
 
     public static class QueueChunkInfo {

@@ -8,12 +8,14 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
@@ -51,12 +53,27 @@ public class VBO {
         this.indexType = parameters.indexType();
         this.mode = parameters.mode();
 
+        //TODO: Could Move to BufferBuilderM but need to access VBO/CHunk Origin to Translate/Offset the Vertices Correctly
+        if(!sort) translateVBO(buffer);
+
+
         this.configureVertexFormat(parameters, buffer.vertexBuffer());
         this.configureIndexBuffer(parameters, buffer.indexBuffer());
 
         buffer.release();
         preInitalised=false;
 
+    }
+
+    //WorkAround For PushConstants
+    private void translateVBO(BufferBuilder.RenderedBuffer buffer) {
+        final long addr = MemoryUtil.memAddress0(buffer.vertexBuffer());
+        for(int i = 0; i< buffer.vertexBuffer().remaining(); i+=32)
+        {
+            MemoryUtil.memPutFloat(addr+i,   (MemoryUtil.memGetFloat(addr+i)  +(float)(x- WorldRenderer.camX - WorldRenderer.originX)));
+            MemoryUtil.memPutFloat(addr+i+4, (MemoryUtil.memGetFloat(addr+i+4)+y));
+            MemoryUtil.memPutFloat(addr+i+8, (MemoryUtil.memGetFloat(addr+i+8)+(float)(z- WorldRenderer.camZ - WorldRenderer.originZ)));
+        }
     }
 
     private VertexFormat configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
