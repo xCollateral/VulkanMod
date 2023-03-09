@@ -42,13 +42,7 @@ public class RenderSection {
     @Nullable
     private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-    private final Map<RenderType, VBO> buffers =
-            //TODO later: find something better
-            new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) -> {
-        return renderType;
-    }, (renderType) -> {
-        return new VBO();
-    })));
+    private final Map<RenderType, VBO> buffers;
     private AABB bb;
     private boolean dirty = true;
     private boolean lightReady = false;
@@ -68,13 +62,20 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
+        buffers =
+        //TODO later: find something better
+        new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) ->
+                renderType, (renderType) -> new VBO(renderType, x, y, z))));
     }
 
     public void setOrigin(int x, int y, int z) {
         this.reset();
         this.origin.set(x, y, z);
-        this.bb = new AABB((double)x, (double)y, (double)z, (double)(x + 16), (double)(y + 16), (double)(z + 16));
-
+        this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
+        for(VBO vbo : buffers.values())
+        {
+            vbo.updateOrigin(x, y, z);
+        }
         for(Direction direction : Direction.values()) {
             this.relativeOrigins[direction.ordinal()].set(this.origin).move(direction, 16);
         }

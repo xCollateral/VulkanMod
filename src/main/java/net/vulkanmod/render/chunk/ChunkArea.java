@@ -38,6 +38,7 @@ public class ChunkArea {
 
     public void unbindSection(RenderSection section) {
         //TODO later find a better way than linear scan
+        section.releaseBuffers();
         for(int i = 0; i < this.sections.length; ++i) {
             if(this.sections[i] == section) {
                 this.sections[i] = null;

@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Matrix4f;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
@@ -13,11 +14,13 @@ import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
+    public boolean preInitalised=true;
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private VertexFormat.IndexType indexType;
@@ -28,8 +31,17 @@ public class VBO {
     private VertexFormat vertexFormat;
 
     private boolean autoIndexed = false;
+    private final RenderType renderType;
+    private int x;
+    private int y;
+    private int z;
 
-    public VBO() {}
+    public VBO(RenderType renderType, int x, int y, int z) {
+        this.renderType = renderType;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 
     public void upload(BufferBuilder.RenderedBuffer buffer) {
         BufferBuilder.DrawState parameters = buffer.drawState();
@@ -43,6 +55,7 @@ public class VBO {
         this.configureIndexBuffer(parameters, buffer.indexBuffer());
 
         buffer.release();
+        preInitalised=false;
 
     }
 
@@ -119,10 +132,28 @@ public class VBO {
 
         this.vertexCount = 0;
         this.indexCount = 0;
+        preInitalised=true;
     }
 
     public VertexFormat getFormat() {
         return this.vertexFormat;
     }
 
+    public void updateOrigin(int x, int y, int z) {
+        this.x=x;
+        this.y=y;
+        this.z=z;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getZ() {
+        return z;
+    }
 }

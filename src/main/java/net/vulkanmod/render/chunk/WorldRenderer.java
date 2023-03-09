@@ -258,25 +258,20 @@ public class WorldRenderer {
 
             this.scheduleUpdate(renderSection);
 
-            renderSection.compiledSection.renderTypes.forEach(
-                    renderType -> {
+            renderSection.compiledSection.renderTypes.stream().filter(renderType ->
+                    !renderSection.getBuffer(renderType).preInitalised).forEach(renderType -> {
                         if (RenderType.solid().equals(renderType)) {
                             solidChunks.add(renderSection);
-                        }
-                        else if (RenderType.cutout().equals(renderType)) {
+                        } else if (RenderType.cutout().equals(renderType)) {
                             cutoutChunks.add(renderSection);
-                        }
-                        else if (RenderType.cutoutMipped().equals(renderType)) {
+                        } else if (RenderType.cutoutMipped().equals(renderType)) {
                             cutoutMippedChunks.add(renderSection);
-                        }
-                        else if (RenderType.translucent().equals(renderType)) {
+                        } else if (RenderType.translucent().equals(renderType)) {
                             translucentChunks.add(renderSection);
-                        }
-                        else if (RenderType.tripwire().equals(renderType)) {
+                        } else if (RenderType.tripwire().equals(renderType)) {
                             tripwireChunks.add(renderSection);
                         }
-                    }
-            );
+            });
 
 //            mainLoop++;
 
@@ -615,11 +610,10 @@ public class WorldRenderer {
             RenderSection renderSection = getter.get();
 
             VBO vertexbuffer = renderSection.getBuffer(renderType);
-            BlockPos blockpos = renderSection.getOrigin();
 
 //            p1.push("start");
 //            p1.push("set_push-const");
-            VRenderSystem.setChunkOffset((float) ((double) blockpos.getX() - camX), (float) ((double) blockpos.getY() - camY), (float) ((double) blockpos.getZ() - camZ));
+            VRenderSystem.setChunkOffset((float) (vertexbuffer.getX() - camX), (float) (vertexbuffer.getY() - camY), (float) (vertexbuffer.getZ() - camZ));
 //            p1.push("push_const");
             drawer.pushConstants(pipeline);
 ////
