@@ -17,7 +17,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.chunk.RenderChunkRegion;
 import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.client.renderer.chunk.VisibilitySet;
@@ -165,7 +164,7 @@ public class ChunkTask {
                     List<CompletableFuture<Void>> list = Lists.newArrayList();
                     if(!compileResults.renderedLayers.isEmpty()) compiledChunk.isCompletelyEmpty = false;
                     compileResults.renderedLayers.forEach((renderType, renderedBuffer) -> {
-                        list.add(taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, this.renderSection.getBuffer(renderType)));
+                        list.add(taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, this.renderSection.getBuffer(renderType), false));
                         compiledChunk.renderTypes.add(renderType);
                     });
                     return Util.sequenceFailFast(list).handle((listx, throwable) -> {
@@ -412,7 +411,7 @@ public class ChunkTask {
                     if (this.cancelled.get()) {
                         return CompletableFuture.completedFuture(Result.CANCELLED);
                     } else {
-                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.getBuffer(RenderType.translucent())).thenApply((p_112898_) -> {
+                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.getBuffer(RenderType.translucent()), true).thenApply((p_112898_) -> {
                             return Result.CANCELLED;
                         });
                         return completablefuture.handle((p_199960_, p_199961_) -> {

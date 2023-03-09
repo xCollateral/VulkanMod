@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
 import net.minecraft.CrashReport;
@@ -178,18 +177,40 @@ public class TaskDispatcher {
 
     }
 
-    public CompletableFuture<Void> scheduleUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer) {
-        return CompletableFuture.runAsync(() -> {
-        }, this.toUpload::add).thenCompose((p_199940_) -> {
-            return this.doUploadChunkLayer(renderedBuffer, vertexBuffer);
-        });
+    public CompletableFuture<Void> scheduleUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
+
+        if (sortSkip(renderedBuffer, vertexBuffer, sort))
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        if (isVBODuplicate(renderedBuffer, vertexBuffer, sort))
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return CompletableFuture.runAsync(() ->
+                vertexBuffer.upload(renderedBuffer, sort), this.toUpload::add);
 //        this.toUpload.add(() -> doUploadChunkLayer(renderedBuffer, vertexBuffer));
 //        return CompletableFuture.completedFuture(null);
     }
 
-    private CompletableFuture<Void> doUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer) {
-        vertexBuffer.upload(renderedBuffer);
-        return CompletableFuture.completedFuture(null);
+    private static boolean sortSkip(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
+        boolean b = sort && vertexBuffer.hasAbort;
+        if(b)
+        {
+            vertexBuffer.hasAbort=false; renderedBuffer.release();
+        }
+        return b;
+    }
+
+    private static boolean isVBODuplicate(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
+        boolean b = !sort && vertexBuffer.indexCount == renderedBuffer.drawState().indexCount();
+        if(b)
+        {
+            vertexBuffer.hasAbort=true; renderedBuffer.release();
+        }
+        return b;
     }
 
     public void dispose() {

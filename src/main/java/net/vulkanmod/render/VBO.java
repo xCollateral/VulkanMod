@@ -14,17 +14,17 @@ import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
     public boolean preInitalised=true;
+    public boolean hasAbort=false;
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private VertexFormat.IndexType indexType;
-    private int indexCount;
+    public int indexCount;
     private int vertexCount;
     private VertexFormat.Mode mode;
     private boolean sequentialIndices;
@@ -43,7 +43,7 @@ public class VBO {
         this.z = z;
     }
 
-    public void upload(BufferBuilder.RenderedBuffer buffer) {
+    public void upload(BufferBuilder.RenderedBuffer buffer, boolean sort) {
         BufferBuilder.DrawState parameters = buffer.drawState();
 
         this.indexCount = parameters.indexCount();
