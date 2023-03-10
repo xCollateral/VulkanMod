@@ -27,7 +27,9 @@ There are none! Simply download the mod from one of the download buttons above a
 ## Known Issues
 
 - Linux and macOS may not work. We are working on ways to improve those platforms.
+
 - Most mods that affect rendering in any way are likely to not work with this mod. Read note one for more info.
+
 - We don't recommend launchers that are **not** the Mojang Launcher as using a custom launcher may break this mod!
 
 ## Notes
