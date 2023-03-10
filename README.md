@@ -22,13 +22,16 @@ Demostration Video:
 
 ### Steps:
 
-Simply download the mod from one of the download buttons above and then move the JAR file into your **mods** folder.
+There are none! Simply download the mod from one of the download buttons above and then move the JAR file into your **mods** folder like any other mod.
 
 ## Known Issues
 
-- Linux and macOS may not work.
+- Linux and macOS may not work. We are working on ways to improve those platforms.
+- Most mods that affect rendering in any way are likely to not work with this mod. Read the first note for more info.
+- We do not recommend launchers that are **not** the Mojang Launcher as using a custom launcher may break this mod!
 
 ## Notes
-This is still a pre-alpha mod. Bugs are to be expected.
-
+- If you come across any mod that do not work with this mod, please create an issue inside **this** repo and **do not** report it to the mod developer.
+- Sodium will **NEVER** be supported! This is because it directly changes elements of Minecraft that we do as well and in turn would be a waste of time to use.
+- If you need support/help with VulkanMod, or simply want to know when updates are released, you can join our Discord server [here](https://discord.gg/EDgQ88tJAk).
 </div>
