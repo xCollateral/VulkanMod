@@ -1,6 +1,6 @@
 <div align='center'>
 
-[![Logo](https://media.discordapp.net/attachments/963349566839738369/969920960373334076/Vlogo.png?width=300&height=300)](#)
+[![Logo](https://cdn.discordapp.com/attachments/911371005811916830/1083801112127217714/Untitled-1.png)](#)
 
 # VulkanMod
 
