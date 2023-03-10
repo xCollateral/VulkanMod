@@ -1,9 +1,6 @@
 <div align='center'>
 
-[![Logo](https://cdn.discordapp.com/attachments/911371005811916830/1083801112127217714/Untitled-1.png)](#)
-
-# VulkanMod
-
+[![Logo](https://cdn.discordapp.com/attachments/911371005811916830/1083802133729652927/Untitled-1.png)](#)
 
 ![Download](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total?color=red&logo=github&style=for-the-badge)
 [![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/FVXg7AYR2Q)
