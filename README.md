@@ -30,7 +30,7 @@ There are none! Simply download the mod from one of the download buttons above a
 
 - Most mods that affect rendering in any way are likely to not work with this mod. Read note one for more info.
 
-- We don't recommend launchers that are **not** the Mojang Launcher as using a custom launcher may break this mod!
+- Custom launchers are not recommended as they can cause issues with this mod. We are working on better compat for this but support is not guaranteed. 
 
 ## Notes
 - If you come across any mod that do not work with this mod, please create an issue inside **this** repo and **do not** report it to the mod developer.
