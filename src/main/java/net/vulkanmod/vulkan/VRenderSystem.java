@@ -144,7 +144,7 @@ public class VRenderSystem {
         mat.store(projectionMatrix.asFloatBuffer());
     }
 
-    public static void copyMVP(Matrix4f MV) {
+    public static void copyMVP() {
 //        applyModelViewMatrix(MV);
         long srcAddr = MemoryUtil.memAddress0(projectionMatrix);
         long dstAddr = MemoryUtil.memAddress0(MVP);
@@ -296,4 +296,5 @@ public class VRenderSystem {
     public static void depthFunc(int p_69457_) {
         depthFun = p_69457_;
     }
+
 }

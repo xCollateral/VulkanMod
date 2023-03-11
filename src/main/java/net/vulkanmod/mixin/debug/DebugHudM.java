@@ -11,6 +11,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.Initializer.getVersion;
+import static net.vulkanmod.render.chunk.util.VBOUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 @Mixin(DebugScreenOverlay.class)
@@ -72,6 +74,19 @@ public abstract class DebugHudM {
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
         strings.add("Vulkan Version:  " + VkVersionString);
         strings.add("");
+        strings.add("==VBO Stats==");
+        strings.add("Solid: "+ solidChunks.size());
+        strings.add("Cutout: "+ cutoutChunks.size());
+        strings.add("cutoutMipped: "+ cutoutMippedChunks.size());
+        strings.add("Translucent: "+ translucentChunks.size());
+        strings.add("Tripwire: "+ tripwireChunks.size());
+        strings.add("");
+        strings.add("Total: "+ (solidChunks.size() +
+                cutoutChunks.size() +
+                cutoutMippedChunks.size() +
+                translucentChunks.size() +
+                tripwireChunks.size() +
+                tripwireChunks.size()));
 
         return strings;
     }

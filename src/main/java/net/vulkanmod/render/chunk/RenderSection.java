@@ -64,7 +64,7 @@ public class RenderSection {
         buffers =
         //TODO later: find something better
         new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) ->
-                renderType, (renderType) -> new VBO(x, y, z))));
+                renderType, (renderType) -> new VBO(renderType.name, x, y, z))));
     }
 
     public void setOrigin(int x, int y, int z) {
