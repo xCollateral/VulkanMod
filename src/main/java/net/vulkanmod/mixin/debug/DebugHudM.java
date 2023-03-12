@@ -30,11 +30,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.Initializer.getVersion;
+import static org.lwjgl.vulkan.VK10.*;
 
 @Mixin(DebugScreenOverlay.class)
 public abstract class DebugHudM {
 
     @Shadow @Final private Minecraft minecraft;
+
+    private static final String VkVersionString=getVulkanVer();
 
     @Shadow
     private static long bytesToMegabytes(long bytes) {
@@ -67,9 +70,14 @@ public abstract class DebugHudM {
         strings.add("CPU: " + DeviceInfo.cpuInfo);
         strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
+        strings.add("Vulkan Version:  " + VkVersionString);
         strings.add("");
 
         return strings;
+    }
+
+    private static String getVulkanVer() {
+        return VK_VERSION_MAJOR(Vulkan.vkVer)+"."+VK_VERSION_MINOR(Vulkan.vkVer)+"."+VK_VERSION_PATCH(Vulkan.vkVer);
     }
 
     private long getOffHeapMemory() {
