@@ -553,14 +553,7 @@ public class Vulkan {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-            QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-            if(!indices.graphicsFamily.equals(indices.presentFamily)) {
-                createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
-            } else {
-                createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-            }
+            createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
             createInfo.preTransform(swapChainSupport.capabilities.currentTransform());
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);

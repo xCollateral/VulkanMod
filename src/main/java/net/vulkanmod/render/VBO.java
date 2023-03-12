@@ -15,6 +15,7 @@ import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -33,13 +34,11 @@ public class VBO {
     private VertexFormat vertexFormat;
 
     private boolean autoIndexed = false;
-    private final RenderType renderType;
     private int x;
     private int y;
     private int z;
 
-    public VBO(RenderType renderType, int x, int y, int z) {
-        this.renderType = renderType;
+    public VBO(int x, int y, int z) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -53,7 +52,7 @@ public class VBO {
         this.indexType = parameters.indexType();
         this.mode = parameters.mode();
 
-        //TODO: Could Move to BufferBuilderM but need to access VBO/CHunk Origin to Translate/Offset the Vertices Correctly
+
         if(!sort) translateVBO(buffer);
 
 
@@ -66,13 +65,15 @@ public class VBO {
     }
 
     //WorkAround For PushConstants
+    //Likely could be moved to an earlier vertex Assembly/Builder state
     private void translateVBO(BufferBuilder.RenderedBuffer buffer) {
         final long addr = MemoryUtil.memAddress0(buffer.vertexBuffer());
+        //Use constant Attribute size to encourage loop unrolling
         for(int i = 0; i< buffer.vertexBuffer().remaining(); i+=32)
         {
-            MemoryUtil.memPutFloat(addr+i,   (MemoryUtil.memGetFloat(addr+i)  +(float)(x- WorldRenderer.camX - WorldRenderer.originX)));
-            MemoryUtil.memPutFloat(addr+i+4, (MemoryUtil.memGetFloat(addr+i+4)+y));
-            MemoryUtil.memPutFloat(addr+i+8, (MemoryUtil.memGetFloat(addr+i+8)+(float)(z- WorldRenderer.camZ - WorldRenderer.originZ)));
+            VUtil.UNSAFE.putFloat(addr+i,   (VUtil.UNSAFE.getFloat(addr+i)  +(float)(x- WorldRenderer.camX - WorldRenderer.originX)));
+            VUtil.UNSAFE.putFloat(addr+i+4, (VUtil.UNSAFE.getFloat(addr+i+4)+y));
+            VUtil.UNSAFE.putFloat(addr+i+8, (VUtil.UNSAFE.getFloat(addr+i+8)+(float)(z- WorldRenderer.camZ - WorldRenderer.originZ)));
         }
     }
 
@@ -119,7 +120,7 @@ public class VBO {
 
             RenderSystem.setShader(() -> shader);
 
-            VRenderSystem.applyMVP(MV, P);
+            VRenderSystem.applyMVPAffine(MV, P);
 
             Drawer drawer = Drawer.getInstance();
             drawer.draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
@@ -131,14 +132,12 @@ public class VBO {
 
     public void drawChunkLayer() {
         if (this.indexCount != 0) {
-
-            RenderSystem.assertOnRenderThread();
-            Drawer drawer = Drawer.getInstance();
-            drawer.drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            Drawer.getInstance().drawIndexed(vertexBuffer, indexBuffer, indexCount);
         }
     }
 
     public void close() {
+        if(preInitalised) return;
         if(vertexCount <= 0) return;
         vertexBuffer.freeBuffer();
         vertexBuffer = null;

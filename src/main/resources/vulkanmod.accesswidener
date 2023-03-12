@@ -5,3 +5,17 @@ accessible field net/minecraft/client/renderer/LevelRenderer$RenderChunkInfo chu
 accessible class net/minecraft/client/model/geom/ModelPart$Polygon
 accessible class net/minecraft/client/model/geom/ModelPart$Vertex
 accessible class net/minecraft/client/gui/Gui$HeartType
+
+accessible field net/minecraft/client/renderer/RenderType SOLID Lnet/minecraft/client/renderer/RenderType;
+accessible field net/minecraft/client/renderer/RenderType CUTOUT_MIPPED Lnet/minecraft/client/renderer/RenderType;
+accessible field net/minecraft/client/renderer/RenderType CUTOUT Lnet/minecraft/client/renderer/RenderType;
+accessible field net/minecraft/client/renderer/RenderType TRANSLUCENT Lnet/minecraft/client/renderer/RenderType;
+accessible field net/minecraft/client/renderer/RenderType TRIPWIRE Lnet/minecraft/client/renderer/RenderType;
+accessible field net/minecraft/client/renderer/RenderStateShard name Ljava/lang/String;
+accessible class net/minecraft/client/renderer/RenderStateShard$ShaderStateShard
+accessible field net/minecraft/client/renderer/RenderStateShard$ShaderStateShard shader Ljava/util/Optional;
+accessible field net/minecraft/client/renderer/RenderStateShard RENDERTYPE_SOLID_SHADER Lnet/minecraft/client/renderer/RenderStateShard$ShaderStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard RENDERTYPE_CUTOUT_MIPPED_SHADER Lnet/minecraft/client/renderer/RenderStateShard$ShaderStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard RENDERTYPE_CUTOUT_SHADER Lnet/minecraft/client/renderer/RenderStateShard$ShaderStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard RENDERTYPE_TRANSLUCENT_SHADER Lnet/minecraft/client/renderer/RenderStateShard$ShaderStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard RENDERTYPE_TRIPWIRE_SHADER Lnet/minecraft/client/renderer/RenderStateShard$ShaderStateShard;

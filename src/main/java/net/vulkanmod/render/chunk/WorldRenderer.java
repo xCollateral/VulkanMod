@@ -10,9 +10,7 @@ import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderBuffers;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.resources.model.ModelBakery;
@@ -28,6 +26,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
+import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.Drawer;
@@ -36,10 +35,7 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import com.mojang.math.Matrix4f;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.function.Supplier;
 
 public class WorldRenderer {
@@ -75,11 +71,11 @@ public class WorldRenderer {
     private double yTransparentOld;
     private double zTransparentOld;
 
-    public ObjectArrayList<RenderSection> solidChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> cutoutChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> cutoutMippedChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> tripwireChunks = new ObjectArrayList<>();
-    public ObjectArrayList<RenderSection> translucentChunks = new ObjectArrayList<>();
+    public ObjectArrayList<VBO> solidChunks = new ObjectArrayList<>(1024);
+    public ObjectArrayList<VBO> cutoutChunks = new ObjectArrayList<>(1024);
+    public ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
+    public ObjectArrayList<VBO> tripwireChunks = new ObjectArrayList<>(1024);
+    public ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
 
     private Frustum frustum;
 
@@ -267,16 +263,17 @@ public class WorldRenderer {
 
             renderSection.compiledSection.renderTypes.stream().filter(renderType ->
                     !renderSection.getBuffer(renderType).preInitalised).forEach(renderType -> {
-                        if (RenderType.solid().equals(renderType)) {
-                            solidChunks.add(renderSection);
-                        } else if (RenderType.cutout().equals(renderType)) {
-                            cutoutChunks.add(renderSection);
-                        } else if (RenderType.cutoutMipped().equals(renderType)) {
-                            cutoutMippedChunks.add(renderSection);
-                        } else if (RenderType.translucent().equals(renderType)) {
-                            translucentChunks.add(renderSection);
-                        } else if (RenderType.tripwire().equals(renderType)) {
-                            tripwireChunks.add(renderSection);
+                        final VBO buffer = renderSection.getBuffer(renderType);
+                        if (RenderType.SOLID == renderType) {
+                            solidChunks.add(buffer);
+                        } else if (RenderType.CUTOUT == renderType) {
+                            cutoutChunks.add(buffer);
+                        } else if (RenderType.CUTOUT_MIPPED == renderType) {
+                            cutoutMippedChunks.add(buffer);
+                        } else if (RenderType.TRANSLUCENT == renderType) {
+                            translucentChunks.add(buffer);
+                        } else if (RenderType.TRIPWIRE == renderType) {
+                            tripwireChunks.add(buffer);
                         }
             });
 
@@ -526,33 +523,41 @@ public class WorldRenderer {
         }
     }
 
-    public void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
+    public enum RenderTypes
+    {
+        SOLID(RenderStateShard.ShaderStateShard.RENDERTYPE_SOLID_SHADER),
+        CUTOUT_MIPPED(RenderStateShard.ShaderStateShard.RENDERTYPE_CUTOUT_MIPPED_SHADER),
+        CUTOUT(RenderStateShard.ShaderStateShard.RENDERTYPE_CUTOUT_SHADER),
+        TRANSLUCENT(RenderStateShard.ShaderStateShard.RENDERTYPE_TRANSLUCENT_SHADER),
+        TRIPWIRE(RenderStateShard.ShaderStateShard.RENDERTYPE_TRIPWIRE_SHADER);
+        private final String name;
+        private final ShaderInstance shader;
+
+        RenderTypes(RenderStateShard.ShaderStateShard solid) {
+
+            this.name = solid.name;
+            this.shader = solid.shader.get().get();
+        };
+    }
+
+    public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
         Profiler p = Profiler.getProfiler("chunks");
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
 
-        String layerName;
-        if (solid.equals(renderType)) {
-            layerName = "solid";
-        } else if (cutout.equals(renderType)) {
-            layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
-            layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
-            layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
-            layerName = "translucent";
-        } else layerName = "unk";
+        final RenderTypes layer = switch (renderType.name) {
+            case "solid" -> RenderTypes.SOLID;
+            case "cutout_mipped" -> RenderTypes.CUTOUT_MIPPED;
+            case "cutout" -> RenderTypes.CUTOUT;
+            case "translucent" -> RenderTypes.TRANSLUCENT;
+            case "tripwire" -> RenderTypes.TRIPWIRE;
+            default -> RenderTypes.SOLID;
+        };
 
-        p.pushMilestone("layer " + layerName);
+        p.pushMilestone("layer " + layer.name);
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-        if (renderType == RenderType.translucent()) {
+        if (layer == RenderTypes.TRANSLUCENT) {
             this.minecraft.getProfiler().push("translucent_sort");
             double d0 = camX - this.xTransparentOld;
             double d1 = camY - this.yTransparentOld;
@@ -564,7 +569,7 @@ public class WorldRenderer {
                 int j = 0;
 
                 for(QueueChunkInfo chunkInfo : this.sectionsInFrustum) {
-                    if (j < 15 && chunkInfo.chunk.resortTransparency(renderType, this.taskDispatcher)) {
+                    if (j < 15 && chunkInfo.chunk.resortTransparency(this.taskDispatcher)) {
                         ++j;
                     }
                 }
@@ -577,59 +582,43 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
         });
-        boolean flag = renderType != RenderType.translucent();
+        boolean flag = layer != RenderTypes.TRANSLUCENT;
 
-        ObjectArrayList<RenderSection> sections;
-        if (RenderType.solid().equals(renderType)) {
-            sections = this.solidChunks;
-        }
-        else if (RenderType.cutout().equals(renderType)) {
-            sections = this.cutoutChunks;
-        }
-        else if (RenderType.cutoutMipped().equals(renderType)) {
-            sections = this.cutoutMippedChunks;
-        }
-        else if (RenderType.translucent().equals(renderType)) {
-            sections = this.translucentChunks;
-        }
-        else if (RenderType.tripwire().equals(renderType)) {
-            sections = this.tripwireChunks;
-        } else {
-            sections = ObjectArrayList.of();
-        }
+        final ObjectArrayList<VBO> sections =
+        switch (layer) {
+            case SOLID -> this.solidChunks;
+            case CUTOUT_MIPPED -> this.cutoutMippedChunks;
+            case CUTOUT -> this.cutoutChunks;
+            case TRANSLUCENT -> this.translucentChunks;
+            case TRIPWIRE -> this.tripwireChunks;
+        };
 
 //        ObjectListIterator<WorldRenderer.QueueChunkInfo> iterator = this.sectionsInFrustum.listIterator(flag ? 0 : this.sectionsInFrustum.size());
-        ObjectListIterator<RenderSection> iterator = sections.listIterator(flag ? 0 : sections.size());
+        ObjectListIterator<VBO> iterator = sections.listIterator(flag ? 0 : sections.size());
 
-        VertexFormat vertexformat = renderType.format();
+
 
 
         //Use seperate matrix to avoid Incorrect translations propagating to Particles/Lines Layer
 
-//        poseStack.pushPose();
-//        {
-//            final Matrix4f pose = poseStack.last().pose();
-//            pose.multiplyWithTranslation((float) originX, (float) -camY, (float) originZ);
-            VRenderSystem.applyMVP(this.translationOffset, projection);
-//        }
-//        poseStack.popPose();
+        VRenderSystem.applyMVP(this.translationOffset, projection);
 
 
         Drawer drawer = Drawer.getInstance();
-        Pipeline pipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
+        Pipeline pipeline = ((ShaderMixed)(layer.shader)).getPipeline();
         drawer.bindPipeline(pipeline);
 
         drawer.uploadAndBindUBOs(pipeline);
 
         Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
-        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;
+        Supplier<VBO> getter = flag ? iterator::next : iterator::previous;
 
 //        Profiler p1 = Profiler.getProfiler("drawCmds");
 //        p1.start();
 //        Profiler.setCurrentProfiler(p1);
 
         while (checker.get()) {
-            getter.get().getBuffer(renderType).drawChunkLayer();
+            getter.get().drawChunkLayer();
         }
 
 //        p1.end();
@@ -640,7 +629,7 @@ public class WorldRenderer {
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
-
+        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
         VRenderSystem.copyMVP(RenderSystem.getModelViewMatrix());
 
 

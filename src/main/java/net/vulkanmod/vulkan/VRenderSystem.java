@@ -123,15 +123,13 @@ public class VRenderSystem {
 //        GlStateManager._enableTexture();
     }
 
-    public static void copyMVP(Matrix4f MV) {
-        applyModelViewMatrix(MV);
-        set();
-    }
     public static void applyMVPAffine(Matrix4f MV, Matrix4f P) {
         applyModelViewMatrix(MV);
         applyProjectionMatrix(P);
         calculateMVPAffine();
-    }public static void applyMVP(Matrix4f MV, Matrix4f P) {
+    }
+
+    public static void applyMVP(Matrix4f MV, Matrix4f P) {
         applyModelViewMatrix(MV);
         applyProjectionMatrix(P);
         calculateMVP();
@@ -146,10 +144,13 @@ public class VRenderSystem {
         mat.store(projectionMatrix.asFloatBuffer());
     }
 
-    public static void set() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.asFloatBuffer());
+    public static void copyMVP(Matrix4f MV) {
+//        applyModelViewMatrix(MV);
+        long srcAddr = MemoryUtil.memAddress0(projectionMatrix);
+        long dstAddr = MemoryUtil.memAddress0(MVP);
 
-        MV.get(MVP);
+        for (int i = 0; i < 8; i++)
+            MemoryUtil.memPutLong(dstAddr + (i << 3), MemoryUtil.memGetLong(srcAddr + (i << 3)));
     }
     public static void calculateMVPAffine() {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.asFloatBuffer());

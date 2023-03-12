@@ -3,7 +3,6 @@ package net.vulkanmod.render.chunk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexBuffer;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import net.minecraft.Util;
@@ -65,7 +64,7 @@ public class RenderSection {
         buffers =
         //TODO later: find something better
         new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) ->
-                renderType, (renderType) -> new VBO(renderType, x, y, z))));
+                renderType, (renderType) -> new VBO(x, y, z))));
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -87,13 +86,13 @@ public class RenderSection {
 
     }
 
-    public boolean resortTransparency(RenderType renderType, TaskDispatcher taskDispatcher) {
+    public boolean resortTransparency(TaskDispatcher taskDispatcher) {
         CompiledSection compiledSection1 = this.getCompiledSection();
         if (this.lastResortTransparencyTask != null) {
             this.lastResortTransparencyTask.cancel();
         }
 
-        if (!compiledSection1.renderTypes.contains(renderType)) {
+        if (!compiledSection1.renderTypes.contains(RenderType.TRANSLUCENT)) {
             return false;
         } else {
             this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);

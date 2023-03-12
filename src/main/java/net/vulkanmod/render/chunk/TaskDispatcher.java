@@ -179,22 +179,12 @@ public class TaskDispatcher {
 
     public CompletableFuture<Void> scheduleUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
 
-        if (sortSkip(renderedBuffer, vertexBuffer, sort))
-        {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        if (isVBODuplicate(renderedBuffer, vertexBuffer, sort))
-        {
-            return CompletableFuture.completedFuture(null);
-        }
-
         return CompletableFuture.runAsync(() ->
                 vertexBuffer.upload(renderedBuffer, sort), this.toUpload::add);
-//        this.toUpload.add(() -> doUploadChunkLayer(renderedBuffer, vertexBuffer));
-//        return CompletableFuture.completedFuture(null);
+//
     }
 
+    //UploadSkip has problems with Lighting updates and Translucent VBOs
     private static boolean sortSkip(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
         boolean b = sort && vertexBuffer.hasAbort;
         if(b)
@@ -204,6 +194,7 @@ public class TaskDispatcher {
         return b;
     }
 
+    //UploadSkip has problems with Lighting updates and Translucent VBOs
     private static boolean isVBODuplicate(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
         boolean b = !sort && vertexBuffer.indexCount == renderedBuffer.drawState().indexCount();
         if(b)

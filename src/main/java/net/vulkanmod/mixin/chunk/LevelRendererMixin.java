@@ -105,7 +105,7 @@ private void renderChunkLayer(PoseStack poseStack, float f, long l, boolean bl, 
      */
     @Overwrite
     private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
-        this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
+        this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, projectionMatrix);
     }
 
     /**
