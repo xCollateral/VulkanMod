@@ -1,14 +1,9 @@
 package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.util.VUtil;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
 
-import static net.vulkanmod.vulkan.memory.MemoryManager.*;
-import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class StagingBuffer extends Buffer {
@@ -18,11 +13,6 @@ public class StagingBuffer extends Buffer {
         this.usedBytes = 0;
         this.offset = 0;
 
-        this.createStagingBuffer(bufferSize);
-    }
-
-    //TODO: use createBuffer instead
-    private void createStagingBuffer(int bufferSize) {
         this.createBuffer(bufferSize);
     }
 
@@ -41,9 +31,8 @@ public class StagingBuffer extends Buffer {
     }
 
     private void resizeBuffer(int newSize) {
-        //TODO
         MemoryManager.getInstance().addToFreeable(this);
-        createStagingBuffer(newSize);
+        this.createBuffer(newSize);
 
         System.out.println("resized staging buffer to: " + newSize);
     }

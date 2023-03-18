@@ -28,7 +28,6 @@ public class UniformBuffers {
     private void createUniformBuffers(int size) {
         this.bufferSize = size;
 
-        //TODO update image size
         uniformBuffers = new ArrayList<>(imagesSize);
 
         for(int i = 0; i < imagesSize; ++i) {
@@ -82,6 +81,7 @@ public class UniformBuffers {
         }
 
         public void uploadUBO(ByteBuffer buffer, int offset) {
+//            MemoryManager.getInstance().Copy(this.data ,(data) -> VUtil.memcpy(data.getByteBuffer(0, (int) bufferSize), buffer, offset));
             VUtil.memcpy(this.data.getByteBuffer(0, (int) bufferSize), buffer, offset);
 
         }
