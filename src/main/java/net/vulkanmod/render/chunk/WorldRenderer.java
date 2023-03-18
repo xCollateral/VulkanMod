@@ -32,7 +32,7 @@ import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Pipeline;
+import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.VRenderSystem;
 import com.mojang.math.Matrix4f;
 
@@ -382,35 +382,6 @@ public class WorldRenderer {
         RenderRegionCache renderregioncache = new RenderRegionCache();
         BlockPos cameraPos = camera.getBlockPosition();
         List<RenderSection> list = Lists.newArrayList();
-
-        //TODO later: find a better way
-//        for(QueueChunkInfo chunkInfo : this.sectionsInFrustum) {
-//            RenderSection renderSection = chunkInfo.chunk;
-//            ChunkPos chunkpos = new ChunkPos(renderSection.getOrigin());
-//            if (renderSection.isDirty()
-//                    && this.level.getChunk(chunkpos.x, chunkpos.z).isClientLightReady()) {
-//                boolean flag = false;
-//                if (this.minecraft.options.prioritizeChunkUpdates().get() != PrioritizeChunkUpdates.NEARBY) {
-//                    if (this.minecraft.options.prioritizeChunkUpdates().get() == PrioritizeChunkUpdates.PLAYER_AFFECTED) {
-//                        flag = renderSection.isDirtyFromPlayer();
-//                    }
-//                } else {
-//                    BlockPos blockpos1 = renderSection.getOrigin().offset(8, 8, 8);
-//                    flag = blockpos1.distSqr(cameraPos) < 768.0D || renderSection.isDirtyFromPlayer();
-//                }
-//
-//                if (flag) {
-//                    this.minecraft.getProfiler().push("build_near_sync");
-//                    renderSection.rebuildChunkSync(this.taskDispatcher, renderregioncache);
-//                    renderSection.setNotDirty();
-//                    this.minecraft.getProfiler().pop();
-//                } else {
-//                    list.add(renderSection);
-//                }
-//                list.add(renderSection);
-//            }
-//
-//        }
 
         this.minecraft.getProfiler().popPush("upload");
         this.taskDispatcher.uploadAllPendingUploads();

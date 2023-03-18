@@ -1,6 +1,4 @@
-package net.vulkanmod.vulkan.shader;
-
-import net.vulkanmod.vulkan.util.MappedBuffer;
+package net.vulkanmod.vulkan.shader.layout;
 
 import java.util.List;
 

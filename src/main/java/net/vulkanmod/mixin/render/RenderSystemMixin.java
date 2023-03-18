@@ -12,8 +12,8 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Pipeline;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,6 +39,8 @@ public abstract class RenderSystemMixin {
     @Shadow
     public static void assertOnGameThreadOrInit() {
     }
+
+    @Shadow @Final private static float[] shaderFogColor;
 
     /**
      * @author
@@ -205,8 +207,17 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
+    public static void blendEquation(int i) {
+        assertOnRenderThread();
+        //TODO
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
     public static void enableBlend() {
-        Drawer.currentBlendState = Pipeline.DEFAULT_BLEND_STATE;
+        VRenderSystem.enableBlend();
     }
 
     /**
@@ -214,15 +225,15 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void disableBlend() {
-        Drawer.currentBlendState = Pipeline.NO_BLEND_STATE;
+        VRenderSystem.disableBlend();
     }
 
     /**
      * @author
      */
     @Overwrite(remap = false)
-    public static void blendFunc(GlStateManager.SourceFactor p_69409_, GlStateManager.DestFactor p_69410_) {
-        Drawer.currentBlendState = new Pipeline.BlendState(p_69409_, p_69410_, p_69409_, p_69410_);
+    public static void blendFunc(GlStateManager.SourceFactor sourceFactor, GlStateManager.DestFactor destFactor) {
+        VRenderSystem.blendFunc(sourceFactor, destFactor);
     }
 
     /**
@@ -230,7 +241,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void blendFunc(int srcFactor, int dstFactor) {
-        Drawer.currentBlendState = new Pipeline.BlendState(srcFactor, dstFactor, srcFactor, dstFactor);
+        VRenderSystem.blendFunc(srcFactor, dstFactor);
     }
 
     /**
@@ -238,7 +249,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void blendFuncSeparate(GlStateManager.SourceFactor p_69417_, GlStateManager.DestFactor p_69418_, GlStateManager.SourceFactor p_69419_, GlStateManager.DestFactor p_69420_) {
-        Drawer.currentBlendState = new Pipeline.BlendState(p_69417_, p_69418_, p_69419_, p_69420_);
+        VRenderSystem.blendFuncSeparate(p_69417_, p_69418_, p_69419_, p_69420_);
     }
 
     /**
@@ -246,7 +257,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
-        Drawer.currentBlendState = new Pipeline.BlendState(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
+        VRenderSystem.blendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
     }
 
     /**
@@ -337,14 +348,27 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    private static void _setShaderColor(float p_157160_, float p_157161_, float p_157162_, float p_157163_) {
-        shaderColor[0] = p_157160_;
-        shaderColor[1] = p_157161_;
-        shaderColor[2] = p_157162_;
-        shaderColor[3] = p_157163_;
+    private static void _setShaderColor(float r, float g, float b, float a) {
+        shaderColor[0] = r;
+        shaderColor[1] = g;
+        shaderColor[2] = b;
+        shaderColor[3] = a;
 
         //Vulkan
-        VRenderSystem.setShaderColor(p_157160_, p_157161_, p_157162_, p_157163_);
+        VRenderSystem.setShaderColor(r, g, b, a);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    private static void _setShaderFogColor(float f, float g, float h, float i) {
+        shaderFogColor[0] = f;
+        shaderFogColor[1] = g;
+        shaderFogColor[2] = h;
+        shaderFogColor[3] = i;
+
+        VRenderSystem.setShaderFogColor(f, g, h, i);
     }
 
     /**

@@ -66,6 +66,9 @@
     "vertex.VertexConsumersM$DoubleM",
     "vertex.VertexConsumersM$SheetDecalM",
 
+    "compatibility.EffectInstanceM",
+    "compatibility.UniformM",
+
     "ClientLevelM",
     "WindowMixin"
   ],

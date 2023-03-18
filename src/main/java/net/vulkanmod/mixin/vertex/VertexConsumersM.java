@@ -42,27 +42,12 @@ public class VertexConsumersM {
 
         @Shadow @Final private Matrix4f cameraInversePose;
 
-        @Shadow protected abstract void resetState();
-
-        @Shadow private float nx;
-
         @Override
-        //TODO see endVertex()
         public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
             float nx = VertexUtil.unpackN1(packedNormal);
             float ny = VertexUtil.unpackN2(packedNormal);
             float nz = VertexUtil.unpackN3(packedNormal);
 
-//            Vector3f vector3f = this.normalInversePose.transform(new Vector3f(nx, ny, nz));
-//            Direction direction = Direction.getNearest(vector3f.x(), vector3f.y(), vector3f.z());
-//            Vector4f vector4f = this.cameraInversePose.transform(new Vector4f(x, y, z, 1.0F));
-//            vector4f.rotateY(3.1415927F);
-//            vector4f.rotateX(-1.5707964F);
-//            vector4f.rotate(direction.getRotation());
-//            float f = -vector4f.x() * this.textureScale;
-//            float g = -vector4f.y() * this.textureScale;
-
-//            Vector3f vector3f = new Vector3f(this.nx, this.ny, this.nz);
             Vector3f vector3f = new Vector3f(nx, ny, nz);
             vector3f.transform(this.normalInversePose);
             Direction direction = Direction.getNearest(vector3f.x(), vector3f.y(), vector3f.z());
@@ -75,11 +60,6 @@ public class VertexConsumersM {
             float g = -vector4f.y();
             this.delegate.vertex(x, y, z).color(1.0F, 1.0F, 1.0F, 1.0F).uv(f, g).uv2(light).normal(nx, ny, nz).endVertex();
 
-//            ExtendedVertexBuilder firstExt = (ExtendedVertexBuilder) this.delegate;
-////            int newPackedNorm = VertexUtil.packNormal()
-//
-//            firstExt.vertex(x, y, z, packedColor, f, g, overlay, light, packedNormal);
-            this.resetState();
         }
     }
 }

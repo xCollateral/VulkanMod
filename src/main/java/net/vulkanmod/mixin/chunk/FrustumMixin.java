@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Frustum.class)
 public class FrustumMixin implements FrustumMixed {
-    //TODO
 
     @Shadow private double camX;
     @Shadow private double camY;

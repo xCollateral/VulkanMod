@@ -1,11 +1,6 @@
-package net.vulkanmod.vulkan.shader;
-
-import net.vulkanmod.vulkan.util.MappedBuffer;
-import org.lwjgl.system.MemoryUtil;
+package net.vulkanmod.vulkan.shader.layout;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 public class UBO extends AlignedStruct {
