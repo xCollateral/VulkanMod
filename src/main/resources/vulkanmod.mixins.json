@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "net.vulkanmod.mixin",
-  "compatibilityLevel": "JAVA_16",
+  "compatibilityLevel": "JAVA_17",
   "plugin": "net.vulkanmod.mixin.MixinPlugin",
   "mixins": [
   ],
@@ -22,8 +22,8 @@
     "gui.InGameHudM",
 
     "math.Matrix4fM",
-    "math.MojMatrix4fM",
-    "math.Vertex3fM",
+    "math.internal.Matrix4f",
+    "math.internal.Vertex3fM",
 
     "render.BakedQuadFactoryM",
     "render.BufferBuilderM",
@@ -42,9 +42,7 @@
     "render.WindowFramebufferMixin",
     "render.LevelRendererMixin",
 
-    "screen.EnchantmentScreenM",
     "screen.OptionsScreenM",
-    "screen.SplashOverlayM",
 
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",

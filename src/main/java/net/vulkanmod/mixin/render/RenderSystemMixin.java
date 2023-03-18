@@ -153,7 +153,9 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    public static void viewport(int x, int y, int width, int height) {}
+    public static void viewport(int x, int y, int width, int height) {
+        Drawer.setViewport(x, y, width, height);
+    }
 
     /**
      * @author

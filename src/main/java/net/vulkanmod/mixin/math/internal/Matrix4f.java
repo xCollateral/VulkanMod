@@ -1,22 +1,21 @@
-package net.vulkanmod.mixin.math;
+package net.vulkanmod.mixin.math.internal;
 
-import com.mojang.math.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
 import java.nio.FloatBuffer;
 
-@Mixin(Matrix4f.class)
-public class MojMatrix4fM {
+@Mixin(com.mojang.math.Matrix4f.class)
+public class Matrix4f {
 
     /**
      * @author
      */
     @Overwrite
-    public static Matrix4f perspective(double fovy, float aspect, float zNear, float zFar) {
+    public static com.mojang.math.Matrix4f perspective(double fovy, float aspect, float zNear, float zFar) {
         float f = (float)(1.0D / Math.tan(fovy * (double)((float)Math.PI / 180F) / 2.0D));
-        Matrix4f matrix4f = new Matrix4f();
+        com.mojang.math.Matrix4f matrix4f = new com.mojang.math.Matrix4f();
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             org.joml.Matrix4f mat4f = new org.joml.Matrix4f();
@@ -53,8 +52,8 @@ public class MojMatrix4fM {
      * @author
      */
     @Overwrite
-    public static Matrix4f orthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane) {
-        Matrix4f matrix4f = new Matrix4f();
+    public static com.mojang.math.Matrix4f orthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane) {
+        com.mojang.math.Matrix4f matrix4f = new com.mojang.math.Matrix4f();
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             org.joml.Matrix4f mat4f = new org.joml.Matrix4f();
