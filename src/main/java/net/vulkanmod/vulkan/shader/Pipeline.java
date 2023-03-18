@@ -1,24 +1,23 @@
-package net.vulkanmod.vulkan;
+package net.vulkanmod.vulkan.shader;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.ShaderKind;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
-import net.vulkanmod.vulkan.shader.AlignedStruct;
-import net.vulkanmod.vulkan.shader.Field;
-import net.vulkanmod.vulkan.shader.PushConstants;
-import net.vulkanmod.vulkan.shader.UBO;
+import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
+import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.shader.layout.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -27,26 +26,25 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
+import static net.vulkanmod.vulkan.ShaderSPIRVUtils.compileShader;
 import static net.vulkanmod.vulkan.ShaderSPIRVUtils.compileShaderFile;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
+import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
-    public static final BlendState DEFAULT_BLEND_STATE = defaultBlend();
-    public static final DepthState DEFAULT_DEPTH_STATE = defaultDepthState();
-    public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
-    public static final ColorMask DEFAULT_COLORMASK = new ColorMask(true, true, true, true);
-    public static final BlendState NO_BLEND_STATE = new BlendState(false, 0, 0, 0, 0);
 
     private static final VkDevice device = Vulkan.getDevice();
     private static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
 
-    private String path;
     private long descriptorSetLayout;
     private long pipelineLayout;
     private Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
@@ -55,8 +53,8 @@ public class Pipeline {
     private final long[] descriptorPools = new long[imagesSize];
     private int descriptorCount = 500;
 
-    private final List<UBO> UBOs = new ArrayList<>();
-    private final List<String> samplers = new ArrayList<>();
+    private final List<UBO> UBOs;
+    private final List<String> samplers;
     private PushConstants pushConstants;
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
@@ -64,38 +62,27 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, String path) {
-        this.path = path;
+    public Pipeline(VertexFormat vertexFormat, List<UBO> UBOs, List<String> samplers, PushConstants pushConstants, SPIRV vertSpirv, SPIRV fragSpirv) {
+        this.UBOs = UBOs;
+        this.samplers = samplers;
+        this.pushConstants = pushConstants;
+        this.vertexFormat = vertexFormat;
 
-        createDescriptorSetLayout(path);
+//        parseBindings();
+        createDescriptorSetLayout();
         createPipelineLayout();
+        createShaderModules(vertSpirv, fragSpirv);
+
         graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
-                (pipelineState) -> createGraphicsPipeline(vertexFormat, pipelineState));
+                this::createGraphicsPipeline);
         createDescriptorPool(descriptorCount);
         //allocateDescriptorSets();
 
     }
 
-    private long createGraphicsPipeline(VertexFormat vertexFormat, PipelineState state) {
-        this.vertexFormat = vertexFormat;
+    private long createGraphicsPipeline(PipelineState state) {
 
         try(MemoryStack stack = stackPush()) {
-
-            // Let's compile the GLSL shaders into SPIR-V at runtime using the org.lwjgl.util.shaderc library
-            // Check ShaderSPIRVUtils class to see how it can be done
-
-            if(vertShaderModule == 0 || fragShaderModule == 0) {
-//                SPIRV vertShaderSPIRV = compileShader(path + ".vsh", "vertex");
-//                SPIRV fragShaderSPIRV = compileShader(path + ".fsh", "fragment");
-
-                SPIRV vertShaderSPIRV = compileShaderFile(path + ".vsh", ShaderKind.VERTEX_SHADER);
-                SPIRV fragShaderSPIRV = compileShaderFile(path + ".fsh", ShaderKind.FRAGMENT_SHADER);
-
-                vertShaderModule = createShaderModule(vertShaderSPIRV.bytecode());
-                fragShaderModule = createShaderModule(fragShaderSPIRV.bytecode());
-            }
-
-
 
             ByteBuffer entryPoint = stack.UTF8("main");
 
@@ -229,46 +216,10 @@ public class Pipeline {
         }
     }
 
-    private void createDescriptorSetLayout(String path) {
-        JsonObject jsonObject;
-
-        ResourceLocation id = new ResourceLocation("modid", "shaders/" + path + ".json");
-        //ResourceManager resourceManager = MinecraftClient.getInstance().getResourceManager();
-        InputStream stream = Pipeline.class.getResourceAsStream("/assets/vulkanmod/shaders/" + path + ".json");
-
-
-//        InputStream stream = getSystemClassLoader().getResourceAsStream("shaders/" + path + ".json");
-//        if(stream == null) throw new RuntimeException("no such file: " + "shaders/" + path);
-        jsonObject = GsonHelper.parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
-
-        JsonArray jsonUbos = GsonHelper.getAsJsonArray(jsonObject, "UBOs", (JsonArray)null);
-        JsonArray jsonSamplers = GsonHelper.getAsJsonArray(jsonObject, "samplers", (JsonArray)null);
-        JsonArray jsonPushConstants = GsonHelper.getAsJsonArray(jsonObject, "PushConstants", (JsonArray)null);
-
-        int bindingsSize = 0; //UBOs + sampler
-
-        if (jsonUbos != null) {
-
-            for (JsonElement jsonelement : jsonUbos) {
-                this.parseUboNode(jsonelement);
-            }
-            bindingsSize = jsonUbos.size();
-        }
-
-        if(jsonSamplers != null) {
-
-            for (JsonElement jsonelement : jsonSamplers) {
-                this.parseSamplerNode(jsonelement);
-            }
-            bindingsSize += jsonSamplers.size();
-        }
-
-        if(jsonPushConstants != null) {
-
-            this.parsePushConstantNode(jsonPushConstants);
-        }
-
+    private void createDescriptorSetLayout() {
         try(MemoryStack stack = stackPush()) {
+
+            int bindingsSize = this.UBOs.size() + this.samplers.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.callocStack(bindingsSize, stack);
 
@@ -318,9 +269,9 @@ public class Pipeline {
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
             pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout));
 
-            if(pushConstants != null) {
+            if(this.pushConstants != null) {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
-                pushConstantRange.size(pushConstants.getSize());
+                pushConstantRange.size(this.pushConstants.getSize());
                 pushConstantRange.offset(0);
                 pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
@@ -372,6 +323,11 @@ public class Pipeline {
                 descriptorPools[i] = pDescriptorPool.get(0);
             }
         }
+    }
+
+    private void createShaderModules(SPIRV vertSpirv, SPIRV fragSpirv) {
+        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
+        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
     }
 
     public void cleanUp() {
@@ -486,62 +442,6 @@ public class Pipeline {
         return attributeDescriptions.rewind();
     }
 
-    private void parseUboNode(JsonElement jsonelement) {
-        JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "UBO");
-        int binding = GsonHelper.getAsInt(jsonobject, "binding");
-        int type = this.getTypeFromString(GsonHelper.getAsString(jsonobject, "type"));
-        JsonArray fields = GsonHelper.getAsJsonArray(jsonobject, "fields");
-
-        AlignedStruct.Builder builder = new AlignedStruct.Builder();
-
-        for (JsonElement jsonelement2 : fields) {
-            JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement2, "uniform");
-            //need to store some infos
-            String name = GsonHelper.getAsString(jsonobject2, "name");
-            String type2 = GsonHelper.getAsString(jsonobject2, "type");
-            int j = GsonHelper.getAsInt(jsonobject2, "count");
-
-            builder.addFieldInfo(type2, name, j);
-
-        }
-        UBO ubo = builder.buildUBO(binding, type);
-
-        this.UBOs.add(ubo);
-    }
-
-    private void parseSamplerNode(JsonElement jsonelement) {
-        JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "UBO");
-        String name = GsonHelper.getAsString(jsonobject, "name");
-
-        this.samplers.add(name);
-    }
-
-    private void parsePushConstantNode(JsonArray jsonArray) {
-        AlignedStruct.Builder builder = new AlignedStruct.Builder();
-
-        for(JsonElement jsonelement : jsonArray) {
-            JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
-
-            String name = GsonHelper.getAsString(jsonobject2, "name");
-            String type2 = GsonHelper.getAsString(jsonobject2, "type");
-            int j = GsonHelper.getAsInt(jsonobject2, "count");
-
-            builder.addFieldInfo(type2, name, j);
-        }
-
-        this.pushConstants = builder.buildPushConstant();
-    }
-
-    private int getTypeFromString(String s) {
-        return switch (s) {
-            case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
-            case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-            case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
-
-            default -> throw new RuntimeException("cannot identify type..");
-        };
-    }
-
     private static long createShaderModule(ByteBuffer spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
@@ -592,9 +492,8 @@ public class Pipeline {
     }
 
     public long getHandle(PipelineState state) {
-
         return graphicsPipelines.computeIfAbsent(state, state1 -> {
-            return createGraphicsPipeline(this.vertexFormat, state1);
+            return createGraphicsPipeline(state1);
         });
     }
 
@@ -762,231 +661,135 @@ public class Pipeline {
         }
     }
 
+    public static class Builder {
+        private final VertexFormat vertexFormat;
+        private final String shaderPath;
+        private List<UBO> UBOs;
+        private PushConstants pushConstants;
+        private List<String> samplers;
 
-    public static BlendState defaultBlend() {
-        return new BlendState(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-    }
+        private SPIRV vertShaderSPIRV;
+        private SPIRV fragShaderSPIRV;
 
-    public static DepthState defaultDepthState() {
-        return new DepthState(true, true, 515);
-    }
-
-    public static ColorMask defaultColorMask() { return new ColorMask(true, true, true, true); }
-
-    public static class PipelineState {
-        final BlendState blendState;
-        final DepthState depthState;
-        final ColorMask colorMask;
-        final LogicOpState logicOpState;
-        final boolean cullState;
-
-        public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask) {
-            this.blendState = blendState;
-            this.depthState = depthState;
-            this.logicOpState = logicOpState;
-            this.colorMask = colorMask;
-            this.cullState = VRenderSystem.cull;
+        public Builder(VertexFormat vertexFormat, String path) {
+            this.vertexFormat = vertexFormat;
+            this.shaderPath = path;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            PipelineState that = (PipelineState) o;
-            return blendState.equals(that.blendState) && depthState.equals(that.depthState) && logicOpState.equals(that.logicOpState) && (cullState == that.cullState) && colorMask.equals(that.colorMask);
+        public Builder(VertexFormat vertexFormat) {
+            this(vertexFormat, null);
         }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(blendState, depthState, logicOpState, cullState);
-        }
-    }
+        public Pipeline createPipeline() {
+            Validate.isTrue(this.samplers != null && this.UBOs != null
+                    && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
+                    "Cannot create Pipeline: resources missing");
 
-    public static class BlendState {
-        public final boolean enabled;
-        public final int srcRgbFactor;
-        public final int dstRgbFactor;
-        public final int srcAlphaFactor;
-        public final int dstAlphaFactor;
-        public final int blendOp = 0;
-
-        private BlendState(boolean enabled, GlStateManager.SourceFactor srcRgb, GlStateManager.DestFactor dstRgb, GlStateManager.SourceFactor srcAlpha, GlStateManager.DestFactor dstAlpha) {
-            this.enabled = enabled;
-
-            this.srcRgbFactor = glToVulkan(srcRgb.value);
-            this.dstRgbFactor = glToVulkan(dstRgb.value);
-            this.srcAlphaFactor = glToVulkan(srcAlpha.value);
-            this.dstAlphaFactor = glToVulkan(dstAlpha.value);
+            return new Pipeline(this.vertexFormat, this.UBOs, this.samplers, this.pushConstants, this.vertShaderSPIRV, this.fragShaderSPIRV);
         }
 
-        public BlendState(GlStateManager.SourceFactor srcRgb, GlStateManager.DestFactor dstRgb, GlStateManager.SourceFactor srcAlpha, GlStateManager.DestFactor dstAlpha) {
-            this(true, srcRgb, dstRgb, srcAlpha, dstAlpha);
+        public void setUniforms(List<UBO> UBOs, List<String> samplers) {
+            this.UBOs = UBOs;
+            this.samplers = samplers;
         }
 
-        public BlendState(int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
-            this(true, glToVulkan(srcRgb), glToVulkan(dstRgb), glToVulkan(srcAlpha), glToVulkan(dstAlpha));
+        public void compileShaders() {
+            this.vertShaderSPIRV = compileShaderFile(this.shaderPath + ".vsh", ShaderKind.VERTEX_SHADER);
+            this.fragShaderSPIRV = compileShaderFile(this.shaderPath + ".fsh", ShaderKind.FRAGMENT_SHADER);
         }
 
-        protected BlendState(boolean enabled, int srcRgb, int dstRgb, int srcAlpha, int dstAlpha) {
-            this.enabled = enabled;
-            this.srcRgbFactor = srcRgb;
-            this.dstRgbFactor = dstRgb;
-            this.srcAlphaFactor = srcAlpha;
-            this.dstAlphaFactor = dstAlpha;
+        public void compileShaders(String vsh, String fsh) {
+            this.vertShaderSPIRV = compileShader("vertex shader", vsh, ShaderKind.VERTEX_SHADER);
+            this.fragShaderSPIRV = compileShader("fragment shader", fsh, ShaderKind.FRAGMENT_SHADER);
         }
 
-        private static int glToVulkan(int value) {
-            return switch (value) {
-                case 1 -> VK_BLEND_FACTOR_ONE;
-                case 0 -> VK_BLEND_FACTOR_ZERO;
-                case 771 -> VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-                case 770 -> VK_BLEND_FACTOR_SRC_ALPHA;
-                case 775 -> VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-                case 769 -> VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-                case 774 -> VK_BLEND_FACTOR_DST_COLOR;
-                case 768 -> VK_BLEND_FACTOR_SRC_COLOR;
-                default -> throw new RuntimeException("unknown blend factor..");
+        public void parseBindingsJSON() {
+            Validate.notNull(this.shaderPath, "Cannot parse bindings: shaderPath is null");
 
+            this.UBOs = new ArrayList<>();
+            this.samplers = new ArrayList<>();
 
-//                        CONSTANT_ALPHA(32771),
-//                        CONSTANT_COLOR(32769),
-//                        DST_ALPHA(772),
-//                        DST_COLOR(774),
-//                        ONE(1),
-//                        ONE_MINUS_CONSTANT_ALPHA(32772),
-//                        ONE_MINUS_CONSTANT_COLOR(32770),
-//                        ONE_MINUS_DST_ALPHA(773),
-//                        ONE_MINUS_DST_COLOR(775),
-//                        ONE_MINUS_SRC_ALPHA(771),
-//                        ONE_MINUS_SRC_COLOR(769),
-//                        SRC_ALPHA(770),
-//                        SRC_ALPHA_SATURATE(776),
-//                        SRC_COLOR(768),
-//                        ZERO(0);
-            };
-        }
+            JsonObject jsonObject;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            BlendState blendState = (BlendState) o;
-            if(this.enabled != blendState.enabled) return false;
-            return srcRgbFactor == blendState.srcRgbFactor && dstRgbFactor == blendState.dstRgbFactor && srcAlphaFactor == blendState.srcAlphaFactor && dstAlphaFactor == blendState.dstAlphaFactor && blendOp == blendState.blendOp;
-        }
+            InputStream stream = Pipeline.class.getResourceAsStream("/assets/vulkanmod/shaders/" + this.shaderPath + ".json");
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(srcRgbFactor, dstRgbFactor, srcAlphaFactor, dstAlphaFactor, blendOp);
-        }
-    }
+            jsonObject = GsonHelper.parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
 
-    public static class LogicOpState {
-        public final boolean enabled;
-        private int logicOp;
+            JsonArray jsonUbos = GsonHelper.getAsJsonArray(jsonObject, "UBOs", (JsonArray)null);
+            JsonArray jsonSamplers = GsonHelper.getAsJsonArray(jsonObject, "samplers", (JsonArray)null);
+            JsonArray jsonPushConstants = GsonHelper.getAsJsonArray(jsonObject, "PushConstants", (JsonArray)null);
 
-        public LogicOpState(boolean enable, int op) {
-            this.enabled = enable;
-            this.logicOp = op;
-        }
-
-        public void setLogicOp(GlStateManager.LogicOp logicOp) {
-            switch (logicOp) {
-                case OR_REVERSE -> setLogicOp(VK_LOGIC_OP_OR_REVERSE);
+            if (jsonUbos != null) {
+                for (JsonElement jsonelement : jsonUbos) {
+                    this.parseUboNode(jsonelement);
+                }
             }
 
+            if(jsonSamplers != null) {
+                for (JsonElement jsonelement : jsonSamplers) {
+                    this.parseSamplerNode(jsonelement);
+                }
+            }
+
+            if(jsonPushConstants != null) {
+                this.parsePushConstantNode(jsonPushConstants);
+            }
         }
 
-        public void setLogicOp(int logicOp) {
-            this.logicOp = logicOp;
+        private void parseUboNode(JsonElement jsonelement) {
+            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "UBO");
+            int binding = GsonHelper.getAsInt(jsonobject, "binding");
+            int type = getTypeFromString(GsonHelper.getAsString(jsonobject, "type"));
+            JsonArray fields = GsonHelper.getAsJsonArray(jsonobject, "fields");
+
+            AlignedStruct.Builder builder = new AlignedStruct.Builder();
+
+            for (JsonElement jsonelement2 : fields) {
+                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement2, "uniform");
+                //need to store some infos
+                String name = GsonHelper.getAsString(jsonobject2, "name");
+                String type2 = GsonHelper.getAsString(jsonobject2, "type");
+                int j = GsonHelper.getAsInt(jsonobject2, "count");
+
+                builder.addFieldInfo(type2, name, j);
+
+            }
+            UBO ubo = builder.buildUBO(binding, type);
+
+            this.UBOs.add(ubo);
         }
 
-        public int getLogicOp() {
-            return logicOp;
+        private void parseSamplerNode(JsonElement jsonelement) {
+            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "UBO");
+            String name = GsonHelper.getAsString(jsonobject, "name");
+
+            this.samplers.add(name);
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            LogicOpState logicOpState = (LogicOpState) o;
-            if(this.enabled != logicOpState.enabled) return false;
-            return logicOp == logicOpState.logicOp;
+        private void parsePushConstantNode(JsonArray jsonArray) {
+            AlignedStruct.Builder builder = new AlignedStruct.Builder();
+
+            for(JsonElement jsonelement : jsonArray) {
+                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
+
+                String name = GsonHelper.getAsString(jsonobject2, "name");
+                String type2 = GsonHelper.getAsString(jsonobject2, "type");
+                int j = GsonHelper.getAsInt(jsonobject2, "count");
+
+                builder.addFieldInfo(type2, name, j);
+            }
+
+            this.pushConstants = builder.buildPushConstant();
         }
 
-        public int hashCode() {
-            return Objects.hash(enabled, logicOp);
-        }
-    }
+        public static int getTypeFromString(String s) {
+            return switch (s) {
+                case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
+                case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
+                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
 
-    public static class ColorMask {
-        public final int colorMask;
-
-        public ColorMask(boolean r, boolean g, boolean b, boolean a) {
-            this.colorMask = (r ? VK_COLOR_COMPONENT_R_BIT : 0) | (g ? VK_COLOR_COMPONENT_G_BIT : 0) | (b ? VK_COLOR_COMPONENT_B_BIT : 0) | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
-        }
-
-        public ColorMask(int mask) {
-            this.colorMask = mask;
-        }
-
-        public static int getColorMask(boolean r, boolean g, boolean b, boolean a) {
-            return (r ? VK_COLOR_COMPONENT_R_BIT : 0) | (g ? VK_COLOR_COMPONENT_G_BIT : 0) | (b ? VK_COLOR_COMPONENT_B_BIT : 0) | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ColorMask colorMask = (ColorMask) o;
-            return this.colorMask == colorMask.colorMask;
-        }
-    }
-
-    public static class DepthState {
-        public final boolean depthTest;
-        public final boolean depthMask;
-        public final int function;
-
-        public DepthState(boolean depthTest, boolean depthMask, int function) {
-            this.depthTest = depthTest;
-            this.depthMask = depthMask;
-            this.function = glToVulkan(function);
-        }
-
-        private static int glToVulkan(int value) {
-            return switch (value) {
-                case 515 -> VK_COMPARE_OP_LESS_OR_EQUAL;
-                case 519 -> VK_COMPARE_OP_ALWAYS;
-                case 516 -> VK_COMPARE_OP_GREATER;
-                case 518 -> VK_COMPARE_OP_GREATER_OR_EQUAL;
-                case 514 -> VK_COMPARE_OP_EQUAL;
-                default -> throw new RuntimeException("unknown blend factor..");
-
-
-//                public static final int GL_NEVER = 512;
-//                public static final int GL_LESS = 513;
-//                public static final int GL_EQUAL = 514;
-//                public static final int GL_LEQUAL = 515;
-//                public static final int GL_GREATER = 516;
-//                public static final int GL_NOTEQUAL = 517;
-//                public static final int GL_GEQUAL = 518;
-//                public static final int GL_ALWAYS = 519;
+                default -> throw new RuntimeException("cannot identify type..");
             };
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DepthState that = (DepthState) o;
-            return depthTest == that.depthTest && depthMask == that.depthMask && function == that.function;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(depthTest, depthMask, function);
         }
     }
 }

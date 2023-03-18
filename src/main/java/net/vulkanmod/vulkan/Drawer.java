@@ -5,9 +5,10 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.shader.PushConstants;
+import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.PipelineState;
+import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.joml.Matrix4f;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -32,7 +33,6 @@ public class Drawer {
     private static List<VkCommandBuffer> commandBuffers;
 
     private Set<Pipeline> usedPipelines = new HashSet<>();
-    private Pipeline lastPipeline;
 
     private VertexBuffer[] vertexBuffers;
     private AutoIndexBuffer quadsIndexBuffer;
@@ -49,15 +49,11 @@ public class Drawer {
     private final int commandBuffersCount = getSwapChainFramebuffers().size();
     private boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
 
-    private static int currentIndex = 0;
-
-    public static Pipeline.BlendState currentBlendState = Pipeline.DEFAULT_BLEND_STATE;
-    public static Pipeline.DepthState currentDepthState = Pipeline.DEFAULT_DEPTH_STATE;
-    public static Pipeline.LogicOpState currentLogicOpState = Pipeline.DEFAULT_LOGICOP_STATE;
-    public static Pipeline.ColorMask currentColorMask = Pipeline.DEFAULT_COLORMASK;
-
-    private static Matrix4f projectionMatrix = new Matrix4f();
-    private static Matrix4f modelViewMatrix = new Matrix4f();
+    public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
+    public static PipelineState.BlendState currentBlendState;
+    public static PipelineState.DepthState currentDepthState = PipelineState.DEFAULT_DEPTH_STATE;
+    public static PipelineState.LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
+    public static PipelineState.ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
 
     public static boolean shouldRecreate = false;
     public static boolean rebuild = false;
@@ -111,7 +107,6 @@ public class Drawer {
         autoIndexBuffer.checkCapacity(vertexCount);
 
         drawAutoIndexed(buffer, this.vertexBuffers[currentFrame], autoIndexBuffer.getIndexBuffer(), drawMode, vertexFormat, vertexCount);
-        currentIndex++;
 
     }
 
@@ -122,7 +117,6 @@ public class Drawer {
         if(!(indexCount > 0)) return;
 
         draw(vertexBuffer, indexBuffer, indexCount);
-        currentIndex++;
 
     }
 
@@ -131,8 +125,6 @@ public class Drawer {
         if(skipRendering) return;
 
         drawFrame();
-        //TODO
-        //if(rebuild) rebuildInstance();
     }
 
     public void initiateRenderPass() {
@@ -221,7 +213,6 @@ public class Drawer {
         }
 
         activeCommandBuffers[currentFrame] = false;
-        currentIndex = 0;
 
         this.vertexBuffers[currentFrame].reset();
         this.uniformBuffers.reset();
@@ -407,29 +398,6 @@ public class Drawer {
         currentFrame = 0;
     }
 
-    public void rebuildInstance() {
-        vkDeviceWaitIdle(device);
-
-        Vulkan.recreateSwapChain();
-        INSTANCE = new Drawer();
-    }
-
-    public static void setProjectionMatrix(Matrix4f mat4) {
-        projectionMatrix = mat4;
-    }
-
-    public static void setModelViewMatrix(Matrix4f mat4) {
-        modelViewMatrix = mat4;
-    }
-
-    public static Matrix4f getProjectionMatrix() {
-        return projectionMatrix;
-    }
-
-    public static Matrix4f getModelViewMatrix() {
-        return modelViewMatrix;
-    }
-
     public AutoIndexBuffer getQuadsIndexBuffer() {
         return quadsIndexBuffer;
     }
@@ -495,8 +463,9 @@ public class Drawer {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         currentDepthState = VRenderSystem.getDepthState();
-        currentColorMask = new Pipeline.ColorMask(VRenderSystem.getColorMask());
-        Pipeline.PipelineState currentState = new Pipeline.PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask);
+        currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
+        currentBlendState = blendInfo.createBlendState();
+        PipelineState currentState = new PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 
         usedPipelines.add(pipeline);

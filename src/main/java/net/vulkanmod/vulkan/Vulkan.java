@@ -232,14 +232,9 @@ public class Vulkan {
 
         swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
 
-//        swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
-
         MemoryManager.getInstance().freeImage(depthImage, depthImageMemory);
         vkDestroyImageView(device, depthImageView, null);
 
-//        vkDestroySwapchainKHR(device, swapChain, null);
-
-//        createSwapChain();
         createImageViews();
         createDepthResources();
         createFramebuffers();
@@ -437,7 +432,12 @@ public class Vulkan {
             }
 
             VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
-            deviceFeatures.samplerAnisotropy(true);
+
+            //TODO store and use device features
+            if(deviceInfo.availableFeatures.samplerAnisotropy())
+                deviceFeatures.samplerAnisotropy(true);
+            if(deviceInfo.availableFeatures.logicOp())
+                deviceFeatures.logicOp(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
@@ -729,7 +729,7 @@ public class Vulkan {
     //Nvidia and AMD only support either VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D16_UNORM_S8_UINT respectively, (Not Both)
     private static int findDepthFormat() {
         return findSupportedFormat(
-                stackGet().ints(VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT),
+                stackGet().ints(VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT),
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
@@ -757,17 +757,20 @@ public class Vulkan {
     }
 
     private static int chooseSwapPresentMode(IntBuffer availablePresentModes) {
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
-        //TODO: check if immediate mode is supported
         //fifo mode is the only mode that has to be supported
-//        for(int i = 0;i < availablePresentModes.capacity();i++) {
-//            if(availablePresentModes.get(i) == VK_PRESENT_MODE_MAILBOX_KHR) {
-//                return availablePresentModes.get(i);
-//            }
-//        }
-//
-//        return VK_PRESENT_MODE_FIFO_KHR;
-        return vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
+
+        for(int i = 0;i < availablePresentModes.capacity();i++) {
+            if(availablePresentModes.get(i) == requestedMode) {
+                return requestedMode;
+            }
+        }
+
+        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
+        return VK_PRESENT_MODE_FIFO_KHR;
+
     }
 
     private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {

@@ -1,7 +1,9 @@
 package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.TextureMap;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
@@ -86,5 +88,23 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _pixelStore(int pname, int param) {
 
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _clearColor(float f, float g, float h, float i) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        VRenderSystem.setRenderPassColor(f, g, h, i);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _clear(int mask, boolean bl) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        VRenderSystem.clear(mask);
     }
 }

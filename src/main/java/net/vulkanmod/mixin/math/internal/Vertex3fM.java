@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.math;
+package net.vulkanmod.mixin.math.internal;
 
 import com.mojang.math.Vector3f;
 import net.vulkanmod.interfaces.math.Vec3Extended;

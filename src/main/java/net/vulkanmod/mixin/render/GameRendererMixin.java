@@ -15,6 +15,9 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
 
 import java.io.IOException;
 import java.util.List;
@@ -82,11 +85,8 @@ public class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance rendertypeLinesShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCrumblingShader;
 
-    /**
-     * @author
-     */
-    @Overwrite
-    public void reloadShaders(ResourceManager manager) {
+    @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
+    public void reloadShaders(ResourceManager manager, CallbackInfo ci) {
         RenderSystem.assertOnRenderThread();
         List<Program> list = Lists.newArrayList();
 //        list.addAll(Program.Type.FRAGMENT.getPrograms().values());
@@ -284,6 +284,8 @@ public class GameRendererMixin {
             this.shaders.put(shaderinstance.getName(), shaderinstance);
             p_172729_.getSecond().accept(shaderinstance);
         });
+
+        ci.cancel();
     }
 
 
