@@ -107,8 +107,8 @@ public class Pipeline {
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo = VkPipelineVertexInputStateCreateInfo.callocStack(stack);
             vertexInputInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-            vertexInputInfo.pVertexBindingDescriptions(getBindingDescription(vertexFormat));
-            vertexInputInfo.pVertexAttributeDescriptions(getAttributeDescriptions(vertexFormat));
+            vertexInputInfo.pVertexBindingDescriptions(this.vertexFormat== DefaultVertexFormat.BLIT_SCREEN ? null : getBindingDescription(vertexFormat));
+            vertexInputInfo.pVertexAttributeDescriptions(this.vertexFormat== DefaultVertexFormat.BLIT_SCREEN ? null : getAttributeDescriptions(vertexFormat));
 
             // ===> ASSEMBLY STAGE <===
 
@@ -190,7 +190,7 @@ public class Pipeline {
             VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.callocStack(1, stack);
             pipelineInfo.sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
             pipelineInfo.pStages(shaderStages);
-            pipelineInfo.pVertexInputState( this.vertexFormat== DefaultVertexFormat.BLIT_SCREEN? null : vertexInputInfo);
+            pipelineInfo.pVertexInputState(vertexInputInfo);
             pipelineInfo.pInputAssemblyState(inputAssembly);
             pipelineInfo.pViewportState(viewportState);
             pipelineInfo.pRasterizationState(rasterizer);

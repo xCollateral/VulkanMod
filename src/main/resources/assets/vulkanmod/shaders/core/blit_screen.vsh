@@ -7,8 +7,8 @@
 
 const ivec2 tri[3] = ivec2[3](
     ivec2(1,1),
-    ivec2(1,-3),
-    ivec2(-3,1)
+    ivec2(-3,1),
+    ivec2(1,-3)
 );
 
 

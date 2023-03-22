@@ -94,10 +94,9 @@ public class Drawer {
 
         VRenderSystem.disableDepthTest();
         VRenderSystem.depthMask(false);
-        VRenderSystem.disableCull();
-
+        VRenderSystem.disableBlend();
         Pipeline pipeline= ((ShaderMixed)(Minecraft.getInstance().gameRenderer.blitShader)).getPipeline();
-        blendInfo.enabled=!disableBlend;
+
         bindPipeline(pipeline);
 
         VkCommandBuffer commandBuffer = commandBuffers.get(getCurrentFrame());
@@ -105,7 +104,7 @@ public class Drawer {
 
 
         vkCmdDraw( commandBuffer, ( 3), 1, 0, 0 );
-        VRenderSystem.enableCull();
+
 
     }
 
