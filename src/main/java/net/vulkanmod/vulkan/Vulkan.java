@@ -728,8 +728,7 @@ public class Vulkan {
 
         throw new RuntimeException("Failed to find supported format");
     }
-    //Nvidia and AMD only support either VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D16_UNORM_S8_UINT respectively, (Not Both)
-    //Unfortunately AMD disenlt supprot 24-|Bit depth, so will fall back to the slower 32-Bit Depth Buffer Format if AMD is used
+    //Use the fastest stencil format depending in the GPU (Nvidia seems to prefer 24-Bit or lower, while AMD performs best with 32-Bit Float)
     private static int findDepthFormat() {
         return findSupportedFormat(
                 stackGet().ints(VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT),
