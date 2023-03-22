@@ -104,7 +104,7 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _clear(int mask, boolean bl) {
-        RenderSystem.assertOnRenderThreadOrInit();
-        VRenderSystem.clear(mask);
+//        RenderSystem.assertOnRenderThreadOrInit();
+//        VRenderSystem.clear(mask);
     }
 }

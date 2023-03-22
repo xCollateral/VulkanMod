@@ -136,7 +136,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void clear(int mask, boolean getError) {
-        VRenderSystem.clear(mask);
+//        VRenderSystem.clear(mask);
     }
 
     /**

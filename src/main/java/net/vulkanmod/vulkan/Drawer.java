@@ -91,7 +91,7 @@ public class Drawer {
     }
 
     public static void setDrawBackgroundColor(boolean disableBlend) {
-        VRenderSystem.colorMask(true, true, true, false);
+
         VRenderSystem.disableDepthTest();
         VRenderSystem.depthMask(false);
         VRenderSystem.disableCull();
