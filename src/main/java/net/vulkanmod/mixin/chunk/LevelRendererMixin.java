@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.SkyBoxVBO;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.util.VBOUtil;
+import net.vulkanmod.vulkan.Drawer;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -211,6 +212,16 @@ public abstract class LevelRendererMixin {
             }
 
         }
+    }
+
+    @Inject(method = "renderSky", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;getShader()Lnet/minecraft/client/renderer/ShaderInstance;"))
+    private void renderSky(PoseStack poseStack, Matrix4f matrix4f, float f, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci)
+    {
+
+//        VRenderSystem.disableDepthTest();
+
+        Drawer.setDrawBackgroundColor(true);
+//        VRenderSystem.enableDepthTest();
     }
 
     @Redirect(method = "renderSky", at=@At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawWithShader(Lcom/mojang/math/Matrix4f;Lcom/mojang/math/Matrix4f;Lnet/minecraft/client/renderer/ShaderInstance;)V"))

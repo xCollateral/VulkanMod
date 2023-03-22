@@ -32,7 +32,7 @@ public class Drawer {
     private static VkDevice device;
     private static List<VkCommandBuffer> commandBuffers;
 
-    private Set<Pipeline> usedPipelines = new HashSet<>();
+    private static final Set<Pipeline> usedPipelines = new HashSet<>();
 
     private VertexBuffer[] vertexBuffers;
     private AutoIndexBuffer quadsIndexBuffer;
@@ -88,6 +88,25 @@ public class Drawer {
         for(boolean bool : activeCommandBuffers) bool = false;
 
         this.allocateCommandBuffers();
+    }
+
+    public static void setDrawBackgroundColor(boolean disableBlend) {
+        VRenderSystem.colorMask(true, true, true, false);
+        VRenderSystem.disableDepthTest();
+        VRenderSystem.depthMask(false);
+        VRenderSystem.disableCull();
+
+        Pipeline pipeline= ((ShaderMixed)(Minecraft.getInstance().gameRenderer.blitShader)).getPipeline();
+        blendInfo.enabled=!disableBlend;
+        bindPipeline(pipeline);
+
+        VkCommandBuffer commandBuffer = commandBuffers.get(getCurrentFrame());
+        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, 12, VRenderSystem.clearColor.ptr);
+
+
+        vkCmdDraw( commandBuffer, ( 3), 1, 0, 0 );
+        VRenderSystem.enableCull();
+
     }
 
     public void draw(ByteBuffer buffer, int drawMode, VertexFormat vertexFormat, int vertexCount)
@@ -172,8 +191,9 @@ public class Drawer {
             renderArea.extent(getSwapchainExtent());
             renderPassInfo.renderArea(renderArea);
 
-            VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
-            clearValues.get(0).color().float32(VRenderSystem.clearColor);
+            //Clear Color value is ignored if Load Op is Not set to Clear
+            VkClearValue.Buffer clearValues = VkClearValue.mallocStack(2, stack);
+
             clearValues.get(1).depthStencil().set(1.0f, 0);
             renderPassInfo.pClearValues(clearValues);
 
@@ -442,8 +462,8 @@ public class Drawer {
             //long uniformBufferOffset = this.uniformBuffers.getUsedBytes();
             long descriptorSet = pipeline.createDescriptorSets(commandBuffer, currentFrame, uniformBuffers);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipeline.getLayout() , 0, stack.longs(descriptorSet), null);
+
+            nvkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getLayout(), 0, 1, stack.npointer(descriptorSet), 0, 0);
         }
     }
 
@@ -459,7 +479,7 @@ public class Drawer {
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 
-    public void bindPipeline(Pipeline pipeline) {
+    public static void bindPipeline(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         currentDepthState = VRenderSystem.getDepthState();
@@ -478,7 +498,7 @@ public class Drawer {
         pushConstants.update();
 //        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstant.getBuffer());
 
-        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), pushConstants.getAddress());
+        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, pushConstants.getSize(), pushConstants.getAddress());
     }
 
     public static void setDepthBias(float units, float factor) {

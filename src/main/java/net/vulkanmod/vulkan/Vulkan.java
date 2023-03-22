@@ -23,7 +23,6 @@ import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
-import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -432,12 +431,16 @@ public class Vulkan {
             }
 
             VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
 
             //TODO store and use device features
-            if(deviceInfo.availableFeatures.samplerAnisotropy())
-                deviceFeatures.samplerAnisotropy(true);
-            if(deviceInfo.availableFeatures.logicOp())
-                deviceFeatures.logicOp(true);
+
+            deviceFeatures.samplerAnisotropy(deviceInfo.availableFeatures.samplerAnisotropy());
+            deviceFeatures.logicOp(deviceInfo.availableFeatures.logicOp());
+
+            deviceVulkan12Features.separateDepthStencilLayouts(deviceInfo.deviceVulkan12Features.separateDepthStencilLayouts());
+
+
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
@@ -446,6 +449,7 @@ public class Vulkan {
             // queueCreateInfoCount is automatically set
 
             createInfo.pEnabledFeatures(deviceFeatures);
+            createInfo.pNext(deviceVulkan12Features);
 
             createInfo.ppEnabledExtensionNames(asPointerBuffer(DEVICE_EXTENSIONS));
 
@@ -612,10 +616,8 @@ public class Vulkan {
             VkAttachmentDescription colorAttachment = attachments.get(0);
             colorAttachment.format(swapChainImageFormat);
             colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-            colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
-            colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+            colorAttachment.storeOp(deviceInfo.hasLoadStoreOpNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_STORE);
             colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             colorAttachment.finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -630,16 +632,16 @@ public class Vulkan {
             VkAttachmentDescription depthAttachment = attachments.get(1);
             depthAttachment.format(findDepthFormat());
             depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            depthAttachment.finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            depthAttachment.finalLayout(deviceInfo.depthAttachmentOptimal);
 
             VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1);
             depthAttachmentRef.attachment(1);
-            depthAttachmentRef.layout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            depthAttachmentRef.layout(deviceInfo.depthAttachmentOptimal);
 
             VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(1, stack);
             subpass.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -697,7 +699,7 @@ public class Vulkan {
             // Explicitly transitioning the depth image
             VkCommandBuffer commandBuffer = beginImmediateCmd();
             transitionImageLayout(commandBuffer, depthImage, depthFormat,
-                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+                    VK_IMAGE_LAYOUT_UNDEFINED, deviceInfo.depthAttachmentOptimal, 1);
             endImmediateCmd();
 
         }
@@ -727,9 +729,10 @@ public class Vulkan {
         throw new RuntimeException("Failed to find supported format");
     }
     //Nvidia and AMD only support either VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D16_UNORM_S8_UINT respectively, (Not Both)
+    //Unfortunately AMD disenlt supprot 24-|Bit depth, so will fall back to the slower 32-Bit Depth Buffer Format if AMD is used
     private static int findDepthFormat() {
         return findSupportedFormat(
-                stackGet().ints(VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT),
+                stackGet().ints(VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT),
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }

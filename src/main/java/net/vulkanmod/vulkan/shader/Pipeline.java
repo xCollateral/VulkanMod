@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.minecraft.util.GsonHelper;
@@ -132,10 +133,7 @@ public class Pipeline {
             rasterizer.rasterizerDiscardEnable(false);
             rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
             rasterizer.lineWidth(1.0f);
-
-            if(state.cullState) rasterizer.cullMode(VK_CULL_MODE_BACK_BIT);
-            else rasterizer.cullMode(VK_CULL_MODE_NONE);
-
+            rasterizer.cullMode(state.cullState ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE);
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
             rasterizer.depthBiasEnable(true);
 
@@ -154,8 +152,8 @@ public class Pipeline {
             depthStencil.depthWriteEnable(state.depthState.depthMask);
             depthStencil.depthCompareOp(state.depthState.function);
             depthStencil.depthBoundsTestEnable(false);
-            depthStencil.minDepthBounds(0.0f); // Optional
-            depthStencil.maxDepthBounds(1.0f); // Optional
+            depthStencil.minDepthBounds(1); // Optional
+            depthStencil.maxDepthBounds(0); // Optional
             depthStencil.stencilTestEnable(false);
 
             // ===> COLOR BLENDING <===
@@ -192,7 +190,7 @@ public class Pipeline {
             VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.callocStack(1, stack);
             pipelineInfo.sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
             pipelineInfo.pStages(shaderStages);
-            pipelineInfo.pVertexInputState(vertexInputInfo);
+            pipelineInfo.pVertexInputState( this.vertexFormat== DefaultVertexFormat.BLIT_SCREEN? null : vertexInputInfo);
             pipelineInfo.pInputAssemblyState(inputAssembly);
             pipelineInfo.pViewportState(viewportState);
             pipelineInfo.pRasterizationState(rasterizer);
@@ -273,7 +271,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(this.pushConstants.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+                pushConstantRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -492,9 +490,7 @@ public class Pipeline {
     }
 
     public long getHandle(PipelineState state) {
-        return graphicsPipelines.computeIfAbsent(state, state1 -> {
-            return createGraphicsPipeline(state1);
-        });
+        return graphicsPipelines.computeIfAbsent(state, this::createGraphicsPipeline);
     }
 
     public PushConstants getPushConstants() { return this.pushConstants; }

@@ -8,6 +8,7 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -291,5 +292,8 @@ public class GameRendererMixin {
 
     @Redirect(method = "render", at = @At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void clear(int v, boolean a) { }
+
+    @Redirect(method = "renderLevel", at = @At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void clear2Hand(int v, boolean a) { VRenderSystem.clear(256); }
 
 }

@@ -18,13 +18,15 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 
 public class DeviceInfo {
 
     public static final String cpuInfo;
     public static final List<GraphicsCard> graphicsCards;
+    public final boolean hasLoadStoreOpNone;
+    public final int depthAttachmentOptimal;
 
     private final VkPhysicalDevice device;
     public final String vendorId;
@@ -33,6 +35,8 @@ public class DeviceInfo {
 
     public GraphicsCard graphicsCard;
 
+    public final VkPhysicalDeviceVulkan12Features deviceVulkan12Features;
+    public final VkPhysicalDeviceVulkan13Features deviceVulkan13Features;
     public final VkPhysicalDeviceFeatures availableFeatures;
 
     static {
@@ -52,9 +56,15 @@ public class DeviceInfo {
         this.vendorId = String.valueOf(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = String.valueOf(properties.driverVersion());
-
-        this.availableFeatures = VkPhysicalDeviceFeatures.malloc();
-        vkGetPhysicalDeviceFeatures(this.device, this.availableFeatures);
+        VkPhysicalDeviceVulkan12Features deviceVulkan12Features=VkPhysicalDeviceVulkan12Features.malloc().sType$Default().pNext(NULL);
+        VkPhysicalDeviceVulkan13Features deviceVulkan13Features=VkPhysicalDeviceVulkan13Features.malloc().sType$Default().pNext(NULL);
+        VkPhysicalDeviceFeatures2 availableFeatures2 = VkPhysicalDeviceFeatures2.malloc().sType$Default().pNext(NULL).pNext(deviceVulkan12Features).pNext(deviceVulkan13Features);
+        VK11.vkGetPhysicalDeviceFeatures2(this.device, availableFeatures2);
+        this.availableFeatures=availableFeatures2.features();
+        this.deviceVulkan12Features=deviceVulkan12Features;
+        this.deviceVulkan13Features=deviceVulkan13Features;
+        this.depthAttachmentOptimal =deviceVulkan12Features.separateDepthStencilLayouts()? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        this.hasLoadStoreOpNone = this.device.getCapabilities().Vulkan13;
     }
 
     private String unsupportedExtensions(Set<String> requiredExtensions) {

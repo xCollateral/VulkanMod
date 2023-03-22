@@ -15,21 +15,21 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
-import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
-    private static VkDevice device = Vulkan.getDevice();
+    private static final VkDevice device = Vulkan.getDevice();
+    private static final double depthAttachmentOptimal= getDeviceInfo().depthAttachmentOptimal;
 
     private long id;
     private long allocation;
     private long textureImageView;
 
-    private Byte2LongMap samplers;
+    private final Byte2LongMap samplers;
     private long textureSampler;
 
-    private int mipLevels;
+    private final int mipLevels;
     private int width;
     private int height;
     private int formatSize;
@@ -431,19 +431,8 @@ public class VulkanImage {
             barrier.subresourceRange().levelCount(mipLevels);
             barrier.subresourceRange().baseArrayLayer(0);
             barrier.subresourceRange().layerCount(1);
-
-            if(newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-
-                barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-
-                if(hasStencilComponent(format)) {
-                    barrier.subresourceRange().aspectMask(
-                            barrier.subresourceRange().aspectMask() | VK_IMAGE_ASPECT_STENCIL_BIT);
-                }
-
-            } else {
-                barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            }
+            //Stencil is Literally never used, so will use the Dedicated Depth Exclusive Flag Instead
+            barrier.subresourceRange().aspectMask(newLayout == depthAttachmentOptimal ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
 
             int sourceStage;
             int destinationStage;
@@ -464,7 +453,7 @@ public class VulkanImage {
                 sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
                 destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-            } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+            } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == depthAttachmentOptimal) {
 
                 barrier.srcAccessMask(0);
                 barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
@@ -484,10 +473,6 @@ public class VulkanImage {
                     barrier);
 
         }
-    }
-
-    private static boolean hasStencilComponent(int format) {
-        return format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT;
     }
 
     public void free() {

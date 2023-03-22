@@ -38,7 +38,7 @@ public class VRenderSystem {
     public static boolean cull = true;
 
     public static final float clearDepth = 1.0f;
-    public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
+    public static MappedBuffer clearColor = new MappedBuffer(4 * 4);
 
     public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
     public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
@@ -232,10 +232,10 @@ public class VRenderSystem {
     }
 
     public static void setRenderPassColor(float f1, float f2, float f3, float f4) {
-        clearColor.put(0, f1);
-        clearColor.put(1, f2);
-        clearColor.put(2, f3);
-        clearColor.put(3, f4);
+        clearColor.putFloat(0, f1);
+        clearColor.putFloat(4, f2);
+        clearColor.putFloat(8, f3);
+        clearColor.putFloat(12, f4);
 
     }
 
