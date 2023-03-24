@@ -26,6 +26,6 @@ public class Mat4f extends Field {
 //        float[] floats = new float[16];
 //        src.asFloatBuffer().get(floats);
 
-        MemoryUtil.memCopy(src.buffer, MemoryUtil.memByteBuffer(this.basePtr, 64));
+        MemoryUtil.memCopy(src.buffer(), MemoryUtil.memByteBuffer(this.basePtr, 64));
     }
 }

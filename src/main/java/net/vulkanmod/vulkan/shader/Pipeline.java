@@ -48,15 +48,15 @@ public class Pipeline {
 
     private long descriptorSetLayout;
     private long pipelineLayout;
-    private Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
-    private VertexFormat vertexFormat;
+    private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>(64);
+    private final VertexFormat vertexFormat;
 
     private final long[] descriptorPools = new long[imagesSize];
     private int descriptorCount = 500;
 
     private final List<UBO> UBOs;
     private final List<String> samplers;
-    private PushConstants pushConstants;
+    private final PushConstants pushConstants;
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
 
@@ -383,55 +383,49 @@ public class Pipeline {
             posDescription.location(i);
 
             VertexFormatElement.Usage usage = elements.get(i).getUsage();
-            if (usage == VertexFormatElement.Usage.POSITION)
-            {
-                posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
-                posDescription.offset(offset);
-
-                offset += 12;
-            }
-            else if (usage == VertexFormatElement.Usage.COLOR)
-            {
-//                posDescription.format(VK_FORMAT_R32G32B32A32_SFLOAT);
-                posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
-                posDescription.offset(offset);
-
-//                offset += 16;
-                offset += 4;
-            }
-            else if (usage == VertexFormatElement.Usage.UV)
-            {
-                if(elements.get(i).getType() == VertexFormatElement.Type.FLOAT){
-                    posDescription.format(VK_FORMAT_R32G32_SFLOAT);
+            switch (usage) {
+                case POSITION:
+                    posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
                     posDescription.offset(offset);
 
-                    offset += 8;
-                }
-                else if(elements.get(i).getType() == VertexFormatElement.Type.SHORT){
-                    posDescription.format(VK_FORMAT_R16G16_SINT);
+                    offset += 12;
+                    break;
+                case COLOR:
+//                posDescription.format(VK_FORMAT_R32G32B32A32_SFLOAT);
+                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
+                    posDescription.offset(offset);
+
+//                offset += 16;
+                    offset += 4;
+                    break;
+                case UV:
+                    if (elements.get(i).getType() == VertexFormatElement.Type.FLOAT) {
+                        posDescription.format(VK_FORMAT_R32G32_SFLOAT);
+                        posDescription.offset(offset);
+
+                        offset += 8;
+                    } else if (elements.get(i).getType() == VertexFormatElement.Type.SHORT) {
+                        posDescription.format(VK_FORMAT_R16G16_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                    }
+                    break;
+                case NORMAL:
+//                posDescription.format(VK_FORMAT_R8G8B8_SNORM);
+                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
                     posDescription.offset(offset);
 
                     offset += 4;
-                }
-            }
-            else if (usage == VertexFormatElement.Usage.NORMAL)
-            {
-//                posDescription.format(VK_FORMAT_R8G8B8_SNORM);
-                posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
-                posDescription.offset(offset);
-
-                offset += 4;
-            }
-            else if (usage == VertexFormatElement.Usage.PADDING)
-            {
+                    break;
+                case PADDING:
 //                posDescription.format(VK_FORMAT_R8_SNORM);
 //                posDescription.offset(offset);
 
 //                offset += 1;
-            }
-
-            else {
-                throw new RuntimeException("Unknown format:");
+                    break;
+                default:
+                    throw new RuntimeException("Unknown format:");
             }
 
             posDescription.offset(((VertexFormatMixed)(vertexFormat)).getOffset(i));
@@ -476,12 +470,11 @@ public class Pipeline {
     }
 
     private Consumer<Integer> defaultResetDPFun() {
-        Consumer<Integer> fun = (i) -> {
+        return (i) -> {
             if(vkResetDescriptorPool(device, descriptorPools[i], 0) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to reset descriptor pool");
             }
         };
-        return fun;
     }
 
     public void resetDescriptorPool(int i) {

@@ -13,11 +13,11 @@ public abstract class AlignedStruct {
 
     protected AlignedStruct(List<Field.FieldInfo> infoList, int size) {
         this.size = size;
-        this.buffer = new MappedBuffer(size);
+        this.buffer = MappedBuffer.AddMappedBuffer(size);
 
         for(Field.FieldInfo fieldInfo : infoList) {
 
-            Field field = Field.createField(fieldInfo, this.buffer.ptr);
+            Field field = Field.createField(fieldInfo, this.buffer.ptr());
             this.fields.add(field);
         }
     }
@@ -34,7 +34,7 @@ public abstract class AlignedStruct {
     }
 
     public long getBufferPtr() {
-        return this.buffer.ptr;
+        return this.buffer.ptr();
     }
 
     public int getSize() {

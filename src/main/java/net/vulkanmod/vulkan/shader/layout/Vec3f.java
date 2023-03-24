@@ -21,8 +21,8 @@ public class Vec3f extends Field {
     void update() {
         MappedBuffer src = this.values.get();
 
-        VUtil.UNSAFE.putFloat(this.basePtr, VUtil.UNSAFE.getFloat(src.ptr));
-        VUtil.UNSAFE.putFloat(this.basePtr + 4, VUtil.UNSAFE.getFloat(src.ptr + 4));
-        VUtil.UNSAFE.putFloat(this.basePtr + 8, VUtil.UNSAFE.getFloat(src.ptr + 8));
+        VUtil.UNSAFE.putFloat(this.basePtr, VUtil.UNSAFE.getFloat(src.ptr()));
+        VUtil.UNSAFE.putFloat(this.basePtr + 4, VUtil.UNSAFE.getFloat(src.ptr() + 4));
+        VUtil.UNSAFE.putFloat(this.basePtr + 8, VUtil.UNSAFE.getFloat(src.ptr() + 8));
     }
 }

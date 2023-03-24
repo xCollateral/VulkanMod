@@ -22,7 +22,7 @@ public class UBO extends AlignedStruct {
     }
 
     public ByteBuffer getBuffer() {
-        return buffer.buffer;
+        return buffer.buffer();
     }
 
 }

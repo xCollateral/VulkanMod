@@ -47,7 +47,7 @@ public class Drawer {
 
     private static int currentFrame = 0;
     private final int commandBuffersCount = getSwapChainFramebuffers().size();
-    private boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
+    private final boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
     public static PipelineState.BlendState currentBlendState;
@@ -100,11 +100,9 @@ public class Drawer {
         bindPipeline(pipeline);
 
         VkCommandBuffer commandBuffer = commandBuffers.get(getCurrentFrame());
-        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, 12, VRenderSystem.clearColor.ptr);
-
+        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, 12, VRenderSystem.clearColor.ptr());
 
         vkCmdDraw( commandBuffer, ( 3), 1, 0, 0 );
-
 
     }
 

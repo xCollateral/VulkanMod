@@ -38,21 +38,21 @@ public class VRenderSystem {
     public static boolean cull = true;
 
     public static final float clearDepth = 1.0f;
-    public static MappedBuffer clearColor = new MappedBuffer(4 * 4);
+    public static MappedBuffer clearColor = MappedBuffer.AddMappedBuffer(4 * 4);
 
-    public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer TextureMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer MVP = new MappedBuffer(16 * 4);
+    public static MappedBuffer modelViewMatrix = MappedBuffer.AddMappedBuffer(16 * 4);
+    public static MappedBuffer projectionMatrix = MappedBuffer.AddMappedBuffer(16 * 4);
+    public static MappedBuffer TextureMatrix = MappedBuffer.AddMappedBuffer(16 * 4);
+    public static MappedBuffer MVP = MappedBuffer.AddMappedBuffer(16 * 4);
 
-    public static MappedBuffer ChunkOffset = new MappedBuffer(3 * 4);
-    public static MappedBuffer lightDirection0 = new MappedBuffer(3 * 4);
-    public static MappedBuffer lightDirection1 = new MappedBuffer(3 * 4);
+    public static MappedBuffer ChunkOffset = MappedBuffer.AddMappedBuffer(3 * 4);
+    public static MappedBuffer lightDirection0 = MappedBuffer.AddMappedBuffer(3 * 4);
+    public static MappedBuffer lightDirection1 = MappedBuffer.AddMappedBuffer(3 * 4);
 
-    public static MappedBuffer shaderColor = new MappedBuffer(4 * 4);
-    public static MappedBuffer shaderFogColor = new MappedBuffer(4 * 4);
+    public static MappedBuffer shaderColor = MappedBuffer.AddMappedBuffer(4 * 4);
+    public static MappedBuffer shaderFogColor = MappedBuffer.AddMappedBuffer(4 * 4);
 
-    public static MappedBuffer screenSize = new MappedBuffer(2 * 4);
+    public static MappedBuffer screenSize = MappedBuffer.AddMappedBuffer(2 * 4);
 
     private static final float[] depthBias = new float[2];
 
@@ -70,7 +70,7 @@ public class VRenderSystem {
 
     }
 
-    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer; }
+    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer(); }
 
     public static int maxSupportedTextureSize() {
         return Vulkan.deviceProperties.limits().maxImageDimension2D();
@@ -140,38 +140,38 @@ public class VRenderSystem {
     }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
-        mat.store(modelViewMatrix.buffer.asFloatBuffer());
+        mat.store(modelViewMatrix.buffer().asFloatBuffer());
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
 
     public static void applyProjectionMatrix(Matrix4f mat) {
-        mat.store(projectionMatrix.buffer.asFloatBuffer());
+        mat.store(projectionMatrix.buffer().asFloatBuffer());
     }
 
     public static void copyMVP() {
 //        applyModelViewMatrix(MV);
-        long srcAddr = (projectionMatrix.ptr);
-        long dstAddr = (MVP.ptr);
+        long srcAddr = (projectionMatrix.ptr());
+        long dstAddr = (MVP.ptr());
 
         for (int i = 0; i < 8; i++)
             MemoryUtil.memPutLong(dstAddr + (i << 3), MemoryUtil.memGetLong(srcAddr + (i << 3)));
     }
     public static void calculateMVPAffine() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
+        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
+        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
 
-        P.mulPerspectiveAffine(MV).get(MVP.buffer);
+        P.mulPerspectiveAffine(MV).get(MVP.buffer());
     }
 
     public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
+        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
+        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
 
-        P.mul(MV).get(MVP.buffer);
+        P.mul(MV).get(MVP.buffer());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
-        mat.store(TextureMatrix.buffer.asFloatBuffer());
+        mat.store(TextureMatrix.buffer().asFloatBuffer());
     }
 
     public static MappedBuffer getTextureMatrix() {
@@ -191,7 +191,7 @@ public class VRenderSystem {
     }
 
     public static void setChunkOffset(float f1, float f2, float f3) {
-        long ptr = ChunkOffset.ptr;
+        long ptr = ChunkOffset.ptr();
         VUtil.UNSAFE.putFloat(ptr, f1);
         VUtil.UNSAFE.putFloat(ptr + 4, f2);
         VUtil.UNSAFE.putFloat(ptr + 8, f3);

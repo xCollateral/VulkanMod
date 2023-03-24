@@ -9,7 +9,7 @@ public class PushConstants extends AlignedStruct {
     }
 
     public long getAddress() {
-        return buffer.ptr;
+        return buffer.ptr();
     }
 
 }
