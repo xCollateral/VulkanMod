@@ -18,9 +18,7 @@ public class VertexBufferM {
 
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void constructor(CallbackInfo ci) {
-//        vbo = new VBO(0, 0, 0);
-    }
+    private void constructor(CallbackInfo ci) {}
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_glGenBuffers()I"))
     private int doNothing() {
@@ -48,31 +46,23 @@ public class VertexBufferM {
      * @author
      */
     @Overwrite
-    public void upload(BufferBuilder.RenderedBuffer buffer) {
-//        vbo.upload(buffer, true);
-    }
+    public void upload(BufferBuilder.RenderedBuffer buffer) {}
 
     /**
      * @author
      */
     @Overwrite
-    public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {
-//        vbo._drawWithShader(viewMatrix, projectionMatrix, shader);
-    }
+    public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {}
 
     /**
      * @author
      */
     @Overwrite
-    public void draw() {
-//        vbo.drawChunkLayer();
-    }
+    public void draw() {}
 
     /**
      * @author
      */
     @Overwrite
-    public void close() {
-//        vbo.close();
-    }
+    public void close() {}
 }

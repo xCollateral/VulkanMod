@@ -38,7 +38,7 @@ public class VRenderSystem {
     public static boolean cull = true;
 
     public static final float clearDepth = 1.0f;
-    public static MappedBuffer clearColor = MappedBuffer.AddMappedBuffer(4 * 4);
+    public static MappedBuffer clearColor = MappedBuffer.AddMappedBuffer(4 * 3);
 
     public static MappedBuffer modelViewMatrix = MappedBuffer.AddMappedBuffer(16 * 4);
     public static MappedBuffer projectionMatrix = MappedBuffer.AddMappedBuffer(16 * 4);
@@ -231,12 +231,10 @@ public class VRenderSystem {
         Drawer.currentLogicOpState.setLogicOp(p_69836_);
     }
 
-    public static void setRenderPassColor(float f1, float f2, float f3, float f4) {
+    public static void setRenderPassColor(float f1, float f2, float f3) {
         clearColor.putFloat(0, f1);
         clearColor.putFloat(4, f2);
         clearColor.putFloat(8, f3);
-        clearColor.putFloat(12, f4);
-
     }
 
     public static void clear(int v) {

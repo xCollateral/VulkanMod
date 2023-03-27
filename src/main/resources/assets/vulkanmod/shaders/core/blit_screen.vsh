@@ -1,20 +1,19 @@
 #version 450
 
+layout(location = 0) in vec3 Position;
+layout(location = 1) in vec2 UV;
+layout(location = 2) in vec4 Color;
 
+layout(binding = 0) uniform UniformBufferObject {
+   mat4 MVP;
+};
 
-
-
-
-const ivec2 tri[3] = ivec2[3](
-    ivec2(1,1),
-    ivec2(-3,1),
-    ivec2(1,-3)
-);
-
-
+layout(location = 0) out vec2 texCoord;
+layout(location = 1) out vec4 vertexColor;
 
 void main() {
-    gl_Position = vec4(tri[gl_VertexIndex], 0.0, 1.0);
+    gl_Position = MVP * vec4(Position, 1.0);
 
-
+    texCoord = UV;
+    vertexColor = Color;
 }

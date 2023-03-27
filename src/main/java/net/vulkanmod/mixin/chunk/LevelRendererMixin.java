@@ -214,16 +214,6 @@ public abstract class LevelRendererMixin {
         }
     }
 
-    @Inject(method = "renderSky", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;getShader()Lnet/minecraft/client/renderer/ShaderInstance;"))
-    private void renderSky(PoseStack poseStack, Matrix4f matrix4f, float f, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci)
-    {
-
-//        VRenderSystem.disableDepthTest();
-
-        Drawer.setDrawBackgroundColor(true);
-//        VRenderSystem.enableDepthTest();
-    }
-
     @Redirect(method = "renderSky", at=@At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawWithShader(Lcom/mojang/math/Matrix4f;Lcom/mojang/math/Matrix4f;Lnet/minecraft/client/renderer/ShaderInstance;)V"))
     private void drawWithShaderSkyBuffer(VertexBuffer instance, Matrix4f matrix4f, Matrix4f matrix4f2, ShaderInstance shaderInstance)
     {

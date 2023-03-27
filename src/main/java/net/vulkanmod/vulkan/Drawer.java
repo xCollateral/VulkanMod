@@ -90,22 +90,6 @@ public class Drawer {
         this.allocateCommandBuffers();
     }
 
-    public static void setDrawBackgroundColor(boolean disableBlend) {
-
-        VRenderSystem.disableDepthTest();
-        VRenderSystem.depthMask(false);
-        VRenderSystem.disableBlend();
-        Pipeline pipeline= ((ShaderMixed)(Minecraft.getInstance().gameRenderer.blitShader)).getPipeline();
-
-        bindPipeline(pipeline);
-
-        VkCommandBuffer commandBuffer = commandBuffers.get(getCurrentFrame());
-        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, 12, VRenderSystem.clearColor.ptr());
-
-        vkCmdDraw( commandBuffer, ( 3), 1, 0, 0 );
-
-    }
-
     public void draw(ByteBuffer buffer, int drawMode, VertexFormat vertexFormat, int vertexCount)
     {
         assertCommandBufferState();
@@ -191,6 +175,7 @@ public class Drawer {
             //Clear Color value is ignored if Load Op is Not set to Clear
             VkClearValue.Buffer clearValues = VkClearValue.mallocStack(2, stack);
 
+            clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr()));
             clearValues.get(1).depthStencil().set(1.0f, 0);
             renderPassInfo.pClearValues(clearValues);
 
@@ -476,7 +461,7 @@ public class Drawer {
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 
-    public static void bindPipeline(Pipeline pipeline) {
+    public void bindPipeline(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         currentDepthState = VRenderSystem.getDepthState();
@@ -495,7 +480,7 @@ public class Drawer {
         pushConstants.update();
 //        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstant.getBuffer());
 
-        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, pushConstants.getSize(), pushConstants.getAddress());
+        nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), pushConstants.getAddress());
     }
 
     public static void setDepthBias(float units, float factor) {

@@ -13,7 +13,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -325,7 +324,7 @@ public abstract class RenderSystemMixin {
         assertOnGameThreadOrInit();
 //      GlStateManager._clearColor(p_69425_, p_69426_, p_69427_, p_69428_);
         //Vulkan
-        VRenderSystem.setRenderPassColor(p_69425_, p_69426_, p_69427_, p_69428_);
+        VRenderSystem.setRenderPassColor(p_69425_, p_69426_, p_69427_);
     }
 
     /**

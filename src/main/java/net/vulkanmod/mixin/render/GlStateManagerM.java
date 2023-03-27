@@ -96,7 +96,7 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _clearColor(float f, float g, float h, float i) {
         RenderSystem.assertOnRenderThreadOrInit();
-        VRenderSystem.setRenderPassColor(f, g, h, i);
+        VRenderSystem.setRenderPassColor(f, g, h);
     }
 
     /**

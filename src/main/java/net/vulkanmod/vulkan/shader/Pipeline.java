@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.minecraft.util.GsonHelper;
@@ -48,15 +47,15 @@ public class Pipeline {
 
     private long descriptorSetLayout;
     private long pipelineLayout;
-    private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>(64);
-    private final VertexFormat vertexFormat;
+    private Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
+    private VertexFormat vertexFormat;
 
     private final long[] descriptorPools = new long[imagesSize];
     private int descriptorCount = 500;
 
     private final List<UBO> UBOs;
     private final List<String> samplers;
-    private final PushConstants pushConstants;
+    private PushConstants pushConstants;
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
 
@@ -107,8 +106,8 @@ public class Pipeline {
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo = VkPipelineVertexInputStateCreateInfo.callocStack(stack);
             vertexInputInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-            vertexInputInfo.pVertexBindingDescriptions(this.vertexFormat== DefaultVertexFormat.BLIT_SCREEN ? null : getBindingDescription(vertexFormat));
-            vertexInputInfo.pVertexAttributeDescriptions(this.vertexFormat== DefaultVertexFormat.BLIT_SCREEN ? null : getAttributeDescriptions(vertexFormat));
+            vertexInputInfo.pVertexBindingDescriptions(getBindingDescription(vertexFormat));
+            vertexInputInfo.pVertexAttributeDescriptions(getAttributeDescriptions(vertexFormat));
 
             // ===> ASSEMBLY STAGE <===
 
@@ -133,7 +132,10 @@ public class Pipeline {
             rasterizer.rasterizerDiscardEnable(false);
             rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
             rasterizer.lineWidth(1.0f);
-            rasterizer.cullMode(state.cullState ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE);
+
+            if(state.cullState) rasterizer.cullMode(VK_CULL_MODE_BACK_BIT);
+            else rasterizer.cullMode(VK_CULL_MODE_NONE);
+
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
             rasterizer.depthBiasEnable(true);
 
@@ -152,8 +154,8 @@ public class Pipeline {
             depthStencil.depthWriteEnable(state.depthState.depthMask);
             depthStencil.depthCompareOp(state.depthState.function);
             depthStencil.depthBoundsTestEnable(false);
-            depthStencil.minDepthBounds(1); // Optional
-            depthStencil.maxDepthBounds(0); // Optional
+            depthStencil.minDepthBounds(0.0f); // Optional
+            depthStencil.maxDepthBounds(1.0f); // Optional
             depthStencil.stencilTestEnable(false);
 
             // ===> COLOR BLENDING <===
@@ -271,7 +273,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(this.pushConstants.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -383,49 +385,55 @@ public class Pipeline {
             posDescription.location(i);
 
             VertexFormatElement.Usage usage = elements.get(i).getUsage();
-            switch (usage) {
-                case POSITION:
-                    posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
-                    posDescription.offset(offset);
+            if (usage == VertexFormatElement.Usage.POSITION)
+            {
+                posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
+                posDescription.offset(offset);
 
-                    offset += 12;
-                    break;
-                case COLOR:
+                offset += 12;
+            }
+            else if (usage == VertexFormatElement.Usage.COLOR)
+            {
 //                posDescription.format(VK_FORMAT_R32G32B32A32_SFLOAT);
-                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
-                    posDescription.offset(offset);
+                posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
+                posDescription.offset(offset);
 
 //                offset += 16;
-                    offset += 4;
-                    break;
-                case UV:
-                    if (elements.get(i).getType() == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32_SFLOAT);
-                        posDescription.offset(offset);
+                offset += 4;
+            }
+            else if (usage == VertexFormatElement.Usage.UV)
+            {
+                if(elements.get(i).getType() == VertexFormatElement.Type.FLOAT){
+                    posDescription.format(VK_FORMAT_R32G32_SFLOAT);
+                    posDescription.offset(offset);
 
-                        offset += 8;
-                    } else if (elements.get(i).getType() == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    }
-                    break;
-                case NORMAL:
-//                posDescription.format(VK_FORMAT_R8G8B8_SNORM);
-                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
+                    offset += 8;
+                }
+                else if(elements.get(i).getType() == VertexFormatElement.Type.SHORT){
+                    posDescription.format(VK_FORMAT_R16G16_SINT);
                     posDescription.offset(offset);
 
                     offset += 4;
-                    break;
-                case PADDING:
+                }
+            }
+            else if (usage == VertexFormatElement.Usage.NORMAL)
+            {
+//                posDescription.format(VK_FORMAT_R8G8B8_SNORM);
+                posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
+                posDescription.offset(offset);
+
+                offset += 4;
+            }
+            else if (usage == VertexFormatElement.Usage.PADDING)
+            {
 //                posDescription.format(VK_FORMAT_R8_SNORM);
 //                posDescription.offset(offset);
 
 //                offset += 1;
-                    break;
-                default:
-                    throw new RuntimeException("Unknown format:");
+            }
+
+            else {
+                throw new RuntimeException("Unknown format:");
             }
 
             posDescription.offset(((VertexFormatMixed)(vertexFormat)).getOffset(i));
@@ -470,11 +478,12 @@ public class Pipeline {
     }
 
     private Consumer<Integer> defaultResetDPFun() {
-        return (i) -> {
+        Consumer<Integer> fun = (i) -> {
             if(vkResetDescriptorPool(device, descriptorPools[i], 0) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to reset descriptor pool");
             }
         };
+        return fun;
     }
 
     public void resetDescriptorPool(int i) {
@@ -483,7 +492,9 @@ public class Pipeline {
     }
 
     public long getHandle(PipelineState state) {
-        return graphicsPipelines.computeIfAbsent(state, this::createGraphicsPipeline);
+        return graphicsPipelines.computeIfAbsent(state, state1 -> {
+            return createGraphicsPipeline(state1);
+        });
     }
 
     public PushConstants getPushConstants() { return this.pushConstants; }
