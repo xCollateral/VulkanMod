@@ -48,7 +48,7 @@ public class AutoIndexBuffer {
 
             //TODO: free old
             //Can't know when VBO will stop using it
-            //indexBuffer.freeBuffer();
+            indexBuffer.freeBuffer();
             createIndexBuffer(newVertexCount);
         }
     }

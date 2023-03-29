@@ -72,9 +72,9 @@ public abstract class DebugHudM {
         strings.add("CPU: " + DeviceInfo.cpuInfo);
         strings.add("GPU: " + Vulkan.getDeviceInfo().deviceName);
         strings.add("Driver: " + Vulkan.getDeviceInfo().driverVersion);
-        strings.add("Vulkan Version:  " + VkVersionString);
+        strings.add("Vulkan Version: " + VkVersionString);
         strings.add("");
-        strings.add("==VBO Stats==");
+        strings.add("-=VBO Stats=-");
         strings.add("Solid: "+ solidChunks.size());
         strings.add("Cutout: "+ cutoutChunks.size());
         strings.add("cutoutMipped: "+ cutoutMippedChunks.size());

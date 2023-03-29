@@ -30,7 +30,7 @@ public class Drawer {
     private static Drawer INSTANCE = new Drawer();
 
     private static VkDevice device;
-    private static List<VkCommandBuffer> commandBuffers;
+    public static List<VkCommandBuffer> commandBuffers;
 
     private static final Set<Pipeline> usedPipelines = new HashSet<>();
 
@@ -457,6 +457,17 @@ public class Drawer {
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+//            Profiler.Push("draw");
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+    }
+    public void drawIndexed2(VertexBuffer vertexBuffer, int indexCount) {
+        VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+
+        VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
+        VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
+        nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
+
+
 //            Profiler.Push("draw");
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }

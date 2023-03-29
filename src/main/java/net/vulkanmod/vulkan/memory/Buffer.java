@@ -2,6 +2,8 @@ package net.vulkanmod.vulkan.memory;
 
 import org.lwjgl.PointerBuffer;
 
+import java.nio.ByteBuffer;
+
 public abstract class Buffer {
     protected long id;
     protected long allocation;
@@ -29,15 +31,20 @@ public abstract class Buffer {
         }
     }
 
+    public void uploadToBuffer(int bufferSize, ByteBuffer byteBuffer)
+    {
+        MemoryTypes.GPU_MEM.copyToBuffer(this, bufferSize, byteBuffer);
+    }
+
     public void freeBuffer() {
         MemoryManager.getInstance().addToFreeable(this);
     }
 
     public void reset() { usedBytes = 0; }
 
-    public long getAllocation() { return allocation; }
+    public int getTotalSize() { return bufferSize-usedBytes; }
 
-    public long getUsedBytes() { return usedBytes; }
+    public int getUsedBytes() { return usedBytes; }
 
     public long getId() {return id; }
 

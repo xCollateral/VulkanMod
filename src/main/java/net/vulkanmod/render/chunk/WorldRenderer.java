@@ -30,6 +30,8 @@ import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
+import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.VRenderSystem;
 import com.mojang.math.Matrix4f;
@@ -39,9 +41,12 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import static net.vulkanmod.render.chunk.util.VBOUtil.*;
+import static org.lwjgl.vulkan.VK10.VK_INDEX_TYPE_UINT16;
+import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
+    private final IndexBuffer autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer();
 
     private Minecraft minecraft;
 
@@ -492,32 +497,12 @@ public class WorldRenderer {
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
-        if (layer == RenderTypes.TRANSLUCENT) {
-            this.minecraft.getProfiler().push("translucent_sort");
-            double d0 = camX - this.xTransparentOld;
-            double d1 = camY - this.yTransparentOld;
-            double d2 = camZ - this.zTransparentOld;
-            if (d0 * d0 + d1 * d1 + d2 * d2 > 1.0D) {
-                this.xTransparentOld = camX;
-                this.yTransparentOld = camY;
-                this.zTransparentOld = camZ;
-                int j = 0;
 
-                for(QueueChunkInfo chunkInfo : this.sectionsInFrustum) {
-                    if (j < 15 && chunkInfo.chunk.resortTransparency(this.taskDispatcher)) {
-                        ++j;
-                    }
-                }
-            }
-
-            this.minecraft.getProfiler().pop();
-        }
 
         this.minecraft.getProfiler().push("filterempty");
         this.minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
         });
-        boolean flag = layer != RenderTypes.TRANSLUCENT;
 
         final ObjectArrayList<VBO> sections =
         switch (layer) {
@@ -529,9 +514,6 @@ public class WorldRenderer {
         };
 
 //        ObjectListIterator<WorldRenderer.QueueChunkInfo> iterator = this.sectionsInFrustum.listIterator(flag ? 0 : this.sectionsInFrustum.size());
-        ObjectListIterator<VBO> iterator = sections.listIterator(flag ? 0 : sections.size());
-
-
 
 
         //Use seperate matrix to avoid Incorrect translations propagating to Particles/Lines Layer
@@ -545,15 +527,13 @@ public class WorldRenderer {
 
         drawer.uploadAndBindUBOs(pipeline);
 
-        Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
-        Supplier<VBO> getter = flag ? iterator::next : iterator::previous;
-
-//        Profiler p1 = Profiler.getProfiler("drawCmds");
+        //        Profiler p1 = Profiler.getProfiler("drawCmds");
 //        p1.start();
 //        Profiler.setCurrentProfiler(p1);
-
-        while (checker.get()) {
-            getter.get().drawChunkLayer();
+        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), autoIndexBuffer.getId(), autoIndexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+        for(VBO vbo : sections)
+        {
+            vbo.drawChunkLayer();;
         }
 
 //        p1.end();

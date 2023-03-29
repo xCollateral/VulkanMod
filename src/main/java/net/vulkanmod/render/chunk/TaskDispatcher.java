@@ -178,7 +178,7 @@ public class TaskDispatcher {
     }
 
     public CompletableFuture<Void> scheduleUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
-
+        if(renderedBuffer.drawState().indexOnly()) return CompletableFuture.completedFuture(null);
         return CompletableFuture.runAsync(() ->
                 vertexBuffer.upload(renderedBuffer, sort), this.toUpload::add);
 //
