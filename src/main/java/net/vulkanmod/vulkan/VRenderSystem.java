@@ -295,7 +295,7 @@ public class VRenderSystem {
         Window window = Minecraft.getInstance().getWindow();
 
         screenSize.putFloat(0, (float)window.getWidth());
-        screenSize.putFloat(1, (float)window.getHeight());
+        screenSize.putFloat(4, (float)window.getHeight());
     }
     
     public static void setWindow(long window) {

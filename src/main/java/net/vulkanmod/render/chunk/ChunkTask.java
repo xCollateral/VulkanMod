@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -197,7 +198,7 @@ public class ChunkTask {
             final PoseStack poseStack = new PoseStack();
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
-                final Set<RenderType> set = new ReferenceArraySet<>(RenderType.chunkBufferLayers().size());
+                final Set<RenderType> set = new ReferenceArraySet<>(VBOUtil.RenderTypes.values().length);
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
 

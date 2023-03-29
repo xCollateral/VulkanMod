@@ -61,17 +61,19 @@ public class VBOUtil {
     @NotNull
     public static RenderTypes getLayer(RenderType renderType) {
         return switch (renderType.name) {
+            case "cutout" -> RenderTypes.CUTOUT;
             case "cutout_mipped" -> RenderTypes.CUTOUT_MIPPED;
             case "translucent" -> RenderTypes.TRANSLUCENT;
-            default -> RenderTypes.CUTOUT;
+            default -> throw new IllegalStateException("Bad RenderType: "+renderType.name);
         };
     }
 
     public static RenderTypes getLayer(String type) {
         return switch (type) {
+            case "cutout" -> RenderTypes.CUTOUT;
             case "cutout_mipped" -> RenderTypes.CUTOUT_MIPPED;
             case "translucent" -> RenderTypes.TRANSLUCENT;
-            default -> RenderTypes.CUTOUT;
+            default -> throw new IllegalStateException("Bad RenderType: "+type);
         };
     }
 

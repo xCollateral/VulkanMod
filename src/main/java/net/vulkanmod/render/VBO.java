@@ -1,12 +1,9 @@
 package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -18,24 +15,20 @@ import static net.vulkanmod.render.chunk.util.VBOUtil.*;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
+    final int index;
     public boolean preInitalised=true;
     public boolean hasAbort=false;
     private VertexBuffer vertexBuffer;
-    private VertexFormat.IndexType indexType;
     public int indexCount;
     private int vertexCount;
-    private VertexFormat.Mode mode;
-    private boolean sequentialIndices;
-    private VertexFormat vertexFormat;
-
-    private boolean autoIndexed = false;
 
     public final RenderTypes type;
     private int x;
     private int y;
     private int z;
 
-    public VBO(String name, int x, int y, int z) {
+    public VBO(int index, String name, int x, int y, int z) {
+        this.index = index;
         this.type = getLayer(name);
         this.x = x;
         this.y = y;
@@ -45,17 +38,15 @@ public class VBO {
     public void upload(BufferBuilder.RenderedBuffer buffer, boolean sort) {
         BufferBuilder.DrawState parameters = buffer.drawState();
 
-        this.indexCount = parameters.indexCount();
+        this.indexCount = Math.min(parameters.indexCount(), parameters.vertexCount()/4*6);
         this.vertexCount = parameters.vertexCount();
-        this.indexType = parameters.indexType();
-        this.mode = parameters.mode();
 
         final ByteBuffer vertBuff = buffer.vertexBuffer();
 
-        if(!sort) translateVBO(vertBuff);
+        if(!sort) translateVBO(MemoryUtil.memAddress0(vertBuff));
 
 
-        this.configureVertexFormat(parameters, vertBuff);
+        this.configureVertexFormat(vertBuff);
 //        this.configureIndexBuffer(idxBuff);
 
         buffer.release();
@@ -65,10 +56,9 @@ public class VBO {
 
     //WorkAround For PushConstants
     //Likely could be moved to an earlier vertex Assembly/Builder state
-    private void translateVBO(ByteBuffer buffer) {
-        final long addr = MemoryUtil.memAddress0(buffer);
+    private void translateVBO(long addr) {
         //Use constant Attribute size to encourage loop unrolling
-        for(int i = 0; i< buffer.remaining(); i+=32)
+        for(int i = 0; i< vertexCount*32; i+=32)
         {
             VUtil.UNSAFE.putFloat(addr+i,   (VUtil.UNSAFE.getFloat(addr+i)  +(float)(x- camX - originX)));
             VUtil.UNSAFE.putFloat(addr+i+4, (VUtil.UNSAFE.getFloat(addr+i+4)+y));
@@ -76,21 +66,19 @@ public class VBO {
         }
     }
 
-    private void configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
+    private void configureVertexFormat(ByteBuffer data) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
-        if (!parameters.indexOnly()) {
 
-            if(this.vertexBuffer==null) this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            if(data.remaining()> vertexBuffer.getTotalSize())
-            {
-                this.vertexBuffer.freeBuffer();
-                this.vertexBuffer=new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            }
-
-            //
-
-            vertexBuffer.uploadToBuffer(data.remaining(), data);
+        if(this.vertexBuffer==null) this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+        if(data.remaining()> vertexBuffer.getTotalSize())
+        {
+            this.vertexBuffer.freeBuffer();
+            this.vertexBuffer=new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
         }
+
+        //
+
+        vertexBuffer.uploadToBuffer(data.remaining(), data);
     }
 
 
@@ -110,10 +98,6 @@ public class VBO {
         this.indexCount = 0;
         preInitalised=true;
         removeVBO(this);
-    }
-
-    public VertexFormat getFormat() {
-        return this.vertexFormat;
     }
 
     public void updateOrigin(int x, int y, int z) {

@@ -114,6 +114,7 @@ public abstract class LevelRendererMixin {
 
     }
 
+
     @Redirect(method = "renderLevel", at=@At(value="INVOKE", ordinal =0, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"))
     private void renderChunkLayer1(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double d, double e, double f, Matrix4f matrix4f)
     {
@@ -128,13 +129,18 @@ public abstract class LevelRendererMixin {
     @Redirect(method = "renderLevel", at=@At(value = "INVOKE", ordinal = 4, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"))
     private void removeTripWire1(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {}
 
-
-
-    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"))
-    private void renderChunkLayer(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix)
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix)
     {
         this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, projectionMatrix);
     }
+
+
+
     //Avoid NullPointer when calling VertexBuffer.bind()
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;bind()V"))
     private void bindSkyBoxVBO(VertexBuffer instance)

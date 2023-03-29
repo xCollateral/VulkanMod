@@ -18,12 +18,10 @@ import net.minecraft.world.phys.AABB;
 import net.vulkanmod.render.VBO;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RenderSection {
     private final int index;
@@ -61,8 +59,8 @@ public class RenderSection {
         this.origin.set(x, y, z);
         buffers =
         //TODO later: find something better
-        new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) ->
-                renderType, (renderType) -> new VBO(renderType.name, x, y, z))));
+        new Reference2ReferenceArrayMap<>(Stream.of(RenderType.CUTOUT, RenderType.CUTOUT_MIPPED, RenderType.TRANSLUCENT).collect(Collectors.toMap((renderType) ->
+                renderType, (renderType) -> new VBO(index, renderType.name, x, y, z))));
     }
 
     public void setOrigin(int x, int y, int z) {
