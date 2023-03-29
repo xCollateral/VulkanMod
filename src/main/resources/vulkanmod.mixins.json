@@ -11,6 +11,7 @@
     "WindowMixin",
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
+    "chunk.ItemBlockRenderTypesM",
     "chunk.LevelRendererMixin",
     "chunk.VisibilitySetMixin",
     "compatibility.EffectInstanceM",

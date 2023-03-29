@@ -38,8 +38,6 @@ public class RenderSection {
     final AtomicInteger initialCompilationCancelCount = new AtomicInteger(0);
     @Nullable
     private ChunkTask.BuildTask lastRebuildTask;
-    @Nullable
-    private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
     private final Map<RenderType, VBO> buffers;
     private AABB bb;
@@ -86,21 +84,6 @@ public class RenderSection {
 
     }
 
-    public boolean resortTransparency(TaskDispatcher taskDispatcher) {
-        CompiledSection compiledSection1 = this.getCompiledSection();
-        if (this.lastResortTransparencyTask != null) {
-            this.lastResortTransparencyTask.cancel();
-        }
-
-        if (!compiledSection1.renderTypes.contains(RenderType.TRANSLUCENT)) {
-            return false;
-        } else {
-            this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);
-            taskDispatcher.schedule(this.lastResortTransparencyTask);
-            return true;
-        }
-    }
-
     public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
         ChunkTask.BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
         dispatcher.schedule(chunkCompileTask);
@@ -141,11 +124,6 @@ public class RenderSection {
             this.lastRebuildTask.cancel();
             this.lastRebuildTask = null;
             flag = true;
-        }
-
-        if (this.lastResortTransparencyTask != null) {
-            this.lastResortTransparencyTask.cancel();
-            this.lastResortTransparencyTask = null;
         }
 
         return flag;

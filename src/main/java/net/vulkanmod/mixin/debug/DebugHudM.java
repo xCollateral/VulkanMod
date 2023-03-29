@@ -75,18 +75,14 @@ public abstract class DebugHudM {
         strings.add("Vulkan Version: " + VkVersionString);
         strings.add("");
         strings.add("-=VBO Stats=-");
-        strings.add("Solid: "+ solidChunks.size());
         strings.add("Cutout: "+ cutoutChunks.size());
         strings.add("cutoutMipped: "+ cutoutMippedChunks.size());
         strings.add("Translucent: "+ translucentChunks.size());
-        strings.add("Tripwire: "+ tripwireChunks.size());
         strings.add("");
-        strings.add("Total: "+ (solidChunks.size() +
+        strings.add("Total: "+ (
                 cutoutChunks.size() +
                 cutoutMippedChunks.size() +
-                translucentChunks.size() +
-                tripwireChunks.size() +
-                tripwireChunks.size()));
+                translucentChunks.size()));
 
         return strings;
     }

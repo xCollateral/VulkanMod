@@ -237,10 +237,8 @@ public class WorldRenderer {
 
         this.sectionsInFrustum.clear();
 
-        solidChunks.clear();
         cutoutChunks.clear();
         cutoutMippedChunks.clear();
-        tripwireChunks.clear();
         translucentChunks.clear();
 
         this.lastFrame++;
@@ -257,16 +255,10 @@ public class WorldRenderer {
             renderSection.compiledSection.renderTypes.stream().filter(renderType ->
                     !renderSection.getBuffer(renderType).preInitalised).forEach(renderType -> {
                         final VBO buffer = renderSection.getBuffer(renderType);
-                        if (RenderType.SOLID == renderType) {
-                            solidChunks.add(buffer);
-                        } else if (RenderType.CUTOUT == renderType) {
-                            cutoutChunks.add(buffer);
-                        } else if (RenderType.CUTOUT_MIPPED == renderType) {
-                            cutoutMippedChunks.add(buffer);
-                        } else if (RenderType.TRANSLUCENT == renderType) {
-                            translucentChunks.add(buffer);
-                        } else if (RenderType.TRIPWIRE == renderType) {
-                            tripwireChunks.add(buffer);
+                        switch (buffer.type) {
+                            case CUTOUT -> cutoutChunks.add(buffer);
+                            case CUTOUT_MIPPED -> cutoutMippedChunks.add(buffer);
+                            case TRANSLUCENT -> translucentChunks.add(buffer);
                         }
             });
 
@@ -492,7 +484,13 @@ public class WorldRenderer {
         Profiler p = Profiler.getProfiler("chunks");
 
         final RenderTypes layer = getLayer(renderType);
-
+        final ObjectArrayList<VBO> sections =
+                switch (layer) {
+                    case CUTOUT_MIPPED -> cutoutMippedChunks;
+                    case CUTOUT -> cutoutChunks;
+                    case TRANSLUCENT -> translucentChunks;
+                };
+        if(sections.isEmpty()) return;
         p.pushMilestone("layer " + layer.name);
 
         RenderSystem.assertOnRenderThread();
@@ -504,14 +502,7 @@ public class WorldRenderer {
             return "render_" + renderType;
         });
 
-        final ObjectArrayList<VBO> sections =
-        switch (layer) {
-            case SOLID -> solidChunks;
-            case CUTOUT_MIPPED -> cutoutMippedChunks;
-            case CUTOUT -> cutoutChunks;
-            case TRANSLUCENT -> translucentChunks;
-            case TRIPWIRE -> tripwireChunks;
-        };
+
 
 //        ObjectListIterator<WorldRenderer.QueueChunkInfo> iterator = this.sectionsInFrustum.listIterator(flag ? 0 : this.sectionsInFrustum.size());
 
