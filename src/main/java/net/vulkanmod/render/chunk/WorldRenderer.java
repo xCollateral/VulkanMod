@@ -52,7 +52,6 @@ import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
-    private final IndexBuffer autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer();
 
     private Minecraft minecraft;
 
@@ -587,10 +586,7 @@ public class WorldRenderer {
 
         drawer.uploadAndBindUBOs(pipeline);
 
-        //        Profiler p1 = Profiler.getProfiler("drawCmds");
-//        p1.start();
-//        Profiler.setCurrentProfiler(p1);
-        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), autoIndexBuffer.getId(), autoIndexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+
         for(final VBO vbo : sections)
         {
             vbo.drawChunkLayer();
