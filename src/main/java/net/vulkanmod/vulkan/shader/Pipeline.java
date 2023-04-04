@@ -10,6 +10,8 @@ import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.ShaderKind;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.TransferQueue;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
@@ -37,6 +39,7 @@ import static net.vulkanmod.vulkan.ShaderSPIRVUtils.compileShaderFile;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -507,7 +510,7 @@ public class Pipeline {
         private DescriptorSetsUnit(VkCommandBuffer commandBuffer, int frame, UniformBuffers uniformBuffers) {
 
             allocateDescriptorSet(frame);
-            updateDescriptorSet(commandBuffer, frame, uniformBuffers);
+            updateDescriptorSet(frame, uniformBuffers);
         }
 
         private void allocateDescriptorSet(int frame) {
@@ -547,7 +550,7 @@ public class Pipeline {
             }
         }
 
-        private void updateDescriptorSet(VkCommandBuffer commandBuffer, int frame, UniformBuffers uniformBuffers) {
+        private void updateDescriptorSet(int frame, UniformBuffers uniformBuffers) {
             try(MemoryStack stack = stackPush()) {
 
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(UBOs.size() + samplers.size(), stack);
@@ -577,69 +580,37 @@ public class Pipeline {
                     ++i;
                 }
 
-                VkDescriptorImageInfo.Buffer[] imageInfos = new VkDescriptorImageInfo.Buffer[samplers.size()];
+                VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.calloc(samplers.size(), stack);
+                //Don't create empty CommandbUffer if samplers are empty
+                if(!samplers.isEmpty())
+                {
+                    TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+                    for (int j=0; j<samplers.size(); j++) {
 
-                if(samplers.size() > 0) {
-                    //TODO: make an auxiliary function
-                    VulkanImage texture = VTextureSelector.getBoundTexture();
-                    texture.readOnlyLayout();
-                    //VulkanImage texture = VTextureManager.getCurrentTexture();
+                        //TODO: make an auxiliary function
+                        VulkanImage texture = getTex(j);
 
-                    imageInfos[0] = VkDescriptorImageInfo.callocStack(1, stack);
-                    imageInfos[0].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                        texture.readOnlyLayout(commandBuffer);
+                        //VulkanImage texture = VTextureManager.getCurrentTexture();
 
-                    imageInfos[0].imageView(texture.getTextureImageView());
-                    imageInfos[0].sampler(texture.getTextureSampler());
+                        VkDescriptorImageInfo imageInfo = imageInfos.get(j);
+                        imageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-                    VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
-                    samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                    samplerDescriptorWrite.dstBinding(i);
-                    samplerDescriptorWrite.dstArrayElement(0);
-                    samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                    samplerDescriptorWrite.descriptorCount(1);
-                    samplerDescriptorWrite.pImageInfo(imageInfos[0]);
+                        imageInfo.imageView(texture.getTextureImageView());
+                        imageInfo.sampler(texture.getTextureSampler());
 
-                    ++i;
-
-                    if (samplers.size() > 1) {
-                        texture = VTextureSelector.getLightTexture();
-                        texture.readOnlyLayout();
-
-                        imageInfos[1] = VkDescriptorImageInfo.callocStack(1, stack);
-                        imageInfos[1].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-                        imageInfos[1].imageView(texture.getTextureImageView());
-                        imageInfos[1].sampler(texture.getTextureSampler());
-
-                        samplerDescriptorWrite = descriptorWrites.get(i);
+                        VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
                         samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
                         samplerDescriptorWrite.dstBinding(i);
                         samplerDescriptorWrite.dstArrayElement(0);
                         samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                         samplerDescriptorWrite.descriptorCount(1);
-                        samplerDescriptorWrite.pImageInfo(imageInfos[1]);
-
+                        memPutAddress(samplerDescriptorWrite.address() + VkWriteDescriptorSet.PIMAGEINFO, imageInfo.address());
                         ++i;
 
-                        if(samplers.size() > 2) {
-                            texture = VTextureSelector.getOverlayTexture();
-                            texture.readOnlyLayout();
-
-                            imageInfos[2] = VkDescriptorImageInfo.callocStack(1, stack);
-                            imageInfos[2].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-                            imageInfos[2].imageView(texture.getTextureImageView());
-                            imageInfos[2].sampler(texture.getTextureSampler());
-
-                            samplerDescriptorWrite = descriptorWrites.get(i);
-                            samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                            samplerDescriptorWrite.dstBinding(i);
-                            samplerDescriptorWrite.dstArrayElement(0);
-                            samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                            samplerDescriptorWrite.descriptorCount(1);
-                            samplerDescriptorWrite.pImageInfo(imageInfos[2]);
-                        }
                     }
+                    long fence = TransferQueue.endCommands(commandBuffer);
+                    if (fence != 0) Synchronization.addFence(fence);
                 }
 
                 //long descriptorSet = descriptorSets.get(Drawer.getCurrentFrame());
@@ -658,6 +629,16 @@ public class Pipeline {
 
                 vkUpdateDescriptorSets(device, descriptorWrites, null);
             }
+        }
+
+        private VulkanImage getTex(int j) {
+            return switch (j)
+            {
+                case 0 -> VTextureSelector.getBoundTexture();
+                case 1 -> VTextureSelector.getLightTexture();
+                case 2 -> VTextureSelector.getOverlayTexture();
+                default -> throw new IllegalStateException("Unexpected value: " + j);
+            };
         }
     }
 
