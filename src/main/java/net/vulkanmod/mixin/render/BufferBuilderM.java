@@ -1,9 +1,14 @@
 package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.math.Vector3f;
+import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.ints.IntComparator;
+import it.unimi.dsi.fastutil.ints.IntConsumer;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.render.vertex.VertexUtil;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
@@ -51,6 +56,16 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     @Shadow private @Nullable VertexFormatElement currentElement;
     @Shadow private VertexFormat format;
 
+    @Shadow private int renderedBufferPointer;
+    @Shadow private VertexFormat.Mode mode;
+    @Shadow private int vertices;
+    @Shadow @Nullable private Vector3f[] sortingPoints;
+    @Shadow private float sortX;
+    @Shadow private float sortY;
+    @Shadow private float sortZ;
+
+    @Shadow protected abstract IntConsumer intConsumer(int i, VertexFormat.IndexType indexType);
+
     private long bufferPtr;
     private long ptr;
     private int offset;
@@ -69,11 +84,76 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.vertex(v.x(), v.y(), v.z(), v.packedColor(), v.u(), v.v(), v.overlay(), v.light(), v.packedNormal());
     }
 
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
+        final int i1 = this.vertices / this.mode.primitiveStride;
+        float[] fs = new float[i1];
+        int[] is = new int[i1];
+
+        for (int i = 0; i < i1; is[i] = i++) {
+            float f = this.sortingPoints[i].x() - this.sortX;
+            float g = this.sortingPoints[i].y() - this.sortY;
+            float h = this.sortingPoints[i].z() - this.sortZ;
+            fs[i] = f * f + g * g + h * h;
+        }
+
+        IntComparator intComparator = (ix, jx) -> {
+            if (fs[jx] < fs[ix]) return -1;
+            if (fs[jx] > fs[ix]) return 1;
+
+            return 0;
+        };
+        IntArrays.unstableSort(is, intComparator);
+        MutableInt mutableInt = new MutableInt(this.nextElementByte);
+
+        IntConsumer intConsumer = (ix) -> this.buffer.putShort(mutableInt.getAndAdd(2), (short) ix);
+
+
+
+        for (int j : is) {
+            intConsumer.accept(j * this.mode.primitiveStride);
+            intConsumer.accept(j * this.mode.primitiveStride + 1);
+            intConsumer.accept(j * this.mode.primitiveStride + 2);
+            intConsumer.accept(j * this.mode.primitiveStride + 2);
+            intConsumer.accept(j * this.mode.primitiveStride + 3);
+            intConsumer.accept(j * this.mode.primitiveStride);
+        }
+
+    }
+
+    @Overwrite
+    private Vector3f[] makeQuadSortingPoints() {
+        int i = this.renderedBufferPointer / 4;
+        int j = this.format.getIntegerSize();
+        int k = j * this.mode.primitiveStride;
+        int l = this.vertices / this.mode.primitiveStride;
+        Vector3f[] vector3fs = new Vector3f[l];
+
+        for (int m = 0; m < l; ++m) {
+            float f = this.buffer.getFloat((i + m * k)*4);
+            float g = this.buffer.getFloat((i + m * k + 1)*4);
+            float h = this.buffer.getFloat((i + m * k + 2)*4);
+            float n = this.buffer.getFloat((i + m * k + j * 2)*4);
+            float o = this.buffer.getFloat((i + m * k + j * 2 + 1)*4);
+            float p = this.buffer.getFloat((i + m * k + j * 2 + 2)*4);
+            float q = (f + n) / 2.0F;
+            float r = (g + o) / 2.0F;
+            float s = (h + p) / 2.0F;
+            vector3fs[m] = new Vector3f(q, r, s);
+        }
+
+        return vector3fs;
+    }
+
     public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
         this.ptr = this.nextElementPtr();
 
         if(this.format == DefaultVertexFormat.NEW_ENTITY) {
-            MemoryUtil.memPutFloat(ptr + 0, x);
+            MemoryUtil.memPutFloat(ptr, x);
             MemoryUtil.memPutFloat(ptr + 4, y);
             MemoryUtil.memPutFloat(ptr + 8, z);
 
@@ -105,7 +185,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     }
 
     public void vertex(float x, float y, float z) {
-        MemoryUtil.memPutFloat(ptr + 0, x);
+        MemoryUtil.memPutFloat(ptr, x);
         MemoryUtil.memPutFloat(ptr + 4, y);
         MemoryUtil.memPutFloat(ptr + 8, z);
 

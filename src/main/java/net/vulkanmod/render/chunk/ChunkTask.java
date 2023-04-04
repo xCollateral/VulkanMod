@@ -244,13 +244,13 @@ public class ChunkTask {
                     }
                 }
 
-//                if (set.contains(RenderType.TRANSLUCENT)) {
-//                    BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.TRANSLUCENT);
-//                    if (!bufferBuilder2.isCurrentBatchEmpty()) {
-//                        bufferBuilder2.setQuadSortOrigin(f - (float) blockPos1.getX(), g - (float) blockPos1.getY(), h - (float) blockPos1.getZ());
-//                        compileResults.transparencyState = bufferBuilder2.getSortState();
-//                    }
-//                }
+                if (set.contains(RenderType.TRANSLUCENT)) {
+                    BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.TRANSLUCENT);
+                    if (!bufferBuilder2.isCurrentBatchEmpty()) {
+                        bufferBuilder2.setQuadSortOrigin(f - (float) blockPos1.getX(), g - (float) blockPos1.getY(), h - (float) blockPos1.getZ());
+                        compileResults.transparencyState = bufferBuilder2.getSortState();
+                    }
+                }
 
 //                var15 = set.iterator();
 
@@ -303,9 +303,62 @@ public class ChunkTask {
             }
         }
     }
+
+    public static class SortTransparencyTask extends ChunkTask {
+        RenderSection.CompiledSection compiledSection;
+
+        SortTransparencyTask(RenderSection renderSection) {
+            super(renderSection);
+            this.compiledSection = renderSection.getCompiledSection();
+        }
+
+        public String name() {
+            return "rend_chk_sort";
+        }
+
+        public CompletableFuture<Result> doTask(ChunkBufferBuilderPack builderPack) {
+            if (this.cancelled.get()) {
+                return CompletableFuture.completedFuture(Result.CANCELLED);
+            } else if (renderSection.hasXYNeighbours()) {
+                this.cancelled.set(true);
+                return CompletableFuture.completedFuture(Result.CANCELLED);
+            } else {
+                Vec3 vec3 = WorldRenderer.getCameraPos();
+                float f = (float)vec3.x;
+                float f1 = (float)vec3.y;
+                float f2 = (float)vec3.z;
+                BufferBuilder.SortState bufferbuilder$sortstate = this.compiledSection.transparencyState;
+                if (bufferbuilder$sortstate != null && this.compiledSection.renderTypes.contains(RenderType.translucent())) {
+                    BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
+                    bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                    bufferbuilder.restoreSortState(bufferbuilder$sortstate);
+                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
+                    this.compiledSection.transparencyState = bufferbuilder.getSortState();
+                    BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
+                    if (this.cancelled.get()) {
+                        return CompletableFuture.completedFuture(Result.CANCELLED);
+                    } else {
+                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.getBuffer(RenderType.translucent()), true).thenApply((p_112898_) -> {
+                            return Result.CANCELLED;
+                        });
+                        return completablefuture.handle((p_199960_, p_199961_) -> {
+                            if (p_199961_ != null && !(p_199961_ instanceof CancellationException) && !(p_199961_ instanceof InterruptedException)) {
+                                CrashReport crashreport = CrashReport.forThrowable(p_199961_, "Rendering chunk");
+                                Minecraft.getInstance().delayCrash(crashreport);
+                            }
+
+                            return this.cancelled.get() ? Result.CANCELLED : Result.SUCCESSFUL;
+                        });
+                    }
+                } else {
+                    return CompletableFuture.completedFuture(Result.CANCELLED);
+                }
+            }
+        }
+    }
     
     public enum Result {
         CANCELLED,
-        SUCCESSFUL
+        SUCCESSFUL;
     }
 }

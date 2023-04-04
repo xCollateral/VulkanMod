@@ -225,10 +225,10 @@ public class VulkanImage {
         currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     }
 
-    public void readOnlyLayout() {
+    public void readOnlyLayout(TransferQueue.CommandBuffer commandBuffer) {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) return;
 
-        TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+
 
         try(MemoryStack stack = stackPush()) {
 
@@ -264,8 +264,7 @@ public class VulkanImage {
                     barrier);
         }
 
-        long fence = TransferQueue.endCommands(commandBuffer);
-        if (fence != 0) Synchronization.addFence(fence);
+
 
 
         this.currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

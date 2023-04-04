@@ -18,7 +18,10 @@ import net.minecraft.world.phys.AABB;
 import net.vulkanmod.render.VBO;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +39,8 @@ public class RenderSection {
     final AtomicInteger initialCompilationCancelCount = new AtomicInteger(0);
     @Nullable
     private ChunkTask.BuildTask lastRebuildTask;
+    @Nullable
+    private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
     private final Map<RenderType, VBO> buffers;
     private AABB bb;
@@ -60,7 +65,7 @@ public class RenderSection {
         buffers =
         //TODO later: find something better
         new Reference2ReferenceArrayMap<>(Stream.of(RenderType.CUTOUT, RenderType.CUTOUT_MIPPED, RenderType.TRANSLUCENT).collect(Collectors.toMap((renderType) ->
-                renderType, (renderType) -> new VBO(index, renderType.name, x, y, z))));
+                renderType, (renderType) -> new VBO(renderType.name, x, y, z))));
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -80,6 +85,21 @@ public class RenderSection {
             this.init = false;
         }
 
+    }
+
+    public boolean resortTransparency(TaskDispatcher taskDispatcher) {
+        CompiledSection compiledSection1 = this.getCompiledSection();
+        if (this.lastResortTransparencyTask != null) {
+            this.lastResortTransparencyTask.cancel();
+        }
+
+        if (!compiledSection1.renderTypes.contains(RenderType.TRANSLUCENT)) {
+            return false;
+        } else {
+            this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);
+            taskDispatcher.schedule(this.lastResortTransparencyTask);
+            return true;
+        }
     }
 
     public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
@@ -122,6 +142,11 @@ public class RenderSection {
             this.lastRebuildTask.cancel();
             this.lastRebuildTask = null;
             flag = true;
+        }
+
+        if (this.lastResortTransparencyTask != null) {
+            this.lastResortTransparencyTask.cancel();
+            this.lastResortTransparencyTask = null;
         }
 
         return flag;
