@@ -319,20 +319,20 @@ public class ChunkTask {
         public CompletableFuture<Result> doTask(ChunkBufferBuilderPack builderPack) {
             if (this.cancelled.get()) {
                 return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else if (renderSection.hasXYNeighbours()) {
+            } else if (!renderSection.hasXYNeighbours()) {
                 this.cancelled.set(true);
                 return CompletableFuture.completedFuture(Result.CANCELLED);
             } else {
                 Vec3 vec3 = WorldRenderer.getCameraPos();
-                float f = (float)vec3.x;
-                float f1 = (float)vec3.y;
-                float f2 = (float)vec3.z;
+                int f = (int)vec3.x;
+                int f1 = (int)vec3.y;
+                int f2 = (int)vec3.z;
                 BufferBuilder.SortState bufferbuilder$sortstate = this.compiledSection.transparencyState;
                 if (bufferbuilder$sortstate != null && this.compiledSection.renderTypes.contains(RenderType.translucent())) {
                     BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
                     bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                     bufferbuilder.restoreSortState(bufferbuilder$sortstate);
-                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
+                    bufferbuilder.setQuadSortOrigin(f - this.renderSection.origin.getX(), f1 - renderSection.origin.getY(), f2 - renderSection.origin.getZ());
                     this.compiledSection.transparencyState = bufferbuilder.getSortState();
                     BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
                     if (this.cancelled.get()) {

@@ -3,12 +3,9 @@ package net.vulkanmod.mixin.render;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Vector3f;
 import it.unimi.dsi.fastutil.ints.IntArrays;
-import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.ints.IntConsumer;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.render.vertex.VertexUtil;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
@@ -59,12 +56,10 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     @Shadow private int renderedBufferPointer;
     @Shadow private VertexFormat.Mode mode;
     @Shadow private int vertices;
-    @Shadow @Nullable private Vector3f[] sortingPoints;
-    @Shadow private float sortX;
-    @Shadow private float sortY;
-    @Shadow private float sortZ;
-
-    @Shadow protected abstract IntConsumer intConsumer(int i, VertexFormat.IndexType indexType);
+    private Vector3f[] sortingPoints;
+    private int sortX;
+    private int sortY;
+    private int sortZ;
 
     private long bufferPtr;
     private long ptr;
@@ -84,66 +79,84 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.vertex(v.x(), v.y(), v.z(), v.packedColor(), v.u(), v.v(), v.overlay(), v.light(), v.packedNormal());
     }
 
+    @Overwrite
+    public void setQuadSortOrigin(float f, float g, float h) {
+        if (this.mode == VertexFormat.Mode.QUADS) {
+            setSortOrigin2((int) f, (int) g, (int) h);
+        }
+    }
+
+    private void setSortOrigin2(int f, int g, int h) {
+        if (this.sortX != f || this.sortY != g || this.sortZ != h) {
+            this.sortX = f;
+            this.sortY = g;
+            this.sortZ = h;
+            if (this.sortingPoints == null) {
+                this.sortingPoints = this.makeQuadSortingPoints();
+            }
+        }
+    }
+
     /**
      * @author
      * @reason
      */
     @Overwrite
     private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
-        final int i1 = this.vertices / this.mode.primitiveStride;
-        float[] fs = new float[i1];
-        int[] is = new int[i1];
+        final int vertexCount = this.vertices / Integer.BYTES;
+        int[] dist = new int[vertexCount];
+        int[] indices = new int[vertexCount];
 
-        for (int i = 0; i < i1; is[i] = i++) {
-            float f = this.sortingPoints[i].x() - this.sortX;
-            float g = this.sortingPoints[i].y() - this.sortY;
-            float h = this.sortingPoints[i].z() - this.sortZ;
-            fs[i] = f * f + g * g + h * h;
+        for (int i = 0; i < vertexCount; indices[i] = i++) {
+            int f = (int) this.sortingPoints[i].x() - this.sortX;
+            int g = (int) this.sortingPoints[i].y() - this.sortY;
+            int h = (int) this.sortingPoints[i].z() - this.sortZ;
+            dist[i] = f * f + g * g + h * h;
         }
 
-        IntComparator intComparator = (ix, jx) -> {
-            if (fs[jx] < fs[ix]) return -1;
-            if (fs[jx] > fs[ix]) return 1;
-
-            return 0;
-        };
-        IntArrays.unstableSort(is, intComparator);
-        MutableInt mutableInt = new MutableInt(this.nextElementByte);
-
-        IntConsumer intConsumer = (ix) -> this.buffer.putShort(mutableInt.getAndAdd(2), (short) ix);
+        IntArrays.unstableSort(indices, (ix, jx) -> Integer.compare(dist[jx], dist[ix]));
+        int mutableInt = this.nextElementByte;
 
 
-
-        for (int j : is) {
-            intConsumer.accept(j * this.mode.primitiveStride);
-            intConsumer.accept(j * this.mode.primitiveStride + 1);
-            intConsumer.accept(j * this.mode.primitiveStride + 2);
-            intConsumer.accept(j * this.mode.primitiveStride + 2);
-            intConsumer.accept(j * this.mode.primitiveStride + 3);
-            intConsumer.accept(j * this.mode.primitiveStride);
+        for (final int quadSet : indices) {
+            final int quadIdxSet = quadSet * Integer.BYTES;
+            this.buffer.putInt(mutableInt, quadIdxSet + 1 << 16 | quadIdxSet);
+            this.buffer.putInt(mutableInt+4, quadIdxSet + 2 << 16 | quadIdxSet + 2);
+            this.buffer.putInt(mutableInt+8, quadIdxSet << 16 | quadIdxSet + 3);
+            mutableInt+=12;
         }
 
     }
 
     @Overwrite
     private Vector3f[] makeQuadSortingPoints() {
-        int i = this.renderedBufferPointer / 4;
-        int j = this.format.getIntegerSize();
-        int k = j * this.mode.primitiveStride;
-        int l = this.vertices / this.mode.primitiveStride;
+        int vecPos = this.renderedBufferPointer / 4;
+        final int vecSizeStride = 32/4;
+        int k = vecSizeStride * Integer.BYTES;
+        int l = this.vertices / Integer.BYTES;
         Vector3f[] vector3fs = new Vector3f[l];
 
         for (int m = 0; m < l; ++m) {
-            float f = this.buffer.getFloat((i + m * k)*4);
-            float g = this.buffer.getFloat((i + m * k + 1)*4);
-            float h = this.buffer.getFloat((i + m * k + 2)*4);
-            float n = this.buffer.getFloat((i + m * k + j * 2)*4);
-            float o = this.buffer.getFloat((i + m * k + j * 2 + 1)*4);
-            float p = this.buffer.getFloat((i + m * k + j * 2 + 2)*4);
-            float q = (f + n) / 2.0F;
-            float r = (g + o) / 2.0F;
-            float s = (h + p) / 2.0F;
-            vector3fs[m] = new Vector3f(q, r, s);
+            vector3fs[m] = new Vector3f(
+                    (int)(this.buffer.getFloat((vecPos + m * k)*4) + this.buffer.getFloat((vecPos + m * k + vecSizeStride * 2)*4)) / 2,
+                    (int)(this.buffer.getFloat((vecPos + m * k + 1)*4) + this.buffer.getFloat((vecPos + m * k + vecSizeStride * 2 + 1)*4)) / 2,
+                    (int)(this.buffer.getFloat((vecPos + m * k + 2)*4) + this.buffer.getFloat((vecPos + m * k + vecSizeStride * 2 + 2)*4)) / 2);
+        }
+
+        return vector3fs;
+    }
+
+    private float[] makeQuadSortingPoints2() {
+        int vecPos = this.renderedBufferPointer / 4;
+        final int vecSizeStride = 32/4;
+        int k = vecSizeStride * Integer.BYTES;
+        int l = this.vertices / Integer.BYTES;
+        float[] vector3fs = new float[l*3];
+
+        for (int m = 0; m < l; ++m) {
+            vector3fs[m] =(this.buffer.getFloat((vecPos + m * k)*4) + this.buffer.getFloat((vecPos + m * k + vecSizeStride * 2)*4)) / 2;
+            vector3fs[m+1] = (this.buffer.getFloat((vecPos + m * k + 1)*4) + this.buffer.getFloat((vecPos + m * k + vecSizeStride * 2 + 1)*4)) / 2;
+            vector3fs[m+2] = (this.buffer.getFloat((vecPos + m * k + 2)*4) + this.buffer.getFloat((vecPos + m * k + vecSizeStride * 2 + 2)*4)) / 2;
         }
 
         return vector3fs;

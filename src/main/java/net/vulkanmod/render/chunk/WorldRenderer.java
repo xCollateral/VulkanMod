@@ -53,11 +53,11 @@ import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
-    private Minecraft minecraft;
+    private final Minecraft minecraft;
 
     private ClientLevel level;
     private int lastViewDistance;
-    private RenderBuffers renderBuffers;
+    private final RenderBuffers renderBuffers;
 
     private Vec3 cameraPos;
     private int lastCameraSectionX;
@@ -74,7 +74,7 @@ public class WorldRenderer {
     private boolean needsUpdate;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
-    private TaskDispatcher taskDispatcher;
+    private final TaskDispatcher taskDispatcher;
     private final ChunkQueue chunkQueue = new ChunkQueue();
     private int lastFrame = 0;
     private final ObjectArrayList<QueueChunkInfo> sectionsInFrustum = new ObjectArrayList<>(10000);
@@ -234,7 +234,7 @@ public class WorldRenderer {
             }
 
         } else {
-            QueueChunkInfo chunkInfo = new QueueChunkInfo(renderSection, (Direction)null, 0);
+            QueueChunkInfo chunkInfo = new QueueChunkInfo(renderSection, null, 0);
             this.chunkQueue.add(chunkInfo);
         }
 
@@ -298,7 +298,7 @@ public class WorldRenderer {
                     if (renderChunkInfo.hasMainDirection()) {
 
                         RenderSection.CompiledSection compiledSection = renderSection.getCompiledSection();
-                        boolean flag1 = false;
+                        boolean flag1 = compiledSection.canSeeThrough(renderChunkInfo.mainDir.getOpposite(), direction);
 
 //                  for(int j = 0; j < DIRECTIONS.length; ++j) {
 //                     if (renderChunkInfo.hasSourceDirection(j) && compiledSection.facesCanSeeEachother(DIRECTIONS[j].getOpposite(), direction)) {
@@ -308,10 +308,6 @@ public class WorldRenderer {
 //                  }
 
 //                        if(compiledSection.hasNoRenderableLayers()) continue;
-
-                        if (compiledSection.canSeeThrough(renderChunkInfo.mainDir.getOpposite(), direction)) {
-                            flag1 = true;
-                        }
 
                         if (!flag1) {
                             continue;
@@ -585,21 +581,23 @@ public class WorldRenderer {
         drawer.bindPipeline(pipeline);
 
         drawer.uploadAndBindUBOs(pipeline);
-//        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
 
-      if(layer!=RenderTypes.TRANSLUCENT)
-      {
+        if(layer!=RenderTypes.TRANSLUCENT)
+        {
+          vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
+
           for(final VBO vbo : sections)
           {
-              vbo.drawChunkLayer();
+              Drawer.drawIndexed2(vbo.vertexBuffer, vbo.indexCount);
           }
-      }
-      else
-      {
+        }
+        else
+        {
           for (int i = sections.size() - 1; i >= 0; i--) {
-              sections.get(i).drawChunkLayer();
+              final VBO vbo = sections.get(i);
+              Drawer.drawIndexed(vbo.vertexBuffer, vbo.indexBuffer, vbo.indexCount);
           }
-      }
+        }
 
 //        p1.end();
 

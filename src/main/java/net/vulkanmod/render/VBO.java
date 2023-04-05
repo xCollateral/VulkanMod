@@ -20,8 +20,8 @@ import static net.vulkanmod.render.chunk.util.VBOUtil.*;
 public class VBO {
     public boolean preInitalised=true;
     public boolean hasAbort=false;
-    private VertexBuffer vertexBuffer;
-    private IndexBuffer indexBuffer;
+    public VertexBuffer vertexBuffer;
+    public IndexBuffer indexBuffer;
     private VertexFormat.IndexType indexType;
     public int indexCount;
     private int vertexCount;
@@ -57,8 +57,8 @@ public class VBO {
         if(!sort) translateVBO(vertBuff);
 
 
-        this.configureVertexFormat(parameters, vertBuff);
-        this.configureIndexBuffer(parameters, idxBuff);
+        if (!sort) this.configureVertexFormat(parameters, vertBuff);
+        if (type==RenderTypes.TRANSLUCENT) this.configureIndexBuffer(parameters, idxBuff);
 
         buffer.release();
         preInitalised=false;
@@ -142,7 +142,7 @@ public class VBO {
         if(vertexCount <= 0) return;
         vertexBuffer.freeBuffer();
         vertexBuffer = null;
-        if(!autoIndexed) {
+        if(indexBuffer!=null) {
             indexBuffer.freeBuffer();
             indexBuffer = null;
         }

@@ -58,20 +58,19 @@ public class AutoIndexBuffer {
 
         int indexCount = vertexCount * 3 / 2;
         ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
-        ShortBuffer idxs = buffer.asShortBuffer();
+
         //short[] idxs = new short[indexCount];
 
         int j = 0;
         for(int i = 0; i < vertexCount; i += 4) {
 
-            idxs.put(j, (short) i);
-            idxs.put(j + 1, (short) (i + 1));
-            idxs.put(j + 2, (short) (i + 2));
-            idxs.put(j + 3, (short) (i));
-            idxs.put(j + 4, (short) (i + 2));
-            idxs.put(j + 5, (short) (i + 3));
+            buffer.putInt(j, i + 1 <<16 |i);
 
-            j += 6;
+            buffer.putInt(j + 4, i << 16 | i + 2);
+
+            buffer.putInt(j + 8, i + 3 <<16 |i + 2);
+
+            j += 12;
         }
 
         return buffer;

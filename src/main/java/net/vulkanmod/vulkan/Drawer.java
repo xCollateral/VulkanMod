@@ -444,7 +444,7 @@ public class Drawer {
         }
     }
 
-    public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+    public static void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
@@ -455,7 +455,7 @@ public class Drawer {
 //            Profiler.Push("draw");
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
-    public void drawIndexed2(VertexBuffer vertexBuffer, int indexCount) {
+    public static void drawIndexed2(VertexBuffer vertexBuffer, int indexCount) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
