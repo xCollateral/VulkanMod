@@ -582,22 +582,14 @@ public class WorldRenderer {
 
         drawer.uploadAndBindUBOs(pipeline);
 
-        if(layer!=RenderTypes.TRANSLUCENT)
-        {
-          vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
 
-          for(final VBO vbo : sections)
-          {
-              Drawer.drawIndexed2(vbo.vertexBuffer, vbo.indexCount);
-          }
-        }
-        else
+        for(final VBO vbo : sections)
         {
-          for (int i = sections.size() - 1; i >= 0; i--) {
-              final VBO vbo = sections.get(i);
-              Drawer.drawIndexed(vbo.vertexBuffer, vbo.indexBuffer, vbo.indexCount);
-          }
+          Drawer.drawIndexed2(vbo.vertexBuffer, vbo.indexCount);
         }
+
+
 
 //        p1.end();
 

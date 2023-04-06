@@ -21,15 +21,8 @@ public class VBO {
     public boolean preInitalised=true;
     public boolean hasAbort=false;
     public VertexBuffer vertexBuffer;
-    public IndexBuffer indexBuffer;
-    private VertexFormat.IndexType indexType;
     public int indexCount;
     private int vertexCount;
-    private VertexFormat.Mode mode;
-    private boolean sequentialIndices;
-    private VertexFormat vertexFormat;
-
-    private boolean autoIndexed = false;
 
     public final RenderTypes type;
     private int x;
@@ -48,17 +41,15 @@ public class VBO {
 
         this.indexCount = parameters.indexCount();
         this.vertexCount = parameters.vertexCount();
-        this.indexType = parameters.indexType();
-        this.mode = parameters.mode();
 
         final ByteBuffer vertBuff = buffer.vertexBuffer();
-        final ByteBuffer idxBuff = buffer.indexBuffer();
+//        final ByteBuffer idxBuff = buffer.indexBuffer();
 
         if(!sort) translateVBO(vertBuff);
 
 
         if (!sort) this.configureVertexFormat(parameters, vertBuff);
-        if (type==RenderTypes.TRANSLUCENT) this.configureIndexBuffer(parameters, idxBuff);
+//        if (type==RenderTypes.TRANSLUCENT) this.configureIndexBuffer(parameters, idxBuff);
 
         buffer.release();
         preInitalised=false;
@@ -96,65 +87,17 @@ public class VBO {
         }
     }
 
-    private void configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
-        if (parameters.sequentialIndex()) {
-
-            AutoIndexBuffer autoIndexBuffer;
-            if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
-                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
-            } else {
-                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
-                this.indexCount = (vertexCount - 2) * 3;
-            }
-
-            if(indexBuffer != null && !this.autoIndexed) indexBuffer.freeBuffer();
-
-            autoIndexBuffer.checkCapacity(vertexCount);
-            indexBuffer = autoIndexBuffer.getIndexBuffer();
-            this.autoIndexed = true;
-
-        }
-        else {
-            if(indexBuffer == null) this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            if(data.remaining()>indexBuffer.getTotalSize())
-            {
-                this.indexBuffer.freeBuffer();
-                this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            }
-
-            int size = data.remaining();
-
-            indexBuffer.uploadToBuffer(size, data);
-        }
-
-    }
-
-
-    public void drawChunkLayer() {
-        if (this.indexCount != 0) {
-          if(type!=RenderTypes.TRANSLUCENT) Drawer.getInstance().drawIndexed2(vertexBuffer, indexCount);
-          else Drawer.getInstance().drawIndexed(vertexBuffer, indexBuffer, indexCount);
-        }
-    }
 
     public void close() {
         if(preInitalised) return;
         if(vertexCount <= 0) return;
         vertexBuffer.freeBuffer();
         vertexBuffer = null;
-        if(indexBuffer!=null) {
-            indexBuffer.freeBuffer();
-            indexBuffer = null;
-        }
 
         this.vertexCount = 0;
         this.indexCount = 0;
         preInitalised=true;
         removeVBO(this);
-    }
-
-    public VertexFormat getFormat() {
-        return this.vertexFormat;
     }
 
     public void updateOrigin(int x, int y, int z) {
