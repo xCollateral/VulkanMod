@@ -79,7 +79,7 @@ public class Drawer {
         }
 
         uniformBuffers = new UniformBuffers(UBOSize);
-        quadsIndexBuffer = new AutoIndexBuffer(Short.MAX_VALUE+1, AutoIndexBuffer.DrawType.QUADS);
+        quadsIndexBuffer = new AutoIndexBuffer(98304, AutoIndexBuffer.DrawType.QUADS);
         triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
         triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
 
