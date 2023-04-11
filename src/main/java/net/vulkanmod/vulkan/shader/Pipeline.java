@@ -580,12 +580,13 @@ public class Pipeline {
                     ++i;
                 }
 
-                VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.calloc(samplers.size(), stack);
                 //Don't create empty CommandbUffer if samplers are empty
                 if(!samplers.isEmpty())
                 {
+                    VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.malloc(samplers.size(), stack);
                     TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
-                    for (int j=0; j<samplers.size(); j++) {
+                    int j=0;
+                    for (final VkDescriptorImageInfo imageInfo : imageInfos) {
 
                         //TODO: make an auxiliary function
                         VulkanImage texture = getTex(j);
@@ -593,20 +594,21 @@ public class Pipeline {
                         texture.readOnlyLayout(commandBuffer);
                         //VulkanImage texture = VTextureManager.getCurrentTexture();
 
-                        VkDescriptorImageInfo imageInfo = imageInfos.get(j);
+
                         imageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
                         imageInfo.imageView(texture.getTextureImageView());
                         imageInfo.sampler(texture.getTextureSampler());
 
                         VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
-                        samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+                        samplerDescriptorWrite.sType$Default();
                         samplerDescriptorWrite.dstBinding(i);
                         samplerDescriptorWrite.dstArrayElement(0);
                         samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                         samplerDescriptorWrite.descriptorCount(1);
                         memPutAddress(samplerDescriptorWrite.address() + VkWriteDescriptorSet.PIMAGEINFO, imageInfo.address());
                         ++i;
+                        ++j;
 
                     }
                     long fence = TransferQueue.endCommands(commandBuffer);
