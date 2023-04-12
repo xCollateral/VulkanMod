@@ -581,6 +581,7 @@ public class Pipeline {
                 }
 
                 //Don't create empty CommandbUffer if samplers are empty
+                VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.malloc(samplers.size(), stack);
                 if(!samplers.isEmpty())
                 {
                     VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.malloc(samplers.size(), stack);
@@ -611,8 +612,11 @@ public class Pipeline {
                         ++j;
 
                     }
-                    long fence = TransferQueue.endCommands(commandBuffer);
-                    if (fence != 0) Synchronization.addFence(fence);
+                    if(Vulkan.vsync) //Nvidia has issues with Sampler updates with V-Sync for some reason
+                    {
+                        long fence = TransferQueue.endCommands(commandBuffer);
+                        if (fence != 0) Synchronization.addFence(fence);
+                    }
                 }
 
                 //long descriptorSet = descriptorSets.get(Drawer.getCurrentFrame());
