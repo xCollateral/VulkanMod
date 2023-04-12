@@ -187,7 +187,7 @@ public class Vulkan {
 
     private static long allocator;
 
-    private static boolean vsync = false;
+    public static boolean vsync = false;
 
     private static StagingBuffer[] stagingBuffers;
     private static MemoryManager memoryManager;
