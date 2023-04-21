@@ -751,7 +751,7 @@ public class Pipeline {
             int binding = GsonHelper.getAsInt(jsonobject, "binding");
             int stage = getTypeFromString(GsonHelper.getAsString(jsonobject, "stage"));
 
-            samplers.add(new Sampler(binding, VK_SHADER_STAGE_ALL_GRAPHICS, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, "sampler2D", name));
+            samplers.add(new Sampler(binding, VK_SHADER_STAGE_FRAGMENT_BIT|VK_SHADER_STAGE_VERTEX_BIT, "sampler2D", name));
         }
 
         private void parsePushConstantNode(JsonArray jsonArray) {

@@ -47,8 +47,7 @@ public class UniformParser {
             if ("sampler2D".equals(this.type)) {
                 final boolean b = vertex == GlslConverter.ShaderStage.Vertex;
                 Sampler sampler = new Sampler(getBindingValueToken(token),
-                        b ? VK_SHADER_STAGE_VERTEX_BIT:VK_SHADER_STAGE_FRAGMENT_BIT,
-                        b ? VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                        VK_SHADER_STAGE_FRAGMENT_BIT|VK_SHADER_STAGE_VERTEX_BIT,
                         this.type, this.name);
                 if (!this.currentUniforms.samplers.contains(sampler))
                     this.currentUniforms.samplers.add(sampler);
