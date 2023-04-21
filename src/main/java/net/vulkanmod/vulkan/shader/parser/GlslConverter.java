@@ -1,10 +1,10 @@
 package net.vulkanmod.vulkan.shader.parser;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.vulkanmod.vulkan.shader.Sampler;
 import net.vulkanmod.vulkan.shader.layout.UBO;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -38,7 +38,7 @@ public class GlslConverter {
         while (iterator.hasNext()) {
             String line = iterator.next();
 
-            String parsedLine = this.parseLine(line);
+            String parsedLine = this.parseLine(line, ShaderStage.Vertex);
             if(parsedLine != null) {
                 vshOut.append(parsedLine);
                 vshOut.append("\n");
@@ -57,7 +57,7 @@ public class GlslConverter {
         while (iterator.hasNext()) {
             String line = iterator.next();
 
-            String parsedLine = this.parseLine(line);
+            String parsedLine = this.parseLine(line, ShaderStage.Fragment);
             if(parsedLine != null) {
                 fshOut.append(parsedLine);
                 fshOut.append("\n");
@@ -86,7 +86,7 @@ public class GlslConverter {
 
     }
 
-    private String parseLine(String line) {
+    private String parseLine(String line, ShaderStage vertex) {
 
         StringTokenizer tokenizer = new StringTokenizer(line);
 
@@ -115,20 +115,20 @@ public class GlslConverter {
             throw new IllegalArgumentException("Less than 3 tokens present");
         }
 
-        feedToken(token);
+        feedToken(token, vertex);
 
         while (tokenizer.hasMoreTokens()) {
             token = tokenizer.nextToken();
 
-            feedToken(token);
+            feedToken(token, vertex);
         }
 
         return null;
     }
 
-    private void feedToken(String token) {
+    private void feedToken(String token, ShaderStage vertex) {
         switch (this.state) {
-            case MATCHING_UNIFORM -> this.uniformParser.parseToken(token);
+            case MATCHING_UNIFORM -> this.uniformParser.parseToken(token, vertex);
             case MATCHING_IN_OUT -> this.inOutParser.parseToken(token);
         }
     }
@@ -143,7 +143,7 @@ public class GlslConverter {
         return this.uniformParser.createUBO();
     }
 
-    public List<String> createSamplerList() {
+    public List<Sampler> createSamplerList() {
         return this.uniformParser.createSamplerList();
     }
 

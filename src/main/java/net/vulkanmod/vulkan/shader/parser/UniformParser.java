@@ -2,12 +2,14 @@ package net.vulkanmod.vulkan.shader.parser;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.Sampler;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.UBO;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
+
+import static org.lwjgl.vulkan.VK10.*;
 
 public class UniformParser {
 
@@ -28,7 +30,7 @@ public class UniformParser {
         }
     }
 
-    public boolean parseToken(String token) {
+    public boolean parseToken(String token, GlslConverter.ShaderStage vertex) {
         if(token.matches("uniform")) return false;
 
         if (this.type == null) {
@@ -43,8 +45,13 @@ public class UniformParser {
             //TODO check if already present
             Uniform uniform = new Uniform(this.type, this.name);
             if ("sampler2D".equals(this.type)) {
-                if (!this.currentUniforms.samplers.contains(uniform))
-                    this.currentUniforms.samplers.add(uniform);
+                final boolean b = vertex == GlslConverter.ShaderStage.Vertex;
+                Sampler sampler = new Sampler(getBindingValueToken(token),
+                        b ? VK_SHADER_STAGE_VERTEX_BIT:VK_SHADER_STAGE_FRAGMENT_BIT,
+                        b ? VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                        this.type, this.name);
+                if (!this.currentUniforms.samplers.contains(sampler))
+                    this.currentUniforms.samplers.add(sampler);
             } else {
                 if (!this.globalUniforms.contains(uniform))
                     this.globalUniforms.add(uniform);
@@ -55,6 +62,18 @@ public class UniformParser {
         }
 
         return false;
+    }
+
+    private int getBindingValueToken(String token) {
+        final char c = token.charAt(token.indexOf("=") + 2);
+        return switch(c)
+                {
+                    case '0' -> 0;
+                    case '1' -> 1;
+                    case '2' -> 2;
+                    case '3' -> 3;
+                    default -> throw new IllegalStateException("Unexpected value: " + c);
+                };
     }
 
     public void setCurrentUniforms(GlslConverter.ShaderStage shaderStage) {
@@ -84,8 +103,8 @@ public class UniformParser {
         StringBuilder builder = new StringBuilder();
 
         //TODO find a better way for bindings
-        for(Uniform sampler : this.stageUniforms[shaderStage.ordinal()].samplers) {
-            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", this.currentLocation, sampler.type, sampler.name));
+        for(Sampler sampler : this.stageUniforms[shaderStage.ordinal()].samplers) {
+            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", sampler.binding(), sampler.type(), sampler.name()));
             this.currentLocation++;
         }
         builder.append("\n");
@@ -104,13 +123,11 @@ public class UniformParser {
         return builder.buildUBO(0, Pipeline.Builder.getTypeFromString("all"));
     }
 
-    public List<String> createSamplerList() {
-        List<String> samplers = new ObjectArrayList<>();
+    public List<Sampler> createSamplerList() {
+        List<Sampler> samplers = new ObjectArrayList<>();
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
-            for(Uniform uniform : stageUniforms.samplers) {
-                samplers.add(uniform.name);
-            }
+            samplers.addAll(stageUniforms.samplers);
         }
 
         return samplers;
@@ -126,7 +143,7 @@ public class UniformParser {
     public record Uniform(String type, String name) {}
 
     private static class StageUniforms {
-        List<Uniform> samplers = new ArrayList<>();
+        List<Sampler> samplers = new ArrayList<>();
     }
 
     enum State {
