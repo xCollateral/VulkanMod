@@ -198,7 +198,7 @@ public class ChunkTask {
             final PoseStack poseStack = new PoseStack();
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
-                final Set<RenderType> set = new ReferenceArraySet<>(VBOUtil.RenderTypes.values().length);
+                final Set<VBOUtil.RenderTypes> set = new ReferenceArraySet<>(VBOUtil.RenderTypes.values().length);
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
 
@@ -223,7 +223,7 @@ public class ChunkTask {
                     if (!fluidState.isEmpty()) {
                         renderType = ItemBlockRenderTypes.getRenderLayer(fluidState);
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
-                        if (set.add(renderType)) {
+                        if (set.add(VBOUtil.getLayer(renderType))) {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                         }
 
@@ -233,7 +233,7 @@ public class ChunkTask {
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
                         renderType = ItemBlockRenderTypes.getChunkRenderType(blockState);
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
-                        if (set.add(renderType)) {
+                        if (set.add(VBOUtil.getLayer(renderType))) {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                         }
 
@@ -244,7 +244,7 @@ public class ChunkTask {
                     }
                 }
 
-                if (set.contains(RenderType.TRANSLUCENT)) {
+                if (set.contains(VBOUtil.RenderTypes.TRANSLUCENT)) {
                     BufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.TRANSLUCENT);
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
                         bufferBuilder2.setQuadSortOrigin(f - (float) blockPos1.getX(), g - (float) blockPos1.getY(), h - (float) blockPos1.getZ());
@@ -254,9 +254,9 @@ public class ChunkTask {
 
 //                var15 = set.iterator();
 
-                for(RenderType renderType2 : set) {
+                for(VBOUtil.RenderTypes renderType2 : set) {
 //                    RenderType renderType2 = (RenderType)var15.next();
-                    BufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
+                    BufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(VBOUtil.getLayerToType(renderType2)).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
                         compileResults.renderedLayers.put(renderType2, renderedBuffer);
                     }
@@ -294,7 +294,7 @@ public class ChunkTask {
         private static final class CompileResults {
             public final List<BlockEntity> globalBlockEntities = new ArrayList();
             public final List<BlockEntity> blockEntities = new ArrayList();
-            public final Map<RenderType, BufferBuilder.RenderedBuffer> renderedLayers = new Reference2ObjectArrayMap();
+            public final Map<VBOUtil.RenderTypes, BufferBuilder.RenderedBuffer> renderedLayers = new Reference2ObjectArrayMap();
             public VisibilitySet visibilitySet = new VisibilitySet();
             @org.jetbrains.annotations.Nullable
             public BufferBuilder.SortState transparencyState;
@@ -328,7 +328,7 @@ public class ChunkTask {
                 int f1 = (int)vec3.y;
                 int f2 = (int)vec3.z;
                 BufferBuilder.SortState bufferbuilder$sortstate = this.compiledSection.transparencyState;
-                if (bufferbuilder$sortstate != null && this.compiledSection.renderTypes.contains(RenderType.translucent())) {
+                if (bufferbuilder$sortstate != null && this.compiledSection.renderTypes.contains(VBOUtil.RenderTypes.TRANSLUCENT)) {
                     BufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
                     bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
                     bufferbuilder.restoreSortState(bufferbuilder$sortstate);
@@ -338,7 +338,7 @@ public class ChunkTask {
                     if (this.cancelled.get()) {
                         return CompletableFuture.completedFuture(Result.CANCELLED);
                     } else {
-                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.getBuffer(RenderType.translucent()), true).thenApply((p_112898_) -> {
+                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.getBuffer(VBOUtil.RenderTypes.TRANSLUCENT), true).thenApply((p_112898_) -> {
                             return Result.CANCELLED;
                         });
                         return completablefuture.handle((p_199960_, p_199961_) -> {

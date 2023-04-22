@@ -37,7 +37,7 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 
 import javax.annotation.Nullable;
@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.SortedSet;
 
 import static net.vulkanmod.render.chunk.util.VBOUtil.*;
-import static org.lwjgl.vulkan.VK10.VK_INDEX_TYPE_UINT16;
+import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
 
 public class WorldRenderer {
@@ -253,7 +253,6 @@ public class WorldRenderer {
         this.sectionsInFrustum.clear();
 
         cutoutChunks.clear();
-        cutoutMippedChunks.clear();
         translucentChunks.clear();
 
         this.lastFrame++;
@@ -272,7 +271,6 @@ public class WorldRenderer {
                         final VBO buffer = renderSection.getBuffer(renderType);
                         switch (buffer.type) {
                             case CUTOUT -> cutoutChunks.add(buffer);
-                            case CUTOUT_MIPPED -> cutoutMippedChunks.add(buffer);
                             case TRANSLUCENT -> translucentChunks.add(buffer);
                         }
             });
@@ -331,7 +329,6 @@ public class WorldRenderer {
         this.sectionsInFrustum.clear();
 
         VBOUtil.cutoutChunks.clear();
-        VBOUtil.cutoutMippedChunks.clear();
         VBOUtil.translucentChunks.clear();
 
         this.lastFrame++;
@@ -349,7 +346,6 @@ public class WorldRenderer {
                 final VBO buffer = renderSection.getBuffer(renderType);
                 switch (buffer.type) {
                     case CUTOUT -> cutoutChunks.add(buffer);
-                    case CUTOUT_MIPPED -> cutoutMippedChunks.add(buffer);
                     case TRANSLUCENT -> translucentChunks.add(buffer);
                 }
             });
@@ -463,6 +459,7 @@ public class WorldRenderer {
 
     public void allChanged() {
         resetOrigin();
+        resetAllBuffers();
         if (this.level != null) {
 //            this.graphicsChanged();
             this.level.clearTintCaches();
@@ -495,6 +492,21 @@ public class WorldRenderer {
             }
 
         }
+    }
+
+    public static void resetAllBuffers() {
+
+        Drawer.skipRendering=true;
+        cutoutChunks.clear();
+        translucentChunks.clear();
+//        nvkWaitForFences(Vulkan.getDevice(), Drawer.inFlightFences.capacity(), Drawer.inFlightFences.address0(), 1, -1);
+        vkDeviceWaitIdle(Vulkan.getDevice()); //Use a heavier Wait to avoid potential crashes
+//        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
+
+        VBOUtil.virtualBufferIdx.reset();
+
+        Drawer.skipRendering=false;
+
     }
 
     private void resetOrigin() {
@@ -546,11 +558,9 @@ public class WorldRenderer {
     public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
         Profiler p = Profiler.getProfiler("chunks");
-
         final RenderTypes layer = getLayer(renderType);
         final ObjectArrayList<VBO> sections =
                 switch (layer) {
-                    case CUTOUT_MIPPED -> cutoutMippedChunks;
                     case CUTOUT -> cutoutChunks;
                     case TRANSLUCENT -> translucentChunks;
                 };
@@ -582,11 +592,21 @@ public class WorldRenderer {
 
         drawer.uploadAndBindUBOs(pipeline);
 
-        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
 
-        for(final VBO vbo : sections)
+        if(layer!=RenderTypes.TRANSLUCENT)
         {
-          Drawer.drawIndexed2(vbo.vertexBuffer, vbo.indexCount);
+            vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
+            for(final VBO vbo : cutoutChunks)
+          {
+              vbo.draw();
+          }
+        }
+        else
+        {
+            vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), virtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
+            for (int i = translucentChunks.size() - 1; i >= 0; i--) {
+                translucentChunks.get(i).draw();
+            }
         }
 
 

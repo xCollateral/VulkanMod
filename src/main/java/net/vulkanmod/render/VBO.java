@@ -1,13 +1,13 @@
 package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -21,16 +21,22 @@ public class VBO {
     public boolean preInitalised=true;
     public boolean hasAbort=false;
     public VertexBuffer vertexBuffer;
+    public VkBufferPointer fakeIndexBuffer;
+
+
     public int indexCount;
     private int vertexCount;
 
+    private final int index;
     public final RenderTypes type;
     private int x;
     private int y;
     private int z;
+    public int indexOff = 0;
 
-    public VBO(String name, int x, int y, int z) {
-        this.type = getLayer(name);
+    public VBO(int index, RenderTypes name, int x, int y, int z) {
+        this.index = index;
+        this.type = name;
         this.x = x;
         this.y = y;
         this.z = z;
@@ -49,7 +55,7 @@ public class VBO {
 
 
         if (!sort) this.configureVertexFormat(parameters, vertBuff);
-//        if (type==RenderTypes.TRANSLUCENT) this.configureIndexBuffer(parameters, idxBuff);
+        if (type==RenderTypes.TRANSLUCENT) this.configureIndexFormat(buffer.indexBuffer());
 
         buffer.release();
         preInitalised=false;
@@ -86,6 +92,23 @@ public class VBO {
 
         }
     }
+    private void configureIndexFormat(ByteBuffer data) {
+//        boolean bl = !parameters.format().equals(this.vertexFormat);
+        if (type==RenderTypes.TRANSLUCENT) {
+
+            if(fakeIndexBuffer ==null || !VBOUtil.virtualBufferIdx.isAlreadyLoaded(index, data.remaining()))
+            {
+                fakeIndexBuffer =VBOUtil.virtualBufferIdx.addSubIncr(index, data.remaining());
+            }
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+            stagingBuffer.copyBuffer(fakeIndexBuffer.size_t(), data);
+
+            Vulkan.copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.getOffset(), VBOUtil.virtualBufferIdx.bufferPointerSuperSet, fakeIndexBuffer.i2(), fakeIndexBuffer.size_t());
+
+            this.indexOff= fakeIndexBuffer.i2()>>1;
+
+        }
+    }
 
 
     public void close() {
@@ -93,6 +116,11 @@ public class VBO {
         if(vertexCount <= 0) return;
         vertexBuffer.freeBuffer();
         vertexBuffer = null;
+        if(type==RenderTypes.TRANSLUCENT)
+        {
+            virtualBufferIdx.addFreeableRange(index, fakeIndexBuffer);
+            fakeIndexBuffer=null;
+        }
 
         this.vertexCount = 0;
         this.indexCount = 0;
@@ -116,5 +144,9 @@ public class VBO {
 
     public int getZ() {
         return z;
+    }
+
+    public void draw() {
+        Drawer.drawIndexed2(this.vertexBuffer, this.indexOff, this.indexCount);
     }
 }

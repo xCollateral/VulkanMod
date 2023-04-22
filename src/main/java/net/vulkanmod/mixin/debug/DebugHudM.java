@@ -76,13 +76,31 @@ public abstract class DebugHudM {
         strings.add("");
         strings.add("-=VBO Stats=-");
         strings.add("Cutout: "+ cutoutChunks.size());
-        strings.add("cutoutMipped: "+ cutoutMippedChunks.size());
         strings.add("Translucent: "+ translucentChunks.size());
         strings.add("");
         strings.add("Total: "+ (
                 cutoutChunks.size() +
-                cutoutMippedChunks.size() +
                 translucentChunks.size()));
+
+        strings.add("tIndex-Buffers");
+        strings.add("");
+
+        strings.add("Used Bytes: " + (virtualBufferIdx.usedBytes >> 10) + "KB");
+        strings.add("Max Size: " + (virtualBufferIdx.size_t >> 10) + "KB");
+//        strings.add("Allocs: " + VirtualBuffer.allocs);
+//        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
+        strings.add("subAllocs: " + virtualBufferIdx.subAllocs);
+//        strings.add("Blocks: " + VirtualBuffer.blocks);
+//        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
+
+        strings.add("minRange: " + virtualBufferIdx.unusedRangesS);
+        strings.add("maxRange: " + virtualBufferIdx.unusedRangesM);
+        strings.add("unusedRangesCount: " + virtualBufferIdx.unusedRangesCount);
+        strings.add("minVBOSize: " + virtualBufferIdx.allocMin);
+        strings.add("maxVBOSize: " + virtualBufferIdx.allocMax);
+        strings.add("unusedBytes: " + (virtualBufferIdx.size_t- virtualBufferIdx.usedBytes >> 10) + "KB");
+        strings.add("freeRanges: " + (virtualBufferIdx.FreeRanges.size()));
+        strings.add("activeRanges: " + (virtualBufferIdx.activeRanges.size()));
 
         return strings;
     }
