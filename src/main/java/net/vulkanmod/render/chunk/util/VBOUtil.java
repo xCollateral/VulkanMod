@@ -7,15 +7,27 @@ import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.render.VBO;
+import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
+import net.vulkanmod.vulkan.memory.IndexBuffer;
+import net.vulkanmod.vulkan.memory.StagingBuffer;
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.vulkan.VK10;
+
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
 //Use smaller class instead of WorldRenderer in case it helps GC/Heap fragmentation e.g.
 public class VBOUtil {
+
+    //TODO: Fix MipMaps Later...
     public static final ObjectArrayList<VBO> cutoutChunks = new ObjectArrayList<>(1024);
-    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
+//    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
     public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
+    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(33554432, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     public static Matrix4f translationOffset;
     public static double camX;
     public static double camZ;
@@ -50,19 +62,15 @@ public class VBOUtil {
     }
 
     public static void removeVBO(VBO vbo) {
-        switch (vbo.type)
-        {
-            case CUTOUT_MIPPED -> cutoutMippedChunks.remove(vbo);
-            case CUTOUT -> cutoutChunks.remove(vbo);
-            case TRANSLUCENT-> translucentChunks.remove(vbo);
-        }
+        //            case CUTOUT_MIPPED -> cutoutMippedChunks.remove(vbo);
+        (vbo.type == RenderTypes.CUTOUT?cutoutChunks:translucentChunks).remove(vbo);
+
     }
 
     @NotNull
     public static RenderTypes getLayer(RenderType renderType) {
         return switch (renderType.name) {
-            case "cutout" -> RenderTypes.CUTOUT;
-            case "cutout_mipped" -> RenderTypes.CUTOUT_MIPPED;
+            case "cutout","cutout_mipped" -> RenderTypes.CUTOUT;
             case "translucent" -> RenderTypes.TRANSLUCENT;
             default -> throw new IllegalStateException("Bad RenderType: "+renderType.name);
         };
@@ -71,15 +79,21 @@ public class VBOUtil {
     public static RenderTypes getLayer(String type) {
         return switch (type) {
             case "cutout" -> RenderTypes.CUTOUT;
-            case "cutout_mipped" -> RenderTypes.CUTOUT_MIPPED;
             case "translucent" -> RenderTypes.TRANSLUCENT;
             default -> throw new IllegalStateException("Bad RenderType: "+type);
         };
     }
 
+    public static RenderType getLayerToType(RenderTypes renderType2) {
+        return switch (renderType2) {
+            case CUTOUT-> RenderType.CUTOUT;
+            case TRANSLUCENT-> RenderType.TRANSLUCENT;
+        };
+    }
+
     public enum RenderTypes
     {
-        CUTOUT_MIPPED(RenderStateShard.ShaderStateShard.RENDERTYPE_CUTOUT_MIPPED_SHADER),
+//        CUTOUT_MIPPED(RenderStateShard.ShaderStateShard.RENDERTYPE_CUTOUT_MIPPED_SHADER),
         CUTOUT(RenderStateShard.ShaderStateShard.RENDERTYPE_CUTOUT_SHADER),
         TRANSLUCENT(RenderStateShard.ShaderStateShard.RENDERTYPE_TRANSLUCENT_SHADER);
 

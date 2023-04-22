@@ -7,7 +7,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.chunk.RenderChunkRegion;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
 import net.minecraft.client.renderer.chunk.VisibilitySet;
@@ -16,15 +15,13 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.vulkanmod.render.VBO;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RenderSection {
     private final int index;
@@ -42,7 +39,7 @@ public class RenderSection {
     @Nullable
     private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-    private final Map<RenderType, VBO> buffers;
+    private final EnumMap<VBOUtil.RenderTypes, VBO> buffers=new EnumMap<>(VBOUtil.RenderTypes.class);
     private AABB bb;
     private boolean dirty = true;
     private boolean lightReady = false;
@@ -62,10 +59,11 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
-        buffers =
+
+        Arrays.stream(VBOUtil.RenderTypes.values()).forEach(renderType -> buffers.put(renderType, new VBO(this.index, renderType, x, y, z)));
+
         //TODO later: find something better
-        new Reference2ReferenceArrayMap<>(Stream.of(RenderType.CUTOUT, RenderType.CUTOUT_MIPPED, RenderType.TRANSLUCENT).collect(Collectors.toMap((renderType) ->
-                renderType, (renderType) -> new VBO(renderType.name, x, y, z))));
+
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -93,7 +91,7 @@ public class RenderSection {
             this.lastResortTransparencyTask.cancel();
         }
 
-        if (!compiledSection1.renderTypes.contains(RenderType.TRANSLUCENT)) {
+        if (!compiledSection1.renderTypes.contains(VBOUtil.RenderTypes.TRANSLUCENT)) {
             return false;
         } else {
             this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);
@@ -167,7 +165,7 @@ public class RenderSection {
         return this.origin;
     }
 
-    public VBO getBuffer(RenderType renderType) {
+    public VBO getBuffer(VBOUtil.RenderTypes renderType) {
         return buffers.get(renderType);
     }
 
@@ -260,7 +258,7 @@ public class RenderSection {
                 return false;
             }
         };
-        final Set<RenderType> renderTypes = new ObjectArraySet<>();
+        final Set<VBOUtil.RenderTypes> renderTypes = new ObjectArraySet<>();
         boolean isCompletelyEmpty = true;
         final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
         VisibilitySet visibilitySet = new VisibilitySet();
@@ -271,7 +269,7 @@ public class RenderSection {
             return this.isCompletelyEmpty;
         }
 
-        public boolean isEmpty(RenderType p_112759_) {
+        public boolean isEmpty(VBOUtil.RenderTypes p_112759_) {
             return !this.renderTypes.contains(p_112759_);
         }
 

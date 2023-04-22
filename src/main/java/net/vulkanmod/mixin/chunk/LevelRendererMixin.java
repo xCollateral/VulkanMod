@@ -120,6 +120,10 @@ public abstract class LevelRendererMixin {
     {
         VBOUtil.updateCamTranslation(poseStack, d, e, f, matrix4f);
     }
+
+    @Redirect(method = "renderLevel", at=@At(value="INVOKE", ordinal =1, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"))
+    private void removeCutoutMipped(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double d, double e, double f, Matrix4f matrix4f) {}
+
     /**
      * @author
      * @reason
