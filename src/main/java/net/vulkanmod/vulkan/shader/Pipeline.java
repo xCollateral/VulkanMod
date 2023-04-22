@@ -10,8 +10,6 @@ import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.ShaderSPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.TransferQueue;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
@@ -36,8 +34,6 @@ import static net.vulkanmod.vulkan.ShaderSPIRVUtils.compileShaderFile;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddressSafe;
-import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -508,7 +504,7 @@ public class Pipeline {
         private DescriptorSetsUnit(VkCommandBuffer commandBuffer, int frame, UniformBuffers uniformBuffers) {
 
             allocateDescriptorSet(frame);
-            updateDescriptorSet(frame, uniformBuffers);
+            updateDescriptorSet(commandBuffer, frame, uniformBuffers);
         }
 
         private void allocateDescriptorSet(int frame) {
@@ -548,7 +544,7 @@ public class Pipeline {
             }
         }
 
-        private void updateDescriptorSet(int frame, UniformBuffers uniformBuffers) {
+        private void updateDescriptorSet(VkCommandBuffer commandBuffer, int frame, UniformBuffers uniformBuffers) {
             try(MemoryStack stack = stackPush()) {
 
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(UBOs.size() + samplers.size(), stack);
@@ -562,7 +558,7 @@ public class Pipeline {
                     ubo.update();
                     uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
 
-                    bufferInfos[i] = VkDescriptorBufferInfo.callocStack(1, stack);
+                    bufferInfos[i] = VkDescriptorBufferInfo.malloc(1, stack);
                     bufferInfos[i].offset(currentOffset);
                     bufferInfos[i].range(ubo.getSize());
 
@@ -579,42 +575,33 @@ public class Pipeline {
                 }
 
                 //Don't create empty CommandbUffer if samplers are empty
-                VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.malloc(samplers.size(), stack);
-                if(!samplers.isEmpty())
-                {
-                    TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
-                    for (int j=0; j<samplers.size(); j++) {
 
-                        //TODO: make an auxiliary function
-                        VulkanImage texture = getTex(j);
+                VkDescriptorImageInfo.Buffer[] imageInfos = new VkDescriptorImageInfo.Buffer[samplers.size()];
 
-                        texture.readOnlyLayout(commandBuffer);
-                        //VulkanImage texture = VTextureManager.getCurrentTexture();
 
-                        VkDescriptorImageInfo imageInfo = imageInfos.get(j);
-                        imageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                for(int x=0;x<samplers.size(); x++){
+                    //TODO: make an auxiliary function
+                    VulkanImage texture = getTex(x);
+                    texture.readOnlyLayout(samplers.get(x));
+                    //VulkanImage texture = VTextureManager.getCurrentTexture();
 
-                        imageInfo.imageView(texture.getTextureImageView());
-                        imageInfo.sampler(texture.getTextureSampler());
+                    imageInfos[x] = VkDescriptorImageInfo.malloc(1, stack);
+                    imageInfos[x].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-                        VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
-                        samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                        samplerDescriptorWrite.dstBinding(samplers.get(j).binding());
-                        samplerDescriptorWrite.dstArrayElement(0);
-                        samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                        samplerDescriptorWrite.descriptorCount(1);
-                        memPutAddress(samplerDescriptorWrite.address() + VkWriteDescriptorSet.PIMAGEINFO, imageInfo.address());
-                        ++i;
+                    imageInfos[x].imageView(texture.getTextureImageView());
+                    imageInfos[x].sampler(texture.getTextureSampler());
 
-                    }
-                    if(Vulkan.vsync) //Nvidia has issues with UBO updates with V-Sync for some reason
-                    {
-                        long fence = TransferQueue.endCommands(commandBuffer);
-                        if (fence != 0) Synchronization.addFence(fence);
-                    }
+                    VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
+                    samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+                    samplerDescriptorWrite.dstBinding(samplers.get(x).binding());
+                    samplerDescriptorWrite.dstArrayElement(0);
+                    samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                    samplerDescriptorWrite.descriptorCount(1);
+                    samplerDescriptorWrite.pImageInfo(imageInfos[x]);
+
+                    ++i;
+
                 }
-
-
 
                 //long descriptorSet = descriptorSets.get(Drawer.getCurrentFrame());
 
@@ -751,7 +738,7 @@ public class Pipeline {
             int binding = GsonHelper.getAsInt(jsonobject, "binding");
             int stage = getTypeFromString(GsonHelper.getAsString(jsonobject, "stage"));
 
-            samplers.add(new Sampler(binding, VK_SHADER_STAGE_FRAGMENT_BIT|VK_SHADER_STAGE_VERTEX_BIT, "sampler2D", name));
+            samplers.add(new Sampler(binding, stage, getAccessfromStage(stage), "sampler2D", name));
         }
 
         private void parsePushConstantNode(JsonArray jsonArray) {

@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.bytes.Byte2LongOpenHashMap;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.shader.Sampler;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -191,8 +192,8 @@ public class VulkanImage {
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-            barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.srcQueueFamilyIndex(0);
+            barrier.dstQueueFamilyIndex(0);
             barrier.image(this.id);
 
             barrier.subresourceRange().baseMipLevel(0);
@@ -225,10 +226,10 @@ public class VulkanImage {
         currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     }
 
-    public void readOnlyLayout(TransferQueue.CommandBuffer commandBuffer) {
+    public void readOnlyLayout(Sampler sampler) {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) return;
 
-
+        TransferQueue.CommandBuffer commandBuffer = TransferQueue.beginCommands();
 
         try(MemoryStack stack = stackPush()) {
 
@@ -236,8 +237,8 @@ public class VulkanImage {
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             barrier.newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-            barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.srcQueueFamilyIndex(0);
+            barrier.dstQueueFamilyIndex(0);
             barrier.image(this.id);
 
             barrier.subresourceRange().baseMipLevel(0);
@@ -254,7 +255,7 @@ public class VulkanImage {
             barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
 
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            destinationStage = sampler.accessStageMask();
 
             vkCmdPipelineBarrier(commandBuffer.getHandle(),
                     sourceStage, destinationStage,
@@ -264,7 +265,8 @@ public class VulkanImage {
                     barrier);
         }
 
-
+        long fence = TransferQueue.endCommands(commandBuffer);
+        if (fence != 0) Synchronization.addFence(fence);
 
 
         this.currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -422,8 +424,8 @@ public class VulkanImage {
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(oldLayout);
             barrier.newLayout(newLayout);
-            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-            barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.srcQueueFamilyIndex(0);
+            barrier.dstQueueFamilyIndex(0);
             barrier.image(image);
 
             barrier.subresourceRange().baseMipLevel(0);
