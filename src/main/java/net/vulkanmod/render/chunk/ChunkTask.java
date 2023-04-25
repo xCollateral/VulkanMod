@@ -198,7 +198,7 @@ public class ChunkTask {
             final PoseStack poseStack = new PoseStack();
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
-                final Set<VBOUtil.RenderTypes> set = new ReferenceArraySet<>(VBOUtil.RenderTypes.values().length);
+                final Set<VBOUtil.RenderTypes> set = EnumSet.noneOf(VBOUtil.RenderTypes.class);
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
 

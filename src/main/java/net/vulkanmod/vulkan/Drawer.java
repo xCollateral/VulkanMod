@@ -3,7 +3,9 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
@@ -297,7 +299,7 @@ public class Drawer {
 
             IntBuffer pImageIndex = stack.mallocInt(1);
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain(), VUtil.UINT64_MAX,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain(), 10000,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
@@ -409,7 +411,7 @@ public class Drawer {
         if(drawMode!=7) return;
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
-        Pipeline boundPipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
+        Pipeline boundPipeline = ((ShaderMixed) (RenderSystem.getShader()==null ?VBOUtil.RenderTypes.CUTOUT.shader : RenderSystem.getShader())).getPipeline();
         usedPipelines.add(boundPipeline);
         bindPipeline(boundPipeline);
 

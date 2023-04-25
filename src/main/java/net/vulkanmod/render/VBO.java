@@ -93,6 +93,7 @@ public class VBO {
         }
     }
     private void configureIndexFormat(ByteBuffer data) {
+        if(data.remaining()==0) return;
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         if (type==RenderTypes.TRANSLUCENT) {
 

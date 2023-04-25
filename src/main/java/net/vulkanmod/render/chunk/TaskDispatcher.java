@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.util.thread.ProcessorMailbox;
 import net.vulkanmod.render.VBO;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -178,10 +179,17 @@ public class TaskDispatcher {
     }
 
     public CompletableFuture<Void> scheduleUploadChunkLayer(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer, boolean sort) {
-        if(renderedBuffer.drawState().indexOnly()) return CompletableFuture.completedFuture(null);
+        if(nullSkip(renderedBuffer, vertexBuffer))
+        {
+            renderedBuffer.release();return CompletableFuture.completedFuture(null);
+        }
         return CompletableFuture.runAsync(() ->
                 vertexBuffer.upload(renderedBuffer, sort), this.toUpload::add);
 //
+    }
+
+    private static boolean nullSkip(BufferBuilder.RenderedBuffer renderedBuffer, VBO vertexBuffer) {
+        return (vertexBuffer.type == VBOUtil.RenderTypes.TRANSLUCENT?renderedBuffer.drawState().indexCount():renderedBuffer.drawState().vertexCount()) == 0;
     }
 
     //UploadSkip has problems with Lighting updates and Translucent VBOs

@@ -102,9 +102,8 @@ public class VBOUtil {
         public final ShaderInstance shader;
 
         RenderTypes(RenderStateShard.ShaderStateShard solid) {
-
             this.name = solid.name;
-            this.shader = solid.shader.get().get();
+            this.shader = solid.shader.orElseThrow().get();
         };
     }
 }

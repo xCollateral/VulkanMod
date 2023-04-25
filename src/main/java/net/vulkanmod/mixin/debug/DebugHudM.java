@@ -82,7 +82,7 @@ public abstract class DebugHudM {
                 cutoutChunks.size() +
                 translucentChunks.size()));
 
-        strings.add("tIndex-Buffers");
+        strings.add("tIndex-Buffer");
         strings.add("");
 
         strings.add("Used Bytes: " + (virtualBufferIdx.usedBytes >> 10) + "KB");

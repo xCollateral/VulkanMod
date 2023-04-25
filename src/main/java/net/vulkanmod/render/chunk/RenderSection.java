@@ -260,7 +260,7 @@ public class RenderSection {
                 return false;
             }
         };
-        final Set<VBOUtil.RenderTypes> renderTypes = new ObjectArraySet<>();
+        final Set<VBOUtil.RenderTypes> renderTypes = EnumSet.noneOf(VBOUtil.RenderTypes.class);
         boolean isCompletelyEmpty = true;
         final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
         VisibilitySet visibilitySet = new VisibilitySet();
