@@ -21,7 +21,7 @@ public class VBOUtil {
     public static final ObjectArrayList<VBO> cutoutChunks = new ObjectArrayList<>(1024);
 //    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
     public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
-    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+//    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     public static Matrix4f translationOffset;

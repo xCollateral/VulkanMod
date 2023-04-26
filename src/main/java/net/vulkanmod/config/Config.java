@@ -12,6 +12,7 @@ import java.util.Collections;
 
 public class Config {
 
+    public static boolean Bindless=false;
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;

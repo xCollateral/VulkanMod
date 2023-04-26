@@ -463,7 +463,10 @@ public class Drawer {
 
 
 //            Profiler.Push("draw");
-        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffers.get(currentFrame), indexCount, 1, 0, 0, 0);
+    }
+    public static void drawIndexedBindless(int v, int indexCount) {
+        vkCmdDrawIndexed(commandBuffers.get(currentFrame), indexCount, 1, 0, v, 0);
     }
 
     public void bindPipeline(Pipeline pipeline) {

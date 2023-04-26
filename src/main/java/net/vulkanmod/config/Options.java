@@ -185,7 +185,14 @@ public class Options {
                             return Component.nullToEmpty(t);
                         },
                         value -> config.advCulling = value,
-                        () -> config.advCulling)
+                        () -> config.advCulling),
+                new SwitchOption("Bindless Rendering",
+                        value -> Config.Bindless = value,
+                        () -> Config.Bindless)
+                        .setTooltip(Component.nullToEmpty("""
+                        Minimises CPU overhead by binding each vertexBuffer only one per RenderType per Frame
+                        May cause performance regressions on Some Older GPUs (Due to Suspected Prefetching issues)
+                        """)),
         };
 
     }

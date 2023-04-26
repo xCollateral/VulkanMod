@@ -3,6 +3,7 @@ package net.vulkanmod.render;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -94,7 +95,7 @@ public class VBO {
         }
     }
 
-    private void configureIndexFormat(ByteBuffer data) {
+    /*private void configureIndexFormat(ByteBuffer data) {
         if(data.remaining()==0) return;
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         if (type==RenderTypes.TRANSLUCENT) {
@@ -111,7 +112,7 @@ public class VBO {
             this.indexOff= fakeIndexBuffer.i2()>>1;
 
         }
-    }
+    }*/
 
 
     public void close() {
@@ -147,6 +148,7 @@ public class VBO {
     }
 
     public void draw() {
-        Drawer.drawIndexed2(this.fakeVertexBuffer.i2(), this.indexCount);
+        if(Config.Bindless) Drawer.drawIndexedBindless(this.fakeVertexBuffer.i2() >> 5, this.indexCount);
+        else Drawer.drawIndexed2(this.fakeVertexBuffer.i2() , this.indexCount);
     }
 }

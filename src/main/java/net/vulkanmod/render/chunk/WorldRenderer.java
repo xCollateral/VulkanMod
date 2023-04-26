@@ -28,6 +28,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
@@ -508,7 +509,7 @@ public class WorldRenderer {
         vkDeviceWaitIdle(Vulkan.getDevice()); //Use a heavier Wait to avoid potential crashes
 //        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
 
-        virtualBufferIdx.reset();
+//        virtualBufferIdx.reset();
         virtualBufferVtx.reset();
         virtualBufferVtx2.reset();
 
@@ -601,9 +602,17 @@ public class WorldRenderer {
 
 
         final boolean b = layer != RenderTypes.TRANSLUCENT;
-        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
+        VkCommandBuffer commandBuffer = Drawer.commandBuffers.get(Drawer.getCurrentFrame());
+        vkCmdBindIndexBuffer(commandBuffer, Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
 
         VUtil.UNSAFE.putLong(pBuffers, b ? virtualBufferVtx.bufferPointerSuperSet:virtualBufferVtx2.bufferPointerSuperSet);
+
+        if(Config.Bindless)
+        {
+           VUtil.UNSAFE.putLong(pOffsets, 0);
+           nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
+        }
+
         if(b)
         {
             for(final VBO vbo : cutoutChunks)
