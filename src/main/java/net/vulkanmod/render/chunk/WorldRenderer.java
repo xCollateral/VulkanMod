@@ -39,6 +39,9 @@ import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -47,6 +50,8 @@ import java.util.Set;
 import java.util.SortedSet;
 
 import static net.vulkanmod.render.chunk.util.VBOUtil.*;
+import static net.vulkanmod.vulkan.Drawer.pBuffers;
+import static net.vulkanmod.vulkan.Drawer.pOffsets;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
 
@@ -503,7 +508,9 @@ public class WorldRenderer {
         vkDeviceWaitIdle(Vulkan.getDevice()); //Use a heavier Wait to avoid potential crashes
 //        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
 
-        VBOUtil.virtualBufferIdx.reset();
+        virtualBufferIdx.reset();
+        virtualBufferVtx.reset();
+        virtualBufferVtx2.reset();
 
         Drawer.skipRendering=false;
 
@@ -593,22 +600,21 @@ public class WorldRenderer {
         drawer.uploadAndBindUBOs(pipeline);
 
 
-        if(layer!=RenderTypes.TRANSLUCENT)
+        final boolean b = layer != RenderTypes.TRANSLUCENT;
+        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
+
+        VUtil.UNSAFE.putLong(pBuffers, b ? virtualBufferVtx.bufferPointerSuperSet:virtualBufferVtx2.bufferPointerSuperSet);
+        if(b)
         {
-            vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
             for(final VBO vbo : cutoutChunks)
-          {
-              vbo.draw();
-          }
-        }
-        else
-        {
-            vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), virtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
-            for (int i = translucentChunks.size() - 1; i >= 0; i--) {
-                translucentChunks.get(i).draw();
+            {
+                vbo.draw();
             }
         }
 
+        else for (int i = translucentChunks.size() - 1; i >= 0; i--) {
+            translucentChunks.get(i).draw();
+        }
 
 
 //        p1.end();

@@ -8,17 +8,11 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.VirtualBuffer;
-import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
-import net.vulkanmod.vulkan.memory.StagingBuffer;
 import org.jetbrains.annotations.NotNull;
-import org.lwjgl.vulkan.VK10;
 
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 //Use smaller class instead of WorldRenderer in case it helps GC/Heap fragmentation e.g.
 public class VBOUtil {
@@ -28,6 +22,8 @@ public class VBOUtil {
 //    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
     public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
     public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     public static Matrix4f translationOffset;
     public static double camX;
     public static double camZ;

@@ -82,25 +82,45 @@ public abstract class DebugHudM {
                 cutoutChunks.size() +
                 translucentChunks.size()));
 
-        strings.add("tIndex-Buffer");
+        strings.add("tVertex-Buffer2");
         strings.add("");
 
-        strings.add("Used Bytes: " + (virtualBufferIdx.usedBytes >> 10) + "KB");
-        strings.add("Max Size: " + (virtualBufferIdx.size_t >> 10) + "KB");
+        strings.add("Used Bytes: " + (virtualBufferVtx.usedBytes >> 10) + "KB");
+        strings.add("Max Size: " + (virtualBufferVtx.size_t >> 10) + "KB");
 //        strings.add("Allocs: " + VirtualBuffer.allocs);
 //        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
-        strings.add("subAllocs: " + virtualBufferIdx.subAllocs);
+        strings.add("subAllocs: " + virtualBufferVtx.subAllocs);
 //        strings.add("Blocks: " + VirtualBuffer.blocks);
 //        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
 
-        strings.add("minRange: " + virtualBufferIdx.unusedRangesS);
-        strings.add("maxRange: " + virtualBufferIdx.unusedRangesM);
-        strings.add("unusedRangesCount: " + virtualBufferIdx.unusedRangesCount);
-        strings.add("minVBOSize: " + virtualBufferIdx.allocMin);
-        strings.add("maxVBOSize: " + virtualBufferIdx.allocMax);
-        strings.add("unusedBytes: " + (virtualBufferIdx.size_t- virtualBufferIdx.usedBytes >> 10) + "KB");
-        strings.add("freeRanges: " + (virtualBufferIdx.FreeRanges.size()));
-        strings.add("activeRanges: " + (virtualBufferIdx.activeRanges.size()));
+        strings.add("minRange: " + virtualBufferVtx.unusedRangesS);
+        strings.add("maxRange: " + virtualBufferVtx.unusedRangesM);
+        strings.add("unusedRangesCount: " + virtualBufferVtx.unusedRangesCount);
+        strings.add("minVBOSize: " + virtualBufferVtx.allocMin);
+        strings.add("maxVBOSize: " + virtualBufferVtx.allocMax);
+        strings.add("unusedBytes: " + (virtualBufferVtx.size_t- virtualBufferVtx.usedBytes >> 10) + "KB");
+        strings.add("freeRanges: " + (virtualBufferVtx.FreeRanges.size()));
+        strings.add("activeRanges: " + (virtualBufferVtx.activeRanges.size()));
+
+        strings.add("tVertex-Buffer");
+        strings.add("");
+
+        strings.add("Used Bytes: " + (virtualBufferVtx2.usedBytes >> 10) + "KB");
+        strings.add("Max Size: " + (virtualBufferVtx2.size_t >> 10) + "KB");
+//        strings.add("Allocs: " + VirtualBuffer.allocs);
+//        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
+        strings.add("subAllocs: " + virtualBufferVtx2.subAllocs);
+//        strings.add("Blocks: " + VirtualBuffer.blocks);
+//        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
+
+        strings.add("minRange: " + virtualBufferVtx2.unusedRangesS);
+        strings.add("maxRange: " + virtualBufferVtx2.unusedRangesM);
+        strings.add("unusedRangesCount: " + virtualBufferVtx2.unusedRangesCount);
+        strings.add("minVBOSize: " + virtualBufferVtx2.allocMin);
+        strings.add("maxVBOSize: " + virtualBufferVtx2.allocMax);
+        strings.add("unusedBytes: " + (virtualBufferVtx2.size_t- virtualBufferVtx2.usedBytes >> 10) + "KB");
+        strings.add("freeRanges: " + (virtualBufferVtx2.FreeRanges.size()));
+        strings.add("activeRanges: " + (virtualBufferVtx2.activeRanges.size()));
 
         return strings;
     }

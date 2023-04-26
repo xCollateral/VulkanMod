@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.memory.*;
@@ -61,10 +60,8 @@ public class Drawer {
     public static boolean rebuild = false;
     public static boolean skipRendering = false;
 
-    private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
-    private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
-    private static final long pBuffers = MemoryUtil.memAddress0(buffers);
-    private static final long pOffsets = MemoryUtil.memAddress0(offsets);
+    public static final long pBuffers = MemoryUtil.nmemAlloc(8);
+    public static final long pOffsets = MemoryUtil.nmemAlloc(8);
 
 
     public Drawer()
@@ -457,16 +454,16 @@ public class Drawer {
 //            Profiler.Push("draw");
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
-    public static void drawIndexed2(VertexBuffer vertexBuffer, int indexOffset, int indexCount) {
+    public static void drawIndexed2(int v, int indexCount) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-        VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
-        VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
+
+        VUtil.UNSAFE.putLong(pOffsets, v);
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
 
 //            Profiler.Push("draw");
-        vkCmdDrawIndexed(commandBuffer, indexCount, 1, indexOffset, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 
     public void bindPipeline(Pipeline pipeline) {

@@ -6,9 +6,7 @@ import net.fabricmc.api.Environment;
 import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 
@@ -20,7 +18,8 @@ import static net.vulkanmod.render.chunk.util.VBOUtil.*;
 public class VBO {
     public boolean preInitalised=true;
     public boolean hasAbort=false;
-    public VertexBuffer vertexBuffer;
+
+    public VkBufferPointer fakeVertexBuffer;
     public VkBufferPointer fakeIndexBuffer;
 
 
@@ -33,6 +32,7 @@ public class VBO {
     private int y;
     private int z;
     public int indexOff = 0;
+    public int vertOff = 0;
 
     public VBO(int index, RenderTypes name, int x, int y, int z) {
         this.index = index;
@@ -55,7 +55,7 @@ public class VBO {
 
 
         if (!sort) this.configureVertexFormat(parameters, vertBuff);
-        if (type==RenderTypes.TRANSLUCENT) this.configureIndexFormat(buffer.indexBuffer());
+//        if (type==RenderTypes.TRANSLUCENT) this.configureIndexFormat(buffer.indexBuffer());
 
         buffer.release();
         preInitalised=false;
@@ -79,19 +79,21 @@ public class VBO {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         if (!parameters.indexOnly()) {
 
-            if(this.vertexBuffer==null) this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            if(data.remaining()>vertexBuffer.getTotalSize())
+            VirtualBuffer virtualBufferVtx1 = type!=RenderTypes.TRANSLUCENT ? virtualBufferVtx : virtualBufferVtx2;
+            if(fakeVertexBuffer ==null || !virtualBufferVtx1.isAlreadyLoaded(index, data.remaining()))
             {
-                this.vertexBuffer.freeBuffer();
-                this.vertexBuffer=new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+                fakeVertexBuffer = virtualBufferVtx1.addSubIncr(index, data.remaining());
             }
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+            stagingBuffer.copyBuffer(fakeVertexBuffer.size_t(), data);
 
-            //
+            Vulkan.copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.getOffset(), virtualBufferVtx1.bufferPointerSuperSet, fakeVertexBuffer.i2(), fakeVertexBuffer.size_t());
 
-            vertexBuffer.uploadToBuffer(32 * parameters.vertexCount(), data);
+            this.vertOff= fakeVertexBuffer.i2()>>5;
 
         }
     }
+
     private void configureIndexFormat(ByteBuffer data) {
         if(data.remaining()==0) return;
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
@@ -104,7 +106,7 @@ public class VBO {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
             stagingBuffer.copyBuffer(fakeIndexBuffer.size_t(), data);
 
-            Vulkan.copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.getOffset(), VBOUtil.virtualBufferIdx.bufferPointerSuperSet, fakeIndexBuffer.i2(), fakeIndexBuffer.size_t());
+            Vulkan.copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.getOffset(), virtualBufferIdx.bufferPointerSuperSet, fakeIndexBuffer.i2(), fakeIndexBuffer.size_t());
 
             this.indexOff= fakeIndexBuffer.i2()>>1;
 
@@ -115,16 +117,13 @@ public class VBO {
     public void close() {
         if(preInitalised) return;
         if(vertexCount <= 0) return;
-        vertexBuffer.freeBuffer();
-        vertexBuffer = null;
-        if(type==RenderTypes.TRANSLUCENT)
-        {
-            virtualBufferIdx.addFreeableRange(index, fakeIndexBuffer);
-            fakeIndexBuffer=null;
-        }
+        (type!=RenderTypes.TRANSLUCENT ? virtualBufferVtx : virtualBufferVtx2).addFreeableRange(index, fakeVertexBuffer);
+        fakeVertexBuffer=null;
 
         this.vertexCount = 0;
         this.indexCount = 0;
+        this.indexOff = 0;
+        this.vertOff = 0;
         preInitalised=true;
         removeVBO(this);
     }
@@ -148,6 +147,6 @@ public class VBO {
     }
 
     public void draw() {
-        Drawer.drawIndexed2(this.vertexBuffer, this.indexOff, this.indexCount);
+        Drawer.drawIndexed2(this.fakeVertexBuffer.i2(), this.indexCount);
     }
 }
