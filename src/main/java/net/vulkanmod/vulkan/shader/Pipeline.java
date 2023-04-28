@@ -412,6 +412,12 @@ public class Pipeline {
 
                     offset += 4;
                 }
+                else if(elements.get(i).getType() == VertexFormatElement.Type.USHORT){
+                    posDescription.format(VK_FORMAT_R16G16_UINT);
+                    posDescription.offset(offset);
+
+                    offset += 4;
+                }
             }
             else if (usage == VertexFormatElement.Usage.NORMAL)
             {

@@ -3,14 +3,10 @@ package net.vulkanmod.render;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
-
-import java.nio.LongBuffer;
 
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.util.vma.Vma.*;
@@ -37,8 +33,6 @@ public final class VirtualBuffer {
 //    private static long  PFNINTERNALALLOCATION=nmemAlignedAlloc(8, 32);
 //    private static long  PFNINTERNALFREE=nmemAlignedAlloc(8, 32);
 //    public static int allocBytes;
-
-    public final ObjectArrayList<VkBufferPointer> FreeRanges = new ObjectArrayList<>(1024);
 
     public final ObjectArrayList<VkBufferPointer> activeRanges = new ObjectArrayList<>(1024);
     private final int vkBufferType;
@@ -82,7 +76,6 @@ public final class VirtualBuffer {
 //        subIncr=0;
         subAllocs=0;
         usedBytes=0;
-        FreeRanges.clear();
         activeRanges.clear();
         freeThis();
 //
@@ -172,19 +165,19 @@ public final class VirtualBuffer {
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
-            var a = (checkforFreeable((actualSize)));
+
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack);
             allocCreateInfo.size((actualSize));
             allocCreateInfo.alignment(0);
-            allocCreateInfo.flags((a!=null) ? 0 : VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
+            allocCreateInfo.flags(VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
             allocCreateInfo.pUserData(NULL);
 
             PointerBuffer pAlloc = stack.mallocPointer(1);
 
-            LongBuffer pOffset = a!=null ? stack.longs(a.i2()) : null;
+            ;
 //            subIncr += alignedSize;
             usedBytes+= (actualSize);
-            Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset);
+            Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, null);
 
             long allocation = pAlloc.get(0);
 
@@ -224,17 +217,6 @@ public final class VirtualBuffer {
     }
 
 
-
-    private VkBufferPointer checkforFreeable(int size) {
-        for (int i = 0; i < FreeRanges.size(); i++) {
-            VkBufferPointer bufferPointer = FreeRanges.get(i);
-            if (bufferPointer.size_t() >= size) {
-                return FreeRanges.remove(i);
-            }
-        }
-        return null;
-    }
-
     //Not Supported on LWJGL 3.3.1
     private void updateStatistics(MemoryStack stack) {
         VmaDetailedStatistics vmaStatistics = VmaDetailedStatistics.malloc(stack);
@@ -268,7 +250,6 @@ public final class VirtualBuffer {
         }
         subAllocs--;
         usedBytes-=bufferPointer.size_t();
-        addToFreeableRanges(bufferPointer);
     }
 
     private VkBufferPointer getActiveRangeFromIdx(int index) {
@@ -278,10 +259,6 @@ public final class VirtualBuffer {
             }
         }
         return null;
-    }
-
-    private void addToFreeableRanges(VkBufferPointer bufferPointer) {
-        FreeRanges.add(bufferPointer);
     }
 
     //Makes Closing the game very slow

@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
@@ -245,6 +246,9 @@ public class Vulkan {
         vkDestroyCommandPool(device, TransferQueue.getCommandPool(), null);
 
         TransferQueue.cleanUp();
+
+        VBOUtil.virtualBufferVtx.cleanUp();
+        VBOUtil.virtualBufferVtx2.cleanUp();
 
         vkDestroyDevice(device, null);
         vkDestroyInstance(instance, null);

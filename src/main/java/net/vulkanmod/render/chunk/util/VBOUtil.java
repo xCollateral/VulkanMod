@@ -1,8 +1,13 @@
 package net.vulkanmod.render.chunk.util;
 
+import com.google.common.collect.ImmutableMap;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -11,7 +16,10 @@ import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.NotNull;
 
-import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+import java.io.IOException;
+import java.util.Map;
+
+import static com.mojang.blaze3d.vertex.DefaultVertexFormat.*;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 //Use smaller class instead of WorldRenderer in case it helps GC/Heap fragmentation e.g.
@@ -31,6 +39,21 @@ public class VBOUtil {
     public static double originZ;
     private static double prevCamX;
     private static double prevCamZ;
+
+    private static final ShaderInstance test;
+    private static final ShaderInstance test2;
+    private static final VertexFormatElement ELEMENT_UV2 = new VertexFormatElement(2,VertexFormatElement.Type.USHORT, VertexFormatElement.Usage.UV, 2);
+    private static final VertexFormat BLOCK2 = new VertexFormat(ImmutableMap.of("Position",ELEMENT_POSITION, "Color",ELEMENT_COLOR, "UV0",ELEMENT_UV0, "UV2",ELEMENT_UV2, "Normal",ELEMENT_NORMAL, "Padding",ELEMENT_PADDING));
+
+
+    static {
+        try {
+            test = new ShaderInstance(Minecraft.getInstance().getResourceManager(), "rendertype_cutout", BLOCK2);
+            test2 = new ShaderInstance(Minecraft.getInstance().getResourceManager(), "rendertype_translucent", BLOCK2);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static void updateCamTranslation(PoseStack pose, double d, double e, double g, Matrix4f matrix4f)
     {
@@ -90,16 +113,16 @@ public class VBOUtil {
     public enum RenderTypes
     {
 //        CUTOUT_MIPPED(RenderStateShard.ShaderStateShard.RENDERTYPE_CUTOUT_MIPPED_SHADER),
-        CUTOUT(RenderStateShard.ShaderStateShard.RENDERTYPE_CUTOUT_SHADER),
-        TRANSLUCENT(RenderStateShard.ShaderStateShard.RENDERTYPE_TRANSLUCENT_SHADER);
+        CUTOUT(test, "cutout"),
+        TRANSLUCENT(test2, "translucent");
 
         public final String name;
 
         public final ShaderInstance shader;
 
-        RenderTypes(RenderStateShard.ShaderStateShard solid) {
-            this.name = solid.name;
-            this.shader = solid.shader.orElseThrow().get();
+        RenderTypes(ShaderInstance solid, String name) {
+            this.name = name;
+            this.shader = solid;
         };
     }
 }

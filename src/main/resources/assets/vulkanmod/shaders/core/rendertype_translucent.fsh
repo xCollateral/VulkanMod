@@ -19,9 +19,9 @@ layout(binding = 1) uniform UBO{
 };
 
 layout(location = 0) in vec4 vertexColor;
-layout(location = 1) in vec4 normal;
-layout(location = 2) in vec2 texCoord0;
-layout(location = 3) in float vertexDistance;
+//layout(location = 1) in vec4 normal;
+layout(location = 1) in vec2 texCoord0;
+layout(location = 2) in float vertexDistance;
 
 layout(location = 0) out vec4 fragColor;
 

@@ -99,7 +99,6 @@ public abstract class DebugHudM {
         strings.add("minVBOSize: " + virtualBufferVtx.allocMin);
         strings.add("maxVBOSize: " + virtualBufferVtx.allocMax);
         strings.add("unusedBytes: " + (virtualBufferVtx.size_t- virtualBufferVtx.usedBytes >> 10) + "KB");
-        strings.add("freeRanges: " + (virtualBufferVtx.FreeRanges.size()));
         strings.add("activeRanges: " + (virtualBufferVtx.activeRanges.size()));
 
         strings.add("tVertex-Buffer");
@@ -119,7 +118,6 @@ public abstract class DebugHudM {
         strings.add("minVBOSize: " + virtualBufferVtx2.allocMin);
         strings.add("maxVBOSize: " + virtualBufferVtx2.allocMax);
         strings.add("unusedBytes: " + (virtualBufferVtx2.size_t- virtualBufferVtx2.usedBytes >> 10) + "KB");
-        strings.add("freeRanges: " + (virtualBufferVtx2.FreeRanges.size()));
         strings.add("activeRanges: " + (virtualBufferVtx2.activeRanges.size()));
 
         return strings;

@@ -567,12 +567,8 @@ public class WorldRenderer {
         //debug
         Profiler p = Profiler.getProfiler("chunks");
         final RenderTypes layer = getLayer(renderType);
-        final ObjectArrayList<VBO> sections =
-                switch (layer) {
-                    case CUTOUT -> cutoutChunks;
-                    case TRANSLUCENT -> translucentChunks;
-                };
-        if(sections.isEmpty()) return;
+
+        if((layer == RenderTypes.CUTOUT ? cutoutChunks : translucentChunks).isEmpty()) return;
         p.pushMilestone("layer " + layer.name);
 
         RenderSystem.assertOnRenderThread();
@@ -606,7 +602,7 @@ public class WorldRenderer {
         vkCmdBindIndexBuffer(commandBuffer, Drawer.getInstance().getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
 
         VUtil.UNSAFE.putLong(pBuffers, b ? virtualBufferVtx.bufferPointerSuperSet:virtualBufferVtx2.bufferPointerSuperSet);
-
+//ToDO:Share Layouts
         if(Config.Bindless)
         {
            VUtil.UNSAFE.putLong(pOffsets, 0);
