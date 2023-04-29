@@ -587,7 +587,7 @@ public class Pipeline {
 
                 for(int x=0;x<samplers.size(); x++){
                     //TODO: make an auxiliary function
-                    VulkanImage texture = getTex(x);
+                    VulkanImage texture = getTexFromBinding(samplers.get(x).binding());
                     texture.readOnlyLayout(samplers.get(x));
                     //VulkanImage texture = VTextureManager.getCurrentTexture();
 
@@ -627,13 +627,13 @@ public class Pipeline {
             }
         }
 
-        private VulkanImage getTex(int i)
+        private VulkanImage getTexFromBinding(int i)
         {
             return switch (i)
                     {
-                        case 0 -> VTextureSelector.getBoundTexture();
-                        case 1 -> VTextureSelector.getLightTexture();
-                        case 2 -> VTextureSelector.getOverlayTexture();
+                        case 2 -> VTextureSelector.getBoundTexture();
+                        case 3 -> VTextureSelector.getLightTexture();
+                        case 4 -> VTextureSelector.getOverlayTexture();
                         default -> throw new IllegalStateException("Unexpected value: " + i);
                     };
         }
@@ -738,7 +738,7 @@ public class Pipeline {
         }
 
         private void parseSamplerNode(JsonElement jsonelement) {
-            JsonObject jsonobject = jsonelement.getAsJsonObject();
+            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "samplers");
 
             String name = GsonHelper.getAsString(jsonobject, "name");
             int binding = GsonHelper.getAsInt(jsonobject, "binding");
