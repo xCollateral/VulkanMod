@@ -462,7 +462,7 @@ public class Drawer {
     public static void drawIndexed2(int v, int indexCount) {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-
+        //Contiguous bufferL so same buffer is rebound each time
         VUtil.UNSAFE.putLong(pOffsets, v);
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 

@@ -3,6 +3,7 @@ package net.vulkanmod.render;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.util.Mth;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
@@ -68,11 +69,13 @@ public class VBO {
     private void translateVBO(ByteBuffer buffer) {
         final long addr = MemoryUtil.memAddress0(buffer);
         //Use constant Attribute size to encourage loop unrolling
+        final int camX1 = Mth.fastFloor(x-camX-originX);
+        final int camZ1 = Mth.fastFloor(z-camZ-originZ);
         for(int i = 0; i< buffer.remaining(); i+=32)
         {
-            VUtil.UNSAFE.putFloat(addr+i,   (VUtil.UNSAFE.getFloat(addr+i)  +(float)(x- camX - originX)));
+            VUtil.UNSAFE.putFloat(addr+i,   (VUtil.UNSAFE.getFloat(addr+i)  +(camX1)));
             VUtil.UNSAFE.putFloat(addr+i+4, (VUtil.UNSAFE.getFloat(addr+i+4)+y));
-            VUtil.UNSAFE.putFloat(addr+i+8, (VUtil.UNSAFE.getFloat(addr+i+8)+(float)(z- camZ - originZ)));
+            VUtil.UNSAFE.putFloat(addr+i+8, (VUtil.UNSAFE.getFloat(addr+i+8)+(camZ1)));
         }
     }
 

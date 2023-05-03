@@ -518,8 +518,8 @@ public class WorldRenderer {
     }
 
     private void resetOrigin() {
-        originX=0;
-        originZ=0;
+        originX=originX-Mth.fastFloor(originX);
+        originZ=originZ-Mth.fastFloor(originZ);
     }
 
     public void setLevel(@Nullable ClientLevel level) {
