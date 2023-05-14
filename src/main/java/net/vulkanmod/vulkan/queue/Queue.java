@@ -122,13 +122,24 @@ public abstract class Queue {
                     indices.transferFamily = fallback;
                 }
             }
+            
+            if(indices.computeFamily == null) {
+                for(int i = 0; i < queueFamilies.capacity(); i++) {
+                    int queueFlags = queueFamilies.get(i).queueFlags();
 
-            if (indices.computeFamily == null)
-                throw new RuntimeException("Unable to find queue family with compute support.");
+                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
+                        indices.computeFamily = i;
+                        break;
+                    }
+                }
+            }
+
             if (indices.graphicsFamily == null)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
             if (indices.presentFamily == null)
                 throw new RuntimeException("Unable to find queue family with present support.");
+            if (indices.computeFamily == null)
+                throw new RuntimeException("Unable to find queue family with compute support.");
 
             return indices;
         }
