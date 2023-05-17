@@ -17,7 +17,7 @@ A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the 
 
 ### Requirements
 
-- A Graphics Card that supports Vulkan 1.3 or later*.
+- A Graphics Card that supports Vulkan 1.3***** or later.
 - [Fabric loader](https://fabricmc.net/use/installer/)
 
 ## Steps:
