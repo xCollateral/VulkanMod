@@ -6,23 +6,48 @@
 [![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/FVXg7AYR2Q)
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V7CHHJV)
 
-
 A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the Vulkan API.
 
-Demostration Video:
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V7CHHJV)
 
-[![Demostration Video](http://img.youtube.com/vi/sbr7UxcAmOE/0.jpg)](https://youtu.be/sbr7UxcAmOE)
-
-## Installation
+</div>
 
 ### Downloads:
 
 [![Modrinth](https://modrinth-utils.vercel.app/api/badge/downloads?id=vulkanmod&logo=true&style=for-the-badge)](https://modrinth.com/mod/vulkanmod)
 [![CurseForge](https://cf.way2muchnoise.eu/title/635429_Get_Mod.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
 
+![fabric](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg)
+
+### Requirements
+
+- A device (GPU) that supports Vulkan
+- [Fabric loader](https://fabricmc.net/use/installer/)
+
 ### Steps:
 
 There are none! Simply download the mod from one of the download buttons above and then move the JAR file into your **mods** folder like any other mod.
+
+Demostration Video:
+
+[![Demostration Video](http://img.youtube.com/vi/sbr7UxcAmOE/0.jpg)](https://youtu.be/sbr7UxcAmOE)
+
+## Community
+
+If you need help or want to chat feel free to join our Discord server.
+
+[![Discord](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/social/discord-plural_vector.svg)](https://discord.gg/FVXg7AYR2Q)
+
+## Issues
+
+Before asking for help, if your instance is crashing check if your system supports Vulkan and if any of the mods listed in the link below is present in your instance.
+
+Please before reporting any issue check if there is another one similar already opened.
+
+## Compatibility
+
+Mod compatibility is not guaranteed. When VulkanMod is loaded, mods that make explicit calls to OpenGL will crash the game.
+Check [Incompatible mods](https://github.com/xCollateral/VulkanMod/discussions/226) list to make sure you are not using one of them.
 
 ## Known Issues
 

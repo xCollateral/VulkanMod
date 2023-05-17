@@ -172,10 +172,12 @@ public class ChunkGrid {
                     BlockPos blockpos = renderSection.getOrigin();
 
                     //maybe later no need to check
-                    if (x1 != blockpos.getX() || y1 != blockpos.getY() || z1 != blockpos.getZ()) {
-                        renderSection.setOrigin(x1, y1, z1);
-//                        count++;
-                    }
+//                    if (x1 != blockpos.getX() || y1 != blockpos.getY() || z1 != blockpos.getZ()) {
+//                        renderSection.setOrigin(x1, y1, z1);
+////                        count++;
+//                    }
+
+                    renderSection.setOrigin(x1, y1, z1);
 
                     this.unsetNeighbours(renderSection);
                     this.unbindChunkArea(renderSection);
@@ -208,10 +210,12 @@ public class ChunkGrid {
                     BlockPos blockpos = renderSection.getOrigin();
 
                     //maybe later no need to check
-                    if (x1 != blockpos.getX() || y1 != blockpos.getY() || z1 != blockpos.getZ()) {
-                        renderSection.setOrigin(x1, y1, z1);
-//                        count++;
-                    }
+//                    if (x1 != blockpos.getX() || y1 != blockpos.getY() || z1 != blockpos.getZ()) {
+//                        renderSection.setOrigin(x1, y1, z1);
+////                        count++;
+//                    }
+
+                    renderSection.setOrigin(x1, y1, z1);
 
                     this.unsetNeighbours(renderSection);
                     this.unbindChunkArea(renderSection);

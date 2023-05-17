@@ -225,14 +225,9 @@ public class Vulkan {
 
         swapChainFramebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
 
-//        swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
-
         MemoryManager.getInstance().freeImage(depthImage, depthImageMemory);
         vkDestroyImageView(device, depthImageView, null);
 
-//        vkDestroySwapchainKHR(device, swapChain, null);
-
-//        createSwapChain();
         createImageViews();
         createDepthResources();
         createFramebuffers();
@@ -420,7 +415,12 @@ public class Vulkan {
             }
 
             VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
-            deviceFeatures.samplerAnisotropy(true);
+
+            //TODO store and use device features
+            if(deviceInfo.availableFeatures.samplerAnisotropy())
+                deviceFeatures.samplerAnisotropy(true);
+            if(deviceInfo.availableFeatures.logicOp())
+                deviceFeatures.logicOp(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
@@ -744,17 +744,20 @@ public class Vulkan {
     }
 
     private static int chooseSwapPresentMode(IntBuffer availablePresentModes) {
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
-        //TODO: check if immediate mode is supported
         //fifo mode is the only mode that has to be supported
-//        for(int i = 0;i < availablePresentModes.capacity();i++) {
-//            if(availablePresentModes.get(i) == VK_PRESENT_MODE_MAILBOX_KHR) {
-//                return availablePresentModes.get(i);
-//            }
-//        }
-//
-//        return VK_PRESENT_MODE_FIFO_KHR;
-        return vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
+
+        for(int i = 0;i < availablePresentModes.capacity();i++) {
+            if(availablePresentModes.get(i) == requestedMode) {
+                return requestedMode;
+            }
+        }
+
+        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
+        return VK_PRESENT_MODE_FIFO_KHR;
+
     }
 
     private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {

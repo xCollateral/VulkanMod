@@ -48,6 +48,8 @@ public class ShaderSPIRVUtils {
 
 //        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
+//        shaderc_compile_options_set_auto_bind_uniforms();
+
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 
         if(result == NULL) {

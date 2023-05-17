@@ -9,11 +9,13 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import com.mojang.math.Matrix4f;
 import org.joml.Vector2f;
 import org.lwjgl.system.MemoryUtil;
+import org.spongepowered.asm.mixin.Overwrite;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 
@@ -31,24 +33,26 @@ public class VRenderSystem {
     public static boolean depthMask = true;
     public static int depthFun = 515;
 
-    public static int colorMask = Pipeline.ColorMask.getColorMask(true, true, true, true);
+    public static int colorMask = PipelineState.ColorMask.getColorMask(true, true, true, true);
 
     public static boolean cull = true;
 
     public static float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
 
-    public static ByteBuffer modelViewMatrix = MemoryUtil.memAlloc(16 * 4);
-    public static ByteBuffer projectionMatrix = MemoryUtil.memAlloc(16 * 4);
-    public static ByteBuffer TextureMatrix = MemoryUtil.memAlloc(16 * 4);
-    public static ByteBuffer MVP = MemoryUtil.memAlloc(16 * 4);
+    public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
+    public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
+    public static MappedBuffer TextureMatrix = new MappedBuffer(16 * 4);
+    public static MappedBuffer MVP = new MappedBuffer(16 * 4);
 
     public static MappedBuffer ChunkOffset = new MappedBuffer(3 * 4);
     public static MappedBuffer lightDirection0 = new MappedBuffer(3 * 4);
     public static MappedBuffer lightDirection1 = new MappedBuffer(3 * 4);
 
-    public static ByteBuffer shaderColor = MemoryUtil.memAlloc(4 * 4);
-    public static ByteBuffer shaderFogColor = MemoryUtil.memAlloc(4 * 4);
+    public static MappedBuffer shaderColor = new MappedBuffer(4 * 4);
+    public static MappedBuffer shaderFogColor = new MappedBuffer(4 * 4);
+
+    public static MappedBuffer screenSize = new MappedBuffer(2 * 4);
 
     private static final float[] depthBias = new float[2];
 
@@ -130,38 +134,38 @@ public class VRenderSystem {
     }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
-        mat.store(modelViewMatrix.asFloatBuffer());
+        mat.store(modelViewMatrix.buffer.asFloatBuffer());
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
 
     public static void applyProjectionMatrix(Matrix4f mat) {
-        mat.store(projectionMatrix.asFloatBuffer());
+        mat.store(projectionMatrix.buffer.asFloatBuffer());
     }
 
     public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.asFloatBuffer());
+        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
+        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
 
-        P.mul(MV).get(MVP);
+        P.mul(MV).get(MVP.buffer);
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
-        mat.store(TextureMatrix.asFloatBuffer());
+        mat.store(TextureMatrix.buffer.asFloatBuffer());
     }
 
-    public static ByteBuffer getTextureMatrix() {
+    public static MappedBuffer getTextureMatrix() {
         return TextureMatrix;
     }
 
-    public static ByteBuffer getModelViewMatrix() {
+    public static MappedBuffer getModelViewMatrix() {
         return modelViewMatrix;
     }
 
-    public static ByteBuffer getProjectionMatrix() {
+    public static MappedBuffer getProjectionMatrix() {
         return projectionMatrix;
     }
 
-    public static ByteBuffer getMVP() {
+    public static MappedBuffer getMVP() {
         return MVP;
     }
 
@@ -179,27 +183,27 @@ public class VRenderSystem {
         shaderColor.putFloat(12, f4);
     }
 
-    public static void setFogShaderColor(float f1, float f2, float f3, float f4) {
+    public static void setShaderFogColor(float f1, float f2, float f3, float f4) {
         shaderFogColor.putFloat(0, f1);
         shaderFogColor.putFloat(4, f2);
         shaderFogColor.putFloat(8, f3);
         shaderFogColor.putFloat(12, f4);
     }
 
-    public static ByteBuffer getShaderColor() {
+    public static MappedBuffer getShaderColor() {
         return shaderColor;
     }
 
-    public static ByteBuffer getShaderFogColor() {
+    public static MappedBuffer getShaderFogColor() {
         return shaderFogColor;
     }
 
     public static void enableColorLogicOp() {
-        Drawer.currentLogicOpState = new Pipeline.LogicOpState(true, 0);
+        Drawer.currentLogicOpState = new PipelineState.LogicOpState(true, 0);
     }
 
     public static void disableColorLogicOp() {
-        Drawer.currentLogicOpState = Pipeline.DEFAULT_LOGICOP_STATE;
+        Drawer.currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
     }
 
     public static void logicOp(GlStateManager.LogicOp p_69836_) {
@@ -226,12 +230,12 @@ public class VRenderSystem {
         depthMask = b;
     }
 
-    public static Pipeline.DepthState getDepthState() {
-        return new Pipeline.DepthState(depthTest, depthMask, depthFun);
+    public static PipelineState.DepthState getDepthState() {
+        return new PipelineState.DepthState(depthTest, depthMask, depthFun);
     }
 
     public static void colorMask(boolean b, boolean b1, boolean b2, boolean b3) {
-        colorMask = Pipeline.ColorMask.getColorMask(b, b1, b2, b3);
+        colorMask = PipelineState.ColorMask.getColorMask(b, b1, b2, b3);
     }
 
     public static int getColorMask() {
@@ -263,9 +267,16 @@ public class VRenderSystem {
         Drawer.setDepthBias(0.0F, 0.0F);
     }
 
-    public static Vector2f getScreenSize() {
+    public static MappedBuffer getScreenSize() {
+        updateScreenSize();
+        return screenSize;
+    }
+
+    public static void updateScreenSize() {
         Window window = Minecraft.getInstance().getWindow();
-        return new Vector2f((float)window.getWidth(), (float)window.getHeight());
+
+        screenSize.putFloat(0, (float)window.getWidth());
+        screenSize.putFloat(4, (float)window.getHeight());
     }
     
     public static void setWindow(long window) {
@@ -274,5 +285,29 @@ public class VRenderSystem {
 
     public static void depthFunc(int p_69457_) {
         depthFun = p_69457_;
+    }
+
+    public static void enableBlend() {
+        Drawer.blendInfo.enabled = true;
+    }
+
+    public static void disableBlend() {
+        Drawer.blendInfo.enabled = false;
+    }
+
+    public static void blendFunc(GlStateManager.SourceFactor sourceFactor, GlStateManager.DestFactor destFactor) {
+        Drawer.blendInfo.setBlendFunction(sourceFactor, destFactor);
+    }
+
+    public static void blendFunc(int srcFactor, int dstFactor) {
+        Drawer.blendInfo.setBlendFunction(srcFactor, dstFactor);
+    }
+
+    public static void blendFuncSeparate(GlStateManager.SourceFactor p_69417_, GlStateManager.DestFactor p_69418_, GlStateManager.SourceFactor p_69419_, GlStateManager.DestFactor p_69420_) {
+        Drawer.blendInfo.setBlendFuncSeparate(p_69417_, p_69418_, p_69419_, p_69420_);
+    }
+
+    public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
+        Drawer.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
     }
 }

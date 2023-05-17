@@ -33,6 +33,8 @@ public class DeviceInfo {
 
     public GraphicsCard graphicsCard;
 
+    public final VkPhysicalDeviceFeatures availableFeatures;
+
     static {
         CentralProcessor centralProcessor = new SystemInfo().getHardware().getProcessor();
         cpuInfo = String.format("%s", centralProcessor.getProcessorIdentifier().getName()).replaceAll("\\s+", " ");
@@ -50,6 +52,9 @@ public class DeviceInfo {
         this.vendorId = String.valueOf(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = String.valueOf(properties.driverVersion());
+
+        this.availableFeatures = VkPhysicalDeviceFeatures.malloc();
+        vkGetPhysicalDeviceFeatures(this.device, this.availableFeatures);
     }
 
     private String unsupportedExtensions(Set<String> requiredExtensions) {

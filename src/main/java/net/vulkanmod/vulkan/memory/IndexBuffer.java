@@ -15,11 +15,6 @@ public class IndexBuffer extends Buffer {
 
     public IndexBuffer(int size, MemoryType type) {
         super(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, type);
-        createIndexBuffer(size);
-    }
-
-    //TODO: use createBuffer instead
-    private void createIndexBuffer(int size) {
         this.createBuffer(size);
     }
 
@@ -54,7 +49,7 @@ public class IndexBuffer extends Buffer {
 
     private void resizeBuffer(int newSize) {
         MemoryManager.getInstance().addToFreeable(this);
-        createIndexBuffer(newSize);
+        this.createBuffer(newSize);
 
         System.out.println("resized vertexBuffer to: " + newSize);
     }

@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
@@ -32,9 +33,8 @@ import net.vulkanmod.render.VBO;
 import net.vulkanmod.render.chunk.util.ChunkQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Pipeline;
 import net.vulkanmod.vulkan.VRenderSystem;
-import com.mojang.math.Matrix4f;
+import net.vulkanmod.vulkan.shader.Pipeline;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -182,7 +182,10 @@ public class WorldRenderer {
 
                 this.renderRegionCache = new RenderRegionCache();
 
-                this.updateRenderChunks();
+                if(flag)
+                    this.updateRenderChunks();
+                else
+                    this.updateRenderChunksSpectator();
 
                 this.needsUpdate = false;
                 this.minecraft.getProfiler().pop();
@@ -201,27 +204,34 @@ public class WorldRenderer {
         Vec3 vec3 = camera.getPosition();
         BlockPos blockpos = camera.getBlockPosition();
         RenderSection renderSection = this.chunkGrid.getRenderSectionAt(blockpos);
+
         if (renderSection == null) {
-//            boolean flag = blockpos.getY() > this.level.getMinBuildHeight();
-//            int j = flag ? this.level.getMaxBuildHeight() - 8 : this.level.getMinBuildHeight() + 8;
-//            int k = Mth.floor(vec3.x / 16.0D) * 16;
-//            int l = Mth.floor(vec3.z / 16.0D) * 16;
-//            List<WorldRenderer.QueueChunkInfo> list = Lists.newArrayList();
-//
-//            for(int i1 = -this.lastViewDistance; i1 <= this.lastViewDistance; ++i1) {
-//                for(int j1 = -this.lastViewDistance; j1 <= this.lastViewDistance; ++j1) {
-//                    ChunkRenderDispatcher.RenderChunk chunkrenderdispatcher$renderchunk1 = this.viewArea.getRenderChunkAt(new BlockPos(k + SectionPos.sectionToBlockCoord(i1, 8), j, l + SectionPos.sectionToBlockCoord(j1, 8)));
-//                    if (chunkrenderdispatcher$renderchunk1 != null) {
-//                        list.add(new WorldRenderer.QueueChunkInfo(chunkrenderdispatcher$renderchunk1, (Direction)null, 0));
-//                    }
-//                }
-//            }
-//
+            boolean flag = blockpos.getY() > this.level.getMinBuildHeight();
+            int j = flag ? this.level.getMaxBuildHeight() - 8 : this.level.getMinBuildHeight() + 8;
+            int k = Mth.floor(vec3.x / 16.0D) * 16;
+            int l = Mth.floor(vec3.z / 16.0D) * 16;
+            List<WorldRenderer.QueueChunkInfo> list = Lists.newArrayList();
+
+            for(int i1 = -this.lastViewDistance; i1 <= this.lastViewDistance; ++i1) {
+                for(int j1 = -this.lastViewDistance; j1 <= this.lastViewDistance; ++j1) {
+
+                    RenderSection renderSection1 = this.chunkGrid.getRenderSectionAt(new BlockPos(k + SectionPos.sectionToBlockCoord(i1, 8), j, l + SectionPos.sectionToBlockCoord(j1, 8)));
+                    if (renderSection1 != null) {
+                        list.add(new QueueChunkInfo(renderSection1, null, 0));
+
+                    }
+                }
+            }
+
+            //Maybe not needed
 //            list.sort(Comparator.comparingDouble((p_194358_) -> {
 //                return blockpos.distSqr(p_194358_.chunk.getOrigin().offset(8, 8, 8));
 //            }));
-//            //TODO
-//            chunkInfoQueue.addAll(list);
+
+            for (QueueChunkInfo chunkInfo : list) {
+                this.chunkQueue.add(chunkInfo);
+            }
+
         } else {
             QueueChunkInfo chunkInfo = new QueueChunkInfo(renderSection, (Direction)null, 0);
             this.chunkQueue.add(chunkInfo);
@@ -319,47 +329,7 @@ public class WorldRenderer {
                         }
                     }
 
-                    if (relativeChunk.setLastFrame(this.lastFrame)) {
-
-                        int d;
-                        if (renderChunkInfo.mainDir != direction && !renderSection.compiledSection.hasNoRenderableLayers())
-                            d = renderChunkInfo.directionChanges + 1;
-                        else d = renderChunkInfo.directionChanges;
-
-                        QueueChunkInfo chunkInfo = relativeChunk.queueInfo;
-                        if(chunkInfo != null) {
-                            chunkInfo.addDir(direction);
-
-                            if(d < chunkInfo.directionChanges) chunkInfo.setDirectionChanges(d);
-                        }
-
-                    }
-                    else if (relativeChunk.getChunkArea().inFrustum() < 0) {
-                        //TODO later: check frustum on intersections
-
-                        QueueChunkInfo chunkInfo = new QueueChunkInfo(relativeChunk, direction, renderChunkInfo.step + 1);
-                        chunkInfo.setDirections(renderChunkInfo.directions, direction);
-                        this.chunkQueue.add(chunkInfo);
-
-                        int d;
-//                        if (renderChunkInfo.mainDir != direction && !renderSection.compiledSection.hasNoRenderableLayers())
-//                        if (renderChunkInfo.mainDir != null && renderChunkInfo.mainDir.ordinal() != direction.ordinal() && !renderSection.compiledSection.hasNoRenderableLayers())
-                        if ((renderChunkInfo.sourceDirs & (1 << direction.ordinal())) == 0 && !renderSection.compiledSection.hasNoRenderableLayers())
-                        {
-                            if(renderChunkInfo.step > 4) {
-                                d = renderChunkInfo.directionChanges + 1;
-                            }
-                            else {
-                                d = 0;
-                            }
-//                            d = renderChunkInfo.directionChanges + 1;
-                        }
-
-                        else d = renderChunkInfo.directionChanges;
-
-                        chunkInfo.setDirectionChanges(d);
-                        relativeChunk.queueInfo = chunkInfo;
-                    }
+                    this.addNode(renderChunkInfo, relativeChunk, direction);
 
                 }
             }
@@ -369,9 +339,114 @@ public class WorldRenderer {
 //        mainLoop++;
     }
 
+    private void updateRenderChunksSpectator() {
+
+        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
+
+        this.sectionsInFrustum.clear();
+
+        this.solidChunks.clear();
+        this.cutoutChunks.clear();
+        this.cutoutMippedChunks.clear();
+        this.tripwireChunks.clear();
+        this.translucentChunks.clear();
+
+        this.lastFrame++;
+
+        while(this.chunkQueue.hasNext()) {
+            QueueChunkInfo renderChunkInfo = this.chunkQueue.poll();
+            RenderSection renderSection = renderChunkInfo.chunk;
+
+            this.sectionsInFrustum.add(renderChunkInfo);
+
+            this.scheduleUpdate(renderSection);
+
+            renderSection.compiledSection.renderTypes.forEach(
+                    renderType -> {
+                        if (RenderType.solid().equals(renderType)) {
+                            solidChunks.add(renderSection);
+                        }
+                        else if (RenderType.cutout().equals(renderType)) {
+                            cutoutChunks.add(renderSection);
+                        }
+                        else if (RenderType.cutoutMipped().equals(renderType)) {
+                            cutoutMippedChunks.add(renderSection);
+                        }
+                        else if (RenderType.translucent().equals(renderType)) {
+                            translucentChunks.add(renderSection);
+                        }
+                        else if (RenderType.tripwire().equals(renderType)) {
+                            tripwireChunks.add(renderSection);
+                        }
+                    }
+            );
+
+            if(renderChunkInfo.directionChanges > maxDirectionsChanges)
+                continue;
+
+            for(Direction direction : Util.DIRECTIONS) {
+                RenderSection relativeChunk = renderSection.getNeighbour(direction);
+
+                if (relativeChunk != null && !renderChunkInfo.hasDirection(direction.getOpposite())) {
+
+                    this.addNode(renderChunkInfo, relativeChunk, direction);
+
+                }
+            }
+        }
+
+    }
+
+    private void addNode(QueueChunkInfo renderChunkInfo, RenderSection relativeChunk, Direction direction) {
+        if (relativeChunk.setLastFrame(this.lastFrame)) {
+
+            int d;
+            if (renderChunkInfo.mainDir != direction && !renderChunkInfo.chunk.compiledSection.hasNoRenderableLayers())
+                d = renderChunkInfo.directionChanges + 1;
+            else d = renderChunkInfo.directionChanges;
+
+            QueueChunkInfo chunkInfo = relativeChunk.queueInfo;
+            if(chunkInfo != null) {
+                chunkInfo.addDir(direction);
+
+                if(d < chunkInfo.directionChanges) chunkInfo.setDirectionChanges(d);
+            }
+
+        }
+        else if (relativeChunk.getChunkArea().inFrustum() < 0) {
+            //TODO later: check frustum on intersections
+
+            QueueChunkInfo chunkInfo = new QueueChunkInfo(relativeChunk, direction, renderChunkInfo.step + 1);
+            chunkInfo.setDirections(renderChunkInfo.directions, direction);
+            this.chunkQueue.add(chunkInfo);
+
+            int d;
+//                        if (renderChunkInfo.mainDir != direction && !renderSection.compiledSection.hasNoRenderableLayers())
+//                        if (renderChunkInfo.mainDir != null && renderChunkInfo.mainDir.ordinal() != direction.ordinal() && !renderSection.compiledSection.hasNoRenderableLayers())
+            if ((renderChunkInfo.sourceDirs & (1 << direction.ordinal())) == 0 && !renderChunkInfo.chunk.compiledSection.hasNoRenderableLayers())
+            {
+                if(renderChunkInfo.step > 4) {
+                    d = renderChunkInfo.directionChanges + 1;
+                }
+                else {
+                    d = 0;
+                }
+//                            d = renderChunkInfo.directionChanges + 1;
+            }
+
+            else d = renderChunkInfo.directionChanges;
+
+            chunkInfo.setDirectionChanges(d);
+            relativeChunk.queueInfo = chunkInfo;
+        }
+    }
+
+
+
     public void scheduleUpdate(RenderSection section) {
         if(!section.isDirty() || !section.isLightReady()) return;
 
+        //TODO sync rebuilds
         section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache);
         section.setNotDirty();
 
@@ -382,35 +457,6 @@ public class WorldRenderer {
         RenderRegionCache renderregioncache = new RenderRegionCache();
         BlockPos cameraPos = camera.getBlockPosition();
         List<RenderSection> list = Lists.newArrayList();
-
-        //TODO later: find a better way
-//        for(QueueChunkInfo chunkInfo : this.sectionsInFrustum) {
-//            RenderSection renderSection = chunkInfo.chunk;
-//            ChunkPos chunkpos = new ChunkPos(renderSection.getOrigin());
-//            if (renderSection.isDirty()
-//                    && this.level.getChunk(chunkpos.x, chunkpos.z).isClientLightReady()) {
-//                boolean flag = false;
-//                if (this.minecraft.options.prioritizeChunkUpdates().get() != PrioritizeChunkUpdates.NEARBY) {
-//                    if (this.minecraft.options.prioritizeChunkUpdates().get() == PrioritizeChunkUpdates.PLAYER_AFFECTED) {
-//                        flag = renderSection.isDirtyFromPlayer();
-//                    }
-//                } else {
-//                    BlockPos blockpos1 = renderSection.getOrigin().offset(8, 8, 8);
-//                    flag = blockpos1.distSqr(cameraPos) < 768.0D || renderSection.isDirtyFromPlayer();
-//                }
-//
-//                if (flag) {
-//                    this.minecraft.getProfiler().push("build_near_sync");
-//                    renderSection.rebuildChunkSync(this.taskDispatcher, renderregioncache);
-//                    renderSection.setNotDirty();
-//                    this.minecraft.getProfiler().pop();
-//                } else {
-//                    list.add(renderSection);
-//                }
-//                list.add(renderSection);
-//            }
-//
-//        }
 
         this.minecraft.getProfiler().popPush("upload");
         this.taskDispatcher.uploadAllPendingUploads();

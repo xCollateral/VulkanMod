@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan.memory;
 import java.nio.ByteBuffer;
 
 import static net.vulkanmod.vulkan.Vulkan.copyStagingtoLocalBuffer;
-import static net.vulkanmod.vulkan.memory.MemoryManager.*;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class VertexBuffer extends Buffer {
@@ -14,13 +13,8 @@ public class VertexBuffer extends Buffer {
 
     public VertexBuffer(int size, MemoryType type) {
         super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, type);
-        createVertexBuffer(size);
-
-    }
-
-    //TODO: use createBuffer instead
-    private void createVertexBuffer(int size) {
         this.createBuffer(size);
+
     }
 
     public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {
@@ -32,8 +26,8 @@ public class VertexBuffer extends Buffer {
 //        byteBuffer.asFloatBuffer().get(floats);
 
         //debug
-        if(bufferSize != byteBuffer.remaining())
-            System.nanoTime();
+//        if(bufferSize != byteBuffer.remaining())
+//            System.nanoTime();
 
         if(bufferSize > this.bufferSize - this.usedBytes) {
             resizeBuffer((this.bufferSize + bufferSize) * 2);
@@ -61,7 +55,7 @@ public class VertexBuffer extends Buffer {
 
     private void resizeBuffer(int newSize) {
         MemoryManager.getInstance().addToFreeable(this);
-        createVertexBuffer(newSize);
+        this.createBuffer(newSize);
 
 //        System.out.println("resized vertexBuffer to: " + newSize);
     }
