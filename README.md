@@ -8,8 +8,6 @@
 
 A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the Vulkan API.
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V7CHHJV)
-
 </div>
 
 ### Downloads:
@@ -27,16 +25,6 @@ A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the 
 ### Steps:
 
 There are none! Simply download the mod from one of the download buttons above and then move the JAR file into your **mods** folder like any other mod.
-
-Demostration Video:
-
-[![Demostration Video](http://img.youtube.com/vi/sbr7UxcAmOE/0.jpg)](https://youtu.be/sbr7UxcAmOE)
-
-## Community
-
-If you need help or want to chat feel free to join our Discord server.
-
-[![Discord](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/social/discord-plural_vector.svg)](https://discord.gg/FVXg7AYR2Q)
 
 ## Issues
 
