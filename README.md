@@ -24,12 +24,6 @@ A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the 
 
 There are none! Simply download the mod from one of the download buttons above and then move the JAR file into your **mods** folder like any other mod.
 
-## Issues
-
-Before asking for help, if your instance is crashing check if your system supports Vulkan and if any of the mods listed in the link below is present in your instance.
-
-Please before reporting any issue check if there is another one similar already opened.
-
 ## Compatibility
 
 Mod compatibility is not guaranteed. When VulkanMod is loaded, mods that make explicit calls to OpenGL will crash the game.
