@@ -10,12 +10,12 @@ A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the 
 
 </div>
 
-### Downloads:
+## Downloads:
 
 [![Modrinth](https://modrinth-utils.vercel.app/api/badge/downloads?id=vulkanmod&logo=true&style=for-the-badge)](https://modrinth.com/mod/vulkanmod)
 [![CurseForge](https://cf.way2muchnoise.eu/title/635429_Get_Mod.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
 
-### Requirements
+## Requirements
 
 - A Graphics Card that supports Vulkan 1.3***** or later.
 - [Fabric loader](https://fabricmc.net/use/installer/)
