@@ -2,10 +2,7 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
-import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.memory.VertexBuffer;
+import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 
 import java.nio.ByteBuffer;
@@ -14,8 +11,7 @@ import java.util.LinkedList;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
-    private final MemoryTypes.DeviceLocalMemory memoryType;
-//    private final MemoryTypes.HostLocalCachedMemory memoryType;
+    private final MemoryType memoryType;
     private final int usage;
 
     private final LinkedList<Segment> freeSegments = new LinkedList<>();
@@ -32,7 +28,7 @@ public class AreaBuffer {
 
         this.usage = usage;
         this.elementSize = elementSize;
-        this.memoryType = (MemoryTypes.DeviceLocalMemory) MemoryTypes.GPU_MEM;
+        this.memoryType = MemoryTypes.GPU_MEM;
 
         this.buffer = this.allocateBuffer(size);
         this.size = size;
@@ -88,9 +84,6 @@ public class AreaBuffer {
         int idx = 0;
         int t = Integer.MAX_VALUE;
         for(Segment segment1 : freeSegments) {
-            //Debug
-//            if(segment1 == null)
-//                System.nanoTime();
 
             if(segment1.size >= size && segment1.size < t) {
                 segment = segment1;
