@@ -6,7 +6,7 @@
 [![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/FVXg7AYR2Q)
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V7V7CHHJV)
 
-A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the Vulkan API.
+A **alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the Vulkan API.
 
 </div>
 
