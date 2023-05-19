@@ -12,8 +12,8 @@ A **pre-alpha** fabric mod that rewrites Minecraft's OpenGL renderer to use the 
 
 ## Downloads:
 
-[![Modrinth](https://modrinth-utils.vercel.app/api/badge/downloads?id=vulkanmod&logo=true&style=for-the-badge)](https://modrinth.com/mod/vulkanmod)
-[![CurseForge](https://cf.way2muchnoise.eu/title/635429_Get_Mod.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
+[![curseforge](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/curseforge_vector.svg)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
+[![modrinth](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/modrinth_vector.svg)](https://modrinth.com/mod/vulkanmod)
 
 ## Requirements
 
