@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
 @Mixin(FaceBakery.class)
-public class BakedQuadFactoryM {
+public class FaceBakeryM {
 
     private static final float d = 1.0f / 16.0f;
 

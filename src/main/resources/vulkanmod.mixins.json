@@ -33,7 +33,7 @@
 
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
-    "render.vertex.BakedQuadFactoryM",
+    "render.vertex.FaceBakeryM",
     "render.vertex.BufferBuilderM",
     "render.vertex.VertexBufferM",
     "render.vertex.VertexConsumerM",
