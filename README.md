@@ -40,7 +40,5 @@ Check [Incompatible mods](https://github.com/xCollateral/VulkanMod/discussions/2
 ## Notes
 - If you come across any mod that do not work with this mod, please create an issue inside **this** repo and **do not** report it to the mod developer.
 
-- Sodium will **NEVER** be supported! This is because it directly changes elements of Minecraft that we do as well and in turn would be a waste of time to use.
-
 - If you need support/help with VulkanMod, or simply want to know when updates are released, you can join our Discord server [here](https://discord.gg/EDgQ88tJAk).
 </div>
