@@ -40,6 +40,6 @@
         ] }
     ],
     "ManualUBOs" : [
-        { "type":  "vertex", "binding": 2, "size": 1200 }
+        { "type":  "vertex", "binding": 2, "size": 2048 }
     ]
 }

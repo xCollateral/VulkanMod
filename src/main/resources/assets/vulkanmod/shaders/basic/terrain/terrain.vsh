@@ -1,7 +1,6 @@
 #version 460
 
-#define MINECRAFT_LIGHT_POWER   0.6
-#define MINECRAFT_AMBIENT_LIGHT 0.4
+#define MAX_OFFSET_COUNT 512
 
 vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
     return texelFetch(lightMap, (uv & 255) >> 4, 0);
@@ -13,7 +12,7 @@ layout(binding = 0) uniform UniformBufferObject {
 };
 
 layout(binding = 2) uniform UniformBufferObject2 {
-    vec3 ChunkOffset[300];
+    vec3 ChunkOffset[MAX_OFFSET_COUNT];
 };
 
 layout(binding = 4) uniform sampler2D Sampler2;
