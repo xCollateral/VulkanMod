@@ -6,10 +6,15 @@ import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.ints.IntArrays;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
+import net.vulkanmod.render.util.SortUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 
@@ -18,8 +23,8 @@ import java.nio.FloatBuffer;
 import java.util.function.IntConsumer;
 
 public class TerrainBufferBuilder implements VertexConsumer {
-//    private static final float POS_CONV = 40000.0f / 20.0f;
     private static final float POS_CONV = 1900.0f;
+    private static final float UV_CONV = 65536.0f;
 
     private static final int GROWTH_SIZE = 2097152;
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -47,7 +52,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
     private long bufferPtr;
 //    private long ptr;
 
-    public TerrainBufferBuilder(int i) {
+	public TerrainBufferBuilder(int i) {
         this.buffer = MemoryTracker.create(i * 6);
 		this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
     }
@@ -226,9 +231,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			distances[i] = f * f + g * g + h * h;
 		}
 
-		IntArrays.mergeSort(is, (ix, jx) -> {
-			return Floats.compare(distances[jx], distances[ix]);
-		});
+		SortUtil.mergeSort(is, distances);
 		IntConsumer intConsumer = this.intConsumer(this.nextElementByte, indexType);
 
 		for(int i = 0; i < is.length; ++i) {
@@ -240,7 +243,6 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			intConsumer.accept(j * this.mode.primitiveStride + 3);
 			intConsumer.accept(j * this.mode.primitiveStride + 0);
 		}
-
 	}
 
 	public boolean isCurrentBatchEmpty() {
@@ -368,20 +370,19 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	}
 
 	private void compressedVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light) {
-		this.putShort(0, (short) (x * POS_CONV));
-		this.putShort(2, (short) (y * POS_CONV));
-		this.putShort(4, (short) (z * POS_CONV));
+		long ptr = this.bufferPtr + this.nextElementByte;
 
-		this.putByte(8, (byte)((int)(red * 255.0F)));
-		this.putByte(9, (byte)((int)(green * 255.0F)));
-		this.putByte(10, (byte)((int)(blue * 255.0F)));
-		this.putByte(11, (byte)((int)(alpha * 255.0F)));
+		MemoryUtil.memPutShort(ptr + 0, (short) (x * POS_CONV));
+		MemoryUtil.memPutShort(ptr + 2, (short) (y * POS_CONV));
+		MemoryUtil.memPutShort(ptr + 4, (short) (z * POS_CONV));
 
-		this.putShort(12, (short) (u * 65536.0F));
-		this.putShort(14, (short) (v * 65536.0F));
+		int temp = VertexUtil.packColor(red, green, blue, alpha);
+		MemoryUtil.memPutInt(ptr + 8, temp);
 
-		this.putShort(16, (short)(light & '\uffff'));
-		this.putShort(18, (short)(light >> 16 & '\uffff'));
+		MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
+		MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));
+
+		MemoryUtil.memPutInt(ptr + 16, light);
 
 		this.nextElementByte += 20;
 		this.endVertex();
