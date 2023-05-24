@@ -3,12 +3,10 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.ShaderManager;
@@ -23,7 +21,10 @@ import org.lwjgl.vulkan.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -32,7 +33,6 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK13.*;
 
 public class Drawer {
     private static Drawer INSTANCE;
@@ -238,7 +238,8 @@ public class Drawer {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
 //        vkCmdEndRenderPass(commandBuffer);
-        vkCmdEndRendering(commandBuffer);
+//        vkCmdEndRendering(commandBuffer);
+        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
         this.boundFramebuffer = null;
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -271,7 +272,8 @@ public class Drawer {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
 //        vkCmdEndRenderPass(commandBuffer);
-        vkCmdEndRendering(commandBuffer);
+//        vkCmdEndRendering(commandBuffer);
+        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
 
         this.boundFramebuffer = null;
     }
@@ -639,7 +641,6 @@ public class Drawer {
     }
 
     public static void setViewport(int x, int y, int width, int height) {
-
         try(MemoryStack stack = stackPush()) {
             VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
             viewport.x(x);
@@ -650,6 +651,25 @@ public class Drawer {
             viewport.maxDepth(1.0f);
 
             vkCmdSetViewport(commandBuffers.get(currentFrame), 0, viewport);
+        }
+    }
+
+    public static void setScissor(int x, int y, int width, int height) {
+        try(MemoryStack stack = stackPush()) {
+            int framebufferHeight = Drawer.getInstance().boundFramebuffer.height;
+
+            VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
+            scissor.offset(VkOffset2D.malloc(stack).set(x, framebufferHeight - (y + height)));
+            scissor.extent(VkExtent2D.malloc(stack).set(width, height));
+
+            vkCmdSetScissor(commandBuffers.get(currentFrame), 0, scissor);
+        }
+    }
+
+    public static void resetScissor() {
+        try(MemoryStack stack = stackPush()) {
+            VkRect2D.Buffer scissor = Drawer.getInstance().boundFramebuffer.scissor(stack);
+            vkCmdSetScissor(commandBuffers.get(currentFrame), 0, scissor);
         }
     }
 

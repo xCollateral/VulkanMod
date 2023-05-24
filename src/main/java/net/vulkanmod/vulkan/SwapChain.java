@@ -22,7 +22,6 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK13.vkCmdBeginRendering;
 
 public class SwapChain extends Framebuffer {
 
@@ -178,7 +177,8 @@ public class SwapChain extends Framebuffer {
         renderingInfo.pColorAttachments(colorAttachment);
         renderingInfo.pDepthAttachment(depthAttachment);
 
-        vkCmdBeginRendering(commandBuffer, renderingInfo);
+//        vkCmdBeginRendering(commandBuffer, renderingInfo);
+        KHRDynamicRendering.vkCmdBeginRenderingKHR(commandBuffer, renderingInfo);
     }
 
     public void colorAttachmentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int frame) {

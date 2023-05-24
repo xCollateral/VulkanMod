@@ -1,16 +1,13 @@
 package net.vulkanmod.vulkan;
 
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.CallbackI;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GraphicsCard;
 
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -19,10 +16,11 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+import static org.lwjgl.vulkan.VK10.vkEnumerateDeviceExtensionProperties;
+import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
+import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 public class DeviceInfo {
 
@@ -38,7 +36,9 @@ public class DeviceInfo {
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
-    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
+
+//    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
+//    public final boolean vulkan13Support;
 
     private boolean drawIndirectSupported;
 
@@ -61,16 +61,18 @@ public class DeviceInfo {
         this.driverVersion = String.valueOf(properties.driverVersion());
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
-//        this.availableFeatures.sType$Default();
-        this.availableFeatures.sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
-
-        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
-        this.availableFeatures13.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures13);
+        this.availableFeatures.sType$Default();
 
         this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
         this.availableFeatures11.sType$Default();
-        this.availableFeatures13.pNext(this.availableFeatures11.address());
+        this.availableFeatures.pNext(this.availableFeatures11);
+
+        //Vulkan 1.3
+//        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
+//        this.availableFeatures13.sType$Default();
+//        this.availableFeatures11.pNext(this.availableFeatures13.address());
+//
+//        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
 
         vkGetPhysicalDeviceFeatures2(this.device, this.availableFeatures);
 

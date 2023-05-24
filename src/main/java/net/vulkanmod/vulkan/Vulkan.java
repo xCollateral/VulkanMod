@@ -11,7 +11,6 @@ import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
@@ -23,9 +22,9 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
+import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
 import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
-import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
@@ -35,9 +34,10 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
+import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
+import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
@@ -57,7 +57,8 @@ public class Vulkan {
         }
     }
 
-    private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+    private static final Set<String> DEVICE_EXTENSIONS = Stream.of(
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
             .collect(toSet());
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -193,7 +194,11 @@ public class Vulkan {
         Drawer.getInstance().cleanUpResources();
         freeStagingBuffers();
 
-        MemoryManager.getInstance().freeAllBuffers();
+        try {
+            MemoryManager.getInstance().freeAllBuffers();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         vmaDestroyAllocator(allocator);
 
@@ -226,7 +231,7 @@ public class Vulkan {
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
             appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_3);
+            appInfo.apiVersion(VK_API_VERSION_1_2);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -384,7 +389,7 @@ public class Vulkan {
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
 
-            //TODO indirect draw option disable in case is not supported
+            //TODO indirect draw option disabled in case it is not supported
             if(deviceInfo.availableFeatures.features().samplerAnisotropy())
                 deviceFeatures.features().samplerAnisotropy(true);
             if(deviceInfo.availableFeatures.features().logicOp())
@@ -398,13 +403,6 @@ public class Vulkan {
                 deviceVulkan11Features.shaderDrawParameters(true);
             }
 
-            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
-            deviceVulkan13Features.sType$Default();
-            if(!deviceInfo.availableFeatures13.dynamicRendering())
-                throw new RuntimeException("Device does not support dynamic rendering feature.");
-
-            deviceVulkan13Features.dynamicRendering(true);
-
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
@@ -412,13 +410,27 @@ public class Vulkan {
             // queueCreateInfoCount is automatically set
 
             createInfo.pEnabledFeatures(deviceFeatures.features());
-            createInfo.pNext(deviceVulkan13Features);
 
-            deviceVulkan13Features.pNext(deviceVulkan11Features.address());
+            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
+            dynamicRenderingFeaturesKHR.sType$Default();
+            dynamicRenderingFeaturesKHR.dynamicRendering(true);
+
+            createInfo.pNext(deviceVulkan11Features);
+            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+
+            //Vulkan 1.3 dynamic rendering
+//            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
+//            deviceVulkan13Features.sType$Default();
+//            if(!deviceInfo.availableFeatures13.dynamicRendering())
+//                throw new RuntimeException("Device does not support dynamic rendering feature.");
+//
+//            deviceVulkan13Features.dynamicRendering(true);
+//            createInfo.pNext(deviceVulkan13Features);
+//            deviceVulkan13Features.pNext(deviceVulkan11Features.address());
 
             createInfo.ppEnabledExtensionNames(asPointerBuffer(DEVICE_EXTENSIONS));
 
-            Configuration.DEBUG_FUNCTIONS.set(true);
+//            Configuration.DEBUG_FUNCTIONS.set(true);
 
             if(ENABLE_VALIDATION_LAYERS) {
                 createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
@@ -430,7 +442,7 @@ public class Vulkan {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_3);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
 
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 
