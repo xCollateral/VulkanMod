@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -575,14 +576,23 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
-        while(iterator.hasNext()) {
-            ChunkArea chunkArea = iterator.next();
+        ObjectArrayList<RenderType> renderTypes;
+        if(Initializer.CONFIG.uniqueOpaqueLayer) {
+            renderTypes = TerrainRenderType.COMPACT_RENDER_TYPES;
+        } else {
+            renderTypes = TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
+        }
 
-            if(indirectDraw) {
-                chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], chunkArea, renderType, camX, camY, camZ);
-            } else {
-                chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea, renderType, camX, camY, camZ);
+        if(renderTypes.contains(renderType)) {
+            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
+            while(iterator.hasNext()) {
+                ChunkArea chunkArea = iterator.next();
+
+                if(indirectDraw) {
+                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], chunkArea, renderType, camX, camY, camZ);
+                } else {
+                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea, renderType, camX, camY, camZ);
+                }
             }
         }
 
