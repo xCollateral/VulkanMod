@@ -33,16 +33,6 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
         }
     }
 
-//    /**
-//     * @author
-//     */
-//    @Overwrite
-//    public int getId() {
-//        if(this.vulkanImage != null)
-//            return TextureMap.getId(this.vulkanImage);
-//        return -1;
-//    }
-
     /**
      * @author
      */
@@ -56,9 +46,6 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
 //            System.out.println("trying to free null image");
 
         TextureUtil.releaseTextureId(this.id);
-
-//        if(!TextureMap.removeTexture(this.id));
-//            throw new RuntimeException("texture id not found");
     }
 
     public void setId(int i) {
@@ -80,6 +67,8 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
 
     @Override
     public void bindTexture() {
+        GlTexture.bindTexture(this.id);
+
         if (vulkanImage != null)
             VTextureSelector.bindTexture(vulkanImage);
         else
@@ -93,7 +82,6 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
     public void setVulkanImage(VulkanImage image) {
         this.vulkanImage = image;
 
-//        TextureMap.addTexture(this.vulkanImage);
         if(this.id == -1)
             this.getId();
         GlTexture.setVulkanImage(this.id, this.vulkanImage);
