@@ -21,7 +21,7 @@ public class SortUtil {
             mergeSort(supp, distances, from, mid, indices);
             mergeSort(supp, distances, mid, to, indices);
 
-            if (Float.compare(distances[supp[mid - 1]], distances[supp[mid]]) <= 0) {
+            if (Float.compare(distances[supp[mid]], distances[supp[mid - 1]]) <= 0) {
                 System.arraycopy(supp, from, indices, from, len);
             }
             else {
@@ -29,7 +29,7 @@ public class SortUtil {
                 int p = from;
 
                 for(int q = mid; i < to; ++i) {
-                    if (q < to && (p >= mid || Float.compare(distances[supp[p]],  distances[supp[q]]) > 0)) {
+                    if (q < to && (p >= mid || Float.compare(distances[supp[q]],  distances[supp[p]]) > 0)) {
                         indices[i] = supp[q++];
                     } else {
                         indices[i] = supp[p++];
@@ -115,7 +115,7 @@ public class SortUtil {
             int t = is[i];
             int j = i;
 
-            for(int u = is[i - 1]; Float.compare(distances[t], distances[u]) < 0; u = is[j - 1]) {
+            for(int u = is[i - 1]; Float.compare(distances[u], distances[t]) < 0; u = is[j - 1]) {
                 is[j] = u;
                 if (from == j - 1) {
                     --j;
