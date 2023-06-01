@@ -161,6 +161,10 @@ public class ChunkTask {
                     TerrainBufferBuilder bufferBuilder;
                     if (!fluidState.isEmpty()) {
                         renderType = ItemBlockRenderTypes.getRenderLayer(fluidState);
+
+                        //Force compact RenderType
+                        renderType = compactRenderTypes(renderType);
+
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         if (set.add(renderType)) {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, ShaderManager.TERRAIN_VERTEX_FORMAT);
