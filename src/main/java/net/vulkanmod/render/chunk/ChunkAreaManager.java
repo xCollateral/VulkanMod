@@ -27,7 +27,9 @@ public class ChunkAreaManager {
         this.sectionGridWidth = width;
 
         int t = (width >> BASE_SH_XZ) + 2;
-        this.ySize = (height & 0x5) != 0 ? (height >> BASE_SH_Y) : (height >> BASE_SH_Y) + 1;
+
+        int relativeHeight = height - (minHeight >> 4);
+        this.ySize = (relativeHeight & 0x5) == 0 ? (relativeHeight >> BASE_SH_Y) : (relativeHeight >> BASE_SH_Y) + 1;
 
         //check if width is even
         if((t & 1) == 0)
