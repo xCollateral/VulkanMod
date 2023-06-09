@@ -237,9 +237,9 @@ public class DrawBuffers {
             RenderSection section = iterator.next();
             DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
-//            if(drawParameters.indexCount == 0) {
-//                continue;
-//            }
+            if(drawParameters.indexCount == 0) {
+                continue;
+            }
 
             long ptr = bufferPtr + (drawCount * 24L);
             MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
@@ -267,9 +267,9 @@ public class DrawBuffers {
                 firstIndex    = MemoryUtil.memGetInt(offset + 4);
                 vertexOffset  = MemoryUtil.memGetInt(offset + 8);
 
-                if(indexCount == 0) {
-                    continue;
-                }
+//                if(indexCount == 0) {
+//                    continue;
+//                }
 
                 nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, offset + 12);
 
