@@ -622,7 +622,7 @@ public class Pipeline {
                 Sampler sampler = samplers.get(j);
                 VulkanImage texture = VTextureSelector.getTexture(sampler.name());
                 VulkanImage.Sampler textureSampler = texture.getTextureSampler();
-//                texture.readOnlyLayout();
+                texture.readOnlyLayout();
 
                 imageInfo[j] = VkDescriptorImageInfo.callocStack(1, stack);
                 imageInfo[j].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
