@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.compatibility.gl;
 import net.vulkanmod.gl.GlTexture;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -88,6 +89,24 @@ public class GL11M {
     @Overwrite(remap = false)
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height, int border, int format, int type, @Nullable ByteBuffer pixels) {
         GlTexture.texImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glTexSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
+        GlTexture.texSubImage2D(target, level, xOffset, yOffset, width, height, format, type, pixels);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glTexSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable IntBuffer pixels) {
+        GlTexture.texSubImage2D(target, level, xOffset, yOffset, width, height, format, type, MemoryUtil.memByteBuffer(pixels));
     }
 
     /**

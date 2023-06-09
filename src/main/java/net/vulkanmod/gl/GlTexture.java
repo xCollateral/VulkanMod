@@ -56,6 +56,13 @@ public class GlTexture {
         boundTexture.uploadImage(pixels);
     }
 
+    public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
+        if(width == 0 || height == 0)
+            return;
+
+        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, pixels);
+    }
+
     public static void setVulkanImage(int id, VulkanImage vulkanImage) {
         GlTexture texture = map.get(id);
 
@@ -85,11 +92,11 @@ public class GlTexture {
 //            if(pixels.remaining() != width * height * 4)
 //                throw new IllegalArgumentException("buffer size does not match image size");
 
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 4, 0, 0, 0, pixels);
+            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
         }
         else {
             pixels = MemoryUtil.memCalloc(width * height * 4);
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 4, 0, 0, 0, pixels);
+            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
             MemoryUtil.memFree(pixels);
         }
     }
