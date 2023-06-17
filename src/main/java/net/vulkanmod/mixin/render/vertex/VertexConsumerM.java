@@ -1,20 +1,16 @@
 package net.vulkanmod.mixin.render.vertex;
 
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.core.Vec3i;
+import net.vulkanmod.render.vertex.VertexUtil;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-
-import java.nio.ByteBuffer;
 
 @Mixin(VertexConsumer.class)
 public interface VertexConsumerM {
@@ -33,49 +29,43 @@ public interface VertexConsumerM {
         vec3f.mul(matrixEntry.normal());
 
         int j = js.length / 8;
-        try (MemoryStack memoryStack = MemoryStack.stackPush()){
-            ByteBuffer byteBuffer = memoryStack.malloc(DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP.getVertexSize());
-            long memAddress = MemoryUtil.memAddress0(byteBuffer);
 
-            for (int k = 0; k < j; ++k) {
-                float q;
-                float p;
-                float o;
-                float n;
-                float m;
+        for (int k = 0; k < j; ++k) {
+            float q;
+            float p;
+            float o;
 
-                long idx = 0;
-                for(int i = k * 8; i < k * 8 + 8; ++i) {
-                    MemoryUtil.memPutInt(memAddress + idx, js[i]);
-                    idx += 4L;
-                }
+            float l;
+            float n;
+            float m;
 
-                float f = MemoryUtil.memGetFloat(memAddress);
-                float g = MemoryUtil.memGetFloat(memAddress + 4);
-                float h = MemoryUtil.memGetFloat(memAddress + 8);
+            int i = k * 8;
+            float f = Float.intBitsToFloat(js[i]);
+            float g = Float.intBitsToFloat(js[i + 1]);
+            float h = Float.intBitsToFloat(js[i + 2]);
 
-                if (useQuadColorData) {
-                    float l = (float)(MemoryUtil.memGetByte(memAddress + 12) & 0xFF) * 0.003921568F; // equivalent to / 255.0f
-                    m = (float)(MemoryUtil.memGetByte(memAddress + 13) & 0xFF) * 0.003921568F;
-                    n = (float)(MemoryUtil.memGetByte(memAddress + 14) & 0xFF) * 0.003921568F;
-                    o = l * brightness[k] * red;
-                    p = m * brightness[k] * green;
-                    q = n * brightness[k] * blue;
-                } else {
-                    o = brightness[k] * red;
-                    p = brightness[k] * green;
-                    q = brightness[k] * blue;
-                }
-
-                int r = lights[k];
-                m = MemoryUtil.memGetFloat(memAddress + 16);
-                n = MemoryUtil.memGetFloat(memAddress + 20);
-
-                Vector4f vector4f = new Vector4f(f, g, h, 1.0f);
-                vector4f.mul(matrix4f);
-
-                this.vertex(vector4f.x(), vector4f.y(), vector4f.z(), o, p, q, 1.0f, m, n, overlay, r, vec3f.x(), vec3f.y(), vec3f.z());
+            if (useQuadColorData) {
+                l = VertexUtil.unpackColorR(js[i + 3]); // equivalent to / 255.0f
+                m = VertexUtil.unpackColorG(js[i + 3]);
+                n = VertexUtil.unpackColorB(js[i + 3]);
+                o = l * brightness[k] * red;
+                p = m * brightness[k] * green;
+                q = n * brightness[k] * blue;
+            } else {
+                o = brightness[k] * red;
+                p = brightness[k] * green;
+                q = brightness[k] * blue;
             }
+
+            int r = lights[k];
+            m = Float.intBitsToFloat(js[i + 4]);
+            n = Float.intBitsToFloat(js[i + 5]);
+
+            Vector4f vector4f = new Vector4f(f, g, h, 1.0f);
+            vector4f.mul(matrix4f);
+
+            this.vertex(vector4f.x(), vector4f.y(), vector4f.z(), o, p, q, 1.0f, m, n, overlay, r, vec3f.x(), vec3f.y(), vec3f.z());
         }
+
     }
 }

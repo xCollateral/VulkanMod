@@ -48,10 +48,10 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite
-    public static void _setShaderTexture(int i, ResourceLocation p_157181_) {
+    public static void _setShaderTexture(int i, ResourceLocation location) {
         if (i >= 0 && i < shaderTextures.length) {
             TextureManager texturemanager = Minecraft.getInstance().getTextureManager();
-            AbstractTexture abstracttexture = texturemanager.getTexture(p_157181_);
+            AbstractTexture abstracttexture = texturemanager.getTexture(location);
             //abstracttexture.bindTexture();
             VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstracttexture).getVulkanImage());
 
@@ -159,6 +159,22 @@ public abstract class RenderSystemMixin {
     @Overwrite(remap = false)
     public static void viewport(int x, int y, int width, int height) {
         Drawer.setViewport(x, y, width, height);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void enableScissor(int x, int y, int width, int height) {
+        Drawer.setScissor(x, y, width, height);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void disableScissor() {
+        Drawer.resetScissor();
     }
 
     /**

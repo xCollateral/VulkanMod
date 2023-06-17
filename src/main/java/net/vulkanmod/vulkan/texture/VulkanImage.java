@@ -76,7 +76,7 @@ public class VulkanImage {
             buffer.putInt(0, i);
 
             VulkanImage image = createTextureImage(DefaultFormat, 1, 1, 1, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 4, false, false);
-            image.uploadSubTextureAsync(0,image.width, image.height, 0, 0, image.formatSize, 0, 0, 0, buffer);
+            image.uploadSubTextureAsync(0,image.width, image.height, 0, 0, 0, 0, 0, buffer);
             return image;
 //            return createTextureImage(1, 1, 4, false, false, buffer);
         }
@@ -131,19 +131,19 @@ public class VulkanImage {
         }
     }
 
-    public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int formatSize, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
+    public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         long imageSize = buffer.limit();
 
         CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().getCommandBuffer();
         transferDstLayout(commandBuffer);
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-        stagingBuffer.align(formatSize);
+        stagingBuffer.align(this.formatSize);
 
         stagingBuffer.copyBuffer((int)imageSize, buffer);
 
         copyBufferToImageCmd(commandBuffer, stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * formatSize), unpackRowLength, height);
+                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
         long fence = GraphicsQueue.getInstance().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
@@ -182,7 +182,7 @@ public class VulkanImage {
 
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            barrier.oldLayout(this.currentLayout);
             barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
             barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
@@ -236,7 +236,7 @@ public class VulkanImage {
 
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            barrier.oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            barrier.oldLayout(this.currentLayout);
             barrier.newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
             barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
@@ -306,6 +306,7 @@ public class VulkanImage {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(mipLevels);
                 samplerInfo.minLod(0.0F);
+                samplerInfo.mipLodBias(-1.0F);
             } else {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(0.0F);
@@ -537,6 +538,8 @@ public class VulkanImage {
         }
 
         public VulkanImage createVulkanImage() {
+            this.formatSize = formatSize(this.format);
+
             return VulkanImage.createTextureImage(this.format, this.mipLevels, this.width, this.height, this.usage, this.formatSize, this.linearFiltering, this.clamp);
         }
 
@@ -544,6 +547,14 @@ public class VulkanImage {
             return switch (format) {
                 case RGBA -> VK_FORMAT_R8G8B8A8_UNORM;
                 case RED -> VK_FORMAT_R8_UNORM;
+                default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));
+            };
+        }
+
+        private static int formatSize(int format) {
+            return switch (format) {
+                case VK_FORMAT_R8G8B8A8_UNORM -> 4;
+                case VK_FORMAT_R8_UNORM -> 1;
                 default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));
             };
         }

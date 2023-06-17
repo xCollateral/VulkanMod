@@ -28,13 +28,13 @@ public abstract class VTextureSelector {
         framebufferTexture = texture;
     }
 
-    public static void uploadSubTexture(int mipLevel, int width, int height, int xOffset, int yOffset, int formatSize, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
+    public static void uploadSubTexture(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         VulkanImage texture;
         if(activeTexture == 0) texture = boundTexture;
         else if(activeTexture == 1) texture = lightTexture;
         else texture = overlayTexture;
 
-        texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, formatSize, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
+        texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
     }
 
     public static VulkanImage getTexture(String name) {

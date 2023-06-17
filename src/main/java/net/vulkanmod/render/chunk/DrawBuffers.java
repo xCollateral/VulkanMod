@@ -27,7 +27,6 @@ public class DrawBuffers {
     AreaBuffer indexBuffer;
 
     public void allocateBuffers() {
-        //TODO size
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
         this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
 
@@ -229,8 +228,8 @@ public class DrawBuffers {
         ResettableQueue<RenderSection> queue = chunkArea.sectionQueue;
 
         int drawCount = 0;
-        MemoryStack stack = MemoryStack.stackPush();
-        ByteBuffer byteBuffer = stack.calloc(24 * queue.size());
+        MemoryStack stack = MemoryStack.stackGet().push();
+        ByteBuffer byteBuffer = stack.malloc(24 * queue.size());
         long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
 
         var iterator = queue.iterator(isTranslucent);
@@ -238,9 +237,9 @@ public class DrawBuffers {
             RenderSection section = iterator.next();
             DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
-//            if(drawParameters.indexCount == 0) {
-//                continue;
-//            }
+            if(drawParameters.indexCount == 0) {
+                continue;
+            }
 
             long ptr = bufferPtr + (drawCount * 24L);
             MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
@@ -268,9 +267,9 @@ public class DrawBuffers {
                 firstIndex    = MemoryUtil.memGetInt(offset + 4);
                 vertexOffset  = MemoryUtil.memGetInt(offset + 8);
 
-                if(indexCount == 0) {
-                    continue;
-                }
+//                if(indexCount == 0) {
+//                    continue;
+//                }
 
                 nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, offset + 12);
 
@@ -278,7 +277,7 @@ public class DrawBuffers {
             }
         }
 
-        MemoryStack.stackPop();
+        stack.pop();
     }
 
     public void releaseBuffers() {

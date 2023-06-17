@@ -68,7 +68,9 @@ public class GlStateManagerM {
      * @author
      */
     @Overwrite(remap = false)
-    public static void _disableScissorTest() {}
+    public static void _disableScissorTest() {
+        Drawer.resetScissor();
+    }
 
     /**
      * @author
@@ -80,15 +82,17 @@ public class GlStateManagerM {
      * @author
      */
     @Overwrite(remap = false)
-    public static void _viewport(int i, int j, int k, int l) {
-        Drawer.setViewport(i, j, k, l);
+    public static void _viewport(int x, int y, int width, int height) {
+        Drawer.setViewport(x, y, width, height);
     }
 
     /**
      * @author
      */
     @Overwrite(remap = false)
-    public static void _scissorBox(int x, int y, int width, int height) {} //TODO: scissor
+    public static void _scissorBox(int x, int y, int width, int height) {
+        Drawer.setScissor(x, y, width, height);
+    }
 
     //TODO
     /**

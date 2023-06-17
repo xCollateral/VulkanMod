@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -160,6 +161,10 @@ public class ChunkTask {
                     TerrainBufferBuilder bufferBuilder;
                     if (!fluidState.isEmpty()) {
                         renderType = ItemBlockRenderTypes.getRenderLayer(fluidState);
+
+                        //Force compact RenderType
+                        renderType = compactRenderTypes(renderType);
+
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         if (set.add(renderType)) {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, ShaderManager.TERRAIN_VERTEX_FORMAT);
@@ -170,6 +175,10 @@ public class ChunkTask {
 
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
                         renderType = ItemBlockRenderTypes.getChunkRenderType(blockState);
+
+                        //Force compact RenderType
+                        renderType = compactRenderTypes(renderType);
+
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         if (set.add(renderType)) {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, ShaderManager.TERRAIN_VERTEX_FORMAT);
@@ -206,6 +215,30 @@ public class ChunkTask {
 
             compileResults.visibilitySet = visGraph.resolve();
             return compileResults;
+        }
+
+        private RenderType compactRenderTypes(RenderType renderType) {
+
+            if(Initializer.CONFIG.uniqueOpaqueLayer) {
+                if (renderType != RenderType.translucent()) {
+                    if(renderType != RenderType.tripwire()) {
+                        renderType = RenderType.cutoutMipped();
+                    }
+                    else
+                        renderType = RenderType.translucent();
+                }
+            }
+            else {
+                if (renderType != RenderType.translucent() && renderType != RenderType.cutoutMipped()) {
+                    if(renderType != RenderType.tripwire()) {
+                        renderType = RenderType.cutout();
+                    }
+                    else
+                        renderType = RenderType.translucent();
+                }
+            }
+
+            return renderType;
         }
 
         private <E extends BlockEntity> void handleBlockEntity(CompileResults compileResults, E blockEntity) {

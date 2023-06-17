@@ -3,8 +3,10 @@ package net.vulkanmod.mixin.render.vertex;
 import com.mojang.blaze3d.vertex.*;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.interfaces.VertexFormatMixed;
+import net.vulkanmod.render.util.SortUtil;
 import net.vulkanmod.render.vertex.VertexUtil;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -15,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.function.IntConsumer;
 
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderM extends DefaultedVertexConsumer
@@ -30,6 +33,14 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     @Shadow private int elementIndex;
     @Shadow private @Nullable VertexFormatElement currentElement;
     @Shadow private VertexFormat format;
+
+    @Shadow @Nullable private Vector3f[] sortingPoints;
+    @Shadow private float sortX;
+    @Shadow private float sortY;
+    @Shadow private float sortZ;
+    @Shadow private VertexFormat.Mode mode;
+
+    @Shadow protected abstract it.unimi.dsi.fastutil.ints.IntConsumer intConsumer(int i, VertexFormat.IndexType indexType);
 
     private long bufferPtr;
     private long ptr;
@@ -135,29 +146,30 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     @Overwrite
     public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
         if (this.fastFormat) {
-            this.putFloat(0, x);
-            this.putFloat(4, y);
-            this.putFloat(8, z);
-            this.putByte(12, (byte)((int)(red * 255.0F)));
-            this.putByte(13, (byte)((int)(green * 255.0F)));
-            this.putByte(14, (byte)((int)(blue * 255.0F)));
-            this.putByte(15, (byte)((int)(alpha * 255.0F)));
-            this.putFloat(16, u);
-            this.putFloat(20, v);
+            long ptr = this.nextElementPtr();
+            MemoryUtil.memPutFloat(ptr + 0, x);
+            MemoryUtil.memPutFloat(ptr + 4, y);
+            MemoryUtil.memPutFloat(ptr + 8, z);
+
+            int temp = VertexUtil.packColor(red, green, blue, alpha);
+            MemoryUtil.memPutInt(ptr + 12, temp);
+
+            MemoryUtil.memPutFloat(ptr + 16, u);
+            MemoryUtil.memPutFloat(ptr + 20, v);
+
             byte i;
             if (this.fullFormat) {
-                this.putShort(24, (short)(overlay & '\uffff'));
-                this.putShort(26, (short)(overlay >> 16 & '\uffff'));
+                MemoryUtil.memPutInt(ptr + 24, overlay);
                 i = 28;
             } else {
                 i = 24;
             }
 
-            this.putShort(i, (short)(light & '\uffff'));
-            this.putShort(i + 2, (short)(light >> 16 & '\uffff'));
-            this.putByte(i + 4, BufferVertexConsumer.normalIntValue(normalX));
-            this.putByte(i + 5, BufferVertexConsumer.normalIntValue(normalY));
-            this.putByte(i + 6, BufferVertexConsumer.normalIntValue(normalZ));
+            MemoryUtil.memPutInt(ptr + i, light);
+
+            temp = VertexUtil.packNormal(normalX, normalY, normalZ);
+            MemoryUtil.memPutInt(ptr + i + 4, temp);
+
             this.nextElementByte += i + 8;
             this.endVertex();
         } else {
@@ -183,6 +195,39 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         }
         if (this.defaultColorSet && this.currentElement.getUsage() == VertexFormatElement.Usage.COLOR) {
             BufferVertexConsumer.super.color(this.defaultR, this.defaultG, this.defaultB, this.defaultA);
+        }
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite
+    private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
+        float[] distances = new float[this.sortingPoints.length];
+        int[] is = new int[this.sortingPoints.length];
+
+        for(int i = 0; i < this.sortingPoints.length; is[i] = i++) {
+            float f = this.sortingPoints[i].x() - this.sortX;
+            float g = this.sortingPoints[i].y() - this.sortY;
+            float h = this.sortingPoints[i].z() - this.sortZ;
+            distances[i] = f * f + g * g + h * h;
+        }
+
+//		IntArrays.mergeSort(is, (ix, jx) -> Floats.compare(distances[jx], distances[ix]));
+//        SortUtil.quickSort(is, (ix, jx) -> Float.compare(distances[jx], distances[ix]));
+        SortUtil.mergeSort(is, distances);
+//        SortUtil.quickSort2(is, distances);
+
+        IntConsumer intConsumer = this.intConsumer(this.nextElementByte, indexType);
+
+        for(int i = 0; i < is.length; ++i) {
+            int j = is[i];
+            intConsumer.accept(j * this.mode.primitiveStride + 0);
+            intConsumer.accept(j * this.mode.primitiveStride + 1);
+            intConsumer.accept(j * this.mode.primitiveStride + 2);
+            intConsumer.accept(j * this.mode.primitiveStride + 2);
+            intConsumer.accept(j * this.mode.primitiveStride + 3);
+            intConsumer.accept(j * this.mode.primitiveStride + 0);
         }
     }
 

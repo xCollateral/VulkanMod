@@ -10,8 +10,9 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-public class GlTexture {
+import static org.lwjgl.vulkan.VK10.VK_FORMAT_R8G8B8A8_UNORM;
 
+public class GlTexture {
     private static int ID_COUNT = 0;
     private static final Int2ReferenceOpenHashMap<GlTexture> map = new Int2ReferenceOpenHashMap<>();
     private static int boundTextureId = 0;
@@ -48,12 +49,18 @@ public class GlTexture {
         if(width == 0 || height == 0)
             return;
 
-        if(width != boundTexture.width || height != boundTexture.height) {
-            boundTexture.setParameters(target, level, internalFormat, width, height, border, format, type);
-            boundTexture.allocateVulkanImage();
+        if(width != boundTexture.vulkanImage.width || height != boundTexture.vulkanImage.height || vulkanFormat(format, type) != boundTexture.vulkanImage.format) {
+            boundTexture.allocateVulkanImage(width, height);
         }
 
         boundTexture.uploadImage(pixels);
+    }
+
+    public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
+        if(width == 0 || height == 0)
+            return;
+
+        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, pixels);
     }
 
     public static void setVulkanImage(int id, VulkanImage vulkanImage) {
@@ -65,45 +72,45 @@ public class GlTexture {
     final int id;
     VulkanImage vulkanImage;
 
-    int internalFormat;
-    int width;
-    int height;
-    int border;
-    int format;
-    int type;
-
     public GlTexture(int id) {
         this.id = id;
     }
 
-    private void setParameters(int target, int level, int internalFormat, int width, int height, int border, int format, int type) {
-        this.internalFormat = internalFormat;
-        this.width = width;
-        this.height = height;
-        this.border = border;
-        this.format = format;
-        this.type = type;
-    }
-
-    private void allocateVulkanImage() {
+    private void allocateVulkanImage(int width, int height) {
         if(this.vulkanImage != null)
             this.vulkanImage.free();
 
         this.vulkanImage = new VulkanImage.Builder(width, height).createVulkanImage();
+        VTextureSelector.bindTexture(this.vulkanImage);
     }
 
     private void uploadImage(@Nullable ByteBuffer pixels) {
+        int width = this.vulkanImage.width;
+        int height = this.vulkanImage.height;
+
         if(pixels != null) {
 //            if(pixels.remaining() != width * height * 4)
 //                throw new IllegalArgumentException("buffer size does not match image size");
 
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 4, 0, 0, 0, pixels);
+            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
         }
         else {
             pixels = MemoryUtil.memCalloc(width * height * 4);
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 4, 0, 0, 0, pixels);
+            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
             MemoryUtil.memFree(pixels);
         }
+    }
+
+    private static int vulkanFormat(int glFormat, int type) {
+        return switch (glFormat) {
+            case 6408 ->
+                    switch (type) {
+                        case 5121 -> VK_FORMAT_R8G8B8A8_UNORM;
+                        default -> throw new IllegalStateException("Unexpected value: " + type);
+                    };
+
+            default -> throw new IllegalStateException("Unexpected value: " + glFormat);
+        };
     }
 
 }
