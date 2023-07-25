@@ -137,34 +137,16 @@ body {
 }
 
 .modal .content {
-    background-color: black;
+    background-color: rgb(12, 11, 20);
     margin: 250px auto;
     padding: 20px;
-    border: 1px solid red;
+    border: 1px solid var(--text-colour);
     border-radius: 10px;
     max-width: 600px;
     text-align: left;
     font-family: 'Poppins', sans-serif;
     color: #fff;
     --animate-duration: 0.5s;
-}
-
-.modal .content .button {
-    padding: 8px 12px 8px;
-    color: #fff;
-    background-color: #0D4652;
-    text-decoration: none;
-    border: none;
-    border-radius: 10px;
-    min-height: 40px;
-    min-width: 100px;
-    font-family: 'Poppins', sans-serif;
-    transition-duration: 0.5s;
-    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-}
-
-.modal .content .btn:hover {
-    background-color: #082d35;
 }
 
 .modal .content ul,
