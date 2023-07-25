@@ -49,6 +49,15 @@ body {
          animation: fadein 2s;
 }
 
+.link {
+    transition-duration: 300ms;
+    color: var(--text-colour);
+}
+
+.link:hover {
+    color: var(--highlight-text-colour);
+}
+
 .logo {
     transition-duration: 500ms;
 }
