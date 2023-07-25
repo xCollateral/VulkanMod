@@ -100,8 +100,8 @@ body {
 
 .btn {
     padding: 8px 12px 8px;
-    color: #0D4652;
-    background-color: #fff;
+    color: rgb(12, 20, 29);
+    background-color: var(--text-colour);
     text-decoration: none;
     border: none;
     border-radius: 10px;
@@ -119,7 +119,8 @@ body {
 }
 
 .btn:hover {
-    background-color: #B5D2D8;
+    color: rgb(43, 71, 102);
+    background-color: var(--highlight-text-colour);
     cursor: pointer;
 }
 
@@ -173,7 +174,7 @@ body {
 }
 
 .modal .close {
-    color: #0D4652;
+    color: var(--text-colour);
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -182,7 +183,7 @@ body {
 
 .modal .close:hover,
 .modal .close:focus {
-  color: #082d35;
+  color: var(--highlight-text-colour);
   text-decoration: none;
   cursor: pointer;
 }
