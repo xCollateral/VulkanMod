@@ -8,6 +8,8 @@ body {
 }
 
 * {
+    --text-colour: rgb(205, 204, 204);
+    --highlight-text-colour: rgb(241, 241, 241);
     margin: 0;
     padding: 0;
 }
@@ -25,7 +27,7 @@ body {
 }
 
 .heading {
-    color: white;
+    color: var(--highlight-text-colour);
     text-align: center;
     font-family: 'Poppins', sans-serif;
     -webkit-animation: fadein 2s; /* Safari, Chrome and Opera > 12.1 */
@@ -36,7 +38,7 @@ body {
 }
 
 .text {
-    color: white;
+    color: var(--text-colour);
     padding: 0px 24px;
     text-align: center;
     font-family: 'Poppins', sans-serif;
@@ -67,7 +69,7 @@ body {
     text-align: center;
     width: 100%;
     font-family: 'Poppins', sans-serif;
-    color: white;
+    color: var(--text-colour);
     font-size: 12px;
     -webkit-animation: fadein 4s; /* Safari, Chrome and Opera > 12.1 */
     -moz-animation: fadein 4s; /* Firefox < 16 */
