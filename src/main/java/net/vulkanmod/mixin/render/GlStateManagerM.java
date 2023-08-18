@@ -7,8 +7,6 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -141,6 +139,12 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _pixelStore(int pname, int param) {
 
+    }
+
+    @Overwrite(remap = false)
+    public static int _getTexLevelParameter(int i, int j, int k) {
+        RenderSystem.assertInInitPhase();
+        return GlTexture.texLevelParameter(i, j, k);
     }
 
     /**

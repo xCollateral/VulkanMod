@@ -4,12 +4,10 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.system.MemoryStack;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-
 import static org.lwjgl.vulkan.VK10.VK_FORMAT_R8G8B8A8_UNORM;
 
 public class GlTexture {
@@ -67,6 +65,47 @@ public class GlTexture {
         GlTexture texture = map.get(id);
 
         texture.vulkanImage = vulkanImage;
+    }
+
+    public static int texLevelParameter(int target, int level, int pname) {
+
+        if (target != GL11.GL_TEXTURE_2D || boundTexture == null) {
+            // TODO: other targets are not implemented
+            return 0;
+        }
+
+
+        if (pname == GL11.GL_TEXTURE_INTERNAL_FORMAT) {
+            return boundTexture.vulkanImage.getFormat().glFormat();
+        }
+        if (pname == GL11.GL_TEXTURE_WIDTH) {
+            return boundTexture.vulkanImage.width;
+        }
+        if (pname == GL11.GL_TEXTURE_HEIGHT) {
+            return boundTexture.vulkanImage.height;
+        }
+
+        // TODO: pname is one of:
+            // GL12#GL_TEXTURE_DEPTH
+            // GL32#GL_TEXTURE_SAMPLES
+            // GL32#GL_TEXTURE_FIXED_SAMPLE_LOCATIONS
+            // GL11C#GL_TEXTURE_INTERNAL_FORMAT
+            // GL11C#GL_TEXTURE_RED_SIZE
+            // GL11C#GL_TEXTURE_GREEN_SIZE
+            // GL11C#GL_TEXTURE_BLUE_SIZE
+            // GL11C#GL_TEXTURE_ALPHA_SIZE
+            // GL14#GL_TEXTURE_DEPTH_SIZE
+            // GL30#GL_TEXTURE_STENCIL_SIZE
+            // GL30#GL_TEXTURE_SHARED_SIZE
+            // GL30#GL_TEXTURE_ALPHA_TYPE
+            // GL30#GL_TEXTURE_DEPTH_TYPE
+            // GL13#GL_TEXTURE_COMPRESSED
+            // GL13#GL_TEXTURE_COMPRESSED_IMAGE_SIZE
+            // GL31#GL_TEXTURE_BUFFER_DATA_STORE_BINDING
+            // GL43#GL_TEXTURE_BUFFER_OFFSET
+            // GL43#GL_TEXTURE_BUFFER_SIZE
+
+        return 0;
     }
 
     final int id;

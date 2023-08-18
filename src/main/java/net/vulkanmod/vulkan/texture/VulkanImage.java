@@ -131,6 +131,16 @@ public class VulkanImage {
         }
     }
 
+  //TODO: Vulkan Does not support RGB due to 16 Byte alignment, as RGB is mapped to RGBA internally in OpenGL iirc
+    public NativeImage.InternalGlFormat getFormat() {
+        return switch (this.format) {
+            case VK_FORMAT_R8G8B8A8_UNORM -> NativeImage.InternalGlFormat.RGBA;
+            case VK_FORMAT_R8G8_UNORM -> NativeImage.InternalGlFormat.RG;
+            case VK_FORMAT_R8_UNORM -> NativeImage.InternalGlFormat.RED;
+            default -> throw new IllegalStateException("Unexpected value: " + this.format);
+        };
+    }
+
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         long imageSize = buffer.limit();
 
