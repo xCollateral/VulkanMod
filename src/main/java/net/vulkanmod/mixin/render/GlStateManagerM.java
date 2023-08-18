@@ -141,6 +141,12 @@ public class GlStateManagerM {
 
     }
 
+    @Overwrite(remap = false)
+    public static int _getTexLevelParameter(int i, int j, int k) {
+        RenderSystem.assertInInitPhase();
+        return GlTexture.texLevelParameter(i, j, k);
+    }
+
     /**
      * @author
      */
