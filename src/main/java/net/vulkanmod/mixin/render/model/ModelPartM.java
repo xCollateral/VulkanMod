@@ -10,13 +10,11 @@ import net.vulkanmod.render.vertex.VertexUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-import java.util.Iterator;
 import java.util.List;
 
 @Mixin(ModelPart.class)
@@ -40,17 +38,19 @@ public class ModelPartM {
             ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
             CubeModel cubeModel = cubeMixed.getCubeModel();
 
-            ModelPart.Polygon[] var11 = cubeModel.getPolygons();
+            ModelPart.Polygon[] var11 = cubeMixed.getPolygons();
+
+            cubeModel.compileVertices(var11);
+            cubeModel.transformVertices(matrix4f, matrix3f);
+
 //            int var12 = var11.length;
 
-            cubeModel.transformVertices(matrix4f);
-
             for (ModelPart.Polygon polygon : var11) {
-                Vector3f vector3f = matrix3f.transform(new Vector3f(polygon.normal));
+                //Vector3f vector3f = matrix3f.transform(new Vector3f(polygon.normal));
 //                float l = vector3f.x();
 //                float m = vector3f.y();
 //                float n = vector3f.z();
-                int packedNormal = VertexUtil.packNormal(vector3f.x(), vector3f.y(), vector3f.z());
+                int packedNormal = VertexUtil.packNormal(polygon.normal.x(), polygon.normal.y(), polygon.normal.z());
 
                 ModelPart.Vertex[] vertices = polygon.vertices;
 //                int var20 = vertices.length;
