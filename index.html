@@ -11,6 +11,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="icon" type="image/x-icon" href="VulkanMod.ico">
     <title>VulkanMod</title>
+    <meta name="title" content="VulkanMod" />
+    <meta name="description" content="A fabric mod that rewrites Minecraft OpenGL® renderer to use Vulkan® API." />
+    <meta name="theme-color" content="#FF5A5A">
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="vkminecraft.dev" />
+    <meta property="og:title" content="VulkanMod" />
+    <meta property="og:description" content="A fabric mod that rewrites Minecraft OpenGL® renderer to use Vulkan® API." />
+    <meta property="og:image" content="https://raw.githubusercontent.com/chitanda-dev/VulkanMod/web/VulkanModStars.png" />
+
+    <meta property="twitter:url" content="vkminecraft.dev" />
+    <meta property="twitter:title" content="VulkanMod" />
+    <meta property="twitter:description" content="A fabric mod that rewrites Minecraft OpenGL® renderer to use Vulkan® API." />
+    <meta property="twitter:image" content="https://raw.githubusercontent.com/chitanda-dev/VulkanMod/web/VulkanModStars.png"/>
 </head>
 <body>
     <div id="particles"></div>
@@ -21,7 +35,7 @@
                 <h1>VulkanMod</h1>
             </div>
             <div class="text">
-                <p>A <u><a href="https://fabricmc.net/" style="color: white;">fabric</a></u> mod that rewrites Minecraft <u><a href="https://opengl.org/" style="color: white;">OpenGL®</a></u> renderer to use <u><a href="https://vulkan.org/" style="color: white;">Vulkan®</a></u> API.</p>
+                <p>A <u><a href="https://fabricmc.net/" class="link">fabric</a></u> mod that rewrites Minecraft <u><a href="https://opengl.org/" class="link">OpenGL®</a></u> renderer to use <u><a href="https://vulkan.org/" class="link"">Vulkan®</a></u> API.</p>
             </div>
             <div class="button">
                 <a class="btn" href="https://modrinth.com/mod/vulkanmod"><i class="bi bi-download"></i><span class="btn-text"> Download (Linux & Windows)</span></a>
@@ -35,19 +49,19 @@
     <div id="disclaimer" class="modal">
         <div class="content animate__animated animate__fadeInDown">
           <span class="close" onclick="disclaimerModal()">&times;</span>
-          <h4>Disclaimer:</h4>
-          <ul>
+          <h4 class="header">Disclaimer:</h4>
+          <ul class="text">
             <li>Vulkan and the Vulkan logo are registered trademarks of the Khronos Group Inc.</li>
             <li>OpenGL and the OpenGL logo are registered trademarks of the Khronos Group Inc.</li>
             <li>Minecraft is the trademark of Microsoft Corporation.</li>
             <li>Fabric is the trademark of FabricMC.</li>
           </ul>
-          <div style="display: block; margin-top: 12px"><a class="button" href="javascript:void(0)" onclick="disclaimerModal()">Close</a></div>  
+          <div style="display: block; margin-top: 12px"><a class="btn button" href="javascript:void(0)" onclick="disclaimerModal()">Close</a></div>  
         </div>
     </div>
     <div class="footer">
-        <p>© COPYRIGHT 2023 XCOLLATERAL. NOT APPROVED BY OR ASSOCIATED WITH MOJANG. <a href="javascript:void(0)" onclick="disclaimerModal()" style="color: #fff">DISCLAIMER</a></p>
-        <p>Made with 💖 by <a href="https://github.com/chitanda-dev"> chitanda</a> and<a href="https://github.com/xCollateral"> xCollateral</a></p>
+        <p>© COPYRIGHT 2023 XCOLLATERAL. NOT APPROVED BY OR ASSOCIATED WITH MOJANG. <a href="javascript:void(0)" onclick="disclaimerModal()" class="link">DISCLAIMER</a></p>
+        <p>Made with 💖 by <a class="link" href="https://github.com/chitanda-dev"> chitanda</a> and<a class="link" href="https://github.com/xCollateral"> xCollateral</a>. Special thanks to <a class="link" href="https://pieman.dev/"> piemanau</a> for website adjustments.</p>
     </div>
     <script src="./particles.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js" integrity="sha512-aVKKRRi/Q/YV+4mjoKBsE4x3H+BkegoM/em46NNlCqNTmUYADjBbeNefNxYV7giUp0VxICtqdrbqU7iVaeZNXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
