@@ -3,6 +3,7 @@ package net.vulkanmod.config.widget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.config.CyclingOption;
@@ -30,7 +31,7 @@ public class CyclingOptionWidget extends OptionWidget {
         return  0;
     }
 
-    public void renderBackground(PoseStack matrices, Minecraft client, int mouseX, int mouseY) {
+    public void renderBackground(GuiGraphics guiGraphics, Minecraft client, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         int i = (this.isHovered() ? 2 : 1) * 20;
@@ -42,8 +43,8 @@ public class CyclingOptionWidget extends OptionWidget {
         this.leftButton.setStatus(option.index() > 0);
         this.rightButton.setStatus(option.index() < option.getValues().length - 1);
 
-        this.leftButton.renderButton(matrices, mouseX, mouseY);
-        this.rightButton.renderButton(matrices, mouseX, mouseY);
+        this.leftButton.renderButton(guiGraphics.pose(), mouseX, mouseY);
+        this.rightButton.renderButton(guiGraphics.pose(), mouseX, mouseY);
     }
 
     @Override
@@ -59,7 +60,8 @@ public class CyclingOptionWidget extends OptionWidget {
             buttonClicked = true;
         }
 
-        if(buttonClicked) updateDisplayedValue(this.option.getValueText());
+        if(buttonClicked)
+            updateDisplayedValue(this.option.getValueText());
     }
 
     public Component getTooltip() {

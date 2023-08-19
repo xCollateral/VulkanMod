@@ -144,11 +144,6 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		MutableInt mutableInt = new MutableInt(i);
 		IntConsumer var10000;
 		switch (indexType) {
-			case BYTE:
-				var10000 = (ix) -> {
-					this.buffer.put(mutableInt.getAndIncrement(), (byte)ix);
-				};
-				break;
 			case SHORT:
 				var10000 = (ix) -> {
 					this.buffer.putShort(mutableInt.getAndAdd(2), (short)ix);

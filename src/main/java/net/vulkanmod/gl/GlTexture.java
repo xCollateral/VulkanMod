@@ -60,7 +60,7 @@ public class GlTexture {
         if(width == 0 || height == 0)
             return;
 
-        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, pixels);
+        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset, 0, 0, width, pixels);
     }
 
     public static void setVulkanImage(int id, VulkanImage vulkanImage) {

@@ -389,7 +389,6 @@ public class Vulkan {
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
 
-            //TODO indirect draw option disabled in case it is not supported
             if(deviceInfo.availableFeatures.features().samplerAnisotropy())
                 deviceFeatures.features().samplerAnisotropy(true);
             if(deviceInfo.availableFeatures.features().logicOp())
@@ -398,6 +397,7 @@ public class Vulkan {
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
 
+            //TODO indirect draw option disabled in case it is not supported
             if(deviceInfo.isDrawIndirectSupported()) {
                 deviceFeatures.features().multiDrawIndirect(true);
                 deviceVulkan11Features.shaderDrawParameters(true);

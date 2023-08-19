@@ -3,6 +3,8 @@ package net.vulkanmod.config;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
@@ -13,6 +15,7 @@ import net.minecraft.util.FormattedCharSequence;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.widget.CustomButtonWidget;
 import net.vulkanmod.config.widget.OptionWidget;
+import net.vulkanmod.vulkan.util.VUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -134,18 +137,18 @@ public class OptionScreenV extends Screen {
     }
 
     @Override
-    public void render(PoseStack matrices, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         this.updateStatus();
 
-        this.renderBackground(matrices);
-        this.currentList.render(matrices, mouseX, mouseY, delta);
-//        fill(matrices, 0, 0, width, height, VUtil.packColor(0.6f, 0.2f, 0.2f, 0.5f));
+        this.renderBackground(guiGraphics);
+        this.currentList.render(guiGraphics, mouseX, mouseY, delta);
+//        guiGraphics.fill(0, 0, width, height, VUtil.packColor(0.6f, 0.2f, 0.2f, 0.5f));
 
 //        VideoOptionsScreen.drawCenteredComponent(matrices, this.textRenderer, this.title, this.width / 2, 5, 0xFFFFFF);
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(guiGraphics, mouseX, mouseY, delta);
         List<FormattedCharSequence> list = getHoveredButtonTooltip(this.currentList, mouseX, mouseY);
         if (list != null) {
-            this.renderTooltip(matrices, list, mouseX, mouseY);
+            guiGraphics.renderTooltip(this.minecraft.font, list, mouseX, mouseY);
         }
     }
 

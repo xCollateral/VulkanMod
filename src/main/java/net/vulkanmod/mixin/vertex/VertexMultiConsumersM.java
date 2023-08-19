@@ -2,7 +2,6 @@ package net.vulkanmod.mixin.vertex;
 
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import net.minecraft.core.Direction;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.render.vertex.VertexUtil;
@@ -14,11 +13,10 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-public class VertexConsumersM {
+public class VertexMultiConsumersM {
 
     @Mixin(targets = "com/mojang/blaze3d/vertex/VertexMultiConsumer$Double")
     public static class DoubleM implements ExtendedVertexBuilder {
-
 
         @Shadow @Final private VertexConsumer first;
         @Shadow @Final private VertexConsumer second;
@@ -33,15 +31,26 @@ public class VertexConsumersM {
         }
     }
 
+    @Mixin(targets = "com/mojang/blaze3d/vertex/VertexMultiConsumer$Multiple")
+    public static class MultipleM implements ExtendedVertexBuilder {
+        @Shadow @Final private VertexConsumer[] delegates;
+
+        @Override
+        public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
+            for (VertexConsumer vertexConsumer : this.delegates) {
+                ExtendedVertexBuilder extendedVertexBuilder = (ExtendedVertexBuilder) vertexConsumer;
+
+                extendedVertexBuilder.vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
+            }
+        }
+    }
+
     @Mixin(SheetedDecalTextureGenerator.class)
     public static abstract class SheetDecalM implements ExtendedVertexBuilder {
 
         @Shadow @Final private VertexConsumer delegate;
-
         @Shadow @Final private Matrix3f normalInversePose;
-
         @Shadow @Final private Matrix4f cameraInversePose;
-
         @Shadow @Final private float textureScale;
 
         @Override

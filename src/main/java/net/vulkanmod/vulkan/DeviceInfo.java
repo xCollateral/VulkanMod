@@ -60,6 +60,8 @@ public class DeviceInfo {
         this.deviceName = properties.deviceNameString();
         this.driverVersion = String.valueOf(properties.driverVersion());
 
+//        this.driverVersion = graphicsCard.getVersionInfo();
+
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
 

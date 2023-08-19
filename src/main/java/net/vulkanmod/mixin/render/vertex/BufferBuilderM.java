@@ -34,11 +34,11 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     @Shadow private @Nullable VertexFormatElement currentElement;
     @Shadow private VertexFormat format;
 
-    @Shadow @Nullable private Vector3f[] sortingPoints;
-    @Shadow private float sortX;
-    @Shadow private float sortY;
-    @Shadow private float sortZ;
-    @Shadow private VertexFormat.Mode mode;
+//    @Shadow @Nullable private Vector3f[] sortingPoints;
+//    @Shadow private float sortX;
+//    @Shadow private float sortY;
+//    @Shadow private float sortZ;
+//    @Shadow private VertexFormat.Mode mode;
 
     @Shadow protected abstract it.unimi.dsi.fastutil.ints.IntConsumer intConsumer(int i, VertexFormat.IndexType indexType);
 
@@ -198,38 +198,38 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         }
     }
 
-    /**
-     * @author
-     */
-    @Overwrite
-    private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
-        float[] distances = new float[this.sortingPoints.length];
-        int[] is = new int[this.sortingPoints.length];
-
-        for(int i = 0; i < this.sortingPoints.length; is[i] = i++) {
-            float f = this.sortingPoints[i].x() - this.sortX;
-            float g = this.sortingPoints[i].y() - this.sortY;
-            float h = this.sortingPoints[i].z() - this.sortZ;
-            distances[i] = f * f + g * g + h * h;
-        }
-
-//		IntArrays.mergeSort(is, (ix, jx) -> Floats.compare(distances[jx], distances[ix]));
-//        SortUtil.quickSort(is, (ix, jx) -> Float.compare(distances[jx], distances[ix]));
-        SortUtil.mergeSort(is, distances);
-//        SortUtil.quickSort2(is, distances);
-
-        IntConsumer intConsumer = this.intConsumer(this.nextElementByte, indexType);
-
-        for(int i = 0; i < is.length; ++i) {
-            int j = is[i];
-            intConsumer.accept(j * this.mode.primitiveStride + 0);
-            intConsumer.accept(j * this.mode.primitiveStride + 1);
-            intConsumer.accept(j * this.mode.primitiveStride + 2);
-            intConsumer.accept(j * this.mode.primitiveStride + 2);
-            intConsumer.accept(j * this.mode.primitiveStride + 3);
-            intConsumer.accept(j * this.mode.primitiveStride + 0);
-        }
-    }
+//    /**
+//     * @author
+//     */
+//    @Overwrite
+//    private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
+//        float[] distances = new float[this.sortingPoints.length];
+//        int[] is = new int[this.sortingPoints.length];
+//
+//        for(int i = 0; i < this.sortingPoints.length; is[i] = i++) {
+//            float f = this.sortingPoints[i].x() - this.sortX;
+//            float g = this.sortingPoints[i].y() - this.sortY;
+//            float h = this.sortingPoints[i].z() - this.sortZ;
+//            distances[i] = f * f + g * g + h * h;
+//        }
+//
+////		IntArrays.mergeSort(is, (ix, jx) -> Floats.compare(distances[jx], distances[ix]));
+////        SortUtil.quickSort(is, (ix, jx) -> Float.compare(distances[jx], distances[ix]));
+//        SortUtil.mergeSort(is, distances);
+////        SortUtil.quickSort2(is, distances);
+//
+//        IntConsumer intConsumer = this.intConsumer(this.nextElementByte, indexType);
+//
+//        for(int i = 0; i < is.length; ++i) {
+//            int j = is[i];
+//            intConsumer.accept(j * this.mode.primitiveStride + 0);
+//            intConsumer.accept(j * this.mode.primitiveStride + 1);
+//            intConsumer.accept(j * this.mode.primitiveStride + 2);
+//            intConsumer.accept(j * this.mode.primitiveStride + 2);
+//            intConsumer.accept(j * this.mode.primitiveStride + 3);
+//            intConsumer.accept(j * this.mode.primitiveStride + 0);
+//        }
+//    }
 
     public void putByte(int index, byte value) {
         MemoryUtil.memPutByte(this.bufferPtr + this.nextElementByte + index, value);

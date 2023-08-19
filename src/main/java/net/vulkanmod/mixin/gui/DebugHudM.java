@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -81,40 +82,40 @@ public abstract class DebugHudM {
 //        bufferSource.endBatch();
 //    }
 
-    /**
-     * @author
-     */
-    @Overwrite
-    public void drawSystemInformation(PoseStack matrices) {
-        List<String> list = this.getSystemInformation();
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.font.lineHeight;
-            int k = this.font.width(string);
-            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.fill(matrices, l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
-        }
-        GuiBatchRenderer.endBatch();
-
-        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.font.lineHeight;
-            int k = this.font.width(string);
-            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, (float)l, (float)m, 0xE0E0E0);
-        }
-        bufferSource.endBatch();
-    }
+//    /**
+//     * @author
+//     */
+//    @Overwrite
+//    public void drawSystemInformation(GuiGraphics guiGraphics) {
+//        List<String> list = this.getSystemInformation();
+//
+//        RenderSystem.enableBlend();
+//        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.font.lineHeight;
+//            int k = this.font.width(string);
+//            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.fill(matrices, l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
+//        }
+//        GuiBatchRenderer.endBatch();
+//
+//        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.font.lineHeight;
+//            int k = this.font.width(string);
+//            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, (float)l, (float)m, 0xE0E0E0);
+//        }
+//        bufferSource.endBatch();
+//    }
 }

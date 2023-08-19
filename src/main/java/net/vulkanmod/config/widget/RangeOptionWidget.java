@@ -3,6 +3,7 @@ package net.vulkanmod.config.widget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -32,7 +33,7 @@ public class RangeOptionWidget extends OptionWidget {
     }
 
     @Override
-    protected void renderBackground(PoseStack matrices, Minecraft client, int mouseX, int mouseY) {
+    protected void renderBackground(GuiGraphics guiGraphics, Minecraft client, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         int i = (this.isHovered() ? 2 : 1) * 20;
@@ -41,7 +42,7 @@ public class RangeOptionWidget extends OptionWidget {
 
         int color = this.controlHovered ? VUtil.packColor(1.0f, 1.0f, 1.0f, 1.0f) : VUtil.packColor(1.0f, 1.0f, 1.0f, 0.8f);
 
-        fill(matrices, this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y + 20, this.controlX + (int)(this.value * (this.controlWidth - 8)) + 8, this.y, color);
+        guiGraphics.fill(this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y + 20, this.controlX + (int)(this.value * (this.controlWidth - 8)) + 8, this.y, color);
     }
 
     @Override

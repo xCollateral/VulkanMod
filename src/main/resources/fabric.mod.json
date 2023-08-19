@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "vulkanmod",
-  "version": "0.3.1_dev",
+  "version": "0.3.2_dev",
 
   "name": "VulkanMod",
   "description": "Bring Vulkan to Minecraft!",
@@ -28,7 +28,7 @@
 
   "depends": {
     "fabricloader": ">=0.14.14",
-    "minecraft": "1.19.4",
+    "minecraft": ">=1.20",
     "java": ">=17"
   }
 }

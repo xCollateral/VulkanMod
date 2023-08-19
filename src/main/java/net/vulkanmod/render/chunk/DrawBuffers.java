@@ -15,6 +15,8 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
+import static org.lwjgl.system.JNI.callPJPV;
+import static org.lwjgl.system.JNI.callPV;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
@@ -28,6 +30,7 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
+//        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 10000000, VERTEX_SIZE);
         this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
 
         this.allocated = true;
@@ -252,6 +255,7 @@ public class DrawBuffers {
 
             drawCount++;
 
+//            drawCount = drawParameters.indexCount == 0 ? drawCount : drawCount + 1;
         }
 
         if(drawCount > 0) {

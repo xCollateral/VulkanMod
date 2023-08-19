@@ -18,13 +18,13 @@
     "compatibility.UniformM",
 
     "debug.ChunkBorderRendererM",
-    "debug.DebugHudM",
+    "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
 
     "gui.ChatComponentM",
     "gui.DebugHudM",
-    "gui.InGameHudM",
+    "gui.GuiM",
 
     "matrix.Matrix4fM",
 
@@ -68,8 +68,9 @@
     "util.ScreenshotRecorderM",
 
     "vertex.SpriteCoordinateExpanderM",
-    "vertex.VertexConsumersM$DoubleM",
-    "vertex.VertexConsumersM$SheetDecalM",
+    "vertex.VertexMultiConsumersM$DoubleM",
+    "vertex.VertexMultiConsumersM$MultipleM",
+    "vertex.VertexMultiConsumersM$SheetDecalM",
 
     "ClientLevelM",
     "WindowMixin"

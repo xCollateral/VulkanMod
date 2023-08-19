@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.shaders.Program;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -35,13 +36,8 @@ public abstract class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance positionColorTexShader;
     @Shadow private @Nullable static ShaderInstance positionTexShader;
     @Shadow private @Nullable static ShaderInstance positionTexColorShader;
-    @Shadow private @Nullable static ShaderInstance blockShader;
-    @Shadow private @Nullable static ShaderInstance newEntityShader;
     @Shadow private @Nullable static ShaderInstance particleShader;
-    @Shadow private @Nullable static ShaderInstance positionColorLightmapShader;
-    @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
     @Shadow private @Nullable static ShaderInstance positionTexColorNormalShader;
-    @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
     @Shadow private @Nullable static ShaderInstance rendertypeSolidShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCutoutMippedShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader;
@@ -88,10 +84,16 @@ public abstract class GameRendererMixin {
 
     @Shadow private static @Nullable ShaderInstance rendertypeTextBackgroundShader;
     @Shadow private static @Nullable ShaderInstance rendertypeTextBackgroundSeeThroughShader;
+    @Shadow private static @Nullable ShaderInstance rendertypeGuiShader;
+    @Shadow private static @Nullable ShaderInstance rendertypeGuiOverlayShader;
+    @Shadow private static @Nullable ShaderInstance rendertypeGuiTextHighlightShader;
+    @Shadow private static @Nullable ShaderInstance rendertypeGuiGhostRecipeOverlayShader;
 
     @Shadow protected abstract void shutdownShaders();
 
     @Shadow public ShaderInstance blitShader;
+
+    @Shadow protected abstract ShaderInstance preloadShader(ResourceProvider resourceProvider, String string, VertexFormat vertexFormat);
 
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
@@ -282,9 +284,22 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_crumbling", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
                 rendertypeCrumblingShader = shaderInstance;
             }));
+
+            list1.add(Pair.of(positionColor, (shaderInstance) -> {
+                rendertypeGuiShader = shaderInstance;
+            }));
+            list1.add(Pair.of(positionColor, (shaderInstance) -> {
+                rendertypeGuiOverlayShader = shaderInstance;
+            }));
+            list1.add(Pair.of(positionColor, (shaderInstance) -> {
+                rendertypeGuiTextHighlightShader = shaderInstance;
+            }));
+            list1.add(Pair.of(positionColor, (shaderInstance) -> {
+                rendertypeGuiGhostRecipeOverlayShader = shaderInstance;
+            }));
         } catch (IOException ioexception) {
-            list1.forEach((p_172772_) -> {
-                p_172772_.getFirst().close();
+            list1.forEach((pair) -> {
+                pair.getFirst().close();
             });
             throw new RuntimeException("could not reload shaders", ioexception);
         }
@@ -300,6 +315,33 @@ public abstract class GameRendererMixin {
         });
 
         ci.cancel();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public void preloadUiShader(ResourceProvider resourceProvider) {
+        if (this.blitShader != null) {
+            throw new RuntimeException("Blit shader already preloaded");
+        } else {
+            try {
+                this.blitShader = new ShaderInstance(resourceProvider, "blit_screen", DefaultVertexFormat.BLIT_SCREEN);
+            } catch (IOException var3) {
+                throw new RuntimeException("could not preload blit shader", var3);
+            }
+
+            positionShader = this.preloadShader(resourceProvider, "position", DefaultVertexFormat.POSITION);
+            positionColorShader = this.preloadShader(resourceProvider, "position_color", DefaultVertexFormat.POSITION_COLOR);
+            positionColorTexShader = this.preloadShader(resourceProvider, "position_color_tex", DefaultVertexFormat.POSITION_COLOR_TEX);
+            positionTexShader = this.preloadShader(resourceProvider, "position_tex", DefaultVertexFormat.POSITION_TEX);
+            positionTexColorShader = this.preloadShader(resourceProvider, "position_tex_color", DefaultVertexFormat.POSITION_TEX_COLOR);
+            rendertypeTextShader = this.preloadShader(resourceProvider, "rendertype_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+
+            rendertypeGuiShader = positionColorShader;
+            rendertypeGuiOverlayShader = positionColorShader;
+        }
     }
 
 }

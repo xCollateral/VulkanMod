@@ -138,12 +138,12 @@ public class VulkanImage {
         transferDstLayout(commandBuffer);
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-        stagingBuffer.align(this.formatSize);
+        stagingBuffer.align(formatSize);
 
         stagingBuffer.copyBuffer((int)imageSize, buffer);
 
         copyBufferToImageCmd(commandBuffer, stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
+                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * formatSize), unpackRowLength, height);
 
         long fence = GraphicsQueue.getInstance().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
@@ -306,7 +306,7 @@ public class VulkanImage {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(mipLevels);
                 samplerInfo.minLod(0.0F);
-                samplerInfo.mipLodBias(-1.0F);
+//                samplerInfo.mipLodBias(-1.0F);
             } else {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(0.0F);

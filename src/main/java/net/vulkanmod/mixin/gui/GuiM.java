@@ -4,7 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -13,14 +14,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
-import net.vulkanmod.render.gui.GuiBatchRenderer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(net.minecraft.client.gui.Gui.class)
-public abstract class InGameHudM extends GuiComponent {
+@Mixin(Gui.class)
+public abstract class GuiM {
 
     @Shadow @Final private Minecraft minecraft;
 
@@ -32,7 +32,7 @@ public abstract class InGameHudM extends GuiComponent {
 
     @Shadow protected abstract int getVehicleMaxHearts(LivingEntity livingEntity);
 
-    @Shadow protected abstract void renderHearts(PoseStack poseStack, Player player, int i, int j, int k, int l, float f, int m, int n, int o, boolean bl);
+    @Shadow protected abstract void renderHearts(GuiGraphics guiGraphics, Player player, int i, int j, int k, int l, float f, int m, int n, int o, boolean bl);
 
     @Shadow protected abstract LivingEntity getPlayerVehicleWithHealth();
 
@@ -50,11 +50,13 @@ public abstract class InGameHudM extends GuiComponent {
 
     @Shadow protected abstract Player getCameraPlayer();
 
+    @Shadow @Final private static ResourceLocation GUI_ICONS_LOCATION;
+
     /**
      * @author
      */
     @Overwrite()
-    private void renderPlayerHealth(PoseStack poseStack) {
+    private void renderPlayerHealth(GuiGraphics guiGraphics) {
         int ac;
         int ab;
         int aa;
@@ -104,16 +106,16 @@ public abstract class InGameHudM extends GuiComponent {
             if (u <= 0) continue;
             x = m + w * 8;
             if (w * 2 + 1 < u) {
-                this.blit(poseStack, x, s, 34, 9, 9, 9);
+                guiGraphics.blit(GUI_ICONS_LOCATION, x, s, 34, 9, 9, 9);
             }
             if (w * 2 + 1 == u) {
-                this.blit(poseStack, x, s, 25, 9, 9, 9);
+                guiGraphics.blit(GUI_ICONS_LOCATION, x, s, 25, 9, 9, 9);
             }
             if (w * 2 + 1 <= u) continue;
-            this.blit(poseStack, x, s, 16, 9, 9, 9);
+            guiGraphics.blit(GUI_ICONS_LOCATION, x, s, 16, 9, 9, 9);
         }
         this.minecraft.getProfiler().popPush("health");
-        this.renderHearts(poseStack, player, m, o, r, v, f, i, j, p, bl);
+        this.renderHearts(guiGraphics, player, m, o, r, v, f, i, j, p, bl);
         LivingEntity livingEntity = this.getPlayerVehicleWithHealth();
         x = this.getVehicleMaxHearts(livingEntity);
         if (x == 0) {
@@ -130,12 +132,12 @@ public abstract class InGameHudM extends GuiComponent {
                     z += this.random.nextInt(3) - 1;
                 }
                 ac = n - y * 8 - 9;
-                this.blit(poseStack, ac, z, 16 + ab * 9, 27, 9, 9);
+                guiGraphics.blit(GUI_ICONS_LOCATION, ac, z, 16 + ab * 9, 27, 9, 9);
                 if (y * 2 + 1 < k) {
-                    this.blit(poseStack, ac, z, aa + 36, 27, 9, 9);
+                    guiGraphics.blit(GUI_ICONS_LOCATION, ac, z, aa + 36, 27, 9, 9);
                 }
                 if (y * 2 + 1 != k) continue;
-                this.blit(poseStack, ac, z, aa + 45, 27, 9, 9);
+                guiGraphics.blit(GUI_ICONS_LOCATION, ac, z, aa + 45, 27, 9, 9);
             }
             t -= 10;
         }
@@ -149,10 +151,10 @@ public abstract class InGameHudM extends GuiComponent {
             ac = Mth.ceil((double)z * 10.0 / (double)y) - ab;
             for (int ad = 0; ad < ab + ac; ++ad) {
                 if (ad < ab) {
-                    this.blit(poseStack, n - ad * 8 - 9, t, 16, 18, 9, 9);
+                    guiGraphics.blit(GUI_ICONS_LOCATION, n - ad * 8 - 9, t, 16, 18, 9, 9);
                     continue;
                 }
-                this.blit(poseStack, n - ad * 8 - 9, t, 25, 18, 9, 9);
+                guiGraphics.blit(GUI_ICONS_LOCATION, n - ad * 8 - 9, t, 25, 18, 9, 9);
             }
         }
         this.minecraft.getProfiler().pop();
@@ -162,7 +164,7 @@ public abstract class InGameHudM extends GuiComponent {
      * @author
      */
     @Overwrite
-    private void renderHeart(PoseStack poseStack, Gui.HeartType heartType, int i, int j, int k, boolean bl, boolean bl2) {
-        this.blit(poseStack, i, j, heartType.getX(bl2, bl), k, 9, 9);
+    private void renderHeart(GuiGraphics guiGraphics, Gui.HeartType heartType, int i, int j, int k, boolean bl, boolean bl2) {
+        guiGraphics.blit(GUI_ICONS_LOCATION, i, j, heartType.getX(bl2, bl), k, 9, 9);
     }
 }

@@ -3,15 +3,12 @@ package net.vulkanmod.render.gui;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
 
-public class GuiBatchRenderer extends GuiComponent {
+public class GuiBatchRenderer {
 
 //    public static void blit(PoseStack p_93201_, int p_93202_, int p_93203_, int p_93204_, int p_93205_, int p_93206_, TextureAtlasSprite sprite) {
 //        innerBlit(p_93201_.last().pose(), p_93202_, p_93202_ + p_93205_, p_93203_, p_93203_ + p_93206_, p_93204_, sprite.getU0(), sprite.getU1(), sprite.getV0(), sprite.getV1());
@@ -98,11 +95,11 @@ public class GuiBatchRenderer extends GuiComponent {
 
     }
 
-    public static int drawShadow(Font font, MultiBufferSource bufferSource, PoseStack poseStack, FormattedCharSequence charSequence, float x, float y, int intensity) {
+    public static int drawTextShadowed(Font font, MultiBufferSource bufferSource, PoseStack poseStack, FormattedCharSequence charSequence, float x, float y, int intensity) {
         return drawInternal(font, bufferSource, charSequence, x, y, intensity, poseStack.last().pose(), true);
     }
 
-    public static int drawShadow(Font font, MultiBufferSource bufferSource, Matrix4f matrix4f, FormattedCharSequence charSequence, float x, float y, int intensity) {
+    public static int drawTextShadowed(Font font, MultiBufferSource bufferSource, Matrix4f matrix4f, FormattedCharSequence charSequence, float x, float y, int intensity) {
         return drawInternal(font, bufferSource, charSequence, x, y, intensity, matrix4f, true);
     }
 

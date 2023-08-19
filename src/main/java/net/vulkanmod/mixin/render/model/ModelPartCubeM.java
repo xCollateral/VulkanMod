@@ -16,6 +16,7 @@ public class ModelPartCubeM implements ModelPartCubeMixed {
 
     CubeModel cube;
 
+    //TODO
     @Inject(method = "<init>", at = @At(value = "FIELD",
             target = "Lnet/minecraft/client/model/geom/ModelPart$Cube;polygons:[Lnet/minecraft/client/model/geom/ModelPart$Polygon;",
             ordinal = 0, shift = At.Shift.AFTER))

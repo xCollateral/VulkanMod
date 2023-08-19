@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -32,7 +33,7 @@ import java.util.List;
 import static net.vulkanmod.Initializer.getVersion;
 
 @Mixin(DebugScreenOverlay.class)
-public abstract class DebugHudM {
+public abstract class DebugScreenOverlayM {
 
     @Shadow @Final private Minecraft minecraft;
 
@@ -117,86 +118,87 @@ public abstract class DebugHudM {
 //        bufferSource.endBatch();
 //    }
 
-    @Inject(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V",
-            at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z",
-                    shift = At.Shift.AFTER,
-                    ordinal = 2))
-    protected void renderStuffOne(PoseStack poseStack, CallbackInfo ci)
-    {
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-    }
-
-
-    @Redirect(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/components/DebugScreenOverlay;fill(Lcom/mojang/blaze3d/vertex/PoseStack;IIIII)V"))
-    protected void renderStuffRedirectTwo(PoseStack poseStack, int m, int k, int j, int e, int d)
-    {
-        GuiBatchRenderer.fill(poseStack, m, k, j, e, d);
-    }
-    @Redirect(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Font;draw(Lcom/mojang/blaze3d/vertex/PoseStack;Ljava/lang/String;FFI)I"))
-    protected int renderStuffRedirectThree(Font instance, PoseStack $$0, String $$1, float $$2, float $$3, int $$4)
-    {
-        return 0;
-    }
-
-    @Inject(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V", at = @At("TAIL"),
-            locals = LocalCapture.CAPTURE_FAILHARD)
-    public void renderStuff3(PoseStack poseStack, CallbackInfo ci, List<String> list)
-    {
-        GuiBatchRenderer.endBatch();
-
-        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.font.lineHeight;
-            int k = this.font.width(string);
-            int l = 2;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.drawString(this.font, bufferSource, poseStack, string, 2.0f, (float)m, 0xE0E0E0);
-        }
-        bufferSource.endBatch();
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite
-    public void drawSystemInformation(PoseStack matrices) {
-        List<String> list = this.getSystemInformation();
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.font.lineHeight;
-            int k = this.font.width(string);
-            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.fill(matrices, l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
-        }
-        GuiBatchRenderer.endBatch();
-
-        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (Strings.isNullOrEmpty(string)) continue;
-            int j = this.font.lineHeight;
-            int k = this.font.width(string);
-            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
-            int m = 2 + j * i;
-
-            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, (float)l, (float)m, 0xE0E0E0);
-        }
-        bufferSource.endBatch();
-    }
+//    @Inject(method = "drawGameInformation",
+//            at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z",
+//                    shift = At.Shift.AFTER,
+//                    ordinal = 2))
+//    protected void inject1(GuiGraphics guiGraphics, CallbackInfo ci)
+//    {
+//
+//        RenderSystem.enableBlend();
+//        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//    }
+//
+//
+//    @Redirect(method = "renderLines",
+//            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;fill(IIIII)V"))
+//    protected void redirectFill(GuiGraphics instance, int i, int j, int k, int l, int m)
+//    {
+//        GuiBatchRenderer.fill(instance.pose(), m, k, j, l, m);
+//    }
+//
+//    @Redirect(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V",
+//            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Font;draw(Lcom/mojang/blaze3d/vertex/PoseStack;Ljava/lang/String;FFI)I"))
+//    protected int renderStuffRedirectThree(Font instance, PoseStack $$0, String $$1, float $$2, float $$3, int $$4)
+//    {
+//        return 0;
+//    }
+//
+//    @Inject(method = "drawGameInformation(Lcom/mojang/blaze3d/vertex/PoseStack;)V", at = @At("TAIL"),
+//            locals = LocalCapture.CAPTURE_FAILHARD)
+//    public void renderStuff3(PoseStack poseStack, CallbackInfo ci, List<String> list)
+//    {
+//        GuiBatchRenderer.endBatch();
+//
+//        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.font.lineHeight;
+//            int k = this.font.width(string);
+//            int l = 2;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.drawString(this.font, bufferSource, poseStack, string, 2.0f, (float)m, 0xE0E0E0);
+//        }
+//        bufferSource.endBatch();
+//    }
+//
+//    /**
+//     * @author
+//     */
+//    @Overwrite
+//    public void drawSystemInformation(PoseStack matrices) {
+//        List<String> list = this.getSystemInformation();
+//
+//        RenderSystem.enableBlend();
+//        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.font.lineHeight;
+//            int k = this.font.width(string);
+//            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.fill(matrices, l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
+//        }
+//        GuiBatchRenderer.endBatch();
+//
+//        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+//        for (int i = 0; i < list.size(); ++i) {
+//            String string = list.get(i);
+//            if (Strings.isNullOrEmpty(string)) continue;
+//            int j = this.font.lineHeight;
+//            int k = this.font.width(string);
+//            int l = this.minecraft.getWindow().getGuiScaledWidth() - 2 - k;
+//            int m = 2 + j * i;
+//
+//            GuiBatchRenderer.drawString(this.font, bufferSource, matrices, string, (float)l, (float)m, 0xE0E0E0);
+//        }
+//        bufferSource.endBatch();
+//    }
 }
