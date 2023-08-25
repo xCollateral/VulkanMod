@@ -1,6 +1,8 @@
 package net.vulkanmod.mixin.compatibility.gl;
 
 import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryUtil;
@@ -14,6 +16,15 @@ import java.nio.IntBuffer;
 
 @Mixin(GL11.class)
 public class GL11M {
+
+    /**
+     * @author
+     * @reason ideally Scissor should be used. but using vkCmdSetScissor() caused glitches with invisible menus with replay mod, so disabled for now as temp fix
+     */
+    @Overwrite(remap = false)
+    public static void glScissor(@NativeType("GLint") int x, @NativeType("GLint") int y, @NativeType("GLsizei") int width, @NativeType("GLsizei") int height) {
+//        Drawer.setScissor(x, y, width, height);
+    }
 
     /**
      * @author
