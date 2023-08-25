@@ -38,6 +38,8 @@ import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTE
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
@@ -45,6 +47,8 @@ public class Vulkan {
 //    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
+    public static final int vkVer = getVkVer();
+
     static {
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
@@ -58,8 +62,22 @@ public class Vulkan {
     }
 
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+                    VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
             .collect(toSet());
+    private static int getVkVer() {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = stack.mallocInt(1);
+            vkEnumerateInstanceVersion(a);
+            int vkVer1 = a.get(0);
+            if(VK_VERSION_MINOR(vkVer1)<2)
+            {
+                throw new RuntimeException("Vulkan 1.2 not supported!: "+"Only Has: "+ DeviceInfo.decDefVersion(vkVer1));
+            }
+            return vkVer1;
+        }
+    }
+
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
 
@@ -231,7 +249,7 @@ public class Vulkan {
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
             appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_2);
+            appInfo.apiVersion(vkVer);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -469,6 +487,7 @@ public class Vulkan {
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
+            allocatorCreateInfo.vulkanApiVersion(vkVer);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
