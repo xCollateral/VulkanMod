@@ -85,9 +85,8 @@ public class DeviceInfo {
         return switch (i) {
             case (0x10DE) -> "Nvidia";
             case (0x1022) -> "AMD";
-            case (0x5143) -> "Qualcomm";
             case (0x8086) -> "Intel";
-            default -> "undef"; //Either AMD or Unknown Driver version/vendor and.or Encoding Scheme
+            default -> "undef"; //Either AMD or Unknown Driver version/vendor and/or Encoding Scheme
         };
     }
 
@@ -96,6 +95,7 @@ public class DeviceInfo {
     static String decDefVersion(int v) {
         return VK_VERSION_MAJOR(v) + "." + VK_VERSION_MINOR(v) + "." + VK_VERSION_PATCH(v);
     }
+    
     //0x10DE = Nvidia: https://pcisig.com/membership/member-companies?combine=Nvidia
     //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPhysicalDeviceProperties.html
     //this should work with Nvidia + AMD but is not guaranteed to work with intel drivers in Windows and more obscure/Exotic Drivers/vendors
@@ -103,14 +103,9 @@ public class DeviceInfo {
         return switch (i) {
             case (0x10DE) -> decodeNvidia(v); //Nvidia
             case (0x1022) -> decDefVersion(v); //AMD
-            case (0x5143) -> decQualCommVersion(v); //Qualcomm
             case (0x8086) -> decIntelVersion(v); //Intel
             default -> decDefVersion(v); //Either AMD or Unknown Driver version/vendor and.or Encoding Scheme
         };
-    }
-
-    private static String decQualCommVersion(int v) {
-        return null;
     }
 
     //Source: https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
