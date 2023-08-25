@@ -460,7 +460,7 @@ public class Vulkan {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 
