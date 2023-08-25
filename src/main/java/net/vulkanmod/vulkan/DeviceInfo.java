@@ -93,7 +93,6 @@ public class DeviceInfo {
         return switch (i) {
             case (0x10DE) -> "Nvidia";
             case (0x1022) -> "AMD";
-            case (0x5143) -> "Qualcomm";
             case (0x8086) -> "Intel";
             default -> "undef"; //Either AMD or Unknown Driver version/vendor and.or Encoding Scheme
         };
@@ -111,14 +110,9 @@ public class DeviceInfo {
         return switch (i) {
             case (0x10DE) -> decodeNvidia(v); //Nvidia
             case (0x1022) -> decDefVersion(v); //AMD
-            case (0x5143) -> decQualCommVersion(v); //Qualcomm
             case (0x8086) -> decIntelVersion(v); //Intel
-            default -> decDefVersion(v); //Either AMD or Unknown Driver version/vendor and.or Encoding Scheme
+            default -> decDefVersion(v); //Either AMD or Unknown Driver Encoding Scheme
         };
-    }
-
-    private static String decQualCommVersion(int v) {
-        return null;
     }
 
     //Source: https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
