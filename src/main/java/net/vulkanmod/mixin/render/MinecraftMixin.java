@@ -120,37 +120,19 @@ public class MinecraftMixin {
         Renderer.getInstance().resetBuffers();
     }
 
-    /**
-     * @author
-     */
-    @Overwrite
-    public void close() {
+
+    @Inject(method = "close", at = @At(value = "HEAD"))
+    public void close(CallbackInfo ci) {
         Vulkan.waitIdle();
 
-        try {
-            this.modelManager.close();
-            this.fontManager.close();
-            this.gameRenderer.close();
-            this.levelRenderer.close();
-            this.soundManager.destroy();
-            this.particleEngine.close();
-            this.mobEffectTextures.close();
-            this.paintingTextures.close();
-            this.textureManager.close();
-            this.resourceManager.close();
+    }
+    @Inject(method = "close", at = @At(value = "RETURN"))
+    public void close2(CallbackInfo ci) {
 
-            Vulkan.cleanUp();
+        Vulkan.cleanUp();
 
-            Util.shutdownExecutors();
-        }
-        catch (Throwable throwable) {
-            LOGGER.error("Shutdown failure!", throwable);
-            throw throwable;
-        }
-        finally {
-            this.virtualScreen.close();
-            this.window.close();
-        }
+        Util.shutdownExecutors();
+
     }
 
     @Redirect(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;emergencySave()V"))
