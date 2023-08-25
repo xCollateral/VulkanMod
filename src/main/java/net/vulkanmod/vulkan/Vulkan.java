@@ -45,6 +45,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.vkDestroySwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkGetSwapchainImagesKHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
@@ -56,6 +57,8 @@ public class Vulkan {
 //    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
+    public static final int vkVer = getVkVer();
+
     static {
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
@@ -64,6 +67,20 @@ public class Vulkan {
         } else {
             // We are not going to use it, so we don't create it
             VALIDATION_LAYERS = null;
+        }
+    }
+
+    private static int getVkVer() {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = stack.mallocInt(1);
+            vkEnumerateInstanceVersion(a);
+            int vkVer1 = a.get(0);
+            if(VK_VERSION_MINOR(vkVer1)<2)
+            {
+                throw new RuntimeException("Vulkan 1.2 not supported!: "+"Only Has: "+ DeviceInfo.decDefVersion(vkVer1));
+            }
+            return vkVer1;
         }
     }
 
@@ -261,7 +278,7 @@ public class Vulkan {
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
             appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_1);
+            appInfo.apiVersion(vkVer);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -417,9 +434,9 @@ public class Vulkan {
             VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
 
             //TODO store and use device features
-            if(deviceInfo.availableFeatures.samplerAnisotropy())
+            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
                 deviceFeatures.samplerAnisotropy(true);
-            if(deviceInfo.availableFeatures.logicOp())
+            if(deviceInfo.availableFeatures.features().logicOp())
                 deviceFeatures.logicOp(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
@@ -466,6 +483,7 @@ public class Vulkan {
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
+            allocatorCreateInfo.vulkanApiVersion(vkVer);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
