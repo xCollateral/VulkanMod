@@ -659,8 +659,8 @@ public class Drawer {
             int framebufferHeight = Drawer.getInstance().boundFramebuffer.height;
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
-            scissor.offset(VkOffset2D.malloc(stack).set(x, framebufferHeight - (y + height)));
-            scissor.extent(VkExtent2D.malloc(stack).set(width, height));
+            scissor.offset().set(x, framebufferHeight - (y + height));
+            scissor.extent().set(width, height);
 
             vkCmdSetScissor(commandBuffers.get(currentFrame), 0, scissor);
         }
