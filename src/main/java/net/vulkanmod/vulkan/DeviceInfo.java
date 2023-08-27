@@ -18,13 +18,10 @@ import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.vkEnumerateDeviceExtensionProperties;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
-import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
-import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
-import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.*;
 
@@ -65,7 +62,7 @@ public class DeviceInfo {
         this.vendorId = decodeVendor(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(Vulkan.deviceProperties.driverVersion(), Vulkan.deviceProperties.vendorID());
-        this.vkVersion = decDefVersion(Vulkan.vkVer);
+        this.vkVersion = decDefVersion(getVkVer());
 
 //        this.driverVersion = graphicsCard.getVersionInfo();
 
@@ -125,6 +122,20 @@ public class DeviceInfo {
 
     private static String decodeNvidia(int v) {
         return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff) + "." + (v >>> 6 & 0xff) + "." + (v & 0xff);
+    }
+
+    static int getVkVer() {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = stack.mallocInt(1);
+            vkEnumerateInstanceVersion(a);
+            int vkVer1 = a.get(0);
+            if(VK_VERSION_MINOR(vkVer1)<2)
+            {
+                throw new RuntimeException("Vulkan 1.2 not supported!: "+"Only Has: "+ decDefVersion(vkVer1));
+            }
+            return vkVer1;
+        }
     }
 
     private String unsupportedExtensions(Set<String> requiredExtensions) {
