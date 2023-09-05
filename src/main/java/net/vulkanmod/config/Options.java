@@ -10,7 +10,7 @@ import net.vulkanmod.vulkan.Vulkan;
 
 public class Options {
 
-    //Fix Glitches+Crashes if Wayland and the Mesa RADV driver are used, and the available SwapChain images are set above 2 (possible RADV Bug?)
+    //Fix Glitches+Crashes if Wayland and the Mesa RADV driver are used, and Queue Frames is set above 2 (possible RADV Bug?)
     private static final boolean limitSwapChain = VideoResolution.isWayLand() && Vulkan.getDeviceInfo().isAMD();
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
@@ -170,7 +170,7 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("RenderFrameQueue", 2,
+                new RangeOption("Queue Frames", 2,
                         limitSwapChain ? 2 : 5, 1,
                         value -> {
                             config.frameQueueSize = value;
