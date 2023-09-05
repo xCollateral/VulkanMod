@@ -1,8 +1,11 @@
-package net.vulkanmod.vulkan;
+package net.vulkanmod.vulkan.framebuffer;
 
-import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.render.util.MathUtil;
+import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -11,10 +14,10 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import static net.vulkanmod.vulkan.Vulkan.getSwapchainExtent;
-import static net.vulkanmod.vulkan.Vulkan.window;
+import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -24,59 +27,81 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class SwapChain extends Framebuffer {
+    private static int DEFAULT_DEPTH_FORMAT = 0;
+
+    public static int getDefaultDepthFormat() {
+        return DEFAULT_DEPTH_FORMAT;
+    }
+
+    private RenderPass renderPass;
+    private long[] framebuffers;
 
     private long swapChain = VK_NULL_HANDLE;
-    private List<Long> swapChainImages;
+    private List<VulkanImage> swapChainImages;
     private VkExtent2D extent2D;
-    private List<Long> imageViews;
     public boolean isBGRAformat;
     private boolean vsync = false;
-
-    private final int framesNum;
 
     private int[] currentLayout;
 
     public SwapChain() {
-        this.framesNum = Initializer.CONFIG.frameQueueSize;
-        createSwapChain(this.framesNum);
+        DEFAULT_DEPTH_FORMAT = Device.findDepthFormat();
 
-        MemoryManager.createInstance(this.swapChainImages.size());
+        this.attachmentCount = 2;
 
-        this.depthFormat = Vulkan.findDepthFormat();
-        createDepthResources(false);
+        this.depthFormat = DEFAULT_DEPTH_FORMAT;
+        createSwapChain();
+
     }
 
-    public void recreateSwapChain() {
+    public int recreateSwapChain() {
         Synchronization.INSTANCE.waitFences();
 
-        createSwapChain(this.framesNum);
-
-        int framesNum = this.swapChainImages.size();
-
-        if (MemoryManager.getFrames() != framesNum) {
-            MemoryManager.createInstance(framesNum);
+        if(this.depthAttachment != null) {
+            this.depthAttachment.free();
+            this.depthAttachment = null;
         }
 
-        this.depthAttachment.free();
-        createDepthResources(false);
+        if(!DYNAMIC_RENDERING && framebuffers != null) {
+//            this.renderPass.cleanUp();
+            Arrays.stream(framebuffers).forEach(id -> vkDestroyFramebuffer(getDevice(), id, null));
+            framebuffers = null;
+        }
+
+        createSwapChain();
+
+        return this.swapChainImages.size();
     }
 
-    private void createSwapChain(int preferredImageCount) {
+    public void createSwapChain() {
+        int requestedFrames = Initializer.CONFIG.frameQueueSize;
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device.getPhysicalDevice(), stack);
+            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
 
-            VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-            int presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-            VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+            VkSurfaceFormatKHR surfaceFormat = getFormat(surfaceProperties.formats);
+            int presentMode = getPresentMode(surfaceProperties.presentModes);
+            VkExtent2D extent = getExtent(surfaceProperties.capabilities);
+
+            if(extent.width() == 0 && extent.height() == 0) {
+                if(swapChain != VK_NULL_HANDLE) {
+                    this.swapChainImages.forEach(image -> vkDestroyImageView(device, image.getImageView(), null));
+                    vkDestroySwapchainKHR(device, swapChain, null);
+                    swapChain = VK_NULL_HANDLE;
+                }
+
+                this.width = 0;
+                this.height = 0;
+                return;
+            }
 
             //Workaround for Mesa
-            IntBuffer imageCount = stack.ints(preferredImageCount);
-//            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), preferredImageCount));
+            IntBuffer imageCount = stack.ints(requestedFrames);
+//            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
 
-            if(swapChainSupport.capabilities.maxImageCount() > 0 && imageCount.get(0) > swapChainSupport.capabilities.maxImageCount()) {
-                imageCount.put(0, swapChainSupport.capabilities.maxImageCount());
+            if(surfaceProperties.capabilities.maxImageCount() > 0 && imageCount.get(0) > surfaceProperties.capabilities.maxImageCount()) {
+                imageCount.put(0, surfaceProperties.capabilities.maxImageCount());
             }
 
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
@@ -104,7 +129,7 @@ public class SwapChain extends Framebuffer {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
 
-            createInfo.preTransform(swapChainSupport.capabilities.currentTransform());
+            createInfo.preTransform(surfaceProperties.capabilities.currentTransform());
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
@@ -118,7 +143,7 @@ public class SwapChain extends Framebuffer {
             }
 
             if(swapChain != VK_NULL_HANDLE) {
-                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+                this.swapChainImages.forEach(iamge -> vkDestroyImageView(device, iamge.getImageView(), null));
                 vkDestroySwapchainKHR(device, swapChain, null);
             }
 
@@ -132,53 +157,80 @@ public class SwapChain extends Framebuffer {
 
             swapChainImages = new ArrayList<>(imageCount.get(0));
 
-            for(int i = 0;i < pSwapchainImages.capacity();i++) {
-                swapChainImages.add(pSwapchainImages.get(i));
-            }
-
-            createImageViews(this.format);
-
             this.width = extent2D.width();
             this.height = extent2D.height();
+
+            for(int i = 0;i < pSwapchainImages.capacity(); i++) {
+                long imageId = pSwapchainImages.get(i);
+                long imageView = VulkanImage.createImageView(imageId, this.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+                swapChainImages.add(new VulkanImage(imageId, this.format, 1, this.width, this.height, 4, 0, imageView));
+            }
             currentLayout = new int[this.swapChainImages.size()];
+
+            createDepthResources();
+
+            //RenderPass
+            if(this.renderPass == null)
+                createRenderPass();
+
+            if(!DYNAMIC_RENDERING)
+                createFramebuffers();
+
         }
     }
 
-    public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout, int frame) {
-        VulkanImage.transitionImageLayout(stack, commandBuffer, this.getImageId(frame), this.format, this.currentLayout[frame], newLayout, 1);
-        this.currentLayout[frame] = newLayout;
+    private void createRenderPass() {
+        this.hasColorAttachment = true;
+        this.hasDepthAttachment = true;
+
+        this.renderPass = new RenderPass.Builder(this).build();
     }
 
-    public void beginRendering(VkCommandBuffer commandBuffer, MemoryStack stack) {
-        VkRect2D renderArea = VkRect2D.callocStack(stack);
-        renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
-        renderArea.extent(getSwapchainExtent());
+    private void createFramebuffers() {
 
-        VkRenderingAttachmentInfo.Buffer colorAttachment = VkRenderingAttachmentInfo.calloc(1, stack);
-        colorAttachment.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR);
-        colorAttachment.imageView(this.getImageView(Drawer.getCurrentFrame()));
-        colorAttachment.imageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-        colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
-//        colorAttachment.clearValue(clearValues.get(0));
+        try(MemoryStack stack = MemoryStack.stackPush()) {
 
-        VkRenderingAttachmentInfo depthAttachment = VkRenderingAttachmentInfo.calloc(stack);
-        depthAttachment.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR);
-        depthAttachment.imageView(this.getDepthImageView());
-        depthAttachment.imageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-        depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-        depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
-//        depthAttachment.clearValue(clearValues.get(1));
+            framebuffers = new long[swapChainImages.size()];
 
-        VkRenderingInfo renderingInfo = VkRenderingInfo.calloc(stack);
-        renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_INFO_KHR);
-        renderingInfo.renderArea(renderArea);
-        renderingInfo.layerCount(1);
-        renderingInfo.pColorAttachments(colorAttachment);
-        renderingInfo.pDepthAttachment(depthAttachment);
+            for(int i = 0; i < swapChainImages.size(); ++i) {
 
-//        vkCmdBeginRendering(commandBuffer, renderingInfo);
-        KHRDynamicRendering.vkCmdBeginRenderingKHR(commandBuffer, renderingInfo);
+//                LongBuffer attachments = stack.longs(imageViews.get(i), depthAttachment.getImageView());
+                LongBuffer attachments = stack.longs(this.swapChainImages.get(i).getImageView(), depthAttachment.getImageView());
+
+                //attachments = stack.mallocLong(1);
+                LongBuffer pFramebuffer = stack.mallocLong(1);
+
+                VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack);
+                framebufferInfo.sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
+                framebufferInfo.renderPass(this.renderPass.getId());
+                framebufferInfo.width(this.width);
+                framebufferInfo.height(this.height);
+                framebufferInfo.layers(1);
+                framebufferInfo.pAttachments(attachments);
+
+                if(vkCreateFramebuffer(Vulkan.getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to create framebuffer");
+                }
+
+                this.framebuffers[i] = pFramebuffer.get(0);
+            }
+        }
+    }
+
+    public void beginRenderPass(VkCommandBuffer commandBuffer, MemoryStack stack) {
+        if(DYNAMIC_RENDERING) {
+//            this.colorAttachmentLayout(stack, commandBuffer, Drawer.getCurrentFrame());
+//            beginDynamicRendering(commandBuffer, stack);
+
+            this.renderPass.beginDynamicRendering(commandBuffer, stack);
+        }
+        else {
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentFrame()], stack);
+        }
+
+        Renderer.getInstance().setBoundRenderPass(renderPass);
+        Renderer.getInstance().setBoundFramebuffer(this);
     }
 
     public void colorAttachmentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int frame) {
@@ -188,7 +240,7 @@ public class SwapChain extends Framebuffer {
             barrier.oldLayout(this.currentLayout[frame]);
 //            barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             barrier.newLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            barrier.image(this.swapChainImages.get(frame));
+            barrier.image(this.swapChainImages.get(frame).getId());
 //            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 
             barrier.subresourceRange().baseMipLevel(0);
@@ -217,7 +269,7 @@ public class SwapChain extends Framebuffer {
         barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
         barrier.oldLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         barrier.newLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-        barrier.image(this.swapChainImages.get(frame));
+        barrier.image(this.swapChainImages.get(frame).getId());
 
         barrier.subresourceRange().baseMipLevel(0);
         barrier.subresourceRange().levelCount(1);
@@ -242,79 +294,49 @@ public class SwapChain extends Framebuffer {
         VkDevice device = Vulkan.getDevice();
 
 //        framebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
+
+        if(!DYNAMIC_RENDERING) {
+            Arrays.stream(framebuffers).forEach(id -> vkDestroyFramebuffer(device, id, null));
+        }
+
         vkDestroySwapchainKHR(device, this.swapChain, null);
-        imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+        swapChainImages.forEach(image -> vkDestroyImageView(device, image.getImageView(), null));
 
         this.depthAttachment.free();
     }
 
-    private void createImageViews(int format) {
-        imageViews = new ArrayList<>(swapChainImages.size());
-
-        for(long swapChainImage : swapChainImages) {
-            imageViews.add(VulkanImage.createImageView(swapChainImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1));
-        }
-
+    private void createDepthResources() {
+        this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                false, false);
     }
 
     public long getId() {
         return swapChain;
     }
 
-    public List<Long> getImages() {
+    public List<VulkanImage> getImages() {
         return swapChainImages;
     }
 
     public long getImageId(int i) {
-        return swapChainImages.get(i);
+        return swapChainImages.get(i).getId();
     }
 
     public VkExtent2D getExtent() {
         return extent2D;
     }
 
-//    public List<Long> getFramebuffers() {
-//        return swapChainFramebuffers.getFramebuffers();
-//    }
-
-    public List<Long> getImageViews() {
-        return this.imageViews;
+    public VulkanImage getColorAttachment() {
+        return this.swapChainImages.get(Renderer.getCurrentFrame());
     }
 
-    public long getImageView(int i) { return this.imageViews.get(i); }
+    public long getImageView(int i) { return this.swapChainImages.get(i).getImageView(); }
 
-    static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, MemoryStack stack) {
-
-        long surface = Vulkan.getSurface();
-        SwapChainSupportDetails details = new SwapChainSupportDetails();
-
-        details.capabilities = VkSurfaceCapabilitiesKHR.mallocStack(stack);
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, details.capabilities);
-
-        IntBuffer count = stack.ints(0);
-
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, null);
-
-        if(count.get(0) != 0) {
-            details.formats = VkSurfaceFormatKHR.mallocStack(count.get(0), stack);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, details.formats);
-        }
-
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device,surface, count, null);
-
-        if(count.get(0) != 0) {
-            details.presentModes = stack.mallocInt(count.get(0));
-            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, details.presentModes);
-        }
-
-        return details;
-    }
-
-    private VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR.Buffer availableFormats) {
+    private VkSurfaceFormatKHR getFormat(VkSurfaceFormatKHR.Buffer availableFormats) {
         List<VkSurfaceFormatKHR> list = availableFormats.stream().toList();
 
         VkSurfaceFormatKHR format = list.get(0);
-        boolean flag = true;
 
         for (VkSurfaceFormatKHR availableFormat : list) {
             if (availableFormat.format() == VK_FORMAT_R8G8B8A8_UNORM && availableFormat.colorSpace() == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -322,19 +344,20 @@ public class SwapChain extends Framebuffer {
 
             if (availableFormat.format() == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace() == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 format = availableFormat;
-                flag = false;
             }
         }
 
-        if(format.format() == VK_FORMAT_B8G8R8A8_UNORM) isBGRAformat = true;
+        if(format.format() == VK_FORMAT_B8G8R8A8_UNORM)
+            isBGRAformat = true;
         return format;
     }
 
-    private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
+    private int getPresentMode(IntBuffer availablePresentModes) {
         int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
         //fifo mode is the only mode that has to be supported
-        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
+        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
+            return VK_PRESENT_MODE_FIFO_KHR;
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
@@ -347,12 +370,13 @@ public class SwapChain extends Framebuffer {
 
     }
 
-    private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {
+    private static VkExtent2D getExtent(VkSurfaceCapabilitiesKHR capabilities) {
 
         if(capabilities.currentExtent().width() != UINT32_MAX) {
             return capabilities.currentExtent();
         }
 
+        //Fallback
         IntBuffer width = stackGet().ints(0);
         IntBuffer height = stackGet().ints(0);
 
@@ -363,18 +387,10 @@ public class SwapChain extends Framebuffer {
         VkExtent2D minExtent = capabilities.minImageExtent();
         VkExtent2D maxExtent = capabilities.maxImageExtent();
 
-        actualExtent.width(Mth.clamp(minExtent.width(), maxExtent.width(), actualExtent.width()));
-        actualExtent.height(Mth.clamp(minExtent.height(), maxExtent.height(), actualExtent.height()));
+        actualExtent.width(MathUtil.clamp(minExtent.width(), maxExtent.width(), actualExtent.width()));
+        actualExtent.height(MathUtil.clamp(minExtent.height(), maxExtent.height(), actualExtent.height()));
 
         return actualExtent;
-    }
-
-    static class SwapChainSupportDetails {
-
-        VkSurfaceCapabilitiesKHR capabilities;
-        VkSurfaceFormatKHR.Buffer formats;
-        IntBuffer presentModes;
-
     }
 
     public boolean isVsync() {
@@ -384,4 +400,10 @@ public class SwapChain extends Framebuffer {
     public void setVsync(boolean vsync) {
         this.vsync = vsync;
     }
+
+    public RenderPass getRenderPass() {
+        return renderPass;
+    }
+
+    public int getFramesNum() { return this.swapChainImages.size(); }
 }

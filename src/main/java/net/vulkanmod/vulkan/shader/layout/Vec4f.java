@@ -1,8 +1,8 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.util.MappedBuffer;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 public class Vec4f extends Field {
@@ -12,9 +12,9 @@ public class Vec4f extends Field {
     }
 
     void setSupplier() {
+        this.values = Uniforms.vec4f_uniformMap.get(this.fieldInfo.name);
 
-        if (this.fieldInfo.name.equals("ColorModulator")) this.values = VRenderSystem::getShaderColor;
-        else if (this.fieldInfo.name.equals("FogColor")) this.values = VRenderSystem::getShaderFogColor;
+        Validate.notNull(this.values, "Field name not found: " + this.fieldInfo.name);
     }
 
     void update() {

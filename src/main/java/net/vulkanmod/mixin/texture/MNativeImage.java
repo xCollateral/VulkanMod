@@ -2,11 +2,10 @@ package net.vulkanmod.mixin.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
-import net.vulkanmod.vulkan.util.VUtil;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -77,7 +76,7 @@ public abstract class MNativeImage {
     public void downloadTexture(int level, boolean removeAlpha) {
         RenderSystem.assertOnRenderThread();
 
-        VulkanImage.downloadTexture(this.width, this.height, 4, this.buffer, Vulkan.getSwapChainImages().get(Drawer.getCurrentFrame()));
+        VulkanImage.downloadTexture(this.width, this.height, 4, this.buffer, Vulkan.getSwapChain().getColorAttachment().getId());
 
         if (removeAlpha && this.format.hasAlpha()) {
             for (int i = 0; i < this.height; ++i) {
@@ -85,7 +84,7 @@ public abstract class MNativeImage {
                     int v = this.getPixelRGBA(j, i);
 
                     if(Vulkan.getSwapChain().isBGRAformat)
-                        v = VUtil.BGRAtoRGBA(v);
+                        v = ColorUtil.BGRAtoRGBA(v);
 
                     this.setPixelRGBA(j, i, v | 255 << this.format.alphaOffset());
                 }

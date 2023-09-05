@@ -22,7 +22,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
-    private static final int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
     private static VkDevice device = Vulkan.getDevice();
 
@@ -39,7 +39,21 @@ public class VulkanImage {
     public final int height;
     public final int formatSize;
 
+    private int usage;
+
     private int currentLayout;
+
+    public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
+        this.id = id;
+        this.imageView = imageView;
+
+        this.mipLevels = mipLevels;
+        this.width = width;
+        this.height = height;
+        this.formatSize = formatSize;
+        this.format = format;
+        this.usage = usage;
+    }
 
     private VulkanImage(int format, int mipLevels, int width, int height, int usage, int formatSize) {
         this.mipLevels = mipLevels;
@@ -47,6 +61,7 @@ public class VulkanImage {
         this.height = height;
         this.formatSize = formatSize;
         this.format = format;
+        this.usage = usage;
     }
 
     public static VulkanImage createTextureImage(int format, int mipLevels, int width, int height, int usage, int formatSize, boolean blur, boolean clamp) {
@@ -137,13 +152,13 @@ public class VulkanImage {
         CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().getCommandBuffer();
         transferDstLayout(commandBuffer);
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-        stagingBuffer.align(formatSize);
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
+        stagingBuffer.align(this.formatSize);
 
         stagingBuffer.copyBuffer((int)imageSize, buffer);
 
         copyBufferToImageCmd(commandBuffer, stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
-                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * formatSize), unpackRowLength, height);
+                (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
         long fence = GraphicsQueue.getInstance().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
@@ -485,6 +500,14 @@ public class VulkanImage {
         }
     }
 
+    public int getCurrentLayout() {
+        return currentLayout;
+    }
+
+    public void setCurrentLayout(int currentLayout) {
+        this.currentLayout = currentLayout;
+    }
+
     public long getId() { return id;}
     public long getAllocation() { return allocation;}
     public long getImageView() { return imageView; }
@@ -553,7 +576,7 @@ public class VulkanImage {
 
         private static int formatSize(int format) {
             return switch (format) {
-                case VK_FORMAT_R8G8B8A8_UNORM -> 4;
+                case VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB -> 4;
                 case VK_FORMAT_R8_UNORM -> 1;
                 default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));
             };

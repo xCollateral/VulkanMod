@@ -1,8 +1,8 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.util.MappedBuffer;
-import org.joml.Vector2f;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 public class Vec2f extends Field {
@@ -12,7 +12,9 @@ public class Vec2f extends Field {
     }
 
     void setSupplier() {
-        if (this.fieldInfo.name.equals("ScreenSize")) this.values = VRenderSystem::getScreenSize;
+        this.values = Uniforms.vec2f_uniformMap.get(this.fieldInfo.name);
+
+        Validate.notNull(this.values, "Field name not found: " + this.fieldInfo.name);
     }
 
     void update() {

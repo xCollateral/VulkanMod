@@ -86,9 +86,6 @@ public class ShaderInstanceM implements ShaderMixed {
      */
     @Overwrite
     public void close() {
-        if(pipeline == null)
-            return;
-
         pipeline.cleanUp();
     }
 

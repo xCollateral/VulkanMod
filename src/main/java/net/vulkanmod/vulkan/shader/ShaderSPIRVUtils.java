@@ -49,7 +49,7 @@ public class ShaderSPIRVUtils {
 
 //        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
-//        shaderc_compile_options_set_generate_debug_info(options);
+        shaderc_compile_options_set_generate_debug_info(options);
 
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 

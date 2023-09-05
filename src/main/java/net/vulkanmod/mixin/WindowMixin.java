@@ -2,11 +2,11 @@ package net.vulkanmod.mixin;
 
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Options;
 import net.vulkanmod.config.VideoResolution;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.glfw.GLFW;
@@ -45,6 +45,16 @@ public abstract class WindowMixin {
     @Shadow private int width;
     @Shadow private int height;
 
+    @Shadow @Final private WindowEventHandler eventHandler;
+
+    @Shadow public abstract int getWidth();
+
+    @Shadow public abstract int getHeight();
+
+    @Shadow private int framebufferWidth;
+
+    @Shadow private int framebufferHeight;
+
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V"))
     private void redirect(int hint, int value) { }
 
@@ -59,6 +69,8 @@ public abstract class WindowMixin {
     @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"))
     private void vulkanHint(WindowEventHandler windowEventHandler, ScreenManager screenManager, DisplayData displayData, String string, String string2, CallbackInfo ci) {
         GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+//        GLFW.glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+//        GLFW.glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
     }
 
     @Inject(method = "<init>", at = @At(value = "RETURN"))
@@ -192,4 +204,42 @@ public abstract class WindowMixin {
             GLFW.glfwSetWindowMonitor(this.window, 0L, this.x, this.y, this.width, this.height, -1);
         }
     }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void onFramebufferResize(long window, int width, int height) {
+        if (window == this.window) {
+            int k = this.getWidth();
+            int m = this.getHeight();
+            if (width != 0 && height != 0) {
+                this.framebufferWidth = width;
+                this.framebufferHeight = height;
+                if (this.framebufferWidth != k || this.framebufferHeight != m) {
+                    this.eventHandler.resizeDisplay();
+                }
+
+            }
+
+            if(width > 0 && height > 0)
+                Renderer.scheduleSwapChainUpdate();
+        }
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void onResize(long window, int width, int height) {
+//        System.out.printf("onResize: %d %d%n", width, height);
+        this.width = width;
+        this.height = height;
+
+        if(width > 0 && height > 0)
+            Renderer.scheduleSwapChainUpdate();
+    }
+
 }

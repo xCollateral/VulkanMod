@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.shader.layout;
 
+import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.util.MappedBuffer;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.function.Supplier;
@@ -13,7 +15,9 @@ public class Vec1i extends Field {
     }
 
     void setSupplier() {
-        if (this.fieldInfo.name.equals("EndPortalLayers")) this.intSupplier = () -> 15;
+        this.intSupplier = Uniforms.vec1i_uniformMap.get(this.fieldInfo.name);
+
+        Validate.notNull(this.intSupplier, "Field name not found: " + this.fieldInfo.name);
     }
 
     void update() {

@@ -30,7 +30,7 @@ public class IndirectBuffer extends Buffer {
             if(commandBuffer == null)
                 commandBuffer = TransferQueue.getInstance().beginCommands();
 
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
             stagingBuffer.copyBuffer(size, byteBuffer);
 
             TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.id, stagingBuffer.offset, this.getId(), this.getUsedBytes(), size);

@@ -8,11 +8,10 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.VertexFormatMixed;
-import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Framebuffer;
+import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
@@ -31,14 +30,10 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShader;
 import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShaderFile;
-import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
@@ -47,17 +42,21 @@ public class Pipeline {
 
     private static final VkDevice DEVICE = Vulkan.getDevice();
     private static final long PIPELINE_CACHE = createPipelineCache();
-    private static final int IMAGES_SIZE = getSwapChainImages().size();
+    private static final List<Pipeline> PIPELINES = new LinkedList<>();
+
+    public static void recreateDescriptorSets(int frames) {
+        PIPELINES.forEach(pipeline -> {
+            pipeline.destroyDescriptorSets();
+            pipeline.createDescriptorSets(frames);
+        });
+    }
 
     private long descriptorSetLayout;
     private long pipelineLayout;
     private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
-    private final DescriptorSets[] descriptorSets = new DescriptorSets[IMAGES_SIZE];
     private final VertexFormat vertexFormat;
 
-    private int colorFormat;
-    private int depthFormat;
-
+    private DescriptorSets[] descriptorSets;
     private final List<UBO> UBOs;
     private final ManualUBO manualUBO;
     private final List<Sampler> samplers;
@@ -66,26 +65,24 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, SPIRV vertSpirv, SPIRV fragSpirv) {
+    public Pipeline(VertexFormat vertexFormat, RenderPass renderPass, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, SPIRV vertSpirv, SPIRV fragSpirv) {
         this.UBOs = UBOs;
         this.manualUBO = manualUBO;
         this.samplers = samplers;
         this.pushConstants = pushConstants;
         this.vertexFormat = vertexFormat;
 
-        this.colorFormat = colorFormat;
-        this.depthFormat = depthFormat;
-
-//        parseBindings();
         createDescriptorSetLayout();
         createPipelineLayout();
         createShaderModules(vertSpirv, fragSpirv);
 
-        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
-                this::createGraphicsPipeline);
-        createDescriptorSets();
-        //allocateDescriptorSets();
+        if(renderPass != null)
+            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, renderPass),
+                    this::createGraphicsPipeline);
 
+        createDescriptorSets(Vulkan.getSwapChainImages().size());
+
+        PIPELINES.add(this);
     }
 
     private long createGraphicsPipeline(PipelineState state) {
@@ -141,8 +138,10 @@ public class Pipeline {
             rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
             rasterizer.lineWidth(1.0f);
 
-            if(state.cullState) rasterizer.cullMode(VK_CULL_MODE_BACK_BIT);
-            else rasterizer.cullMode(VK_CULL_MODE_NONE);
+            if(state.cullState)
+                rasterizer.cullMode(VK_CULL_MODE_BACK_BIT);
+            else
+                rasterizer.cullMode(VK_CULL_MODE_NONE);
 
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
             rasterizer.depthBiasEnable(true);
@@ -197,12 +196,6 @@ public class Pipeline {
             dynamicStates.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
             dynamicStates.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
 
-            //dyn-rendering
-            VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
-            renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
-            renderingInfo.pColorAttachmentFormats(stack.ints(this.colorFormat));
-            renderingInfo.depthAttachmentFormat(this.depthFormat);
-
             VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.callocStack(1, stack);
             pipelineInfo.sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
             pipelineInfo.pStages(shaderStages);
@@ -215,11 +208,21 @@ public class Pipeline {
             pipelineInfo.pColorBlendState(colorBlending);
             pipelineInfo.pDynamicState(dynamicStates);
             pipelineInfo.layout(pipelineLayout);
-//            pipelineInfo.renderPass(Vulkan.getRenderPass());
-//            pipelineInfo.subpass(0);
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
-            pipelineInfo.pNext(renderingInfo);
+
+            if(!Vulkan.DYNAMIC_RENDERING) {
+                pipelineInfo.renderPass(state.renderPass.getId());
+                pipelineInfo.subpass(0);
+            }
+            else {
+                //dyn-rendering
+                VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
+                renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
+                renderingInfo.pColorAttachmentFormats(stack.ints(state.renderPass.getFramebuffer().getFormat()));
+                renderingInfo.depthAttachmentFormat(state.renderPass.getFramebuffer().getDepthFormat());
+                pipelineInfo.pNext(renderingInfo);
+            }
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
@@ -300,8 +303,9 @@ public class Pipeline {
         }
     }
 
-    private void createDescriptorSets() {
-        for(int i = 0; i < IMAGES_SIZE; ++i) {
+    private void createDescriptorSets(int frames) {
+        descriptorSets = new DescriptorSets[frames];
+        for(int i = 0; i < frames; ++i) {
             descriptorSets[i] = new DescriptorSets(i);
         }
     }
@@ -315,9 +319,7 @@ public class Pipeline {
         vkDestroyShaderModule(DEVICE, vertShaderModule, null);
         vkDestroyShaderModule(DEVICE, fragShaderModule, null);
 
-        for(DescriptorSets descriptorSets : this.descriptorSets) {
-            descriptorSets.cleanUp();
-        }
+        destroyDescriptorSets();
 
         graphicsPipelines.forEach((state, pipeline) -> {
             vkDestroyPipeline(DEVICE, pipeline, null);
@@ -326,6 +328,17 @@ public class Pipeline {
 
         vkDestroyDescriptorSetLayout(DEVICE, descriptorSetLayout, null);
         vkDestroyPipelineLayout(DEVICE, pipelineLayout, null);
+
+        PIPELINES.remove(this);
+        Renderer.getInstance().removeUsedPipeline(this);
+    }
+
+    private void destroyDescriptorSets() {
+        for(DescriptorSets descriptorSets : this.descriptorSets) {
+            descriptorSets.cleanUp();
+        }
+
+        this.descriptorSets = null;
     }
 
     public ManualUBO getManualUBO() { return this.manualUBO; }
@@ -475,14 +488,13 @@ public class Pipeline {
     }
 
     public void resetDescriptorPool(int i) {
-        this.descriptorSets[i].resetIdx();
+        if(this.descriptorSets != null)
+                this.descriptorSets[i].resetIdx();
 
     }
 
     public long getHandle(PipelineState state) {
-        return graphicsPipelines.computeIfAbsent(state, state1 -> {
-            return createGraphicsPipeline(state1);
-        });
+        return graphicsPipelines.computeIfAbsent(state, this::createGraphicsPipeline);
     }
 
     public PushConstants getPushConstants() { return this.pushConstants; }
@@ -492,7 +504,7 @@ public class Pipeline {
     public record Sampler(int binding, String type, String name) {}
 
     public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
-        UniformBuffers uniformBuffers = Drawer.getInstance().getUniformBuffers();
+        UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
         this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers);
     }
 
@@ -593,7 +605,7 @@ public class Pipeline {
 
             this.currentSet = this.sets.get(this.currentIdx);
 
-            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(UBOs.size() + samplers.size(), stack);
+            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(UBOs.size() + samplers.size(), stack);
             VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[UBOs.size()];
 
             //TODO maybe ubo update is not needed everytime
@@ -717,6 +729,14 @@ public class Pipeline {
     }
 
     public static class Builder {
+
+        public static Pipeline create(VertexFormat format, String path) {
+            Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
+            pipelineBuilder.parseBindingsJSON();
+            pipelineBuilder.compileShaders();
+            return pipelineBuilder.createPipeline();
+        }
+
         private final VertexFormat vertexFormat;
         private final String shaderPath;
         private List<UBO> UBOs;
@@ -728,7 +748,7 @@ public class Pipeline {
         private SPIRV vertShaderSPIRV;
         private SPIRV fragShaderSPIRV;
 
-        private Framebuffer framebuffer;
+        private RenderPass renderPass;
 
         public Builder(VertexFormat vertexFormat, String path) {
             this.vertexFormat = vertexFormat;
@@ -744,13 +764,10 @@ public class Pipeline {
                     && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
                     "Cannot create Pipeline: resources missing");
 
-            if(this.framebuffer == null)
-                this.framebuffer = Vulkan.getSwapChain();
-
             if(this.manualUBO != null)
                 this.UBOs.add(this.manualUBO);
 
-            return new Pipeline(this.vertexFormat, this.framebuffer.format, this.framebuffer.depthFormat,
+            return new Pipeline(this.vertexFormat, this.renderPass,
                     this.UBOs, this.manualUBO, this.samplers, this.pushConstants, this.vertShaderSPIRV, this.fragShaderSPIRV);
         }
 
@@ -777,7 +794,11 @@ public class Pipeline {
 
             JsonObject jsonObject;
 
-            InputStream stream = Pipeline.class.getResourceAsStream("/assets/vulkanmod/shaders/" + this.shaderPath + ".json");
+            String resourcePath = String.format("/assets/vulkanmod/shaders/%s.json", this.shaderPath);
+            InputStream stream = Pipeline.class.getResourceAsStream(resourcePath);
+
+            if(stream == null)
+                throw new NullPointerException(String.format("Failed to load: %s", resourcePath));
 
             jsonObject = GsonHelper.parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
 

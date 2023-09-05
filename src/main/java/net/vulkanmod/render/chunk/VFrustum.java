@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.minecraft.world.phys.AABB;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
@@ -30,7 +31,7 @@ public class VFrustum {
         return this;
     }
 
-    public void prepare(double camX, double camY, double camZ) {
+    public void setCamOffset(double camX, double camY, double camZ) {
         this.camX = camX;
         this.camY = camY;
         this.camZ = camZ;
@@ -55,5 +56,19 @@ public class VFrustum {
 
     private int intersectAab(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
         return this.frustum.intersectAab(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    public boolean isVisible(AABB aABB) {
+        return this.cubeInFrustum(aABB.minX, aABB.minY, aABB.minZ, aABB.maxX, aABB.maxY, aABB.maxZ);
+    }
+
+    private boolean cubeInFrustum(double d, double e, double f, double g, double h, double i) {
+        float j = (float)(d - this.camX);
+        float k = (float)(e - this.camY);
+        float l = (float)(f - this.camZ);
+        float m = (float)(g - this.camX);
+        float n = (float)(h - this.camY);
+        float o = (float)(i - this.camZ);
+        return this.frustum.testAab(j, k, l, m, n, o);
     }
 }

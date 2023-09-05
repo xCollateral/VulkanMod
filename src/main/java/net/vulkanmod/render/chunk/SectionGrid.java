@@ -353,15 +353,19 @@ public class SectionGrid {
     }
 
     @Nullable
-    public RenderSection getRenderSectionAt(BlockPos blockPos) {
-        int i = blockPos.getX() >> 4;
-        int j = (blockPos.getY() - this.level.getMinBuildHeight()) >> 4;
-        int k = blockPos.getZ() >> 4;
-
-        return this.getRenderSectionAt(i, j, k);
+    public RenderSection getSectionAtBlockPos(BlockPos blockPos) {
+        return this.getSectionAtBlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ());
     }
 
-    public RenderSection getRenderSectionAt(int i, int j, int k) {
+    public RenderSection getSectionAtBlockPos(int x, int y, int z) {
+        int i = x >> 4;
+        int j = (y - this.level.getMinBuildHeight()) >> 4;
+        int k = z >> 4;
+
+        return this.getSectionAtSectionPos(i, j, k);
+    }
+
+    public RenderSection getSectionAtSectionPos(int i, int j, int k) {
         if (j >= 0 && j < this.gridHeight) {
             i = Math.floorMod(i, this.gridWidth);
             k = Math.floorMod(k, this.gridWidth);

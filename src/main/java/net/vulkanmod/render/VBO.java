@@ -7,30 +7,24 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
     private VertexBuffer vertexBuffer;
-//    private AsyncVertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
-//    private VertexFormat.IndexType indexType;
+
     private int indexCount;
     private int vertexCount;
     private VertexFormat.Mode mode;
-//    private boolean sequentialIndices;
-//    private VertexFormat vertexFormat;
-//    private int vertexOffset;
 
     private boolean autoIndexed = false;
-//    private boolean uploaded = false;
 
     public VBO() {}
 
@@ -50,15 +44,14 @@ public class VBO {
     }
 
     private void configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
-//        boolean bl = !parameters.format().equals(this.vertexFormat);
         if (!parameters.indexOnly()) {
 
-            if(vertexBuffer != null) this.vertexBuffer.freeBuffer();
+            if(vertexBuffer != null)
+                this.vertexBuffer.freeBuffer();
+
             this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-//            this.vertexBuffer = new AsyncVertexBuffer(data.remaining());
             vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
 
-//            this.uploaded = false;
         }
     }
 
@@ -66,22 +59,34 @@ public class VBO {
         if (parameters.sequentialIndex()) {
 
             AutoIndexBuffer autoIndexBuffer;
-            if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
-                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
-            } else {
-                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
-                this.indexCount = (vertexCount - 2) * 3;
+            switch (this.mode) {
+                case TRIANGLE_FAN -> {
+                    autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
+                    this.indexCount = (vertexCount - 2) * 3;
+                }
+                case QUADS -> {
+                    autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
+                }
+                case TRIANGLES -> {
+                    autoIndexBuffer = null;
+                }
+                default -> throw new IllegalStateException("Unexpected draw mode:" + this.mode);
             }
 
-            if(indexBuffer != null && !this.autoIndexed) indexBuffer.freeBuffer();
+            if(indexBuffer != null && !this.autoIndexed)
+                indexBuffer.freeBuffer();
 
-            autoIndexBuffer.checkCapacity(vertexCount);
-            indexBuffer = autoIndexBuffer.getIndexBuffer();
+            if(autoIndexBuffer != null) {
+                autoIndexBuffer.checkCapacity(vertexCount);
+                indexBuffer = autoIndexBuffer.getIndexBuffer();
+            }
+
             this.autoIndexed = true;
 
         }
         else {
-            if(indexBuffer != null) this.indexBuffer.freeBuffer();
+            if(indexBuffer != null)
+                this.indexBuffer.freeBuffer();
             this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
 //            this.indexBuffer = new AsyncIndexBuffer(data.remaining());
             indexBuffer.copyBuffer(data);
@@ -89,19 +94,31 @@ public class VBO {
 
     }
 
-    public void _drawWithShader(Matrix4f MV, Matrix4f P, ShaderInstance shader) {
+    public void drawWithShader(Matrix4f MV, Matrix4f P, ShaderInstance shader) {
         if (this.indexCount != 0) {
             RenderSystem.assertOnRenderThread();
 
             RenderSystem.setShader(() -> shader);
 
+            drawWithShader(MV, P, ((ShaderMixed)shader).getPipeline());
+
+        }
+    }
+
+    public void drawWithShader(Matrix4f MV, Matrix4f P, Pipeline pipeline) {
+        if (this.indexCount != 0) {
+            RenderSystem.assertOnRenderThread();
+
             VRenderSystem.applyMVP(MV, P);
 
-            Drawer drawer = Drawer.getInstance();
-            Pipeline pipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
-            drawer.bindPipeline(pipeline);
-            drawer.uploadAndBindUBOs(pipeline);
-            drawer.drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            Renderer renderer = Renderer.getInstance();
+            renderer.bindPipeline(pipeline);
+            renderer.uploadAndBindUBOs(pipeline);
+
+            if(indexBuffer != null)
+                Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            else
+                Renderer.getDrawer().draw(vertexBuffer, vertexCount);
 
             VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
@@ -109,26 +126,12 @@ public class VBO {
     }
 
     public void drawChunkLayer() {
-//        if (this.indexCount != 0) {
-//        if(!this.uploaded) {
-//            this.checkUploadStatus();
-//            if(!this.uploaded) return;
-//        }
         if (this.indexCount != 0) {
 
             RenderSystem.assertOnRenderThread();
-            Drawer drawer = Drawer.getInstance();
-            drawer.drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
         }
     }
-
-//    public void checkUploadStatus() {
-//        if(!(this.indexBuffer instanceof AsyncIndexBuffer asyncIndexBuffer))
-//            this.uploaded = this.vertexBuffer.checkStatus();
-//        else {
-//            this.uploaded = this.vertexBuffer.checkStatus() && asyncIndexBuffer.checkStatus();
-//        }
-//    }
 
     public void close() {
         if(vertexCount <= 0) return;

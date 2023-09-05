@@ -2,10 +2,9 @@ package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Framebuffer;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.util.DrawUtil;
-import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -49,7 +48,7 @@ public class RenderTargetMixin {
      */
     @Overwrite
     public void bindWrite(boolean updateViewport) {
-        Drawer.getInstance().beginRendering(framebuffer);
+        Renderer.getInstance().beginRendering(framebuffer);
     }
 
     /**

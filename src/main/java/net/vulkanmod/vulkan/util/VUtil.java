@@ -114,27 +114,9 @@ public class VUtil {
         floatBuffer.position(0);
     }
 
-    public static int align(int num, int align) {
-        int r = num % align;
-        return r == 0 ? num : num + align - r;
+    public static int align(int x, int align) {
+        int r = x % align;
+        return r == 0 ? x : x + align - r;
     }
 
-    public static int packColor(float r, float g, float b, float a) {
-        int color = 0;
-        color += (int)(a * 255) << 24;
-        color += (int)(r * 255) << 16;
-        color += (int)(g * 255) << 8;
-        color += (int)(b * 255);
-
-        return color;
-    }
-
-    public static int BGRAtoRGBA(int v) {
-        byte r = (byte) (v >> 16);
-        byte g = (byte) (v >> 8);
-        byte b = (byte) (v);
-        byte a = (byte) (v >> 24);
-
-        return r & 0xFF | (g << 8) & 0xFF00 | (b << 16) & 0xFF0000 | (a << 24) & 0xFF000000;
-     }
 }

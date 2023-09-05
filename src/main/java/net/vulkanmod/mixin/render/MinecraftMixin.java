@@ -7,6 +7,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 
 import net.minecraft.client.gui.font.FontManager;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -19,8 +20,9 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.render.profiling.Profiler2;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -53,19 +55,18 @@ public class MinecraftMixin {
     @Shadow @Final private PaintingTextureManager paintingTextures;
     @Shadow public boolean noRender;
 
-    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", shift = At.Shift.BEFORE))
-    private void beginRender(boolean tick, CallbackInfo ci) {
-        Drawer drawer = Drawer.getInstance();
-        drawer.initiateRenderPass();
+    @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void beginRender(int i, boolean bl) {
+        Renderer renderer = Renderer.getInstance();
+        renderer.beginFrame();
     }
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
     private void submitRender(boolean tick, CallbackInfo ci) {
-        Drawer drawer = Drawer.getInstance();
+        Renderer renderer = Renderer.getInstance();
         Profiler2 p = Profiler2.getMainProfiler();
         p.push("submitRender");
-        drawer.endRenderPass();
-        drawer.submitDraw();
+        renderer.endFrame();
         p.pop();
     }
 
@@ -99,15 +100,12 @@ public class MinecraftMixin {
     locals = LocalCapture.CAPTURE_FAILHARD)
     private void redirectResourceTick(boolean bl, CallbackInfo ci, long l, Runnable runnable, int i, int j) {
         int n = Math.min(10, i) - 1;
-        if(j == n)
-            SpriteUtil.setDoUpload(true);
-        else
-            SpriteUtil.setDoUpload(false);
+        SpriteUtil.setDoUpload(j == n);
     }
 
     @Inject(method = "runTick", at = @At(value = "HEAD"))
     private void resetBuffers(boolean bl, CallbackInfo ci) {
-        Drawer.getInstance().resetBuffers();
+        Renderer.getInstance().resetBuffers();
     }
 
 
@@ -132,7 +130,7 @@ public class MinecraftMixin {
 
     @Inject(method = "resizeDisplay", at = @At("HEAD"))
     public void onResolutionChanged(CallbackInfo ci) {
-        Drawer.shouldRecreate = true;
+        Renderer.scheduleSwapChainUpdate();
     }
 
 }

@@ -10,13 +10,11 @@ import net.vulkanmod.render.vertex.VertexUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-import java.util.Iterator;
 import java.util.List;
 
 @Mixin(ModelPart.class)
@@ -72,42 +70,6 @@ public class ModelPartM {
                 }
             }
         }
-
-//        Iterator var9 = this.cubes.iterator();
-//
-//        while(var9.hasNext()) {
-//            ModelPart.Cube cube = (ModelPart.Cube)var9.next();
-////            cube.compile(pose, vertexConsumer, i, j, r, g, b, a);
-//
-//            Matrix4f matrix4f = pose.pose();
-//            Matrix3f matrix3f = pose.normal();
-//
-//
-//            ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
-//            CubeModel cubeModel = cubeMixed.getCubeModel();
-//
-//            ModelPart.Polygon[] var11 = cubeModel.getPolygons();
-//            int var12 = var11.length;
-//
-//            for(int var13 = 0; var13 < var12; ++var13) {
-//                ModelPart.Polygon polygon = var11[var13];
-//                Vector3f vector3f = matrix3f.transform(new Vector3f(polygon.normal));
-//                float l = vector3f.x();
-//                float m = vector3f.y();
-//                float n = vector3f.z();
-//                ModelPart.Vertex[] var19 = polygon.vertices;
-//                int var20 = var19.length;
-//
-//                for(int var21 = 0; var21 < var20; ++var21) {
-//                    ModelPart.Vertex vertex = var19[var21];
-//                    float o = vertex.pos.x() / 16.0F;
-//                    float p = vertex.pos.y() / 16.0F;
-//                    float q = vertex.pos.z() / 16.0F;
-//                    Vector4f vector4f = matrix4f.transform(new Vector4f(o, p, q, 1.0F));
-//                    vertexConsumer.vertex(vector4f.x(), vector4f.y(), vector4f.z(), r, g, b, a, vertex.u, vertex.v, j, i, l, m, n);
-//                }
-//            }
-//        }
 
     }
 }

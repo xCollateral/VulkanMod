@@ -1,8 +1,7 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.util.MappedBuffer;
+import net.vulkanmod.vulkan.shader.Uniforms;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.function.Supplier;
@@ -15,14 +14,9 @@ public class Vec1f extends Field {
     }
 
     void setSupplier() {
-        switch (this.fieldInfo.name) {
-            case "FogStart" -> this.floatSupplier = RenderSystem::getShaderFogStart;
-            case "FogEnd" -> this.floatSupplier = RenderSystem::getShaderFogEnd;
-            case "LineWidth" -> this.floatSupplier = RenderSystem::getShaderLineWidth;
-            case "GameTime" -> this.floatSupplier = RenderSystem::getShaderGameTime;
-            case "AlphaCutout" -> this.floatSupplier = () -> VRenderSystem.alphaCutout;
-//            default -> throw new IllegalArgumentException("Unexpected value: " + this.fieldInfo.name);
-        }
+        this.floatSupplier = Uniforms.vec1f_uniformMap.get(this.fieldInfo.name);
+
+        Validate.notNull(this.floatSupplier, "Field name not found: " + this.fieldInfo.name);
     }
 
     void update() {
