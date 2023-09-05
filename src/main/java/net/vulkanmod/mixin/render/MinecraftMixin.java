@@ -6,10 +6,11 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.TimerQuery;
 import net.minecraft.SharedConstants;
 import net.minecraft.Util;
+import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
-
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.font.FontManager;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.main.GameConfig;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -24,10 +25,11 @@ import net.minecraft.server.packs.VanillaPackResources;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.render.texture.SpriteUtil;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -60,6 +62,17 @@ public class MinecraftMixin {
     @Shadow @Final private MobEffectTextureManager mobEffectTextures;
     @Shadow @Final private PaintingTextureManager paintingTextures;
     @Shadow public boolean noRender;
+    @Shadow @Final public Options options;
+
+    @Inject(method = "<init>", at = @At(value = "RETURN"))
+    private void forceGraphicsMode(GameConfig gameConfig, CallbackInfo ci) {
+        var graphicsModeOption = this.options.graphicsMode();
+
+        if(graphicsModeOption.get() == GraphicsStatus.FABULOUS) {
+            Initializer.LOGGER.error("Fabulous graphics mode not supported, forcing Fancy");
+            graphicsModeOption.set(GraphicsStatus.FANCY);
+        }
+    }
 
     @Shadow @Final private VanillaPackResources vanillaPackResources;
 
