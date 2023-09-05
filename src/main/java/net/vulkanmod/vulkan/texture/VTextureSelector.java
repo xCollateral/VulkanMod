@@ -4,9 +4,12 @@ import java.nio.ByteBuffer;
 
 public abstract class VTextureSelector {
     private static VulkanImage boundTexture;
+    private static VulkanImage boundTexture2;
+    private static VulkanImage boundTexture3;
     private static VulkanImage lightTexture;
     private static VulkanImage overlayTexture;
     private static VulkanImage framebufferTexture;
+    private static VulkanImage framebufferTexture2;
 
     private static final VulkanImage whiteTexture = VulkanImage.createWhiteTexture();
 
@@ -24,8 +27,20 @@ public abstract class VTextureSelector {
         }
     }
 
+    public static void bindTexture2(VulkanImage texture) {
+        boundTexture2 = texture;
+    }
+
+    public static void bindTexture3(VulkanImage texture) {
+        boundTexture3 = texture;
+    }
+
     public static void bindFramebufferTexture(VulkanImage texture) {
         framebufferTexture = texture;
+    }
+
+    public static void bindFramebufferTexture2(VulkanImage texture) {
+        framebufferTexture2 = texture;
     }
 
     public static void uploadSubTexture(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
@@ -42,6 +57,10 @@ public abstract class VTextureSelector {
             case "Sampler0" -> getBoundTexture();
             case "Sampler1" -> getOverlayTexture();
             case "Sampler2" -> getLightTexture();
+            case "Sampler3" -> boundTexture2;
+            case "Sampler4" -> boundTexture3;
+            case "Framebuffer0" -> framebufferTexture;
+            case "Framebuffer1" -> framebufferTexture2;
             default -> throw new RuntimeException("unknown sampler name: " + name);
         };
     }

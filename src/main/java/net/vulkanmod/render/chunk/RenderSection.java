@@ -26,6 +26,7 @@ public class RenderSection {
     private final RenderSection[] neighbours = new RenderSection[6];
     public byte frustumIndex;
     private short lastFrame = -1;
+    private short lastFrame2 = -1;
 
     private final CompileStatus compileStatus = new CompileStatus();
 
@@ -45,9 +46,9 @@ public class RenderSection {
 
     //Graph-info
     public Direction mainDir;
-    byte directions;
-    byte step;
-    byte directionChanges;
+    public byte directions;
+    public byte step;
+    public byte directionChanges;
     byte sourceDirs;
 
 
@@ -283,8 +284,20 @@ public class RenderSection {
 
     public boolean setLastFrame(short i) {
         boolean res = i == this.lastFrame ;
-        if(!res) this.lastFrame = i;
+        if(!res)
+            this.lastFrame = i;
         return res;
+    }
+
+    public boolean setLastFrame2(short i) {
+        boolean res = i == this.lastFrame2 ;
+        if(!res)
+            this.lastFrame2 = i;
+        return res;
+    }
+
+    public short getLastFrame() {
+        return this.lastFrame;
     }
 
     static class CompileStatus {

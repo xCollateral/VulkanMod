@@ -8,6 +8,7 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.vulkanmod.config.RangeOption;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.glfw.GLFW;
 
@@ -40,7 +41,7 @@ public class RangeOptionWidget extends OptionWidget {
 //        this.drawTexture(matrices, this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y, 0, 46 + i, 4, 20);
 //        this.drawTexture(matrices, this.controlX + (int)(this.value * (this.controlWidth - 8)) + 4, this.y, 196, 46 + i, 4, 20);
 
-        int color = this.controlHovered ? VUtil.packColor(1.0f, 1.0f, 1.0f, 1.0f) : VUtil.packColor(1.0f, 1.0f, 1.0f, 0.8f);
+        int color = this.controlHovered ? ColorUtil.packColorInt(1.0f, 1.0f, 1.0f, 1.0f) : ColorUtil.packColorInt(1.0f, 1.0f, 1.0f, 0.8f);
 
         guiGraphics.fill(this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y + 20, this.controlX + (int)(this.value * (this.controlWidth - 8)) + 8, this.y, color);
     }

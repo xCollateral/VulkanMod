@@ -10,12 +10,11 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.vulkanmod.vulkan.shader.PipelineState;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
-import oshi.SystemInfo;
-import oshi.hardware.CentralProcessor;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -62,7 +61,7 @@ public class VRenderSystem {
     public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer; }
 
     public static int maxSupportedTextureSize() {
-        return Vulkan.deviceProperties.limits().maxImageDimension2D();
+        return Device.deviceProperties.limits().maxImageDimension2D();
     }
 
     public static void renderCrosshair(int p_69348_, boolean p_69349_, boolean p_69350_, boolean p_69351_) {
@@ -166,17 +165,11 @@ public class VRenderSystem {
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
-        shaderColor.putFloat(0, f1);
-        shaderColor.putFloat(4, f2);
-        shaderColor.putFloat(8, f3);
-        shaderColor.putFloat(12, f4);
+        ColorUtil.setRGBA_Buffer(shaderColor, f1, f2, f3, f4);
     }
 
     public static void setShaderFogColor(float f1, float f2, float f3, float f4) {
-        shaderFogColor.putFloat(0, f1);
-        shaderFogColor.putFloat(4, f2);
-        shaderFogColor.putFloat(8, f3);
-        shaderFogColor.putFloat(12, f4);
+        ColorUtil.setRGBA_Buffer(shaderFogColor, f1, f2, f3, f4);
     }
 
     public static MappedBuffer getShaderColor() {
@@ -188,26 +181,23 @@ public class VRenderSystem {
     }
 
     public static void enableColorLogicOp() {
-        Drawer.currentLogicOpState = new PipelineState.LogicOpState(true, 0);
+        PipelineState.currentLogicOpState = new PipelineState.LogicOpState(true, 0);
     }
 
     public static void disableColorLogicOp() {
-        Drawer.currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
+        PipelineState.currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
     }
 
     public static void logicOp(GlStateManager.LogicOp p_69836_) {
-        Drawer.currentLogicOpState.setLogicOp(p_69836_);
+        PipelineState.currentLogicOpState.setLogicOp(p_69836_);
     }
 
     public static void clearColor(float f1, float f2, float f3, float f4) {
-        clearColor.put(0, f1);
-        clearColor.put(1, f2);
-        clearColor.put(2, f3);
-        clearColor.put(3, f4);
+        ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
     }
 
     public static void clear(int v) {
-        Drawer.clearAttachments(v);
+        Renderer.clearAttachments(v);
     }
 
     public static void disableDepthTest() {
@@ -248,11 +238,11 @@ public class VRenderSystem {
     }
 
     public static void enablePolygonOffset() {
-        Drawer.setDepthBias(depthBias[0], depthBias[1]);
+        Renderer.setDepthBias(depthBias[0], depthBias[1]);
     }
 
     public static void disablePolygonOffset() {
-        Drawer.setDepthBias(0.0F, 0.0F);
+        Renderer.setDepthBias(0.0F, 0.0F);
     }
 
     public static MappedBuffer getScreenSize() {
@@ -276,26 +266,26 @@ public class VRenderSystem {
     }
 
     public static void enableBlend() {
-        Drawer.blendInfo.enabled = true;
+        PipelineState.blendInfo.enabled = true;
     }
 
     public static void disableBlend() {
-        Drawer.blendInfo.enabled = false;
+        PipelineState.blendInfo.enabled = false;
     }
 
     public static void blendFunc(GlStateManager.SourceFactor sourceFactor, GlStateManager.DestFactor destFactor) {
-        Drawer.blendInfo.setBlendFunction(sourceFactor, destFactor);
+        PipelineState.blendInfo.setBlendFunction(sourceFactor, destFactor);
     }
 
     public static void blendFunc(int srcFactor, int dstFactor) {
-        Drawer.blendInfo.setBlendFunction(srcFactor, dstFactor);
+        PipelineState.blendInfo.setBlendFunction(srcFactor, dstFactor);
     }
 
     public static void blendFuncSeparate(GlStateManager.SourceFactor p_69417_, GlStateManager.DestFactor p_69418_, GlStateManager.SourceFactor p_69419_, GlStateManager.DestFactor p_69420_) {
-        Drawer.blendInfo.setBlendFuncSeparate(p_69417_, p_69418_, p_69419_, p_69420_);
+        PipelineState.blendInfo.setBlendFuncSeparate(p_69417_, p_69418_, p_69419_, p_69420_);
     }
 
     public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
-        Drawer.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
+        PipelineState.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
     }
 }

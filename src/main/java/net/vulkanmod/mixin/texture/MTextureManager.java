@@ -5,9 +5,7 @@ import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
 import net.minecraft.resources.ResourceLocation;
-import net.vulkanmod.render.texture.SpriteUtil;
-import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
+import net.vulkanmod.vulkan.Renderer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -29,19 +27,20 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-        if(Drawer.skipRendering)
+        if(Renderer.skipRendering)
             return;
 
-        if(SpriteUtil.shouldUpload())
-            GraphicsQueue.getInstance().startRecording();
-        for (Tickable tickable : this.tickableTextures) {
-            tickable.tick();
-        }
-        if(SpriteUtil.shouldUpload()) {
-            SpriteUtil.transitionLayouts(GraphicsQueue.getInstance().getCommandBuffer());
-            GraphicsQueue.getInstance().endRecordingAndSubmit();
-//            Synchronization.INSTANCE.waitFences();
-        }
+        //Debug D
+//        if(SpriteUtil.shouldUpload())
+//            GraphicsQueue.getInstance().startRecording();
+//        for (Tickable tickable : this.tickableTextures) {
+//            tickable.tick();
+//        }
+//        if(SpriteUtil.shouldUpload()) {
+//            SpriteUtil.transitionLayouts(GraphicsQueue.getInstance().getCommandBuffer());
+//            GraphicsQueue.getInstance().endRecordingAndSubmit();
+////            Synchronization.INSTANCE.waitFences();
+//        }
     }
 
     /**

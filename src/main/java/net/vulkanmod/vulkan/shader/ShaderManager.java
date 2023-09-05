@@ -1,23 +1,27 @@
 package net.vulkanmod.vulkan.shader;
 
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 
 public class ShaderManager {
-    public static final VertexFormat TERRAIN_VERTEX_FORMAT = CustomVertexFormat.COMPRESSED_TERRAIN;
-//    public static final VertexFormat TERRAIN_VERTEX_FORMAT = DefaultVertexFormat.BLOCK;
+    public static VertexFormat TERRAIN_VERTEX_FORMAT;
 
     public static ShaderManager shaderManager;
 
-    public static void initShaderManager() {
+    public static void init() {
+        setTerrainVertexFormat(CustomVertexFormat.COMPRESSED_TERRAIN);
         shaderManager = new ShaderManager();
+    }
+
+    public static void setTerrainVertexFormat(VertexFormat format) {
+        TERRAIN_VERTEX_FORMAT = format;
     }
 
     public static ShaderManager getInstance() { return shaderManager; }
 
-    Pipeline terrainShader;
+    Pipeline terrainIndirectShader;
     public Pipeline terrainDirectShader;
 
     public ShaderManager() {
@@ -25,7 +29,7 @@ public class ShaderManager {
     }
 
     private void createBasicPipelines() {
-        this.terrainShader = createPipeline("terrain");
+        this.terrainIndirectShader = createPipeline("terrain");
 
         this.terrainDirectShader = createPipeline("terrain_direct");
     }
@@ -33,15 +37,15 @@ public class ShaderManager {
     private Pipeline createPipeline(String name) {
         String path = String.format("basic/%s/%s", name, name);
 
-        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(TERRAIN_VERTEX_FORMAT, path);
+        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(CustomVertexFormat.COMPRESSED_TERRAIN, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders();
         return pipelineBuilder.createPipeline();
     }
 
-    public Pipeline getTerrainShader() {
+    public Pipeline getTerrainShader(RenderType renderType) {
         if(Initializer.CONFIG.indirectDraw) {
-            return this.terrainShader;
+            return this.terrainIndirectShader;
         }
         else {
             return this.terrainDirectShader;
@@ -49,8 +53,12 @@ public class ShaderManager {
 
     }
 
+    public Pipeline getTerrainIndirectShader(RenderType renderType) {
+        return terrainIndirectShader;
+    }
+
     public void destroyPipelines() {
-        this.terrainShader.cleanUp();
+        this.terrainIndirectShader.cleanUp();
         this.terrainDirectShader.cleanUp();
     }
 }

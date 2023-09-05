@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.VRenderSystem;
 
 import java.util.Objects;
@@ -14,17 +15,33 @@ public class PipelineState {
     public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
     public static final ColorMask DEFAULT_COLORMASK = new ColorMask(true, true, true, true);
 
+    public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
+    public static PipelineState.BlendState currentBlendState;
+    public static PipelineState.DepthState currentDepthState = PipelineState.DEFAULT_DEPTH_STATE;
+    public static PipelineState.LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
+    public static PipelineState.ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
+
+    public static PipelineState getCurrentPipelineState(RenderPass renderPass) {
+        currentBlendState = blendInfo.createBlendState();
+        currentDepthState = VRenderSystem.getDepthState();
+        currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
+
+        return new PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask, renderPass);
+    }
+
     final BlendState blendState;
     final DepthState depthState;
     final ColorMask colorMask;
     final LogicOpState logicOpState;
     final boolean cullState;
+    final RenderPass renderPass;
 
-    public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask) {
+    public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask, RenderPass renderPass) {
         this.blendState = blendState;
         this.depthState = depthState;
         this.logicOpState = logicOpState;
         this.colorMask = colorMask;
+        this.renderPass = renderPass;
         this.cullState = VRenderSystem.cull;
     }
 
@@ -33,12 +50,14 @@ public class PipelineState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PipelineState that = (PipelineState) o;
-        return blendState.equals(that.blendState) && depthState.equals(that.depthState) && logicOpState.equals(that.logicOpState) && (cullState == that.cullState) && colorMask.equals(that.colorMask);
+        return blendState.equals(that.blendState) && depthState.equals(that.depthState)
+                && this.renderPass == that.renderPass
+                && logicOpState.equals(that.logicOpState) && (cullState == that.cullState) && colorMask.equals(that.colorMask);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState, depthState, logicOpState, cullState);
+        return Objects.hash(blendState, depthState, logicOpState, cullState, renderPass);
     }
 
     public static BlendInfo defaultBlendInfo() {

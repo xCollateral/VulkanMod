@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan;
 
+import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -14,16 +15,12 @@ import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
-import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.vkEnumerateDeviceExtensionProperties;
-import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
-import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
-
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
+import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.*;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
+import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
 
 public class DeviceInfo {
 
@@ -35,6 +32,7 @@ public class DeviceInfo {
     public final String deviceName;
     public final String driverVersion;
     public final String vkVersion;
+
     public GraphicsCard graphicsCard;
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
@@ -61,10 +59,8 @@ public class DeviceInfo {
         this.device = device;
         this.vendorId = decodeVendor(properties.vendorID());
         this.deviceName = properties.deviceNameString();
-        this.driverVersion = decodeDvrVersion(Vulkan.deviceProperties.driverVersion(), Vulkan.deviceProperties.vendorID());
+        this.driverVersion = decodeDvrVersion(Device.deviceProperties.driverVersion(), Device.deviceProperties.vendorID());
         this.vkVersion = decDefVersion(getVkVer());
-
-//        this.driverVersion = graphicsCard.getVersionInfo();
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
@@ -84,6 +80,7 @@ public class DeviceInfo {
 
         if(this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
                 this.drawIndirectSupported = true;
+
     }
 
     private static String decodeVendor(int i) {
@@ -176,8 +173,8 @@ public class DeviceInfo {
                 stringBuilder.append(String.format("Device %d: ", i)).append(info.deviceName).append("\n");
                 stringBuilder.append(info.unsupportedExtensions(requiredExtensions)).append("\n");
 
-                SwapChain.SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, stack);
-                boolean swapChainAdequate = swapChainSupport.formats.hasRemaining() && swapChainSupport.presentModes.hasRemaining() ;
+                Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device, stack);
+                boolean swapChainAdequate = surfaceProperties.formats.hasRemaining() && surfaceProperties.presentModes.hasRemaining() ;
                 stringBuilder.append("Swapchain supported: ").append(swapChainAdequate ? "true" : "false").append("\n");
             }
 

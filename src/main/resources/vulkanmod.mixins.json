@@ -18,7 +18,6 @@
     "compatibility.UniformM",
 
     "debug.ChunkBorderRendererM",
-    "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
 
@@ -72,7 +71,6 @@
     "vertex.VertexMultiConsumersM$MultipleM",
     "vertex.VertexMultiConsumersM$SheetDecalM",
 
-    "ClientLevelM",
     "WindowMixin"
   ],
   "injectors": {

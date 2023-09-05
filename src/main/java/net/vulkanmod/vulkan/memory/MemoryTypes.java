@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -16,8 +17,8 @@ public class MemoryTypes {
 
     public static void createMemoryTypes() {
 
-        for(int i = 0; i < Vulkan.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = Vulkan.memoryProperties.memoryTypes(i);
+        for(int i = 0; i < Device.memoryProperties.memoryTypeCount(); ++i) {
+            VkMemoryType memoryType = Device.memoryProperties.memoryTypes(i);
 
             //GPU only Memory
             if(memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
@@ -39,8 +40,8 @@ public class MemoryTypes {
             if(GPU_MEM != null) return;
         }
 
-        for(int i = 0; i < Vulkan.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = Vulkan.memoryProperties.memoryTypes(i);
+        for(int i = 0; i < Device.memoryProperties.memoryTypeCount(); ++i) {
+            VkMemoryType memoryType = Device.memoryProperties.memoryTypes(i);
 
             //gpu-cpu shared memory
             if((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) != 0) {
@@ -64,7 +65,7 @@ public class MemoryTypes {
 
         @Override
         void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
             stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
             TransferQueue.INSTANCE.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
@@ -86,7 +87,7 @@ public class MemoryTypes {
         @Override
         void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
             int bufferSize = byteBuffer.remaining();
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
 
             TransferQueue.INSTANCE.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);

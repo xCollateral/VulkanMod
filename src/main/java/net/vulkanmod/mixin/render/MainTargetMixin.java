@@ -2,9 +2,6 @@ package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.util.DrawUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 

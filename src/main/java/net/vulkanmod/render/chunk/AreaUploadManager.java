@@ -5,7 +5,6 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 import org.apache.commons.lang3.Validate;
 
@@ -16,21 +15,18 @@ import static org.lwjgl.vulkan.VK10.vkWaitForFences;
 public class AreaUploadManager {
     public static AreaUploadManager INSTANCE;
 
-    public static void createInstance(int frames) {
-        INSTANCE = new AreaUploadManager(frames);
+    public static void createInstance() {
+        INSTANCE = new AreaUploadManager();
     }
 
-//    final Reference2LongOpenHashMap<ArrayList<AreaBuffer.Segment>> map = new Reference2LongOpenHashMap<>();
-    final ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
-//    final ObjectArrayList<UploadData>[] recordedUploads;
-//    final ObjectArrayList<DrawBuffers.UploadData>[] recordedUploads;
-    final ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
-    final ObjectArrayList<Runnable>[] frameOps;
-    final CommandPool.CommandBuffer[] commandBuffers;
+    ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
+    ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
+    ObjectArrayList<Runnable>[] frameOps;
+    CommandPool.CommandBuffer[] commandBuffers;
 
     int currentFrame;
 
-    public AreaUploadManager(int frames) {
+    public void createLists(int frames) {
         this.commandBuffers = new CommandPool.CommandBuffer[frames];
         this.recordedUploads = new ObjectArrayList[frames];
         this.updatedParameters = new ObjectArrayList[frames];
@@ -44,7 +40,7 @@ public class AreaUploadManager {
     }
 
     public synchronized void submitUploads() {
-        Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
+        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(this.recordedUploads[this.currentFrame].isEmpty())
             return;
@@ -53,7 +49,7 @@ public class AreaUploadManager {
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
-        Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
+        Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
             this.commandBuffers[currentFrame] = TransferQueue.getInstance().beginCommands();

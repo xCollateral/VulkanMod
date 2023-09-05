@@ -1,8 +1,9 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.apache.commons.lang3.Validate;
 
 public class Vec3f extends Field {
 
@@ -11,11 +12,9 @@ public class Vec3f extends Field {
     }
 
     void setSupplier() {
-        switch (this.fieldInfo.name) {
-            case "Light0_Direction" -> this.values = () -> VRenderSystem.lightDirection0;
-            case "Light1_Direction" -> this.values = () -> VRenderSystem.lightDirection1;
-            case "ChunkOffset" -> this.values = () -> VRenderSystem.ChunkOffset;
-        }
+        this.values = Uniforms.vec3f_uniformMap.get(this.fieldInfo.name);
+
+        Validate.notNull(this.values, "Field name not found: " + this.fieldInfo.name);
     }
 
     void update() {

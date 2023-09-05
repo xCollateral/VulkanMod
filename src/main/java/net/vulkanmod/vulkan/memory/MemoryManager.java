@@ -21,11 +21,19 @@ import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class MemoryManager {
+    private static final boolean DEBUG = false;
+
     private static MemoryManager INSTANCE;
 
-    private final VkDevice device = Vulkan.getDevice();
+    private static final Long2ReferenceOpenHashMap<Buffer> buffers = new Long2ReferenceOpenHashMap<>();
+    private static final Long2ReferenceOpenHashMap<VulkanImage> images = new Long2ReferenceOpenHashMap<>();
+
+    private static final VkDevice device = Vulkan.getDevice();
     private static final long allocator = Vulkan.getAllocator();
     static int Frames;
+
+    private static long deviceMemory = 0;
+    private static long nativeMemory = 0;
 
     private int currentFrame = 0;
 
@@ -35,13 +43,7 @@ public class MemoryManager {
     private ObjectArrayList<Runnable>[] frameOps = new ObjectArrayList[Frames];
 
     //debug
-    private ObjectArrayList<StackTraceElement[]>[] stackTraces = new ObjectArrayList[Frames];
-
-    private static final Long2ReferenceOpenHashMap<Buffer> buffers = new Long2ReferenceOpenHashMap<>();
-    private static final Long2ReferenceOpenHashMap<VulkanImage> images = new Long2ReferenceOpenHashMap<>();
-
-    private long deviceMemory = 0;
-    private long nativeMemory = 0;
+    private ObjectArrayList<StackTraceElement[]>[] stackTraces;
 
     public static MemoryManager getInstance() {
         return INSTANCE;
@@ -63,8 +65,13 @@ public class MemoryManager {
             freeableImages[i] = new ObjectArrayList<>();
 
             frameOps[i] = new ObjectArrayList<>();
+        }
 
-            stackTraces[i] = new ObjectArrayList<>();
+        if(DEBUG) {
+            stackTraces = new ObjectArrayList[Frames];
+            for(int i = 0; i < Frames; ++i) {
+                stackTraces[i] = new ObjectArrayList<>();
+            }
         }
     }
 
@@ -85,8 +92,8 @@ public class MemoryManager {
             this.doFrameOps(frame);
         }
 
-        buffers.values().forEach(buffer -> freeBuffer(buffer.getId(), buffer.getAllocation()));
-        images.values().forEach(image -> image.doFree(this));
+//        buffers.values().forEach(buffer -> freeBuffer(buffer.getId(), buffer.getAllocation()));
+//        images.values().forEach(image -> image.doFree(this));
     }
 
     public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
@@ -130,11 +137,11 @@ public class MemoryManager {
                 nativeMemory += size;
             }
 
-            this.buffers.putIfAbsent(buffer.getId(), buffer);
+            buffers.putIfAbsent(buffer.getId(), buffer);
         }
     }
 
-    public void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
+    public static synchronized void createImage(int width, int height, int mipLevels, int format, int tiling, int usage, int memProperties,
                                    LongBuffer pTextureImage, PointerBuffer pTextureImageMemory) {
 
         try(MemoryStack stack = stackPush()) {
@@ -164,8 +171,8 @@ public class MemoryManager {
         }
     }
 
-    public void addImage(VulkanImage image) {
-        this.images.putIfAbsent(image.getId(), image);
+    public static void addImage(VulkanImage image) {
+        images.putIfAbsent(image.getId(), image);
     }
 
     public void MapAndCopy(long allocation, long bufferSize, Consumer<PointerBuffer> consumer){
@@ -188,13 +195,13 @@ public class MemoryManager {
         return data;
     }
 
-    public void freeBuffer(long buffer, long allocation) {
+    public static void freeBuffer(long buffer, long allocation) {
         vmaDestroyBuffer(allocator, buffer, allocation);
 
-        this.buffers.remove(buffer);
+        buffers.remove(buffer);
     }
 
-    private void freeBuffer(Buffer.BufferInfo bufferInfo) {
+    private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(allocator, bufferInfo.id(), bufferInfo.allocation());
 
         if(bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
@@ -203,13 +210,13 @@ public class MemoryManager {
             nativeMemory -= bufferInfo.bufferSize();
         }
 
-        this.buffers.remove(bufferInfo.id());
+        buffers.remove(bufferInfo.id());
     }
 
-    public void freeImage(long image, long allocation) {
+    public static void freeImage(long image, long allocation) {
         vmaDestroyImage(allocator, image, allocation);
 
-        this.images.remove(image);
+        images.remove(image);
     }
 
     public synchronized void addToFreeable(Buffer buffer) {
@@ -219,8 +226,8 @@ public class MemoryManager {
 
         freeableBuffers[currentFrame].add(bufferInfo);
 
-        //Debug
-        stackTraces[currentFrame].add(new Throwable().getStackTrace());
+        if(DEBUG)
+            stackTraces[currentFrame].add(new Throwable().getStackTrace());
     }
 
     public synchronized void addToFreeable(VulkanImage image) {
@@ -250,8 +257,8 @@ public class MemoryManager {
 
         bufferList.clear();
 
-        //debug
-        stackTraces[frame].clear();
+        if(DEBUG)
+            stackTraces[frame].clear();
 
         this.freeImages();
     }
@@ -267,7 +274,7 @@ public class MemoryManager {
     }
 
     private void checkBuffer(Buffer.BufferInfo bufferInfo) {
-        if(this.buffers.get(bufferInfo.id()) == null){
+        if(buffers.get(bufferInfo.id()) == null){
             throw new RuntimeException("trying to free not present buffer");
         }
 

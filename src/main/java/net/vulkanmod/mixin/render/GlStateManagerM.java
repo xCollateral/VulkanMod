@@ -4,11 +4,9 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -69,7 +67,7 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _disableScissorTest() {
-        Drawer.resetScissor();
+        Renderer.resetScissor();
     }
 
     /**
@@ -83,7 +81,7 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _viewport(int x, int y, int width, int height) {
-        Drawer.setViewport(x, y, width, height);
+        Renderer.setViewport(x, y, width, height);
     }
 
     /**
@@ -91,7 +89,7 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _scissorBox(int x, int y, int width, int height) {
-        Drawer.setScissor(x, y, width, height);
+        Renderer.setScissor(x, y, width, height);
     }
 
     //TODO
