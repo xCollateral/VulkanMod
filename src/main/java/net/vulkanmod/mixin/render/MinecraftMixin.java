@@ -4,10 +4,11 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.TimerQuery;
 import net.minecraft.Util;
+import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
-
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.font.FontManager;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.main.GameConfig;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -18,11 +19,11 @@ import net.minecraft.client.resources.PaintingTextureManager;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
-import net.vulkanmod.render.texture.SpriteUtil;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -54,6 +55,17 @@ public class MinecraftMixin {
     @Shadow @Final private MobEffectTextureManager mobEffectTextures;
     @Shadow @Final private PaintingTextureManager paintingTextures;
     @Shadow public boolean noRender;
+    @Shadow @Final public Options options;
+
+    @Inject(method = "<init>", at = @At(value = "RETURN"))
+    private void forceGraphicsMode(GameConfig gameConfig, CallbackInfo ci) {
+        var graphicsModeOption = this.options.graphicsMode();
+
+        if(graphicsModeOption.get() == GraphicsStatus.FABULOUS) {
+            Initializer.LOGGER.error("Fabulous graphics mode not supported, forcing Fancy");
+            graphicsModeOption.set(GraphicsStatus.FANCY);
+        }
+    }
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void beginRender(int i, boolean bl) {
