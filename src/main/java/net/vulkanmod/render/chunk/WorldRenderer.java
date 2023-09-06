@@ -510,9 +510,7 @@ public class WorldRenderer {
 //        this.entityRenderDispatcher.setLevel(level);
         this.level = level;
         if (level != null) {
-            if(this.sectionGrid == null) {
-                this.allChanged();
-            }
+            this.allChanged();
         } else {
             if (this.sectionGrid != null) {
                 this.sectionGrid.releaseAllBuffers();
