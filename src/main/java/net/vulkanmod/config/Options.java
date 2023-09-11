@@ -203,12 +203,17 @@ public class Options {
                         Use a culling algorithm that might improve performance by
                         reducing the number of non visible chunk sections rendered.
                         """)),
+                new SwitchOption("Entity Culling",
+                        value -> config.entityCulling = value,
+                        () -> config.entityCulling)
+                        .setTooltip(Component.nullToEmpty("""
+                        Enables culling for entities on non visible sections.""")),
                 new SwitchOption("Indirect Draw",
                         value -> config.indirectDraw = value,
                         () -> config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems.""")),
+                        Enabling it might help in CPU limited systems."""))
         };
 
     }

@@ -17,6 +17,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.util.Pair;
@@ -46,19 +47,12 @@ public abstract class LevelRendererMixin {
     @Shadow private boolean generateClouds;
     @Shadow @Final private EntityRenderDispatcher entityRenderDispatcher;
 
-    @Shadow protected abstract boolean shouldShowEntityOutlines();
-
-    @Shadow public abstract void needsUpdate();
-
-    @Shadow public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
-
     private WorldRenderer worldRenderer;
 
     @Unique
-    private static boolean ENTITIES_OPT = true;
-
-    @Unique
     private Object2ReferenceOpenHashMap<Class<? extends Entity>, ObjectArrayList<Pair<Entity, MultiBufferSource>>> entitiesMap = new Object2ReferenceOpenHashMap<>();
+
+    //TODO clear VBOs
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(Minecraft minecraft, EntityRenderDispatcher entityRenderDispatcher, BlockEntityRenderDispatcher blockEntityRenderDispatcher, RenderBuffers renderBuffers, CallbackInfo ci) {
@@ -89,8 +83,6 @@ public abstract class LevelRendererMixin {
     private void setupRender(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
         this.worldRenderer.setupRenderer(camera, frustum, isCapturedFrustum, spectator);
 
-        ENTITIES_OPT = true;
-//        ENTITIES_OPT = false;
         entitiesMap.clear();
     }
 
@@ -200,10 +192,11 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource) {
-        if(!ENTITIES_OPT) {
-            double h = Mth.lerp((double)g, entity.xOld, entity.getX());
-            double i = Mth.lerp((double)g, entity.yOld, entity.getY());
-            double j = Mth.lerp((double)g, entity.zOld, entity.getZ());
+        //Entity lists optimization
+        if(!Initializer.CONFIG.entityCulling) {
+            double h = Mth.lerp(g, entity.xOld, entity.getX());
+            double i = Mth.lerp(g, entity.yOld, entity.getY());
+            double j = Mth.lerp(g, entity.zOld, entity.getZ());
             float k = Mth.lerp(g, entity.yRotO, entity.getYRot());
             this.entityRenderDispatcher.render(entity, h - d, i - e, j - f, k, g, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, g));
             return;
@@ -226,7 +219,7 @@ public abstract class LevelRendererMixin {
             shift = At.Shift.AFTER, ordinal = 0)
     )
     private void renderEntities(PoseStack poseStack, float partialTicks, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-        if(!ENTITIES_OPT)
+        if(!Initializer.CONFIG.entityCulling)
             return;
 
         Vec3 cameraPos = WorldRenderer.getCameraPos();
@@ -244,59 +237,5 @@ public abstract class LevelRendererMixin {
             }
         }
     }
-
-//    @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"))
-//    private Iterable<Entity> replaceIterator(ClientLevel instance) {
-//
-//        return () -> new Iterator<Entity>() {
-//            @Override
-//            public boolean hasNext() {
-//                return false;
-//            }
-//
-//            @Override
-//            public Entity next() {
-//                return null;
-//            }
-//        };
-//    }
-//
-//    @Inject(method = "renderLevel", at = @At(value = "INVOKE",
-//            target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;",
-//            shift = At.Shift.AFTER),
-//            locals = LocalCapture.CAPTURE_FAILHARD
-//    )
-//    private void renderEntities(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-//        for(Entity entity : this.level.entitiesForRendering()) {
-//            if (this.entityRenderDispatcher.shouldRender(entity, frustum, d0, d1, d2) || entity.hasIndirectPassenger(this.minecraft.player)) {
-//                BlockPos blockpos = entity.blockPosition();
-//                if ((this.level.isOutsideBuildHeight(blockpos.getY()) || this.isChunkCompiled(blockpos)) && (entity != p_109604_.getEntity() || p_109604_.isDetached() || p_109604_.getEntity() instanceof LivingEntity && ((LivingEntity)p_109604_.getEntity()).isSleeping()) && (!(entity instanceof LocalPlayer) || p_109604_.getEntity() == entity)) {
-//                    ++this.renderedEntities;
-//                    if (entity.tickCount == 0) {
-//                        entity.xOld = entity.getX();
-//                        entity.yOld = entity.getY();
-//                        entity.zOld = entity.getZ();
-//                    }
-//
-//                    MultiBufferSource multibuffersource;
-//                    if (this.shouldShowEntityOutlines() && this.minecraft.shouldEntityAppearGlowing(entity)) {
-//                        flag3 = true;
-//                        OutlineBufferSource outlinebuffersource = this.renderBuffers.outlineBufferSource();
-//                        multibuffersource = outlinebuffersource;
-//                        int i = entity.getTeamColor();
-//                        int j = 255;
-//                        int k = i >> 16 & 255;
-//                        int l = i >> 8 & 255;
-//                        int i1 = i & 255;
-//                        outlinebuffersource.setColor(k, l, i1, 255);
-//                    } else {
-//                        multibuffersource = bu;
-//                    }
-//
-//                    this.renderEntity(entity, d0, d1, d2, p_109601_, p_109600_, multibuffersource);
-//                }
-//            }
-//        }
-//    }
 
 }

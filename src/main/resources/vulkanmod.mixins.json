@@ -30,6 +30,7 @@
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
 
+    "render.entity.EntityRendererM",
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
     "render.vertex.FaceBakeryM",
