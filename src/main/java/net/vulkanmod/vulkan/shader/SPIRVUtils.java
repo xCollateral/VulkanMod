@@ -14,14 +14,11 @@ import java.nio.file.Paths;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
-public class ShaderSPIRVUtils {
-    private static long compiler;
+public class SPIRVUtils {
+    private static final boolean DEBUG = true;
+    private static final boolean OPTIMIZATIONS = false;
 
-    public static SPIRV compileShaderFile(String shaderFile, ShaderKind shaderKind) {
-        //TODO name out
-        String path = ShaderSPIRVUtils.class.getResource("/assets/vulkanmod/shaders/" + shaderFile).toExternalForm();
-        return compileShaderAbsoluteFile(path, shaderKind);
-    }
+    private static long compiler;
 
     public static SPIRV compileShaderAbsoluteFile(String shaderFile, ShaderKind shaderKind) {
         try {
@@ -47,9 +44,11 @@ public class ShaderSPIRVUtils {
             throw new RuntimeException("Failed to create compiler options");
         }
 
-//        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+        if(OPTIMIZATIONS)
+            shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 
-        shaderc_compile_options_set_generate_debug_info(options);
+        if(DEBUG)
+            shaderc_compile_options_set_generate_debug_info(options);
 
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 
@@ -60,8 +59,6 @@ public class ShaderSPIRVUtils {
         if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
             throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(result));
         }
-
-//        shaderc_compiler_release(compiler);
 
         return new SPIRV(result, shaderc_result_get_bytes(result));
     }
@@ -83,7 +80,8 @@ public class ShaderSPIRVUtils {
     public enum ShaderKind {
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
         GEOMETRY_SHADER(shaderc_glsl_geometry_shader),
-        FRAGMENT_SHADER(shaderc_glsl_fragment_shader);
+        FRAGMENT_SHADER(shaderc_glsl_fragment_shader),
+        COMPUTE_SHADER(shaderc_glsl_compute_shader);
 
         private final int kind;
 

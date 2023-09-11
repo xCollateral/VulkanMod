@@ -2,8 +2,9 @@ package net.vulkanmod.vulkan.shader.parser;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.descriptor.Image;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
-import net.vulkanmod.vulkan.shader.layout.UBO;
+import net.vulkanmod.vulkan.shader.descriptor.UBO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +20,7 @@ public class UniformParser {
     private String name;
 
     private UBO ubo;
-    private List<Pipeline.Sampler> samplers;
+    private List<Image> images;
 
     public UniformParser(GlslConverter converterInstance) {
         this.converterInstance = converterInstance;
@@ -86,10 +87,10 @@ public class UniformParser {
     public String createSamplersCode(GlslConverter.ShaderStage shaderStage) {
         StringBuilder builder = new StringBuilder();
 
-        this.samplers = createSamplerList();
+        this.images = createSamplerList();
 
-        for(Pipeline.Sampler sampler : this.samplers) {
-            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", sampler.binding(), sampler.type(), sampler.name()));
+        for(Image image : this.images) {
+            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", image.getBinding(), image.qualifier, image.name));
         }
         builder.append("\n");
 
@@ -104,22 +105,22 @@ public class UniformParser {
         }
 
         //hardcoded 0 binding as it should always be 0 in this case
-        return builder.buildUBO(0, Pipeline.Builder.getTypeFromString("all"));
+        return builder.buildUBO(0, Pipeline.Builder.getStageFromString("all"));
     }
 
-    private List<Pipeline.Sampler> createSamplerList() {
+    private List<Image> createSamplerList() {
         int currentLocation = 1;
 
-        List<Pipeline.Sampler> samplers = new ObjectArrayList<>();
+        List<Image> images = new ObjectArrayList<>();
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
             for(Uniform uniform : stageUniforms.samplers) {
-                samplers.add(new Pipeline.Sampler(currentLocation, uniform.type, uniform.name));
+                images.add(new Image(currentLocation, uniform.type, uniform.name));
                 currentLocation++;
             }
         }
 
-        return samplers;
+        return images;
     }
 
     public static String removeSemicolon(String s) {
@@ -133,8 +134,8 @@ public class UniformParser {
         return this.ubo;
     }
 
-    public List<Pipeline.Sampler> getSamplers() {
-        return this.samplers;
+    public List<Image> getSamplers() {
+        return this.images;
     }
 
     public record Uniform(String type, String name) {}

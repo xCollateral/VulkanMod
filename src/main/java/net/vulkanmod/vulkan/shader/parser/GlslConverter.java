@@ -2,7 +2,8 @@ package net.vulkanmod.vulkan.shader.parser;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.layout.UBO;
+import net.vulkanmod.vulkan.shader.descriptor.Image;
+import net.vulkanmod.vulkan.shader.descriptor.UBO;
 
 import java.util.Arrays;
 import java.util.List;
@@ -143,7 +144,7 @@ public class GlslConverter {
         return this.uniformParser.getUbo();
     }
 
-    public List<Pipeline.Sampler> getSamplerList() {
+    public List<Image> getSamplerList() {
         return this.uniformParser.getSamplers();
     }
 

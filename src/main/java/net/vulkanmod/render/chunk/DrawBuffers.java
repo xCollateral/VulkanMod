@@ -7,7 +7,6 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.ShaderManager;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -19,7 +18,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
 
-    private static final int VERTEX_SIZE = ShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
+    private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
 
     private boolean allocated = false;
@@ -85,7 +84,7 @@ public class DrawBuffers {
         terrainRenderType.setCutoutUniform();
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
-        Pipeline pipeline = ShaderManager.getInstance().getTerrainIndirectShader(renderType);
+        Pipeline pipeline = TerrainShaderManager.getTerrainIndirectShader(renderType);
 
         if(isTranslucent) {
             vkCmdBindIndexBuffer(Renderer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
@@ -168,7 +167,7 @@ public class DrawBuffers {
     }
 
     private static void fakeIndirectCmd(VkCommandBuffer commandBuffer, IndirectBuffer indirectBuffer, int drawCount, ByteBuffer offsetBuffer) {
-        Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
+        Pipeline pipeline = TerrainShaderManager.getTerrainDirectShader(null);
 //        Drawer.getInstance().bindPipeline(pipeline);
         pipeline.bindDescriptorSets(Renderer.getCommandBuffer(), Renderer.getCurrentFrame());
 //        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());

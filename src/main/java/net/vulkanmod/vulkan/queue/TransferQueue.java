@@ -14,18 +14,8 @@ import static org.lwjgl.vulkan.VK10.*;
 public class TransferQueue extends Queue {
     private static final VkDevice DEVICE = Vulkan.getDevice();
 
-    public static TransferQueue INSTANCE;
-
-    public static void createInstance() {
-        INSTANCE = new TransferQueue();
-    }
-
-    public static TransferQueue getInstance() {
-        return INSTANCE;
-    }
-
-    protected TransferQueue() {
-        commandPool = new CommandPool(getQueueFamilies().transferFamily);
+    public TransferQueue(MemoryStack stack, int familyIndex) {
+        super(stack, familyIndex);
     }
 
     public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
@@ -34,7 +24,7 @@ public class TransferQueue extends Queue {
 
             CommandPool.CommandBuffer commandBuffer = beginCommands();
 
-            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
             copyRegion.size(size);
             copyRegion.srcOffset(srcOffset);
             copyRegion.dstOffset(dstOffset);
@@ -53,7 +43,7 @@ public class TransferQueue extends Queue {
         try(MemoryStack stack = stackPush()) {
             CommandPool.CommandBuffer commandBuffer = this.beginCommands();
 
-            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
             copyRegion.size(size);
             copyRegion.srcOffset(srcOffset);
             copyRegion.dstOffset(dstOffset);
@@ -66,26 +56,17 @@ public class TransferQueue extends Queue {
         }
     }
 
-    public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
-
-        return this.commandPool.submitCommands(commandBuffer, Vulkan.getTransferQueue());
-    }
-
     public static void uploadBufferCmd(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
             copyRegion.size(size);
             copyRegion.srcOffset(srcOffset);
             copyRegion.dstOffset(dstOffset);
 
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
         }
-    }
-
-    public static void waitIdle() {
-        vkQueueWaitIdle(Vulkan.getTransferQueue());
     }
     
 }

@@ -4,27 +4,18 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import static org.lwjgl.vulkan.VK10.*;
 
 public class GraphicsQueue extends Queue {
-    private static final VkDevice DEVICE = Vulkan.getDevice();
-
     public static GraphicsQueue INSTANCE;
-
-    public static void createInstance() {
-        INSTANCE = new GraphicsQueue();
-    }
-
-    public static GraphicsQueue getInstance() {
-        return INSTANCE;
-    }
 
     private static CommandPool.CommandBuffer currentCmdBuffer;
 
-    protected GraphicsQueue() {
-        this.commandPool = new CommandPool(getQueueFamilies().graphicsFamily);
+    public GraphicsQueue(MemoryStack stack, int familyIndex) {
+        super(stack, familyIndex);
     }
 
     public void startRecording() {
@@ -52,11 +43,6 @@ public class GraphicsQueue extends Queue {
         } else {
             return submitCommands(commandBuffer);
         }
-    }
-
-    public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
-
-        return this.commandPool.submitCommands(commandBuffer, Vulkan.getGraphicsQueue());
     }
 
 }

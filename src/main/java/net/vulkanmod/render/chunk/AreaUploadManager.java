@@ -45,15 +45,15 @@ public class AreaUploadManager {
         if(this.recordedUploads[this.currentFrame].isEmpty())
             return;
 
-        TransferQueue.getInstance().submitCommands(this.commandBuffers[currentFrame]);
+        Device.getTransferQueue().submitCommands(this.commandBuffers[currentFrame]);
     }
 
     public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
         Validate.isTrue(currentFrame == Renderer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.getInstance().beginCommands();
-//            this.commandBuffers[currentFrame] = GraphicsQueue.getInstance().beginCommands();
+            this.commandBuffers[currentFrame] = Device.getTransferQueue().beginCommands();
+//            this.commandBuffers[currentFrame] = Device.getGraphicsQueue().beginCommands();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
         stagingBuffer.copyBuffer((int) bufferSize, src);
@@ -77,7 +77,7 @@ public class AreaUploadManager {
         }
 
         if(commandBuffers[currentFrame] == null)
-            this.commandBuffers[currentFrame] = TransferQueue.getInstance().beginCommands();
+            this.commandBuffers[currentFrame] = Device.getTransferQueue().beginCommands();
 
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], src.getId(), 0, dst.getId(), 0, src.getBufferSize());
     }
