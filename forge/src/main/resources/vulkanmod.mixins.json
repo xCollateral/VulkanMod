@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "net.vulkanmod.mixin.forge",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "vulkanmod",
+  "version": "${version}",
+  "name": "VulkanMod",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "authors": [
+    "Collateral"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "Insert License Here",
+  "icon": "assets/examplemod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.vulkanmod.fabric.VulkanModFabric"
+    ]
+  },
+  "mixins": [
+    "vulkanmod.mixins.json",
+    "vulkanmod-common.mixins.json"
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=1.20.1",
+    "architectury": ">=9.1.12"
+  }
+}
