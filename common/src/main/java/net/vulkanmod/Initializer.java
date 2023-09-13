@@ -14,6 +14,8 @@ public class Initializer {
 	private static String VERSION;
 	public static Config CONFIG;
 
+	public static final String MODID = "vulkanmod";
+
 	public static void onInitializeClient() {
 
 		VERSION = Platform.getMod("vulkanmod").getVersion();

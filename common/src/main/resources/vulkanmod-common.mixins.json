@@ -44,7 +44,6 @@
     "render.GlProgramManagerMixin",
     "render.GlStateManagerM",
     "render.vertex.IndexTypeMixin",
-    "render.MinecraftMixin",
     "render.RenderSystemMixin",
     "render.ShaderInstanceM",
     "render.MainTargetMixin",

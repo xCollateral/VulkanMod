@@ -12,10 +12,10 @@
     "sources": "https://github.com/FabricMC/fabric-example-mod"
   },
   "license": "Insert License Here",
-  "icon": "assets/examplemod/icon.png",
+  "icon": "assets/vulkanmod/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": [
+    "client": [
       "net.vulkanmod.fabric.VulkanModFabric"
     ]
   },

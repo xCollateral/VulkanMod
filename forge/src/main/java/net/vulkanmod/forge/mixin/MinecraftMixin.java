@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.render;
+package net.vulkanmod.forge.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
@@ -108,7 +108,7 @@ public class MinecraftMixin {
     }
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;tick()V"),
-    locals = LocalCapture.CAPTURE_FAILHARD)
+            locals = LocalCapture.CAPTURE_FAILHARD)
     private void redirectResourceTick(boolean bl, CallbackInfo ci, long l, Runnable runnable, int i, int j) {
         int n = Math.min(10, i) - 1;
         SpriteUtil.setDoUpload(j == n);
@@ -120,12 +120,12 @@ public class MinecraftMixin {
     }
 
 
-    @Inject(method = "close", at = @At(value = "HEAD"))
+    @Inject(method = "close", at = @At(value = "HEAD"), remap = false)
     public void close(CallbackInfo ci) {
         Vulkan.waitIdle();
 
     }
-    @Inject(method = "close", at = @At(value = "RETURN"))
+    @Inject(method = "close", at = @At(value = "RETURN"), remap = false)
     public void close2(CallbackInfo ci) {
 
         Vulkan.cleanUp();

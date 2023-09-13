@@ -1,9 +1,10 @@
 {
   "required": true,
-  "package": "net.vulkanmod.mixin.fabric",
+  "package": "net.vulkanmod.fabric.mixin",
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "client": [
+    "MinecraftMixin"
   ],
   "mixins": [
   ],
