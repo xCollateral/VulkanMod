@@ -51,18 +51,17 @@ shadowJar {
     exclude "architectury.common.json"
 
     configurations = [project.configurations.shadowCommon]
-    classifier "dev-shadow"
+    //classifier "dev-shadow"
 }
 
 remapJar {
     injectAccessWidener = true
     input.set shadowJar.archiveFile
     dependsOn shadowJar
-    classifier null
 }
 
 jar {
-    classifier "dev"
+    //classifier "dev"
 }
 
 sourcesJar {

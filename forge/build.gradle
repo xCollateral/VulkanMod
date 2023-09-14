@@ -29,7 +29,7 @@ configurations {
 }
 
 dependencies {
-    forge "net.minecraftforge:forge:${rootProject.forge_version}"
+    forge "net.neoforged:forge:${rootProject.forge_version}"
     modApi "dev.architectury:architectury:${rootProject.architectury_version}"
 
     include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
@@ -45,6 +45,10 @@ dependencies {
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
 }
 
+repositories {
+    maven { url "https://maven.neoforged.net/releases/" }
+}
+
 processResources {
     inputs.property "version", project.version
 
@@ -58,17 +62,16 @@ shadowJar {
     exclude "architectury.common.json"
 
     configurations = [project.configurations.shadowCommon]
-    classifier "dev-shadow"
+    //classifier "dev-shadow"
 }
 
 remapJar {
     input.set shadowJar.archiveFile
     dependsOn shadowJar
-    classifier null
 }
 
 jar {
-    classifier "dev"
+    //classifier "dev"
 }
 
 sourcesJar {

@@ -2,6 +2,7 @@ package net.vulkanmod;
 
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.VideoResolution;
+import org.apache.commons.logging.impl.Jdk14Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import dev.architectury.platform.Platform;
