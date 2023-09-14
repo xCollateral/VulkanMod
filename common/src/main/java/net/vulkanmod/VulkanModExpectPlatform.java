@@ -1,10 +1,12 @@
 package net.vulkanmod;
 
+import dev.architectury.injectables.annotations.ExpectPlatform;
+
 import java.nio.file.Path;
 
-public class ExpectPlatform {
+public class VulkanModExpectPlatform {
 
-    @dev.architectury.injectables.annotations.ExpectPlatform
+    @ExpectPlatform
     public static Path getConfigDirectory() {
         // Just throw an error, the content should get replaced at runtime.
         throw new AssertionError();

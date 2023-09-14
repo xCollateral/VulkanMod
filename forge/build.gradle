@@ -32,14 +32,14 @@ dependencies {
     forge "net.neoforged:forge:${rootProject.forge_version}"
     modApi "dev.architectury:architectury:${rootProject.architectury_version}"
 
-    include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
-    include(implementation("org.lwjgl:lwjgl-vma:$lwjglVersion"))
-    include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
-    include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
 
-    include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
-    include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
-    include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
