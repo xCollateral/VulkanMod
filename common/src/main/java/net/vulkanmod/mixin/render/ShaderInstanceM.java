@@ -12,9 +12,10 @@ import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.layout.Field;
-import net.vulkanmod.vulkan.shader.layout.UBO;
+import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.parser.GlslConverter;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
@@ -48,11 +49,11 @@ public class ShaderInstanceM implements ShaderMixed {
     @Shadow @Final @Nullable public Uniform PROJECTION_MATRIX;
     @Shadow @Final @Nullable public Uniform COLOR_MODULATOR;
     @Shadow @Final @Nullable public Uniform LINE_WIDTH;
-    private Pipeline pipeline;
+    private GraphicsPipeline pipeline;
     boolean isLegacy = false;
 
 
-    public Pipeline getPipeline() {
+    public GraphicsPipeline getPipeline() {
         return pipeline;
     }
 
@@ -67,7 +68,7 @@ public class ShaderInstanceM implements ShaderMixed {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders();
-        this.pipeline = pipelineBuilder.createPipeline();
+        this.pipeline = pipelineBuilder.createGraphicsPipeline();
     }
 
     @Inject(method = "getOrCreate", at = @At("HEAD"), cancellable = true)
@@ -192,7 +193,7 @@ public class ShaderInstanceM implements ShaderMixed {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createPipeline();
+            this.pipeline = builder.createGraphicsPipeline();
             this.isLegacy = true;
 
         } catch (Throwable throwable) {

@@ -9,10 +9,8 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.memory.VertexBuffer;
+import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 
@@ -108,14 +106,14 @@ public class VBO {
         }
     }
 
-    public void drawWithShader(Matrix4f MV, Matrix4f P, Pipeline pipeline) {
+    public void drawWithShader(Matrix4f MV, Matrix4f P, GraphicsPipeline pipeline) {
         if (this.indexCount != 0) {
             RenderSystem.assertOnRenderThread();
 
             VRenderSystem.applyMVP(MV, P);
 
             Renderer renderer = Renderer.getInstance();
-            renderer.bindPipeline(pipeline);
+            renderer.bindGraphicsPipeline(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
 
             if(indexBuffer != null)

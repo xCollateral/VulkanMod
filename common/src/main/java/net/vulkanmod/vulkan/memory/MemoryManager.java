@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import jdk.jfr.StackTrace;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
@@ -159,6 +160,7 @@ public class MemoryManager {
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
 //            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
+            //TODO
             imageInfo.pQueueFamilyIndices(stack.ints(0,1));
 
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
@@ -266,7 +268,7 @@ public class MemoryManager {
         List<VulkanImage> bufferList = freeableImages[currentFrame];
         for(VulkanImage image : bufferList) {
 
-            image.doFree(this);
+            image.doFree();
         }
 
         bufferList.clear();

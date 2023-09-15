@@ -1,9 +1,6 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.Device;
-import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -86,7 +83,7 @@ public class UniformBuffers {
         if(commandBuffer == null)
             return;
 
-        TransferQueue.getInstance().submitCommands(commandBuffer);
+        Device.getTransferQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }
@@ -126,7 +123,7 @@ public class UniformBuffers {
             }
             else {
                 if(commandBuffer == null)
-                    commandBuffer = TransferQueue.getInstance().beginCommands();
+                    commandBuffer = Device.getTransferQueue().beginCommands();
 
                 int size = buffer.remaining();
 

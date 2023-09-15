@@ -3,7 +3,10 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.LiteralContents;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 
 public class Options {
@@ -200,12 +203,17 @@ public class Options {
                         Use a culling algorithm that might improve performance by
                         reducing the number of non visible chunk sections rendered.
                         """)),
+                new SwitchOption("Entity Culling",
+                        value -> config.entityCulling = value,
+                        () -> config.entityCulling)
+                        .setTooltip(Component.nullToEmpty("""
+                        Enables culling for entities on non visible sections.""")),
                 new SwitchOption("Indirect Draw",
                         value -> config.indirectDraw = value,
                         () -> config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems.""")),
+                        Enabling it might help in CPU limited systems."""))
         };
 
     }

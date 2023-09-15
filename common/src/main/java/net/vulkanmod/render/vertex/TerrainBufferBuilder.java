@@ -6,7 +6,7 @@ import com.mojang.blaze3d.vertex.*;
 import com.mojang.logging.LogUtils;
 import net.minecraft.util.Mth;
 import net.vulkanmod.render.util.SortUtil;
-import net.vulkanmod.vulkan.shader.ShaderManager;
+import net.vulkanmod.render.chunk.TerrainShaderManager;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -53,7 +53,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		this.buffer = MemoryTracker.create(i * 6);
 		this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
 
-		this.vertexBuilder = ShaderManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN ? new CompressedVertexBuilder() : new DefaultVertexBuilder();
+		this.vertexBuilder = TerrainShaderManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN ? new CompressedVertexBuilder() : new DefaultVertexBuilder();
 	}
 
 	private void ensureVertexCapacity() {

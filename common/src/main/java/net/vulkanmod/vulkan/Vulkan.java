@@ -145,7 +145,6 @@ public class Vulkan {
         createVma();
         MemoryTypes.createMemoryTypes();
 
-        Queue.initQueues();
         createCommandPool();
         allocateImmediateCmdBuffer();
 
@@ -194,9 +193,6 @@ public class Vulkan {
         vkDestroyCommandPool(Device.device, commandPool, null);
         vkDestroyFence(Device.device, immediateFence, null);
 
-        GraphicsQueue.INSTANCE.cleanUp();
-        TransferQueue.INSTANCE.cleanUp();
-
         Pipeline.destroyPipelineCache();
         swapChain.cleanUp();
 
@@ -211,7 +207,7 @@ public class Vulkan {
 
         vmaDestroyAllocator(allocator);
 
-        vkDestroyDevice(Device.device, null);
+        Device.destroy();
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, null);
         KHRSurface.vkDestroySurfaceKHR(instance, surface, null);
         vkDestroyInstance(instance, null);
@@ -421,7 +417,7 @@ public class Vulkan {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
 
-            vkQueueSubmit(Device.graphicsQueue, submitInfo, immediateFence);
+            vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, immediateFence);
 
             vkWaitForFences(Device.device, immediateFence, true, VUtil.UINT64_MAX);
             vkResetFences(Device.device, immediateFence);
@@ -458,12 +454,6 @@ public class Vulkan {
     }
 
     public static long getSurface() { return surface; }
-
-    public static VkQueue getPresentQueue() { return Device.presentQueue; }
-
-    public static VkQueue getGraphicsQueue() { return Device.graphicsQueue; }
-
-    public static VkQueue getTransferQueue() { return Device.transferQueue; }
 
     public static SwapChain getSwapChain() { return swapChain; }
 

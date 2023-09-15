@@ -1,8 +1,8 @@
 package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
+import net.vulkanmod.vulkan.VRenderSystem;
 
 import java.util.Objects;
 
@@ -15,16 +15,16 @@ public class PipelineState {
     public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
     public static final ColorMask DEFAULT_COLORMASK = new ColorMask(true, true, true, true);
 
-    public static BlendInfo blendInfo = PipelineState.defaultBlendInfo();
-    public static BlendState currentBlendState;
-    public static DepthState currentDepthState = PipelineState.DEFAULT_DEPTH_STATE;
-    public static LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
-    public static ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
+    public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
+    public static PipelineState.BlendState currentBlendState;
+    public static PipelineState.DepthState currentDepthState = PipelineState.DEFAULT_DEPTH_STATE;
+    public static PipelineState.LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
+    public static PipelineState.ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
 
     public static PipelineState getCurrentPipelineState(RenderPass renderPass) {
         currentBlendState = blendInfo.createBlendState();
         currentDepthState = VRenderSystem.getDepthState();
-        currentColorMask = new ColorMask(VRenderSystem.getColorMask());
+        currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
 
         return new PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask, renderPass);
     }

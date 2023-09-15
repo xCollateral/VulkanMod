@@ -2,15 +2,15 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.render.chunk.util.CircularIntList;
+import net.vulkanmod.render.chunk.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
-import net.vulkanmod.render.chunk.util.CircularIntList;
-import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.profiling.Profiler;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 public class SectionGrid {

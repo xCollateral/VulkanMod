@@ -1,4 +1,4 @@
-package net.vulkanmod.forge.mixin;
+package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
@@ -21,7 +21,6 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.profiling.Profiler2;
-import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.Optional;
 
@@ -107,25 +105,18 @@ public class MinecraftMixin {
         return Optional.empty();
     }
 
-    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;tick()V"),
-            locals = LocalCapture.CAPTURE_FAILHARD)
-    private void redirectResourceTick(boolean bl, CallbackInfo ci, long l, Runnable runnable, int i, int j) {
-        int n = Math.min(10, i) - 1;
-        SpriteUtil.setDoUpload(j == n);
-    }
-
     @Inject(method = "runTick", at = @At(value = "HEAD"))
     private void resetBuffers(boolean bl, CallbackInfo ci) {
         Renderer.getInstance().resetBuffers();
     }
 
 
-    @Inject(method = "close", at = @At(value = "HEAD"), remap = false)
+    @Inject(method = "close", at = @At(value = "HEAD"))
     public void close(CallbackInfo ci) {
         Vulkan.waitIdle();
 
     }
-    @Inject(method = "close", at = @At(value = "RETURN"), remap = false)
+    @Inject(method = "close", at = @At(value = "RETURN"))
     public void close2(CallbackInfo ci) {
 
         Vulkan.cleanUp();

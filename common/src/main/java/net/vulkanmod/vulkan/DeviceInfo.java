@@ -1,11 +1,12 @@
 package net.vulkanmod.vulkan;
 
+import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.*;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GraphicsCard;
-import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.util.Arrays;

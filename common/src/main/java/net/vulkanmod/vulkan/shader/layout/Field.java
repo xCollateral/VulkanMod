@@ -9,13 +9,11 @@ public abstract class Field {
     protected Supplier<MappedBuffer> values;
 
     FieldInfo fieldInfo;
-    protected long basePtr;
     protected long offset;
     protected int size;
 
-    Field(FieldInfo fieldInfo, long ptr) {
+    Field(FieldInfo fieldInfo) {
         this.fieldInfo = fieldInfo;
-        this.basePtr = ptr + (fieldInfo.offset * 4L);
         this.offset = fieldInfo.offset * 4L;
         this.size = fieldInfo.size * 4;
         this.setSupplier();
@@ -31,22 +29,20 @@ public abstract class Field {
         return this.fieldInfo.name;
     }
 
-    abstract void update();
-
     void update(long ptr) {
         MappedBuffer src = values.get();
 
         MemoryUtil.memCopy(src.ptr, ptr + this.offset, this.size);
     }
 
-    public static Field createField(FieldInfo info, long ptr) {
+    public static Field createField(FieldInfo info) {
         return switch (info.type) {
-            case "mat4" -> new Mat4f(info, ptr);
-            case "vec4" -> new Vec4f(info, ptr);
-            case "vec3" -> new Vec3f(info, ptr);
-            case "vec2" -> new Vec2f(info, ptr);
-            case "float" -> new Vec1f(info, ptr);
-            case "int" -> new Vec1i(info, ptr);
+            case "mat4" -> new Mat4f(info);
+            case "vec4" -> new Vec4f(info);
+            case "vec3" -> new Vec3f(info);
+            case "vec2" -> new Vec2f(info);
+            case "float" -> new Vec1f(info);
+            case "int" -> new Vec1i(info);
             default -> throw new RuntimeException("not admitted type: " + info.type);
         };
     }

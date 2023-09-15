@@ -4,16 +4,14 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.render.chunk.AreaUploadManager;
+import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.passes.DefaultMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.PipelineState;
-import net.vulkanmod.vulkan.shader.ShaderManager;
-import net.vulkanmod.vulkan.shader.Uniforms;
+import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -76,7 +74,7 @@ public class Renderer {
         device = Vulkan.getDevice();
 
         Uniforms.setupDefaultUniforms();
-        ShaderManager.init();
+        TerrainShaderManager.init();
         AreaUploadManager.createInstance();
 
         framesNum = getSwapChainImages().size();
@@ -321,7 +319,7 @@ public class Renderer {
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+            if((vkResult = vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
                 vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
@@ -336,7 +334,7 @@ public class Renderer {
 
             presentInfo.pImageIndices(pImageIndex);
 
-            vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
+            vkResult = vkQueuePresentKHR(Device.getPresentQueue().queue(), presentInfo);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
                 swapCahinUpdate = true;
@@ -363,7 +361,7 @@ public class Renderer {
                     .pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)))
                     .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
 
-            vkQueueSubmit(getGraphicsQueue(), info, inFlightFences.get(currentFrame));
+            vkQueueSubmit(Device.getGraphicsQueue().queue(), info, inFlightFences.get(currentFrame));
             vkWaitForFences(device, inFlightFences.get(currentFrame),  true, -1);
         }
     }
@@ -412,7 +410,7 @@ public class Renderer {
 
         drawer.cleanUpResources();
 
-        ShaderManager.getInstance().destroyPipelines();
+        TerrainShaderManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
     }
 
@@ -438,10 +436,9 @@ public class Renderer {
         this.onResizeCallbacks.add(runnable);
     }
 
-    public void bindPipeline(Pipeline pipeline) {
+    public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
-//        PipelineState currentState = new PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask, boundRenderPass);
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 

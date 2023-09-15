@@ -2,6 +2,7 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 
@@ -122,7 +123,7 @@ public class AreaBuffer {
         AreaUploadManager.INSTANCE.waitAllUploads();
 
         //Sync upload
-        TransferQueue.getInstance().uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        Device.getTransferQueue().uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
         this.buffer.freeBuffer();
         this.buffer = buffer;
 

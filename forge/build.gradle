@@ -30,7 +30,6 @@ configurations {
 
 dependencies {
     forge "net.neoforged:forge:${rootProject.forge_version}"
-    modApi "dev.architectury:architectury:${rootProject.architectury_version}"
 
     include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
     include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion"))

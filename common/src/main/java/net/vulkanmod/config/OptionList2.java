@@ -2,10 +2,7 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
@@ -28,12 +25,12 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
     }
 
     public void addButton(OptionWidget widget) {
-        this.addEntry(new Entry(widget));
+        this.addEntry(new net.vulkanmod.config.OptionList2.Entry(widget));
     }
 
     public void addAll(Option<?>[] options) {
         for (int i = 0; i < options.length; i++) {
-            this.addEntry(new Entry(options[i].createOptionWidget((int) (0.1f * width), 0, (int) (0.8f * width), 20)));
+            this.addEntry(new net.vulkanmod.config.OptionList2.Entry(options[i].createOptionWidget((int) (0.1f * width), 0, (int) (0.8f * width), 20)));
 //            this.addEntry(new Entry(options[i].createOptionWidget(width / 2 - 155, 0, 200, 20)));
         }
     }
@@ -43,7 +40,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
         if (!this.isMouseOver(mouseX, mouseY)) {
             return false;
         } else {
-            Entry entry = this.getEntryAtPos(mouseX, mouseY);
+            OptionList2.Entry entry = this.getEntryAtPos(mouseX, mouseY);
             if (entry != null) {
                 if (entry.mouseClicked(mouseX, mouseY, button)) {
                     this.setFocused(entry);
@@ -60,7 +57,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
     }
 
     @Nullable
-    protected OptionList2.Entry getEntryAtPos(double x, double y) {
+    protected net.vulkanmod.config.OptionList2.Entry getEntryAtPos(double x, double y) {
         int i = this.getRowWidth() / 2;
         int j = this.x0 + this.width / 2;
         int k = j - i;
@@ -68,7 +65,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
         int m = Mth.floor(y - (double)this.y0) - this.headerHeight + (int)this.getScrollAmount() - 4;
         int n = m / this.itemHeight;
         if (x < this.getScrollbarPosition() && x >= (double)k && x <= (double)l && n >= 0 && m >= 0 && n < this.getItemCount()) {
-            return (Entry)this.children().get(n);
+            return (net.vulkanmod.config.OptionList2.Entry)this.children().get(n);
         }
         return null;
     }
@@ -182,7 +179,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
     }
 
     public Optional<OptionWidget> getHoveredButton(double mouseX, double mouseY) {
-        for (Entry buttonEntry : this.children()) {
+        for (net.vulkanmod.config.OptionList2.Entry buttonEntry : this.children()) {
             if (!buttonEntry.button.isMouseOver(mouseX, mouseY)) continue;
             return Optional.of(buttonEntry.button);
         }
@@ -200,7 +197,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
             if (l < this.y0 || k > this.y1) continue;
             int m = y + j * this.itemHeight + this.headerHeight;
             int n = this.itemHeight - 4;
-            Entry entry = this.getEntry(j);
+            net.vulkanmod.config.OptionList2.Entry entry = this.getEntry(j);
             int o = this.getRowWidth();
             if (this.isSelectedItem(j)) {
                 p = this.x0 + this.width / 2 - o / 2;
@@ -234,7 +231,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
     }
 
     protected static class Entry
-            extends ContainerObjectSelectionList.Entry<Entry> {
+            extends ContainerObjectSelectionList.Entry<net.vulkanmod.config.OptionList2.Entry> {
         final OptionWidget button;
 
         private NarratableEntry focusedSelectable;

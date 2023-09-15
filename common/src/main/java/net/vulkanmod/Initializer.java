@@ -1,25 +1,39 @@
 package net.vulkanmod;
 
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.VideoResolution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import dev.architectury.platform.Platform;
 
 import java.nio.file.Path;
 
-public class Initializer {
+public class Initializer implements ClientModInitializer {
 	public static final Logger LOGGER = LogManager.getLogger("VulkanMod");
+
 	private static String VERSION;
-	public static Config CONFIG = loadConfig(Platform.getConfigFolder().resolve("vulkanmod_settings.json"));
-	public static final String MODID = "vulkanmod";
-	public static void onInitializeClient() {
-		VERSION = Platform.getMod("vulkanmod").getVersion();
+	public static Config CONFIG;
+
+	@Override
+	public void onInitializeClient() {
+
+		VERSION = FabricLoader.getInstance()
+				.getModContainer("vulkanmod")
+				.get()
+				.getMetadata()
+				.getVersion().getFriendlyString();
+
 		LOGGER.info("== VulkanMod ==");
+
 		VideoResolution.init();
-//        var configPath = Platform.getConfigFolder().resolve("vulkanmod_settings.json");
-//
-//        CONFIG = loadConfig(configPath);
+
+		var configPath = FabricLoader.getInstance()
+				.getConfigDir()
+				.resolve("vulkanmod_settings.json");
+
+		CONFIG = loadConfig(configPath);
+
 	}
 
 	private static Config loadConfig(Path path) {

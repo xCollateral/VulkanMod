@@ -1,13 +1,13 @@
 package net.vulkanmod.gl;
 
-import net.vulkanmod.vulkan.shader.ShaderSPIRVUtils;
+import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
 public class Util {
 
-    public static ShaderSPIRVUtils.ShaderKind extToShaderKind(String in) {
+    public static SPIRVUtils.ShaderKind extToShaderKind(String in) {
         return switch (in) {
-            case ".vsh" -> ShaderSPIRVUtils.ShaderKind.VERTEX_SHADER;
-            case ".fsh" -> ShaderSPIRVUtils.ShaderKind.FRAGMENT_SHADER;
+            case ".vsh" -> SPIRVUtils.ShaderKind.VERTEX_SHADER;
+            case ".fsh" -> SPIRVUtils.ShaderKind.FRAGMENT_SHADER;
             default -> throw new RuntimeException("unknown shader type: " + in);
         };
     }

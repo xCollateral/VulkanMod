@@ -1,37 +1,26 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import net.vulkanmod.vulkan.util.MappedBuffer;
+import net.vulkanmod.vulkan.shader.descriptor.UBO;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AlignedStruct {
 
-    @Deprecated
-    protected MappedBuffer buffer;
     protected List<Field> fields = new ArrayList<>();
     protected int size;
 
     protected AlignedStruct(List<Field.FieldInfo> infoList, int size) {
         this.size = size;
-        this.buffer = new MappedBuffer(size);
 
         if(infoList == null)
             return;
 
         for(Field.FieldInfo fieldInfo : infoList) {
 
-            Field field = Field.createField(fieldInfo, this.buffer.ptr);
+            Field field = Field.createField(fieldInfo);
             this.fields.add(field);
         }
-    }
-
-    @Deprecated
-    public void update() {
-        for(Field field : this.fields) {
-            field.update();
-        }
-
     }
 
     public void update(long ptr) {
@@ -42,10 +31,6 @@ public abstract class AlignedStruct {
 
     public List<Field> getFields() {
         return this.fields;
-    }
-
-    public long getBufferPtr() {
-        return this.buffer.ptr;
     }
 
     public int getSize() {
@@ -73,9 +58,9 @@ public abstract class AlignedStruct {
             this.fields.add(fieldInfo);
         }
 
-        public UBO buildUBO(int binding, int type) {
+        public UBO buildUBO(int binding, int stages) {
             //offset is expressed in floats/ints
-            return new UBO(binding, type, this.currentOffset * 4, this.fields);
+            return new UBO(binding, stages, this.currentOffset * 4, this.fields);
         }
 
         public PushConstants buildPushConstant() {

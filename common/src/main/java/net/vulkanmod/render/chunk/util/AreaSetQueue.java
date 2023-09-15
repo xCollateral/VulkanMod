@@ -4,6 +4,7 @@ import net.vulkanmod.render.chunk.ChunkArea;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 
 public class AreaSetQueue {
     private final int size;

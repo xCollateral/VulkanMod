@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk.build;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Iterator;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -24,9 +25,8 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Vector3f;
-
-import java.util.Iterator;
 
 @Environment(EnvType.CLIENT)
 public class LiquidRenderer {

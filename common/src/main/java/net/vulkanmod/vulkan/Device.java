@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -33,9 +33,10 @@ public class Device {
 
     public static SurfaceProperties surfaceProperties;
 
-    static VkQueue graphicsQueue;
-    static VkQueue presentQueue;
-    static VkQueue transferQueue;
+    static GraphicsQueue graphicsQueue;
+    static PresentQueue presentQueue;
+    static TransferQueue transferQueue;
+    static ComputeQueue computeQueue;
 
     static void pickPhysicalDevice(VkInstance instance) {
 
@@ -105,7 +106,7 @@ public class Device {
 
         try(MemoryStack stack = stackPush()) {
 
-            Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+            net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
             int[] uniqueQueueFamilies = indices.unique();
 
@@ -176,16 +177,25 @@ public class Device {
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
 
-            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
+//            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
+//
+//            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
+//            graphicsQueue = new VkQueue(pQueue.get(0), device);
+//
+//            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
+//            presentQueue = new VkQueue(pQueue.get(0), device);
+//
+//            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
+//            transferQueue = new VkQueue(pQueue.get(0), device);
 
-            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
-            graphicsQueue = new VkQueue(pQueue.get(0), device);
+            graphicsQueue = new GraphicsQueue(stack, indices.graphicsFamily);
+            transferQueue = new TransferQueue(stack, indices.transferFamily);
+            presentQueue = new PresentQueue(stack, indices.presentFamily);
+            computeQueue = new ComputeQueue(stack, indices.computeFamily);
 
-            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
-            presentQueue = new VkQueue(pQueue.get(0), device);
-
-            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
-            transferQueue = new VkQueue(pQueue.get(0), device);
+//            GraphicsQueue.createInstance(stack, indices.graphicsFamily);
+//            TransferQueue.createInstance(stack, indices.transferFamily);
+//            PresentQueue.createInstance(stack, indices.presentFamily);
 
         }
     }
@@ -288,6 +298,30 @@ public class Device {
         }
 
         throw new RuntimeException("Failed to find supported format");
+    }
+
+    public static void destroy() {
+        graphicsQueue.cleanUp();
+        transferQueue.cleanUp();
+        computeQueue.cleanUp();
+
+        vkDestroyDevice(device, null);
+    }
+
+    public static GraphicsQueue getGraphicsQueue() {
+        return graphicsQueue;
+    }
+
+    public static PresentQueue getPresentQueue() {
+        return presentQueue;
+    }
+
+    public static TransferQueue getTransferQueue() {
+        return transferQueue;
+    }
+
+    public static ComputeQueue getComputeQueue() {
+        return computeQueue;
     }
 
     public static SurfaceProperties querySurfaceProperties(VkPhysicalDevice device, MemoryStack stack) {
