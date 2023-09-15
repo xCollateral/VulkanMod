@@ -3,16 +3,17 @@
   "id": "vulkanmod",
   "version": "${version}",
   "name": "VulkanMod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "description": "Bring Vulkan to Minecraft!",
   "authors": [
     "Collateral"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "",
+    "sources": "https://github.com/xCollateral/VulkanMod"
   },
-  "license": "Insert License Here",
-  "icon": "assets/vulkanmod/icon.png",
+
+  "icon": "assets/vulkanmod/Vlogo.png",
+
   "environment": "*",
   "entrypoints": {
     "client": [
@@ -25,6 +26,7 @@
   ],
   "depends": {
     "fabric": "*",
-    "minecraft": ">=1.20.1"
+    "minecraft": ">=1.20",
+    "java": ">=17"
   }
 }
