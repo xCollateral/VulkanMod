@@ -21,6 +21,8 @@ dependencies {
     include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
     include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
     include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
+
+    include(implementation("com.google.code.findbugs:jsr305:3.0.2"))
 }
 
 publishing {
