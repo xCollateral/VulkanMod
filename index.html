@@ -19,12 +19,12 @@
     <meta property="og:url" content="vkminecraft.dev" />
     <meta property="og:title" content="VulkanMod" />
     <meta property="og:description" content="A fabric mod that rewrites Minecraft OpenGL® renderer to use Vulkan® API." />
-    <meta property="og:image" content="https://raw.githubusercontent.com/chitanda-dev/VulkanMod/web/VulkanModStars.png" />
+    <meta property="og:image" content="https://raw.githubusercontent.com/morikoa/VulkanMod/web/VulkanModStars.png" />
 
     <meta property="twitter:url" content="vkminecraft.dev" />
     <meta property="twitter:title" content="VulkanMod" />
     <meta property="twitter:description" content="A fabric mod that rewrites Minecraft OpenGL® renderer to use Vulkan® API." />
-    <meta property="twitter:image" content="https://raw.githubusercontent.com/chitanda-dev/VulkanMod/web/VulkanModStars.png"/>
+    <meta property="twitter:image" content="https://raw.githubusercontent.com/morikoa/VulkanMod/web/VulkanModStars.png"/>
 </head>
 <body>
     <div id="particles"></div>
@@ -59,9 +59,24 @@
           <div style="display: block; margin-top: 12px"><a class="btn button" href="javascript:void(0)" onclick="disclaimerModal()">Close</a></div>  
         </div>
     </div>
+    <div id="contributor" class="modal">
+        <div class="content animate__animated animate__fadeInDown">
+          <span class="close" onclick="conModal()">&times;</span>
+          <h4 class="header">Contributors:</h4>
+          <ul class="text">
+            <li><a class="link" href="https://github.com/thr3343">thr3343</a> - Core Mod Development</li>
+            <li><a class="link" href="https://github.com.CADIndie">CADIndie</a> - Forge Port</li>
+            <li><a class="link" href="https://pieman.dev">piemanau</a> - Website adjustments</li>
+            <li><a class="link" href="https://github.com/Sollace">Sollace</a> - OpenGL Mod Compatibility fixes</li>
+            <li><a class="link" href="https://www.youtube.com/@SpidFightFR">SpidFightFR</a> - VulkanMod contents</li>
+            <li><a class="link" href="https://github.com/khanhduytran0">DuyKhanhTran</a> - Mobile Devices ports</li>
+          </ul>
+          <div style="display: block; margin-top: 12px"><a class="btn button" href="javascript:void(1)" onclick="conModal()">Close</a></div>  
+        </div>
+    </div>
     <div class="footer">
         <p>© COPYRIGHT 2023 XCOLLATERAL. NOT APPROVED BY OR ASSOCIATED WITH MOJANG. <a href="javascript:void(0)" onclick="disclaimerModal()" class="link">DISCLAIMER</a></p>
-        <p>Made with 💖 by <a class="link" href="https://github.com/chitanda-dev"> chitanda</a> and<a class="link" href="https://github.com/xCollateral"> xCollateral</a>. Special thanks to <a class="link" href="https://pieman.dev/"> piemanau</a> for website adjustments.</p>
+        <p>Made with 💖 by <a class="link" href="https://github.com/morikoa"> mori</a> and<a class="link" href="https://github.com/xCollateral"> xCollateral</a>. Special thanks to our <a href="javascript:void(1)" onclick="conModal()" class="link">Contributors</a></p>
     </div>
     <script src="./particles.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js" integrity="sha512-aVKKRRi/Q/YV+4mjoKBsE4x3H+BkegoM/em46NNlCqNTmUYADjBbeNefNxYV7giUp0VxICtqdrbqU7iVaeZNXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -71,6 +86,10 @@
         var modal = $("#disclaimer");
         function disclaimerModal() {
             modal.toggle();
+        }
+        var Modal = $("#contributor");
+        function conModal() {
+            Modal.toggle();
         }
     </script>
 </body>
