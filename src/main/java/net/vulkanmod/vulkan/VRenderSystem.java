@@ -133,8 +133,7 @@ public class VRenderSystem {
     public static void calculateMVP() {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
         org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
-
-        P.mul(MV).get(MVP.buffer);
+        (P.mul(MV)).mulLocal(Vulkan.getPretransformMatrix()).get(MVP.buffer);
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
