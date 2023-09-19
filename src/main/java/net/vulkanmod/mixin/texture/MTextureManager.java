@@ -5,6 +5,8 @@ import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
 import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.render.texture.SpriteUtil;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,16 +33,16 @@ public abstract class MTextureManager {
             return;
 
         //Debug D
-//        if(SpriteUtil.shouldUpload())
-//            GraphicsQueue.getInstance().startRecording();
-//        for (Tickable tickable : this.tickableTextures) {
-//            tickable.tick();
-//        }
-//        if(SpriteUtil.shouldUpload()) {
-//            SpriteUtil.transitionLayouts(GraphicsQueue.getInstance().getCommandBuffer());
-//            GraphicsQueue.getInstance().endRecordingAndSubmit();
-////            Synchronization.INSTANCE.waitFences();
-//        }
+        if(SpriteUtil.shouldUpload())
+            Device.getGraphicsQueue().startRecording();
+        for (Tickable tickable : this.tickableTextures) {
+            tickable.tick();
+        }
+        if(SpriteUtil.shouldUpload()) {
+            SpriteUtil.transitionLayouts(Device.getGraphicsQueue().getCommandBuffer());
+            Device.getGraphicsQueue().endRecordingAndSubmit();
+//            Synchronization.INSTANCE.waitFences();
+        }
     }
 
     /**

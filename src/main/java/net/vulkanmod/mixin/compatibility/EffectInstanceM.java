@@ -11,7 +11,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.layout.Field;
-import net.vulkanmod.vulkan.shader.layout.UBO;
+import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.parser.GlslConverter;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
@@ -102,7 +102,7 @@ public class EffectInstanceM {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createPipeline();
+            this.pipeline = builder.createGraphicsPipeline();
 
         } catch (IOException e) {
             throw new RuntimeException(e);

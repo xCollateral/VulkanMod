@@ -68,7 +68,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
             stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
-            TransferQueue.INSTANCE.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
+            Device.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
         }
 
         @Override
@@ -81,7 +81,7 @@ public class MemoryTypes {
                 throw new IllegalArgumentException("dst size is less than src size.");
             }
 
-            return TransferQueue.INSTANCE.copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
+            return Device.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
         }
 
         @Override
@@ -90,7 +90,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
 
-            TransferQueue.INSTANCE.copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
+            Device.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
 
         }
 

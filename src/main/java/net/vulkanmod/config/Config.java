@@ -19,6 +19,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = true;
+    public boolean entityCulling = true;
 
     private static Path path;
 

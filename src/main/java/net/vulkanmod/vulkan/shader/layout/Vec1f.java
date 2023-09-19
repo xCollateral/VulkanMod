@@ -9,8 +9,8 @@ import java.util.function.Supplier;
 public class Vec1f extends Field {
     private Supplier<Float> floatSupplier;
 
-    public Vec1f(FieldInfo fieldInfo, long ptr) {
-        super(fieldInfo, ptr);
+    public Vec1f(FieldInfo fieldInfo) {
+        super(fieldInfo);
     }
 
     void setSupplier() {
@@ -19,26 +19,8 @@ public class Vec1f extends Field {
         Validate.notNull(this.floatSupplier, "Field name not found: " + this.fieldInfo.name);
     }
 
-    void update() {
-        if(this.floatSupplier != null) {
-            float f = this.floatSupplier.get();
-            MemoryUtil.memPutFloat(this.basePtr, f);
-        }
-        else {
-            //TODO
-//            MappedBuffer buffer = this.values.get();
-//
-//            MemoryUtil.memPutFloat(this.basePtr, buffer.getFloat(0));
-        }
-    }
-
     void update(long ptr) {
-        if(this.floatSupplier != null) {
-            float f = this.floatSupplier.get();
-            MemoryUtil.memPutFloat(ptr + this.offset, f);
-        }
-        else {
-            //TODO
-        }
+        float f = this.floatSupplier.get();
+        MemoryUtil.memPutFloat(ptr + this.offset, f);
     }
 }

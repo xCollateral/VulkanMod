@@ -1,11 +1,12 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Vulkan;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
-import java.util.ArrayDeque;
 import java.util.stream.IntStream;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -18,26 +19,44 @@ public abstract class Queue {
     private static QueueFamilyIndices queueFamilyIndices;
     protected CommandPool commandPool;
 
-    public synchronized CommandPool.CommandBuffer beginCommands() {
+    private final VkQueue queue;
 
+    public synchronized CommandPool.CommandBuffer beginCommands() {
         return this.commandPool.beginCommands();
     }
 
-    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
+    Queue(MemoryStack stack, int familyIndex) {
+        this(stack, familyIndex, true);
+    }
+
+    Queue(MemoryStack stack, int familyIndex, boolean initCommandPool) {
+        PointerBuffer pQueue = stack.mallocPointer(1);
+        vkGetDeviceQueue(Device.device, familyIndex, 0, pQueue);
+        this.queue = new VkQueue(pQueue.get(0), Device.device);
+
+        if(initCommandPool)
+            this.commandPool = new CommandPool(familyIndex);
+    }
+
+    public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
+        return this.commandPool.submitCommands(commandBuffer, queue);
+    }
+
+    public VkQueue queue() { return this.queue; }
 
     public void cleanUp() {
-        commandPool.cleanUp();
+        if(commandPool != null)
+            commandPool.cleanUp();
+    }
+
+    public void waitIdle() {
+        vkQueueWaitIdle(queue);
     }
 
     public enum Family {
         Graphics,
         Transfer,
         Compute
-    }
-
-    public static void initQueues() {
-        GraphicsQueue.createInstance();
-        TransferQueue.createInstance();
     }
 
     public static QueueFamilyIndices getQueueFamilies() {

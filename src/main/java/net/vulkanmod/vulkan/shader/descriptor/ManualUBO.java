@@ -1,7 +1,5 @@
-package net.vulkanmod.vulkan.shader;
+package net.vulkanmod.vulkan.shader.descriptor;
 
-import net.vulkanmod.vulkan.shader.layout.Field;
-import net.vulkanmod.vulkan.shader.layout.UBO;
 import org.lwjgl.system.MemoryUtil;
 
 public class ManualUBO extends UBO {
@@ -11,10 +9,6 @@ public class ManualUBO extends UBO {
 
     public ManualUBO(int binding, int type, int size) {
         super(binding, type, size * 4, null);
-    }
-
-    public void update() {
-        //update manually
     }
 
     @Override

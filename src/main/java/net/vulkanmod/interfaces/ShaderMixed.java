@@ -1,8 +1,8 @@
 package net.vulkanmod.interfaces;
 
-import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 
 public interface ShaderMixed {
 
-    Pipeline getPipeline();
+    GraphicsPipeline getPipeline();
 }

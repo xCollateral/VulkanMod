@@ -17,6 +17,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.util.Pair;
@@ -55,9 +56,6 @@ public abstract class LevelRendererMixin {
     private WorldRenderer worldRenderer;
 
     @Unique
-    private static boolean ENTITIES_OPT = true;
-
-    @Unique
     private Object2ReferenceOpenHashMap<Class<? extends Entity>, ObjectArrayList<Pair<Entity, MultiBufferSource>>> entitiesMap = new Object2ReferenceOpenHashMap<>();
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -89,8 +87,6 @@ public abstract class LevelRendererMixin {
     private void setupRender(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
         this.worldRenderer.setupRenderer(camera, frustum, isCapturedFrustum, spectator);
 
-        ENTITIES_OPT = true;
-//        ENTITIES_OPT = false;
         entitiesMap.clear();
     }
 
@@ -200,7 +196,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource) {
-        if(!ENTITIES_OPT) {
+        if(!Initializer.CONFIG.entityCulling) {
             double h = Mth.lerp((double)g, entity.xOld, entity.getX());
             double i = Mth.lerp((double)g, entity.yOld, entity.getY());
             double j = Mth.lerp((double)g, entity.zOld, entity.getZ());
@@ -226,7 +222,7 @@ public abstract class LevelRendererMixin {
             shift = At.Shift.AFTER, ordinal = 0)
     )
     private void renderEntities(PoseStack poseStack, float partialTicks, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-        if(!ENTITIES_OPT)
+        if(!Initializer.CONFIG.entityCulling)
             return;
 
         Vec3 cameraPos = WorldRenderer.getCameraPos();

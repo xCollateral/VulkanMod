@@ -160,6 +160,7 @@ public class MemoryManager {
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
 //            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
+            //TODO
             imageInfo.pQueueFamilyIndices(stack.ints(0,1));
 
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
@@ -267,7 +268,7 @@ public class MemoryManager {
         List<VulkanImage> bufferList = freeableImages[currentFrame];
         for(VulkanImage image : bufferList) {
 
-            image.doFree(this);
+            image.doFree();
         }
 
         bufferList.clear();
