@@ -340,8 +340,6 @@ public class WorldRenderer {
     private void updateRenderChunksSpectator() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-        this.initUpdate();
-
         int rebuildLimit = taskDispatcher.getIdleThreadsCount();
 
         if(rebuildLimit == 0)
