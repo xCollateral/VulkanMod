@@ -6,6 +6,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -45,7 +46,12 @@ public class EntityRendererM<T extends Entity> {
 
             Vec3 pos = aABB.getCenter();
 
-            return (worldRenderer.getLastFrame() == worldRenderer.getSectionGrid().getSectionAtBlockPos((int) pos.x(), (int) pos.y(), (int) pos.z()).getLastFrame());
+            RenderSection section = worldRenderer.getSectionGrid().getSectionAtBlockPos((int) pos.x(), (int) pos.y(), (int) pos.z());
+
+            if(section == null)
+                return frustum.isVisible(aABB);
+            
+            return worldRenderer.getLastFrame() == section.getLastFrame();
         } else {
             return frustum.isVisible(aABB);
         }
