@@ -32,7 +32,7 @@ public class CyclingOptionWidget extends OptionWidget {
     }
 
     public void renderBackground(GuiGraphics guiGraphics, Minecraft client, int mouseX, int mouseY) {
-        RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
+//        RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         int i = (this.isHovered() ? 2 : 1) * 20;
 //        this.drawTexture(matrices, this.controlX, this.y, 0, 46 + i, 8, this.height);
@@ -105,7 +105,6 @@ public class CyclingOptionWidget extends OptionWidget {
             Tesselator tesselator = Tesselator.getInstance();
             BufferBuilder bufferBuilder = tesselator.getBuilder();
 
-            RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             int i = (this.isHovered(mouseX, mouseY) ? 2 : 1) * 20;
             i = this.active ? i : 0;

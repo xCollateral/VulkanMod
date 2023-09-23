@@ -126,7 +126,8 @@ public abstract class ChatComponentM {
                                         int ad = this.getTagIconLeft(line);
                                         Objects.requireNonNull(this.minecraft.font);
                                         int ae = ab + 9;
-                                        this.drawTagIcon(mat1, ad, ae, guiMessageTag.icon());
+//                                        this.drawTagIcon(mat1, ad, ae, guiMessageTag.icon());
+                                        this.drawTagIcon(guiGraphics, ad, ae, guiMessageTag.icon());
                                     }
                                 }
 
@@ -227,11 +228,16 @@ public abstract class ChatComponentM {
         }
     }
 
-    private void drawTagIcon(Matrix4f mat4f, int i, int j, GuiMessageTag.Icon icon) {
-        int k = j - icon.height - 1;
-        RenderSystem.setShaderTexture(0, TEXTURE_LOCATION);
+//    private void drawTagIcon(Matrix4f mat4f, int i, int j, GuiMessageTag.Icon icon) {
+//        int k = j - icon.height - 1;
+//        RenderSystem.setShaderTexture(0, TEXTURE_LOCATION);
+//
+//        GuiBatchRenderer.blit(mat4f, i, k, icon.u, icon.v, icon.width, icon.height, 32, 32);
+//    }
 
-        GuiBatchRenderer.blit(mat4f, i, k, icon.u, icon.v, icon.width, icon.height, 32, 32);
+    private void drawTagIcon(GuiGraphics guiGraphics, int i, int j, GuiMessageTag.Icon icon) {
+        int k = j - icon.height - 1;
+        icon.draw(guiGraphics, i, k);
     }
 
     private static double getTimeFactor(int i) {

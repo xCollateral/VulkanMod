@@ -1,11 +1,13 @@
 package net.vulkanmod.config;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -18,6 +20,7 @@ import net.vulkanmod.config.widget.OptionWidget;
 import net.vulkanmod.vulkan.util.VUtil;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +40,8 @@ public class OptionScreenV extends Screen {
 
     private CustomButtonWidget doneButton;
     private CustomButtonWidget applyButton;
+
+    private final List<CustomButtonWidget> buttons = Lists.newArrayList();
 
     public OptionScreenV(Component title, Screen parent) {
         super(title);
@@ -87,9 +92,11 @@ public class OptionScreenV extends Screen {
     }
 
     private void buildPage() {
+        this.buttons.clear();
         this.clearWidgets();
 
-        if(this.currentList == null) this.currentList = optionLists.get(0);
+        if(this.currentList == null)
+            this.currentList = optionLists.get(0);
 
         this.addWidget(currentList);
 
@@ -99,14 +106,19 @@ public class OptionScreenV extends Screen {
     }
 
     private void buildHeader() {
-        this.addRenderableWidget(this.videoButton);
-        this.addRenderableWidget(this.graphicsButton);
-        this.addRenderableWidget(this.otherButton);
-        this.addRenderableWidget(this.supportButton);
+        buttons.add(this.videoButton);
+        buttons.add(this.graphicsButton);
+        buttons.add(this.otherButton);
+        buttons.add(this.supportButton);
+
+        this.addWidget(this.videoButton);
+        this.addWidget(this.graphicsButton);
+        this.addWidget(this.otherButton);
+        this.addWidget(this.supportButton);
     }
 
     private void addButtons() {
-        int buttonX = (int) (this.width - 150);
+        int buttonX = (this.width - 150);
         int buttonGap = 55;
         this.applyButton = new CustomButtonWidget(buttonX, this.height - 27, 50, 20, Component.literal("Apply"), button -> {
             Options.applyOptions(Initializer.CONFIG, new Option[][]{this.videoOpts, this.graphicsOpts, this.otherOpts});
@@ -115,8 +127,11 @@ public class OptionScreenV extends Screen {
             this.minecraft.setScreen(this.parent);
         });
 
-        this.addRenderableWidget(this.applyButton);
-        this.addRenderableWidget(this.doneButton);
+        buttons.add(this.applyButton);
+        buttons.add(this.doneButton);
+
+        this.addWidget(this.applyButton);
+        this.addWidget(this.doneButton);
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -140,15 +155,18 @@ public class OptionScreenV extends Screen {
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         this.updateStatus();
 
-        this.renderBackground(guiGraphics);
         this.currentList.render(guiGraphics, mouseX, mouseY, delta);
-//        guiGraphics.fill(0, 0, width, height, VUtil.packColor(0.6f, 0.2f, 0.2f, 0.5f));
+        renderButtons(guiGraphics, mouseX, mouseY, delta);
 
-//        VideoOptionsScreen.drawCenteredComponent(matrices, this.textRenderer, this.title, this.width / 2, 5, 0xFFFFFF);
-        super.render(guiGraphics, mouseX, mouseY, delta);
         List<FormattedCharSequence> list = getHoveredButtonTooltip(this.currentList, mouseX, mouseY);
         if (list != null) {
             guiGraphics.renderTooltip(this.minecraft.font, list, mouseX, mouseY);
+        }
+    }
+
+    public void renderButtons(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
+        for (Renderable renderable : buttons) {
+            renderable.render(guiGraphics, mouseX, mouseY, delta);
         }
     }
 
