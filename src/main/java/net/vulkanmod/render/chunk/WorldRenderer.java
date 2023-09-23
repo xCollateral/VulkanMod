@@ -193,7 +193,7 @@ public class WorldRenderer {
         if (!isCapturedFrustum) {
 
             //Debug
-            this.needsUpdate = true;
+//            this.needsUpdate = true;
 //            this.needsUpdate = false;
 
             if (this.needsUpdate) {
