@@ -428,7 +428,7 @@ public class WorldRenderer {
         return true;
     }
 
-    public void compileChunks(Camera camera) {
+    public void compileSections(Camera camera) {
         this.minecraft.getProfiler().push("populate_chunks_to_compile");
 //        RenderRegionCache renderregioncache = new RenderRegionCache();
 //        BlockPos cameraPos = camera.getBlockPosition();
@@ -463,7 +463,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().pop();
     }
 
-    public boolean isChunkCompiled(BlockPos blockPos) {
+    public boolean isSectionCompiled(BlockPos blockPos) {
         RenderSection renderSection = this.sectionGrid.getSectionAtBlockPos(blockPos);
         return renderSection != null && renderSection.isCompiled();
     }
@@ -533,7 +533,7 @@ public class WorldRenderer {
         this.onAllChangedCallbacks.clear();
     }
 
-    public void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
+    public void renderSectionLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();

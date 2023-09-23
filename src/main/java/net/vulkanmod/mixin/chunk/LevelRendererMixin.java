@@ -96,7 +96,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void compileChunks(Camera camera) {
-        this.worldRenderer.compileChunks(camera);
+        this.worldRenderer.compileSections(camera);
     }
 
     /**
@@ -105,7 +105,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     public boolean isChunkCompiled(BlockPos blockPos) {
-        return this.worldRenderer.isChunkCompiled(blockPos);
+        return this.worldRenderer.isSectionCompiled(blockPos);
     }
 
     /**
@@ -114,7 +114,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
-        this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
+        this.worldRenderer.renderSectionLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
     }
 
     /**
