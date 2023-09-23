@@ -321,7 +321,7 @@ public class VulkanImage {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(mipLevels);
                 samplerInfo.minLod(0.0F);
-//                samplerInfo.mipLodBias(-1.0F);
+                samplerInfo.mipLodBias(-0.5F);
             } else {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(0.0F);
