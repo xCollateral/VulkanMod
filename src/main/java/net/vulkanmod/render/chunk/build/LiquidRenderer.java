@@ -151,11 +151,11 @@ public class LiquidRenderer {
                 float r1;
                 if (vec3.x == 0.0 && vec3.z == 0.0) {
                     textureAtlasSprite = textureAtlasSprites[0];
-                    z = textureAtlasSprite.getU(0.0);
-                    aa = textureAtlasSprite.getV(0.0);
+                    z = textureAtlasSprite.getU(0.0f);
+                    aa = textureAtlasSprite.getV(0.0f);
                     ab = z;
-                    ac = textureAtlasSprite.getV(16.0);
-                    ad = textureAtlasSprite.getU(16.0);
+                    ac = textureAtlasSprite.getV(16.0f);
+                    ad = textureAtlasSprite.getU(16.0f);
                     ae = ac;
                     af = ad;
                     ag = aa;
@@ -308,11 +308,11 @@ public class LiquidRenderer {
                     }
                 }
 
-                float av = textureAtlasSprite2.getU(0.0);
-                float aw = textureAtlasSprite2.getU(8.0);
-                float ax = textureAtlasSprite2.getV((double)((1.0F - af) * 16.0F * 0.5F));
-                float ay = textureAtlasSprite2.getV((double)((1.0F - aa) * 16.0F * 0.5F));
-                float az = textureAtlasSprite2.getV(8.0);
+                float av = textureAtlasSprite2.getU(0.0f);
+                float aw = textureAtlasSprite2.getU(8.0f);
+                float ax = textureAtlasSprite2.getV((1.0F - af) * 16.0F * 0.5F);
+                float ay = textureAtlasSprite2.getV((1.0F - aa) * 16.0F * 0.5F);
+                float az = textureAtlasSprite2.getV(8.0f);
                 float ba = direction.getAxis() == Direction.Axis.Z ? l : m;
                 float bb = k * ba * f;
                 float bc = k * ba * g;

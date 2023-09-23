@@ -35,7 +35,6 @@ public class RangeOptionWidget extends OptionWidget {
 
     @Override
     protected void renderBackground(GuiGraphics guiGraphics, Minecraft client, int mouseX, int mouseY) {
-        RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         int i = (this.isHovered() ? 2 : 1) * 20;
 //        this.drawTexture(matrices, this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y, 0, 46 + i, 4, 20);

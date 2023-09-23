@@ -1,9 +1,9 @@
 package net.vulkanmod.mixin.profiling;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.vulkanmod.render.profiling.ProfilerOverlay;
 import org.spongepowered.asm.mixin.Final;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class GuiMixin {
 
-    @Shadow @Final private Minecraft minecraft;
+    @Shadow @Final private DebugScreenOverlay debugOverlay;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void createProfilerOverlay(Minecraft minecraft, ItemRenderer itemRenderer, CallbackInfo ci) {
@@ -26,7 +26,7 @@ public class GuiMixin {
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Gui;renderEffects(Lnet/minecraft/client/gui/GuiGraphics;)V", shift = At.Shift.AFTER))
     private void renderProfilerOverlay(GuiGraphics guiGraphics, float f, CallbackInfo ci) {
-        if(ProfilerOverlay.shouldRender && !this.minecraft.options.renderDebug)
+        if(ProfilerOverlay.shouldRender && !this.debugOverlay.showDebugScreen())
             ProfilerOverlay.INSTANCE.render(guiGraphics.pose());
     }
 }

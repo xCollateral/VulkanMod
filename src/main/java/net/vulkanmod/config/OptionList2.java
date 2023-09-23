@@ -75,7 +75,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
         int o;
         int n;
         int m;
-        this.renderBackground(matrices);
+//        this.renderBackground(matrices);
         int i = this.getScrollbarPosition();
         int j = i + 6;
         Tesselator tesselator = Tesselator.getInstance();

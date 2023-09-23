@@ -50,7 +50,7 @@ public class EntityRendererM<T extends Entity> {
 
             if(section == null)
                 return frustum.isVisible(aABB);
-            
+
             return worldRenderer.getLastFrame() == section.getLastFrame();
         } else {
             return frustum.isVisible(aABB);
