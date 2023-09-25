@@ -5,18 +5,32 @@ import net.minecraft.core.Direction;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+import java.util.Set;
+
 public class CubeModel {
 
-    private final ModelPart.Polygon[] polygons = new ModelPart.Polygon[6];
+    private ModelPart.Polygon[] polygons = new ModelPart.Polygon[6];
+    public float minX;
+    public float minY;
+    public float minZ;
+    public float maxX;
+    public float maxY;
+    public float maxZ;
 
     Vector3f[] vertices;
     Vector3f[] transformed = new Vector3f[8];
 
-    public void setVertices(int i, int j, float f, float g, float h, float k, float l, float m, float n, float o, float p, boolean bl, float q, float r) {
-
-        float s = f + k;
-        float t = g + l;
-        float u = h + m;
+    public void setVertices(int i, int j, float f, float g, float h, float k, float l, float m, float n, float o, float p, boolean bl, float q, float r, Set<Direction> set) {
+        this.minX = f;
+        this.minY = g;
+        this.minZ = h;
+        this.maxX = f + k;
+        this.maxY = g + l;
+        this.maxZ = h + m;
+        this.polygons = new ModelPart.Polygon[set.size()];
+        float s = maxX;
+        float t = maxY;
+        float u = maxZ;
         f -= n;
         g -= o;
         h -= p;
@@ -44,7 +58,6 @@ public class CubeModel {
             //pre-divide all vertices once
             this.vertices[i1].div(16.0f);
             this.transformed[i1] = new Vector3f(0.0f);
-//            this.tv[i1] = new Vector3f(this.vertices[i1]);
         }
 
         ModelPart.Vertex vertex1 = new ModelPart.Vertex(transformed[0], 0.0F, 0.0F);
@@ -65,12 +78,30 @@ public class CubeModel {
         float ac = (float)j;
         float ad = (float)j + m;
         float ae = (float)j + m + l;
-        this.polygons[2] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex5, vertex1, vertex2}, x, ac, y, ad, q, r, bl, Direction.DOWN);
-        this.polygons[3] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex3, vertex4, vertex8, vertex7}, y, ad, z, ac, q, r, bl, Direction.UP);
-        this.polygons[1] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex1, vertex5, vertex8, vertex4}, w, ad, x, ae, q, r, bl, Direction.WEST);
-        this.polygons[4] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex2, vertex1, vertex4, vertex3}, x, ad, y, ae, q, r, bl, Direction.NORTH);
-        this.polygons[0] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex2, vertex3, vertex7}, y, ad, aa, ae, q, r, bl, Direction.EAST);
-        this.polygons[5] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex5, vertex6, vertex7, vertex8}, aa, ad, ab, ae, q, r, bl, Direction.SOUTH);
+        int idx = 0;
+        if (set.contains(Direction.DOWN)) {
+            this.polygons[idx++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex5, vertex1, vertex2}, x, ac, y, ad, q, r, bl, Direction.DOWN);
+        }
+
+        if (set.contains(Direction.UP)) {
+            this.polygons[idx++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex3, vertex4, vertex8, vertex7}, y, ad, z, ac, q, r, bl, Direction.UP);
+        }
+
+        if (set.contains(Direction.WEST)) {
+            this.polygons[idx++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex1, vertex5, vertex8, vertex4}, w, ad, x, ae, q, r, bl, Direction.WEST);
+        }
+
+        if (set.contains(Direction.NORTH)) {
+            this.polygons[idx++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex2, vertex1, vertex4, vertex3}, x, ad, y, ae, q, r, bl, Direction.NORTH);
+        }
+
+        if (set.contains(Direction.EAST)) {
+            this.polygons[idx++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex2, vertex3, vertex7}, y, ad, aa, ae, q, r, bl, Direction.EAST);
+        }
+
+        if (set.contains(Direction.SOUTH)) {
+            this.polygons[idx] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex5, vertex6, vertex7, vertex8}, aa, ad, ab, ae, q, r, bl, Direction.SOUTH);
+        }
     }
 
     public void transformVertices(Matrix4f matrix) {
