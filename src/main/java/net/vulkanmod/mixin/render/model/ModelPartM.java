@@ -10,11 +10,13 @@ import net.vulkanmod.render.vertex.VertexUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
+import java.util.Iterator;
 import java.util.List;
 
 @Mixin(ModelPart.class)
@@ -38,12 +40,12 @@ public class ModelPartM {
             ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
             CubeModel cubeModel = cubeMixed.getCubeModel();
 
-            ModelPart.Polygon[] var11 = cubeModel.getPolygons();
-//            int var12 = var11.length;
+            ModelPart.Polygon[] polygons = cubeModel.getPolygons();
+//            int var12 = polygons.length;
 
             cubeModel.transformVertices(matrix4f);
 
-            for (ModelPart.Polygon polygon : var11) {
+            for (ModelPart.Polygon polygon : polygons) {
                 Vector3f vector3f = matrix3f.transform(new Vector3f(polygon.normal));
 //                float l = vector3f.x();
 //                float m = vector3f.y();
