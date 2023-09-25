@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static net.vulkanmod.Initializer.LOGGER;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -31,13 +30,16 @@ import static org.lwjgl.vulkan.VK10.*;
 public class SwapChain extends Framebuffer {
     private static int DEFAULT_DEPTH_FORMAT = 0;
 
+    //Drivers are not guaranteed to support Mailbox Mode
+    private static final int defNoTearMode = checkDisplayMode(VK_PRESENT_MODE_MAILBOX_KHR) ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+
+    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    private static final int defUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
     }
 
     private RenderPass renderPass;
-    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    private static final int defUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
     private long[] framebuffers;
     private long swapChain = VK_NULL_HANDLE;
     private List<VulkanImage> swapChainImages;
@@ -53,7 +55,22 @@ public class SwapChain extends Framebuffer {
         this.attachmentCount = 2;
 
         this.depthFormat = DEFAULT_DEPTH_FORMAT;
+
         createSwapChain();
+
+    }
+
+    private static boolean checkDisplayMode(int requestedMode) {
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer availablePresentModes = Device.querySurfaceProperties(getDevice().getPhysicalDevice(), stack).presentModes;
+
+            for (int i = 0; i < availablePresentModes.capacity(); i++) {
+                if (availablePresentModes.get(i) == requestedMode) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
     }
 
@@ -357,7 +374,8 @@ public class SwapChain extends Framebuffer {
 
     private int getPresentMode(IntBuffer availablePresentModes) {
 
-        int requestedMode = Initializer.CONFIG.useImmediate ? VK_PRESENT_MODE_IMMEDIATE_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR
+                : Initializer.CONFIG.useImmediate ? defUncappedMode : defNoTearMode;
 
         //fifo mode is the only mode that has to be supported
         if (vsync) {
