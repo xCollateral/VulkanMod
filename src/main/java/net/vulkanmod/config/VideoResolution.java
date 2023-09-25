@@ -19,7 +19,8 @@ public class VideoResolution {
     private static final int[] plats = new int[]{
             GLFW_PLATFORM_WIN32,
             GLFW_PLATFORM_WAYLAND,
-            GLFW_PLATFORM_X11};
+            GLFW_PLATFORM_X11,
+            GLFW_PLATFORM_COCOA};
 
     private static final int activePlat = getSupportedPlat();
 
@@ -87,6 +88,7 @@ public class VideoResolution {
             case GLFW_PLATFORM_WIN32 -> "WIN32";
             case GLFW_PLATFORM_WAYLAND -> "WAYLAND";
             case GLFW_PLATFORM_X11 -> "X11";
+            case GLFW_PLATFORM_COCOA -> "macOS";
             default -> throw new IllegalStateException("Unexpected value: " + plat);
         };
     }
@@ -96,6 +98,7 @@ public class VideoResolution {
     public static boolean isWayLand() { return activePlat == GLFW_PLATFORM_WAYLAND; }
     public static boolean isX11() { return activePlat == GLFW_PLATFORM_X11; }
     public static boolean isWindows() { return activePlat == GLFW_PLATFORM_WIN32; }
+    public static boolean isMacOS() { return activePlat == GLFW_PLATFORM_COCOA; }
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
