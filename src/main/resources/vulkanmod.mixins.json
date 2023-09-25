@@ -20,6 +20,7 @@
     "debug.ChunkBorderRendererM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
+    "debug.DebugScreenOverlayM",
 
     "gui.ChatComponentM",
     "gui.DebugHudM",
