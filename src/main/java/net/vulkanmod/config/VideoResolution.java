@@ -94,7 +94,8 @@ public class VideoResolution {
     }
 
     public static int getActivePlat() { return activePlat; }
-    //Allows platform specific checks to be handles (is missing macOS, however that may not be important due to macOS only version))
+
+    //Allows platform specific checks to be handled
     public static boolean isWayLand() { return activePlat == GLFW_PLATFORM_WAYLAND; }
     public static boolean isX11() { return activePlat == GLFW_PLATFORM_X11; }
     public static boolean isWindows() { return activePlat == GLFW_PLATFORM_WIN32; }

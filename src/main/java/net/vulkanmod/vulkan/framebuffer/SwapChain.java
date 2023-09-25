@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static net.vulkanmod.Initializer.LOGGER;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -355,11 +356,16 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
+
+        int requestedMode = Initializer.CONFIG.useImmediate ? VK_PRESENT_MODE_IMMEDIATE_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
 
         //fifo mode is the only mode that has to be supported
-        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
+        if (vsync) {
             return VK_PRESENT_MODE_FIFO_KHR;
+        }
+
+        //Available Display modes in fullscreen and windowed can vary, so we can't optimise out this loop
+        //(e.g. due to a driver bug, Nvidia on Wayland with KWin only supports FIFO in fullscreen, but supports both FIFO and MAILBOX Mode in Windowed
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {

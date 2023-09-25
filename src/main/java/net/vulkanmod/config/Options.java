@@ -4,14 +4,14 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 
 public class Options {
 
+    private static final boolean wayLand = VideoResolution.isWayLand();
     //Fix Glitches+Crashes if Wayland and the Mesa RADV driver are used, and Queue Frames is set above 2 (possible RADV Bug?)
-    private static final boolean limitSwapChain = VideoResolution.isWayLand() && Vulkan.getDeviceInfo().isAMD();
+    private static final boolean limitSwapChain = wayLand && Vulkan.getDeviceInfo().isAMD();
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
@@ -50,6 +50,15 @@ public class Options {
                             window.setFramerateLimit(value);
                         },
                         () -> minecraftOptions.framerateLimit().get()),
+                new SwitchOption("Permit Tearing",
+                        value -> {
+                            config.useImmediate = !wayLand && value; //Always Force Immediate Mode to false if Wayland is used (Wayland is 100% guaranteed to support MailBox Mode)
+                            Renderer.scheduleSwapChainUpdate();
+                        },
+                        () -> config.useImmediate) .setTooltip(Component.nullToEmpty("""
+                        If supported, prevents screen tearing when Vsync is disabled
+                        May not be supported on all Configurations/Systems
+                        (Is always force enabled with Wayland on Linux)""")),
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
