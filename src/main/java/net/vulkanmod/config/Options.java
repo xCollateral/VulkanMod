@@ -52,11 +52,13 @@ public class Options {
                         () -> minecraftOptions.framerateLimit().get()),
                 new SwitchOption("Permit Tearing",
                         value -> {
-                            config.useImmediate = !wayLand && value; //Always Force Immediate Mode to false if Wayland is used (Wayland is 100% guaranteed to support MailBox Mode)
+                            config.useTearingMode = !wayLand && value; //Always Force Immediate Mode to false if Wayland is used (Wayland is 100% guaranteed to support MailBox Mode)
                             Renderer.scheduleSwapChainUpdate();
                         },
-                        () -> config.useImmediate) .setTooltip(Component.nullToEmpty("""
-                        If supported, prevents screen tearing when Vsync is disabled
+                        () -> config.useTearingMode) .setTooltip(Component.nullToEmpty("""
+                        If supported, prevents screen tearing when this is disabled
+                        if VSync is enabled, Relaxed VSync will be used (capped FPS, but allows tearing)
+                        if VSync is disabled, Mailbox will be used (uncapped FPS, but forbids tearing)
                         May not be supported on all Configurations/Systems
                         (Is always force enabled with Wayland on Linux)""")),
                 new SwitchOption("VSync",

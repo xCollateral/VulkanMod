@@ -23,6 +23,7 @@ import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRSharedPresentableImage.*;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -34,7 +35,9 @@ public class SwapChain extends Framebuffer {
     private static final int defNoTearMode = checkDisplayMode(VK_PRESENT_MODE_MAILBOX_KHR) ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    private static final int defUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+    private static final int defUncappedTearMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+    private static final int defAltVsyncMode =  checkDisplayMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR) ? VK_PRESENT_MODE_FIFO_RELAXED_KHR : VK_PRESENT_MODE_FIFO_KHR;
+
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
     }
@@ -374,19 +377,22 @@ public class SwapChain extends Framebuffer {
 
     private int getPresentMode(IntBuffer availablePresentModes) {
 
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR
-                : Initializer.CONFIG.useImmediate ? defUncappedMode : defNoTearMode;
+        final boolean useTearingMode = Initializer.CONFIG.useTearingMode;
+        int requestedMode = vsync ? useTearingMode ? defAltVsyncMode : VK_PRESENT_MODE_FIFO_KHR
+                : useTearingMode ? defUncappedTearMode : defNoTearMode;
+
 
         //fifo mode is the only mode that has to be supported
-        if (vsync) {
+        if (requestedMode==VK_PRESENT_MODE_FIFO_KHR) {
+            Initializer.LOGGER.info("Using display mode: " + getDisplayModeString(VK_PRESENT_MODE_FIFO_KHR));
             return VK_PRESENT_MODE_FIFO_KHR;
         }
-
         //Available Display modes in fullscreen and windowed can vary, so we can't optimise out this loop
         //(e.g. due to a driver bug, Nvidia on Wayland with KWin only supports FIFO in fullscreen, but supports both FIFO and MAILBOX Mode in Windowed
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
+                Initializer.LOGGER.info("Using display mode: " + getDisplayModeString(requestedMode));
                 return requestedMode;
             }
         }
@@ -394,6 +400,19 @@ public class SwapChain extends Framebuffer {
         Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
         return VK_PRESENT_MODE_FIFO_KHR;
 
+    }
+
+    private String getDisplayModeString(int requestedMode) {
+        return switch(requestedMode)
+        {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "VK_PRESENT_MODE_IMMEDIATE_KHR";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "VK_PRESENT_MODE_MAILBOX_KHR";
+            case VK_PRESENT_MODE_FIFO_KHR -> "VK_PRESENT_MODE_FIFO_KHR";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+            case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR -> "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+            case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR ->  "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+            default -> throw new IllegalStateException("Unexpected value: " + requestedMode);
+        };
     }
 
     private static VkExtent2D getExtent(VkSurfaceCapabilitiesKHR capabilities) {
