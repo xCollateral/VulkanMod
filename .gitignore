@@ -1,7 +1,9 @@
 # gradle
 
 .gradle/
-/build/
+fabric/build
+common/build
+forge/build
 out/
 classes/
 
@@ -31,3 +33,5 @@ bin/
 # fabric
 
 run/
+
+.architectury-transformer/
