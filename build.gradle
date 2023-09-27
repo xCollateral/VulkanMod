@@ -1,14 +1,12 @@
 plugins {
-	id 'fabric-loom' version '0.12-SNAPSHOT'
+	id "architectury-plugin" version "3.4-SNAPSHOT"
+	id "dev.architectury.loom" version "1.3-SNAPSHOT" apply false
 	id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
-
-archivesBaseName = project.archives_base_name
-version = project.mod_version
-group = project.maven_group
+architectury {
+	minecraft = rootProject.minecraft_version
+}
 
 project.ext.lwjglVersion = "3.3.2"
 project.ext.jomlVersion = "1.10.4"
@@ -17,87 +15,59 @@ project.ext.linuxNatives = "natives-linux"
 project.ext.macosNatives = "natives-macos"
 project.ext.macosArmNatives = "natives-macos-arm64"
 
-dependencies {
-	include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
+subprojects {
+	apply plugin: "java"
+	apply plugin: "architectury-plugin"
+	apply plugin: "dev.architectury.loom"
+	apply plugin: "maven-publish"
 
-	include(implementation("org.lwjgl:lwjgl-vma:$lwjglVersion"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosArmNatives"))
+	archivesBaseName = project.archives_base_name
+	version = project.mod_version
+	group = project.maven_group
 
-	include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosArmNatives"))
+	tasks.withType(JavaCompile) {
+		options.encoding = "UTF-8"
+		options.release = 17
+	}
 
-	//MoltenVK
-	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArmNatives"))
-}
+	java {
+		withSourcesJar()
+	}
 
-repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
-}
+	loom {
+		silentMojangMappingsLicense()
+	}
 
-dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	dependencies {
+		minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+		// The following line declares the mojmap mappings, you may use other mappings as well
+		mappings loom.officialMojangMappings()
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-}
-
-processResources {
-	inputs.property "version", project.version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
 	}
 }
 
-tasks.withType(JavaCompile).configureEach {
-	// Minecraft 1.18 (1.18-pre2) upwards uses Java 17.
-	it.options.release = 17
+allprojects {
+	apply plugin: "architectury-plugin"
+	apply plugin: "maven-publish"
+
+	repositories {
+		maven { url 'https://jitpack.io' }
+		exclusiveContent {
+			forRepository {
+				maven {
+					name = "Modrinth"
+					url = "https://api.modrinth.com/maven"
+				}
+			}
+			filter {
+				includeGroup "maven.modrinth"
+			}
+		}
+	}
 }
 
-loom {
-	accessWidenerPath = file("src/main/resources/vulkanmod.accesswidener")
-}
-
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-}
-
-jar {
+/*jar {
 	from("LICENSE") {
 		rename { "${it}_${project.archivesBaseName}"}
 	}
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			from components.java
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
-}
+}*/

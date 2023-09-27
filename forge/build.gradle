@@ -1,0 +1,109 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id 'maven-publish'
+}
+
+architectury {
+    platformSetupLoomIde()
+    forge()
+}
+
+loom {
+    accessWidenerPath = project(":common").loom.accessWidenerPath
+
+    forge {
+        convertAccessWideners = true
+        extraAccessWideners.add loom.accessWidenerPath.get().asFile.name
+
+        mixinConfig "vulkanmod-common.mixins.json"
+        mixinConfig "vulkanmod.mixins.json"
+    }
+}
+
+configurations {
+    common
+    shadowCommon // Don't use shadow from the shadow plugin since it *excludes* files.
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentForge.extendsFrom common
+}
+
+dependencies {
+    forge "net.minecraftforge:forge:${rootProject.forge_version}"
+
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
+    include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
+    include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArmNatives"))
+
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosArmNatives"))
+
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosNatives"))
+    include(forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosArmNatives"))
+
+    include(implementation("com.google.code.findbugs:jsr305:3.0.2"))
+
+    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+}
+
+repositories {
+    maven { url "https://maven.minecraftforge.net/releases/" }
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("META-INF/mods.toml") {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "fabric.mod.json"
+    exclude "architectury.common.json"
+
+    configurations = [project.configurations.shadowCommon]
+    //classifier "dev-shadow"
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+}
+
+jar {
+    //classifier "dev"
+}
+
+sourcesJar {
+    def commonSources = project(":common").sourcesJar
+    dependsOn commonSources
+    from commonSources.archiveFile.map { zipTree(it) }
+}
+
+components.java {
+    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+        skip()
+    }
+}
+
+publishing {
+    publications {
+        mavenForge(MavenPublication) {
+            artifactId = rootProject.archives_base_name + "-" + project.name
+            from components.java
+        }
+    }
+
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+    repositories {
+        // Add repositories to publish to here.
+    }
+}

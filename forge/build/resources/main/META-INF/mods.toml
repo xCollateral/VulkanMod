@@ -1,0 +1,28 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+issueTrackerURL = "https://github.com/xCollateral/VulkanMod/issues"
+license = "LGPLv3"
+
+[[mods]]
+modId = "vulkanmod"
+version = "0.3.4_dev"
+displayName = "VulkanMod"
+authors = "Collateral"
+description = '''
+Bring Vulkan to Minecraft!
+'''
+logoFile = "assets/vulkanmod/Vlogo.png"
+
+[[dependencies.vulkanmod]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.vulkanmod]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20,)"
+ordering = "NONE"
+side = "BOTH"

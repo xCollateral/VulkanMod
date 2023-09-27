@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "vulkanmod",
+  "version": "0.3.4_dev",
+  "name": "VulkanMod",
+  "description": "Bring Vulkan to Minecraft!",
+  "authors": [
+    "Collateral"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": "https://github.com/xCollateral/VulkanMod"
+  },
+
+  "icon": "assets/vulkanmod/Vlogo.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "net.vulkanmod.fabric.VulkanModFabric"
+    ]
+  },
+  "mixins": [
+    "vulkanmod.mixins.json",
+    "vulkanmod-common.mixins.json"
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=1.20",
+    "java": ">=17"
+  }
+}
