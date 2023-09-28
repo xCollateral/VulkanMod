@@ -3,13 +3,16 @@ package net.vulkanmod.vulkan.shader;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.shaderc.Shaderc.*;
@@ -19,15 +22,13 @@ public class SPIRVUtils {
     private static final boolean OPTIMIZATIONS = false;
 
     private static long compiler;
+    private static String resourcePath = "/assets/vulkanmod/shaders/";
 
-    public static SPIRV compileShaderAbsoluteFile(String shaderFile, ShaderKind shaderKind) {
-        try {
-            String source = new String(Files.readAllBytes(Paths.get(new URI(shaderFile))));
-            return compileShader(shaderFile, source, shaderKind);
-        } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static SPIRV compileShaderRelativeFile(String shaderPath, ShaderKind shaderKind, String extension) {
+        InputStream inputStream = SPIRVUtils.class.getResourceAsStream(resourcePath + shaderPath + "." + extension);
+        String source = new BufferedReader(new InputStreamReader(inputStream))
+                .lines().collect(Collectors.joining("\n"));
+        return compileShader(shaderPath, source, shaderKind);
     }
 
     public static SPIRV compileShader(String filename, String source, ShaderKind shaderKind) {

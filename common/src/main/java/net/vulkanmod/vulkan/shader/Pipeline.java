@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -469,10 +470,8 @@ public abstract class Pipeline {
         }
 
         public void compileShaders() {
-            String resourcePath = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
-
-            this.vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", resourcePath, this.shaderPath), ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", resourcePath, this.shaderPath), ShaderKind.FRAGMENT_SHADER);
+            this.vertShaderSPIRV = compileShaderRelativeFile(this.shaderPath, ShaderKind.VERTEX_SHADER, "vsh");
+            this.fragShaderSPIRV = compileShaderRelativeFile(this.shaderPath, ShaderKind.FRAGMENT_SHADER, "fsh");
         }
 
         public void compileShaders(String vsh, String fsh) {
