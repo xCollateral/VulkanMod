@@ -18,7 +18,6 @@ Demonstration Video:
 
 </div>
 
-<div align='left'>
 
 ## Installation
 Proceed through all of these steps to correctly install the Vulcan mod to your Windows device
@@ -65,4 +64,3 @@ VulcanMod should be fully installed and ready to run
 ## Notes
 This is still a pre-alpha mod. Bugs are to be expected.
 
-</div>
