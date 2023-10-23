@@ -10,6 +10,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 
 import java.util.ArrayList;
@@ -38,22 +40,7 @@ public class ProfilerOverlay {
     }
 
     protected void drawProfilerInfo(PoseStack poseStack) {
-        List<String> list = new ArrayList<>();
-        list.add("");
-        list.add("Profiler");
-
-        List<Profiler2.Result> results = Profiler2.getMainProfiler().getResults();
-
-        float frametime = results.get(0).getValue();
-        int fps = (int) (1000.0f / frametime);
-
-        list.add(String.format("FPS: %d Frametime: %.3f", fps, frametime));
-        list.add("");
-
-        for (int i = 1; i < results.size(); i++) {
-            Profiler2.Result result = results.get(i);
-            list.add(result.toString());
-        }
+        List<String> list = buildInfo();
 
         RenderSystem.enableBlend();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
@@ -87,5 +74,34 @@ public class ProfilerOverlay {
 
         bufferSource.endBatch();
 
+    }
+
+    private List<String> buildInfo() {
+        List<String> list = new ArrayList<>();
+        list.add("");
+        list.add("Profiler");
+
+        List<Profiler2.Result> results = Profiler2.getMainProfiler().getResults();
+
+        float frametime = results.get(0).getValue();
+        int fps = (int) (1000.0f / frametime);
+
+        list.add(String.format("FPS: %d Frametime: %.3f", fps, frametime));
+        list.add("");
+
+        for (int i = 1; i < results.size(); i++) {
+            Profiler2.Result result = results.get(i);
+            list.add(result.toString());
+        }
+
+        //Section build stats
+        list.add("");
+        list.add("");
+        list.add(String.format("Build time: %.2f ms", BuildTimeBench.getBenchTime()));
+
+        if(ChunkTask.bench)
+            list.add(String.format("Total build time: %d ms for %d builds", ChunkTask.totalBuildTime.get(), ChunkTask.buildCount.get()));
+
+        return list;
     }
 }

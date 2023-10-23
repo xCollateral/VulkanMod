@@ -3,7 +3,10 @@ package net.vulkanmod.render.chunk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
@@ -27,11 +30,12 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
-import net.vulkanmod.render.profiling.Profiler;
-import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
+import net.vulkanmod.render.profiling.BuildTimeBench;
+import net.vulkanmod.render.profiling.Profiler;
+import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
@@ -134,11 +138,17 @@ public class WorldRenderer {
         return INSTANCE.cameraPos;
     }
 
+    private void benchCallback() {
+        BuildTimeBench.runBench(this.needsUpdate, this.taskDispatcher);
+    }
+
     public void setupRenderer(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
 //        Profiler p = Profiler.getProfiler("chunks");
 //        p.start();
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Setup_Renderer");
+
+        benchCallback();
 
 //        this.frustum = frustum.offsetToFullyIncludeCameraCube(8);
         this.cameraPos = camera.getPosition();
