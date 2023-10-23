@@ -296,12 +296,9 @@ public class WorldRenderer {
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-//        this.initUpdate();
+        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
 
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
-//        int rebuildLimit = 32;
-
-        if(rebuildLimit == 0)
+        if(buildLimit == 0)
             this.needsUpdate = true;
 
         while(this.chunkQueue.hasNext()) {
@@ -314,8 +311,8 @@ public class WorldRenderer {
                 this.nonEmptyChunks++;
             }
 
-            if(this.scheduleUpdate(renderSection, rebuildLimit))
-                rebuildLimit--;
+            if(this.scheduleUpdate(renderSection, buildLimit))
+                buildLimit--;
 
             if(renderSection.directionChanges > maxDirectionsChanges)
                 continue;
@@ -537,24 +534,7 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
-
-        String layerName;
-        if (solid.equals(renderType)) {
-            layerName = "solid";
-        } else if (cutout.equals(renderType)) {
-            layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
-            layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
-            layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
-            layerName = "translucent";
-        } else layerName = "unk";
+        final String layerName = getLayerName(renderType);
 
 //        p.pushMilestone("layer " + layerName);
         if(layerName.equals("solid"))
@@ -635,6 +615,28 @@ public class WorldRenderer {
             case "tripwire" -> p.pop();
         }
 
+    }
+
+    private static String getLayerName(RenderType renderType) {
+        RenderType solid = RenderType.solid();
+        RenderType cutout = RenderType.cutout();
+        RenderType cutoutMipped = RenderType.cutoutMipped();
+        RenderType translucent = RenderType.translucent();
+        RenderType tripwire = RenderType.tripwire();
+
+        String layerName;
+        if (solid.equals(renderType)) {
+            layerName = "solid";
+        } else if (cutout.equals(renderType)) {
+            layerName = "cutout";
+        } else if (cutoutMipped.equals(renderType)) {
+            layerName = "cutoutMipped";
+        } else if (tripwire.equals(renderType)) {
+            layerName = "tripwire";
+        } else if (translucent.equals(renderType)) {
+            layerName = "translucent";
+        } else layerName = "unk";
+        return layerName;
     }
 
     private void sortTranslucentSections(double camX, double camY, double camZ) {
