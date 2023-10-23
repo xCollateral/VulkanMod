@@ -51,9 +51,7 @@ public class Options {
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
-                            if (Minecraft.getInstance().getWindow() != null) {
-                                Minecraft.getInstance().getWindow().updateVsync(value);
-                            }
+                            Minecraft.getInstance().getWindow().updateVsync(value);
                         },
                         () -> minecraftOptions.enableVsync().get()),
                 new CyclingOption<>("Gui Scale",
