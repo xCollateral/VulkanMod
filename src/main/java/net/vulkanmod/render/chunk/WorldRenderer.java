@@ -671,30 +671,34 @@ public class WorldRenderer {
 
     public void renderBlockEntities(PoseStack poseStack, double camX, double camY, double camZ,
                                     Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress, float gameTime) {
+        Profiler2 profiler = Profiler2.getMainProfiler();
+        profiler.pop();
+        profiler.push("block-entities");
+
         MultiBufferSource bufferSource = this.renderBuffers.bufferSource();
 
         for(RenderSection renderSection : this.chunkQueue) {
             List<BlockEntity> list = renderSection.getCompiledSection().getRenderableBlockEntities();
             if (!list.isEmpty()) {
-                for(BlockEntity blockentity1 : list) {
-                    BlockPos blockpos4 = blockentity1.getBlockPos();
-                    MultiBufferSource multibuffersource1 = bufferSource;
+                for(BlockEntity blockEntity : list) {
+                    BlockPos blockPos = blockEntity.getBlockPos();
+                    MultiBufferSource bufferSource1 = bufferSource;
                     poseStack.pushPose();
-                    poseStack.translate((double)blockpos4.getX() - camX, (double)blockpos4.getY() - camY, (double)blockpos4.getZ() - camZ);
-                    SortedSet<BlockDestructionProgress> sortedset = destructionProgress.get(blockpos4.asLong());
+                    poseStack.translate((double)blockPos.getX() - camX, (double)blockPos.getY() - camY, (double)blockPos.getZ() - camZ);
+                    SortedSet<BlockDestructionProgress> sortedset = destructionProgress.get(blockPos.asLong());
                     if (sortedset != null && !sortedset.isEmpty()) {
                         int j1 = sortedset.last().getProgress();
                         if (j1 >= 0) {
-                            PoseStack.Pose posestack$pose1 = poseStack.last();
-                            VertexConsumer vertexconsumer = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(j1)), posestack$pose1.pose(), posestack$pose1.normal(), 1.0f);
-                            multibuffersource1 = (p_194349_) -> {
-                                VertexConsumer vertexconsumer3 = bufferSource.getBuffer(p_194349_);
-                                return p_194349_.affectsCrumbling() ? VertexMultiConsumer.create(vertexconsumer, vertexconsumer3) : vertexconsumer3;
+                            PoseStack.Pose pose = poseStack.last();
+                            VertexConsumer vertexconsumer = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(j1)), pose.pose(), pose.normal(), 1.0f);
+                            bufferSource1 = (renderType) -> {
+                                VertexConsumer vertexConsumer2 = bufferSource.getBuffer(renderType);
+                                return renderType.affectsCrumbling() ? VertexMultiConsumer.create(vertexconsumer, vertexConsumer2) : vertexConsumer2;
                             };
                         }
                     }
 
-                    this.minecraft.getBlockEntityRenderDispatcher().render(blockentity1, gameTime, poseStack, multibuffersource1);
+                    this.minecraft.getBlockEntityRenderDispatcher().render(blockEntity, gameTime, poseStack, bufferSource1);
                     poseStack.popPose();
                 }
             }
