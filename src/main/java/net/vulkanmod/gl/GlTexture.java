@@ -1,16 +1,19 @@
 package net.vulkanmod.gl;
 
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import static org.lwjgl.vulkan.VK10.VK_FORMAT_R8G8B8A8_UNORM;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class GlTexture {
     private static int ID_COUNT = 0;
@@ -52,6 +55,8 @@ public class GlTexture {
         if(width == 0 || height == 0)
             return;
 
+        boundTexture.internalFormat = internalFormat;
+
         if(width != boundTexture.vulkanImage.width || height != boundTexture.vulkanImage.height || vulkanFormat(format, type) != boundTexture.vulkanImage.format) {
             boundTexture.allocateVulkanImage(width, height);
         }
@@ -59,12 +64,24 @@ public class GlTexture {
         boundTexture.uploadImage(pixels);
     }
 
-
     public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
         if(width == 0 || height == 0)
             return;
 
         VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, pixels);
+    }
+
+    public static int getTexLevelParameter(int target, int level, int pName) {
+        if(boundTexture == null || target == GL11.GL_TEXTURE_2D)
+            return -1;
+
+        return switch (pName) {
+            case GL11.GL_TEXTURE_INTERNAL_FORMAT -> getGlFormat(boundTexture.vulkanImage.format);
+            case GL11.GL_TEXTURE_WIDTH -> boundTexture.vulkanImage.width;
+            case GL11.GL_TEXTURE_HEIGHT -> boundTexture.vulkanImage.height;
+
+            default -> -1;
+        };
     }
 
     public static void setVulkanImage(int id, VulkanImage vulkanImage) {
@@ -75,6 +92,7 @@ public class GlTexture {
 
     final int id;
     VulkanImage vulkanImage;
+    int internalFormat;
 
     public GlTexture(int id) {
         this.id = id;
@@ -93,8 +111,15 @@ public class GlTexture {
         int height = this.vulkanImage.height;
 
         if(pixels != null) {
-//            if(pixels.remaining() != width * height * 4)
-//                throw new IllegalArgumentException("buffer size does not match image size");
+
+            if(internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
+
+                ByteBuffer RGBA_buffer = Util.RGBtoRGBA_buffer(pixels);
+                this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
+                MemoryUtil.memFree(RGBA_buffer);
+
+                return;
+            }
 
             this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
         }
@@ -107,13 +132,26 @@ public class GlTexture {
 
     private static int vulkanFormat(int glFormat, int type) {
         return switch (glFormat) {
-            case 6408 ->
+            case GL11.GL_RGBA ->
                     switch (type) {
-                        case 5121 -> VK_FORMAT_R8G8B8A8_UNORM;
+                        case GL11.GL_UNSIGNED_BYTE -> VK_FORMAT_R8G8B8A8_UNORM;
+                        default -> throw new IllegalStateException("Unexpected value: " + type);
+                    };
+            case GL11.GL_RED ->
+                    switch (type) {
+                        case GL11.GL_UNSIGNED_BYTE -> VK_FORMAT_R8_UNORM;
                         default -> throw new IllegalStateException("Unexpected value: " + type);
                     };
 
             default -> throw new IllegalStateException("Unexpected value: " + glFormat);
+        };
+    }
+
+    public static int getGlFormat(int vFormat) {
+        return switch (vFormat) {
+            case VK_FORMAT_R8G8B8A8_UNORM -> GL11.GL_RGBA;
+            case VK_FORMAT_R8_UNORM -> GL11.GL_RED;
+            default -> throw new IllegalStateException("Unexpected value: " + vFormat);
         };
     }
 

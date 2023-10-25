@@ -137,6 +137,14 @@ public class GlStateManagerM {
      * @author
      */
     @Overwrite(remap = false)
+    public static int _getTexLevelParameter(int i, int j, int k) {
+        return GlTexture.getTexLevelParameter(i, j, k);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
     public static void _pixelStore(int pname, int param) {
 
     }

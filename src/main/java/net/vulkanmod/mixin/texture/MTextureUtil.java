@@ -16,7 +16,7 @@ public class MTextureUtil {
      */
     @Overwrite(remap = false)
     public static int generateTextureId() {
-        return GlStateManager._genTexture();
+        return GlTexture.genTextureId();
     }
 
     /**
