@@ -397,6 +397,7 @@ public class Renderer {
             Pipeline.recreateDescriptorSets(framesNum);
 
             drawer.createResources(framesNum);
+            AreaUploadManager.INSTANCE.createLists();
         }
 
         this.onResizeCallbacks.forEach(Runnable::run);
