@@ -51,12 +51,11 @@ public abstract class RenderSystemMixin {
     @Overwrite
     public static void _setShaderTexture(int i, ResourceLocation location) {
         if (i >= 0 && i < shaderTextures.length) {
-            TextureManager texturemanager = Minecraft.getInstance().getTextureManager();
-            AbstractTexture abstracttexture = texturemanager.getTexture(location);
-            //abstracttexture.bindTexture();
-            VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstracttexture).getVulkanImage());
+            TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+            AbstractTexture abstractTexture = textureManager.getTexture(location);
+            abstractTexture.bind();
 
-            //shaderTextures[i] = abstracttexture.getId();
+            //shaderTextures[i] = abstractTexture.getId();
         }
 
     }

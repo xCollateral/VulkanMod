@@ -28,12 +28,12 @@ public class GlTexture {
         return id;
     }
 
-    public static void bindTexture(int i) {
-        if(i == -1)
+    public static void bindTexture(int id) {
+        if(id == -1)
             return;
 
-        boundTextureId = i;
-        boundTexture = map.get(i);
+        boundTextureId = id;
+        boundTexture = map.get(id);
 
         if(boundTexture == null)
             throw new NullPointerException("bound texture is null");
@@ -90,6 +90,10 @@ public class GlTexture {
         texture.vulkanImage = vulkanImage;
     }
 
+    public static GlTexture getBoundTexture() {
+        return boundTexture;
+    }
+
     final int id;
     VulkanImage vulkanImage;
     int internalFormat;
@@ -128,6 +132,14 @@ public class GlTexture {
             this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
             MemoryUtil.memFree(pixels);
         }
+    }
+
+    public VulkanImage getVulkanImage() {
+        return vulkanImage;
+    }
+
+    public void setVulkanImage(VulkanImage vulkanImage) {
+        this.vulkanImage = vulkanImage;
     }
 
     private static int vulkanFormat(int glFormat, int type) {

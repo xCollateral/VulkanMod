@@ -71,8 +71,6 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
 
         if (vulkanImage != null)
             VTextureSelector.bindTexture(vulkanImage);
-        else
-            VTextureSelector.bindTexture(VTextureSelector.getWhiteTexture());
     }
 
     public VulkanImage getVulkanImage() {
