@@ -74,7 +74,11 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
     }
 
     public VulkanImage getVulkanImage() {
-        return vulkanImage;
+        if(vulkanImage != null)
+            return vulkanImage;
+        else {
+            return GlTexture.getTexture(this.id).getVulkanImage();
+        }
     }
 
     public void setVulkanImage(VulkanImage image) {
