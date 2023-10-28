@@ -9,7 +9,7 @@ import net.vulkanmod.render.texture.SpriteUtil;
 import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(Minecraft.class)
-public class ForgeMinecraftMixin {
+public class ForgeMinecraftM {
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;tick()V"),
             locals = LocalCapture.CAPTURE_FAILHARD)
     private void redirectResourceTick(boolean bl, CallbackInfo ci, long l, Runnable runnable, int i, int j) {

@@ -4,8 +4,11 @@
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "client": [
-    "ForgeMinecraftMixin",
-    "ForgeWindowMixin"
+    "DisplayWindowM",
+    "ElementShaderMixin",
+    "ForgeMinecraftM",
+    "ForgeWindowM",
+    "ForgeLevelRendererM"
   ],
   "mixins": [
   ],

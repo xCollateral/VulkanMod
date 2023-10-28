@@ -284,7 +284,7 @@ public class VulkanImage {
         this.currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
-    private void createTextureSampler(boolean blur, boolean clamp, boolean mipmap) {
+    public void createTextureSampler(boolean blur, boolean clamp, boolean mipmap) {
 
         try(MemoryStack stack = stackPush()) {
 

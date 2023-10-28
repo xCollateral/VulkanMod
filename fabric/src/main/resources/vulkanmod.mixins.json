@@ -4,8 +4,11 @@
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "client": [
-    "FabricMinecraftMixin",
-    "FabricWindowMixin"
+    "FabricMinecraftM",
+    "FabricWindowM",
+    "FabricShaderInstanceM",
+    "FabricLiquidBlockRendererM",
+    "FabricLevelRendererM"
   ],
   "mixins": [
   ],

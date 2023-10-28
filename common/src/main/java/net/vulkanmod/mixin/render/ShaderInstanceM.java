@@ -77,9 +77,6 @@ public class ShaderInstanceM implements ShaderMixed {
         cir.cancel();
     }
 
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/shaders/Uniform;glBindAttribLocation(IILjava/lang/CharSequence;)V"))
-    private void bindAttr(int program, int index, CharSequence name) {}
-
     /**
      * @author
      */

@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
 
@@ -51,7 +52,8 @@ public class VideoResolution {
     }
 
     public static void init() {
-        RenderSystem.assertOnRenderThread();
+
+        RenderSystem.assertOnRenderThreadOrInit();
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }

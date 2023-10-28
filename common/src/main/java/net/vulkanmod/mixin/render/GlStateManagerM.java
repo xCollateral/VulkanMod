@@ -279,6 +279,12 @@ public class GlStateManagerM {
      * @author
      */
     @Overwrite(remap = false)
+    public static void _glBindAttribLocation(int i, int j, CharSequence charSequence) {}
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
     public static void _glFramebufferRenderbuffer(int i, int j, int k, int l) {
         //TODO
         RenderSystem.assertOnRenderThreadOrInit();
