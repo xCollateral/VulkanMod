@@ -3,10 +3,7 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Renderer;
 
 public class Options {
@@ -51,9 +48,7 @@ public class Options {
                 new SwitchOption("VSync",
                         value -> {
                             minecraftOptions.enableVsync().set(value);
-                            if (Minecraft.getInstance().getWindow() != null) {
-                                Minecraft.getInstance().getWindow().updateVsync(value);
-                            }
+                            Minecraft.getInstance().getWindow().updateVsync(value);
                         },
                         () -> minecraftOptions.enableVsync().get()),
                 new CyclingOption<>("Gui Scale",

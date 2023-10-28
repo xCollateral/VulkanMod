@@ -35,16 +35,19 @@ public class TaskDispatcher {
     }
 
     public void createThreads() {
+        int n = Math.max((Runtime.getRuntime().availableProcessors() - 1) / 2, 1);
+        createThreads(n);
+    }
+
+    public void createThreads(int n) {
         if(!this.stopThreads)
             return;
 
         this.stopThreads = false;
 
-        int j = Math.max((Runtime.getRuntime().availableProcessors() - 1) / 2, 1);
+        this.threads = new Thread[n];
 
-        this.threads = new Thread[j];
-
-        for (int i = 0; i < j; i++) {
+        for (int i = 0; i < n; i++) {
             ThreadBuilderPack builderPack = new ThreadBuilderPack();
             Thread thread = new Thread(
                     () -> runTaskThread(builderPack));
@@ -172,6 +175,8 @@ public class TaskDispatcher {
     public int getIdleThreadsCount() {
         return this.idleThreads;
     }
+
+    public boolean isIdle() { return this.idleThreads == this.threads.length && this.toUpload.isEmpty(); }
 
     public void clearBatchQueue() {
         while(!this.highPriorityTasks.isEmpty()) {

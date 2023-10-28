@@ -1,14 +1,12 @@
 package net.vulkanmod.mixin.texture;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.TextureUtil;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-
-import java.nio.IntBuffer;
 
 @Mixin(TextureUtil.class)
 public class MTextureUtil {
@@ -18,24 +16,29 @@ public class MTextureUtil {
      */
     @Overwrite(remap = false)
     public static int generateTextureId() {
-        return GlStateManager._genTexture();
+        return GlTexture.genTextureId();
     }
 
     /**
      * @author
      */
     @Overwrite(remap = false)
-    public static void prepareImage(NativeImage.InternalGlFormat internalGlFormat, int i, int j, int k, int l) {
-/*        bind(i);
-        if (j >= 0) {
-            GlStateManager._texParameter(3553, 33085, j);
-            GlStateManager._texParameter(3553, 33082, 0);
-            GlStateManager._texParameter(3553, 33083, j);
-            GlStateManager._texParameter(3553, 34049, 0.0F);
-        }
+    public static void prepareImage(NativeImage.InternalGlFormat internalGlFormat, int id, int mipLevels, int width, int height) {
+        GlTexture.bindTexture(id);
+        GlTexture glTexture = GlTexture.getBoundTexture();
+        VulkanImage image = glTexture.getVulkanImage();
 
-        for(int m = 0; m <= j; ++m) {
-            GlStateManager._texImage2D(3553, m, internalGlFormat.glFormat(), k >> m, l >> m, 0, 6408, 5121, (IntBuffer)null);
-        }*/
+        if(image == null || image.mipLevels != mipLevels || image.width != width || image.height != height) {
+            if(image != null)
+                image.free();
+
+            image = new VulkanImage.Builder(width, height)
+                    .setLinearFiltering(false)
+                    .setClamp(false)
+                    .createVulkanImage();
+
+            glTexture.setVulkanImage(image);
+            VTextureSelector.bindTexture(image);
+        }
     }
 }

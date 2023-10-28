@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.profiling;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.render.profiling.BuildTimeBench;
 import net.vulkanmod.render.profiling.ProfilerOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,5 +20,9 @@ public class KeyboardHandlerM {
         if(InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 342) && i == 297)
 //        if(i == 297)
             ProfilerOverlay.shouldRender = !ProfilerOverlay.shouldRender;
+
+        if(InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 342) && i == 299) {
+            BuildTimeBench.startBench();
+        }
     }
 }

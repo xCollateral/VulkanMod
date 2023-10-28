@@ -2,9 +2,7 @@
 
 #define MAX_OFFSET_COUNT 512
 
-vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
-    return texelFetch(lightMap, (uv & 255) >> 4, 0);
-}
+#include "light.glsl"
 
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
@@ -38,7 +36,7 @@ void main() {
     gl_Position = MVP * vec4(pos + ChunkOffset[gl_DrawID], 1.0);
 
     vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset[gl_DrawID], 1.0)).xyz);
-    vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
+    vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
     //    normal = MVP * vec4(Normal, 0.0);
 }

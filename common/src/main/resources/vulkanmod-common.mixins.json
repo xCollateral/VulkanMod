@@ -53,6 +53,7 @@
 
     "screen.OptionsScreenM",
 
+    "texture.MTextureUtil",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",

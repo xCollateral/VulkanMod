@@ -3,7 +3,10 @@ package net.vulkanmod.render.chunk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
@@ -27,11 +30,12 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
-import net.vulkanmod.render.profiling.Profiler;
-import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
+import net.vulkanmod.render.profiling.BuildTimeBench;
+import net.vulkanmod.render.profiling.Profiler;
+import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
@@ -134,11 +138,17 @@ public class WorldRenderer {
         return INSTANCE.cameraPos;
     }
 
+    private void benchCallback() {
+        BuildTimeBench.runBench(this.needsUpdate, this.taskDispatcher);
+    }
+
     public void setupRenderer(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
 //        Profiler p = Profiler.getProfiler("chunks");
 //        p.start();
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Setup_Renderer");
+
+        benchCallback();
 
 //        this.frustum = frustum.offsetToFullyIncludeCameraCube(8);
         this.cameraPos = camera.getPosition();
@@ -296,12 +306,9 @@ public class WorldRenderer {
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-//        this.initUpdate();
+        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
 
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
-//        int rebuildLimit = 32;
-
-        if(rebuildLimit == 0)
+        if(buildLimit == 0)
             this.needsUpdate = true;
 
         while(this.chunkQueue.hasNext()) {
@@ -314,8 +321,8 @@ public class WorldRenderer {
                 this.nonEmptyChunks++;
             }
 
-            if(this.scheduleUpdate(renderSection, rebuildLimit))
-                rebuildLimit--;
+            if(this.scheduleUpdate(renderSection, buildLimit))
+                buildLimit--;
 
             if(renderSection.directionChanges > maxDirectionsChanges)
                 continue;
@@ -537,24 +544,7 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
-
-        String layerName;
-        if (solid.equals(renderType)) {
-            layerName = "solid";
-        } else if (cutout.equals(renderType)) {
-            layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
-            layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
-            layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
-            layerName = "translucent";
-        } else layerName = "unk";
+        final String layerName = getLayerName(renderType);
 
 //        p.pushMilestone("layer " + layerName);
         if(layerName.equals("solid"))
@@ -637,6 +627,28 @@ public class WorldRenderer {
 
     }
 
+    private static String getLayerName(RenderType renderType) {
+        RenderType solid = RenderType.solid();
+        RenderType cutout = RenderType.cutout();
+        RenderType cutoutMipped = RenderType.cutoutMipped();
+        RenderType translucent = RenderType.translucent();
+        RenderType tripwire = RenderType.tripwire();
+
+        String layerName;
+        if (solid.equals(renderType)) {
+            layerName = "solid";
+        } else if (cutout.equals(renderType)) {
+            layerName = "cutout";
+        } else if (cutoutMipped.equals(renderType)) {
+            layerName = "cutoutMipped";
+        } else if (tripwire.equals(renderType)) {
+            layerName = "tripwire";
+        } else if (translucent.equals(renderType)) {
+            layerName = "translucent";
+        } else layerName = "unk";
+        return layerName;
+    }
+
     private void sortTranslucentSections(double camX, double camY, double camZ) {
         this.minecraft.getProfiler().push("translucent_sort");
         double d0 = camX - this.xTransparentOld;
@@ -671,30 +683,34 @@ public class WorldRenderer {
 
     public void renderBlockEntities(PoseStack poseStack, double camX, double camY, double camZ,
                                     Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress, float gameTime) {
+        Profiler2 profiler = Profiler2.getMainProfiler();
+        profiler.pop();
+        profiler.push("block-entities");
+
         MultiBufferSource bufferSource = this.renderBuffers.bufferSource();
 
         for(RenderSection renderSection : this.chunkQueue) {
             List<BlockEntity> list = renderSection.getCompiledSection().getRenderableBlockEntities();
             if (!list.isEmpty()) {
-                for(BlockEntity blockentity1 : list) {
-                    BlockPos blockpos4 = blockentity1.getBlockPos();
-                    MultiBufferSource multibuffersource1 = bufferSource;
+                for(BlockEntity blockEntity : list) {
+                    BlockPos blockPos = blockEntity.getBlockPos();
+                    MultiBufferSource bufferSource1 = bufferSource;
                     poseStack.pushPose();
-                    poseStack.translate((double)blockpos4.getX() - camX, (double)blockpos4.getY() - camY, (double)blockpos4.getZ() - camZ);
-                    SortedSet<BlockDestructionProgress> sortedset = destructionProgress.get(blockpos4.asLong());
+                    poseStack.translate((double)blockPos.getX() - camX, (double)blockPos.getY() - camY, (double)blockPos.getZ() - camZ);
+                    SortedSet<BlockDestructionProgress> sortedset = destructionProgress.get(blockPos.asLong());
                     if (sortedset != null && !sortedset.isEmpty()) {
                         int j1 = sortedset.last().getProgress();
                         if (j1 >= 0) {
-                            PoseStack.Pose posestack$pose1 = poseStack.last();
-                            VertexConsumer vertexconsumer = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(j1)), posestack$pose1.pose(), posestack$pose1.normal(), 1.0f);
-                            multibuffersource1 = (p_194349_) -> {
-                                VertexConsumer vertexconsumer3 = bufferSource.getBuffer(p_194349_);
-                                return p_194349_.affectsCrumbling() ? VertexMultiConsumer.create(vertexconsumer, vertexconsumer3) : vertexconsumer3;
+                            PoseStack.Pose pose = poseStack.last();
+                            VertexConsumer vertexconsumer = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(j1)), pose.pose(), pose.normal(), 1.0f);
+                            bufferSource1 = (renderType) -> {
+                                VertexConsumer vertexConsumer2 = bufferSource.getBuffer(renderType);
+                                return renderType.affectsCrumbling() ? VertexMultiConsumer.create(vertexconsumer, vertexConsumer2) : vertexConsumer2;
                             };
                         }
                     }
 
-                    this.minecraft.getBlockEntityRenderDispatcher().render(blockentity1, gameTime, poseStack, multibuffersource1);
+                    this.minecraft.getBlockEntityRenderDispatcher().render(blockEntity, gameTime, poseStack, bufferSource1);
                     poseStack.popPose();
                 }
             }

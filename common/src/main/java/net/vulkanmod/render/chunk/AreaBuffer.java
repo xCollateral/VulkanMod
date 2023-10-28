@@ -107,15 +107,15 @@ public class AreaBuffer {
         int oldSize = this.size;
         int increment = this.size >> 1;
 
-        if(increment <= uploadSize) {
+        //Try to increase size increment 8 times
+        for(int i = 0; i < 8 && increment <= uploadSize; ++i) {
             increment *= 2;
         }
-        //TODO check size
+
         if(increment <= uploadSize)
-            throw new RuntimeException();
+            throw new RuntimeException(String.format("Size increment %d <= %d (Upload size)", increment, uploadSize));
 
         int newSize = oldSize + increment;
-
 
         Buffer buffer = this.allocateBuffer(newSize);
 

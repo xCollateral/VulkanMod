@@ -85,7 +85,7 @@ public class Renderer {
         allocateCommandBuffers();
         createSyncObjects();
 
-        AreaUploadManager.INSTANCE.createLists(framesNum);
+        AreaUploadManager.INSTANCE.createLists();
     }
 
     private void allocateCommandBuffers() {
@@ -179,7 +179,7 @@ public class Renderer {
         p.start();
         p.push("Frame_ops");
 
-        AreaUploadManager.INSTANCE.updateFrame(currentFrame);
+        AreaUploadManager.INSTANCE.updateFrame();
 
         MemoryManager.getInstance().initFrame(currentFrame);
         drawer.setCurrentFrame(currentFrame);
@@ -397,7 +397,7 @@ public class Renderer {
             Pipeline.recreateDescriptorSets(framesNum);
 
             drawer.createResources(framesNum);
-            AreaUploadManager.INSTANCE.createLists(framesNum);
+            AreaUploadManager.INSTANCE.createLists();
         }
 
         this.onResizeCallbacks.forEach(Runnable::run);
@@ -573,6 +573,9 @@ public class Renderer {
     }
 
     public static void resetScissor() {
+        if(Renderer.getInstance().boundFramebuffer == null)
+            return;
+
         try(MemoryStack stack = stackPush()) {
             VkRect2D.Buffer scissor = Renderer.getInstance().boundFramebuffer.scissor(stack);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);

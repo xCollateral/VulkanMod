@@ -31,9 +31,15 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChunkTask {
     private static TaskDispatcher taskDispatcher;
+
+    //TODO stats
+    public static final boolean bench = false;
+    public static AtomicInteger totalBuildTime = new AtomicInteger(0);
+    public static AtomicInteger buildCount = new AtomicInteger(0);
 
     protected AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final RenderSection renderSection;
@@ -109,8 +115,9 @@ public class ChunkTask {
                     compiledChunk.renderableBlockEntities.addAll(compileResults.blockEntities);
                     compiledChunk.transparencyState = compileResults.transparencyState;
 
-                    if(!compileResults.renderedLayers.isEmpty())
+                    if(!compileResults.renderedLayers.isEmpty()) {
                         compiledChunk.isCompletelyEmpty = false;
+                    }
 
                     taskDispatcher.scheduleSectionUpdate(renderSection, compileResults.renderedLayers);
                     compiledChunk.renderTypes.addAll(compileResults.renderedLayers.keySet());
@@ -120,8 +127,13 @@ public class ChunkTask {
                     this.renderSection.setCompletelyEmpty(compiledChunk.isCompletelyEmpty);
 
                     this.buildTime = (System.nanoTime() - startTime) * 0.000001f;
-                    return CompletableFuture.completedFuture(Result.SUCCESSFUL);
 
+                    if(bench) {
+                        totalBuildTime.addAndGet((int)buildTime);
+                        buildCount.addAndGet(1);
+                    }
+
+                    return CompletableFuture.completedFuture(Result.SUCCESSFUL);
                 }
             }
         }
