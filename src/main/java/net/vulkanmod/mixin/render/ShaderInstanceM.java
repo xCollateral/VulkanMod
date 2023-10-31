@@ -49,6 +49,7 @@ public class ShaderInstanceM implements ShaderMixed {
     @Shadow @Final @Nullable public Uniform PROJECTION_MATRIX;
     @Shadow @Final @Nullable public Uniform COLOR_MODULATOR;
     @Shadow @Final @Nullable public Uniform LINE_WIDTH;
+
     private GraphicsPipeline pipeline;
     boolean isLegacy = false;
 
@@ -59,12 +60,12 @@ public class ShaderInstanceM implements ShaderMixed {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void create(ResourceProvider resourceProvider, String name, VertexFormat format, CallbackInfo ci) {
-        if(Pipeline.class.getResourceAsStream("/assets/vulkanmod/shaders/minecraft/core/" + name + ".json") == null) {
+        if(Pipeline.class.getResourceAsStream(String.format("/assets/vulkanmod/shaders/minecraft/core/%s/%s.json", name, name)) == null) {
             createLegacyShader(resourceProvider, new ResourceLocation("shaders/core/" + name + ".json"), format);
             return;
         }
 
-        String path = "minecraft/core/" + name;
+        String path = String.format("minecraft/core/%s/%s", name, name);
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders();
