@@ -69,17 +69,12 @@ public class MinecraftMixin {
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void beginRender(int i, boolean bl) {
-        Renderer renderer = Renderer.getInstance();
-        renderer.beginFrame();
+        Renderer.getInstance().beginFrame();
     }
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
     private void submitRender(boolean tick, CallbackInfo ci) {
-        Renderer renderer = Renderer.getInstance();
-        Profiler2 p = Profiler2.getMainProfiler();
-        p.push("submitRender");
-        renderer.endFrame();
-        p.pop();
+        Renderer.getInstance().endFrame();
     }
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;bindWrite(Z)V"))

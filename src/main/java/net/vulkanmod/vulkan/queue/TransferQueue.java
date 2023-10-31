@@ -56,7 +56,7 @@ public class TransferQueue extends Queue {
         }
     }
 
-    public static void uploadBufferCmd(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public static void uploadBufferCmd(VkCommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -65,7 +65,7 @@ public class TransferQueue extends Queue {
             copyRegion.srcOffset(srcOffset);
             copyRegion.dstOffset(dstOffset);
 
-            vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+            vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, copyRegion);
         }
     }
     

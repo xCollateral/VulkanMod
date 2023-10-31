@@ -211,6 +211,10 @@ public class Profiler2 {
 //            Node entry = this.stack.pop();
 //            this.values.add(new Node(entry.name, convert(endTime - entries.deltaTime)));
             Node parent = currentNode.parent;
+
+            if (parent == null)
+                return;
+
             currentNode.computeDelta();
             parent.addChild(currentNode);
             currentNode = parent;

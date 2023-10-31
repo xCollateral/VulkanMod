@@ -85,7 +85,7 @@ public class Renderer {
         allocateCommandBuffers();
         createSyncObjects();
 
-        AreaUploadManager.INSTANCE.createLists();
+        AreaUploadManager.INSTANCE.init();
     }
 
     private void allocateCommandBuffers() {
@@ -153,6 +153,7 @@ public class Renderer {
 
     public void beginFrame() {
         Profiler2 p = Profiler2.getMainProfiler();
+        p.pop();
         p.push("Frame_fence");
 
         if(swapCahinUpdate) {
@@ -177,10 +178,9 @@ public class Renderer {
 
         p.pop();
         p.start();
-        p.push("Frame_ops");
+        p.push("Begin_rendering");
 
-        //TODO move
-        AreaUploadManager.INSTANCE.updateFrame();
+//        AreaUploadManager.INSTANCE.updateFrame();
 
         MemoryManager.getInstance().initFrame(currentFrame);
         drawer.setCurrentFrame(currentFrame);
@@ -194,8 +194,6 @@ public class Renderer {
 
         currentCmdBuffer = commandBuffers.get(currentFrame);
         vkResetCommandBuffer(currentCmdBuffer, 0);
-
-        p.pop();
 
         try(MemoryStack stack = stackPush()) {
 
@@ -214,15 +212,22 @@ public class Renderer {
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
         }
+
+        p.pop();
     }
 
     public void endFrame() {
         if(skipRendering)
             return;
 
+        Profiler2 p = Profiler2.getMainProfiler();
+        p.push("End_rendering");
+
         mainPass.end(currentCmdBuffer);
 
         submitFrame();
+
+        p.pop();
     }
 
     public void endRenderPass() {
@@ -262,8 +267,12 @@ public class Renderer {
     }
 
     public void resetBuffers() {
+        Profiler2 p = Profiler2.getMainProfiler();
+        p.push("Frame_ops");
+
         drawer.resetBuffers(currentFrame);
 
+        AreaUploadManager.INSTANCE.updateFrame();
         Vulkan.getStagingBuffer(currentFrame).reset();
     }
 
