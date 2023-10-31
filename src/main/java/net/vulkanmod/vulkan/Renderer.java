@@ -179,6 +179,7 @@ public class Renderer {
         p.start();
         p.push("Frame_ops");
 
+        //TODO move
         AreaUploadManager.INSTANCE.updateFrame();
 
         MemoryManager.getInstance().initFrame(currentFrame);
@@ -367,38 +368,29 @@ public class Renderer {
     }
 
     private void recreateSwapChain() {
-//        for(Long fence : inFlightFences) {
-//            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
-//        }
-
-//        waitForSwapChain();
         Vulkan.waitIdle();
-
-//        for(int i = 0; i < getSwapChainImages().size(); ++i) {
-//            vkDestroyFence(device, inFlightFences.get(i), null);
-//            vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
-//            vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
-//        }
 
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
         Vulkan.recreateSwapChain();
 
+        //Semaphores need to be recreated in order to make them unsignaled
+        destroySyncObjects();
+
         int newFramesNum = getSwapChain().getFramesNum();
 
         if(framesNum != newFramesNum) {
             AreaUploadManager.INSTANCE.waitAllUploads();
-            destroySyncObjects();
 
             framesNum = newFramesNum;
-            createSyncObjects();
             allocateCommandBuffers();
 
             Pipeline.recreateDescriptorSets(framesNum);
 
             drawer.createResources(framesNum);
-            AreaUploadManager.INSTANCE.createLists();
         }
+
+        createSyncObjects();
 
         this.onResizeCallbacks.forEach(Runnable::run);
 
