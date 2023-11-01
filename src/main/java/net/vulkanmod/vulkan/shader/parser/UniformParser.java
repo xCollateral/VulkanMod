@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.shader.parser;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.descriptor.Image;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 
@@ -20,7 +20,7 @@ public class UniformParser {
     private String name;
 
     private UBO ubo;
-    private List<Image> images;
+    private List<ImageDescriptor> imageDescriptors;
 
     public UniformParser(GlslConverter converterInstance) {
         this.converterInstance = converterInstance;
@@ -87,10 +87,10 @@ public class UniformParser {
     public String createSamplersCode(GlslConverter.ShaderStage shaderStage) {
         StringBuilder builder = new StringBuilder();
 
-        this.images = createSamplerList();
+        this.imageDescriptors = createSamplerList();
 
-        for(Image image : this.images) {
-            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", image.getBinding(), image.qualifier, image.name));
+        for(ImageDescriptor imageDescriptor : this.imageDescriptors) {
+            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", imageDescriptor.getBinding(), imageDescriptor.qualifier, imageDescriptor.name));
         }
         builder.append("\n");
 
@@ -108,19 +108,19 @@ public class UniformParser {
         return builder.buildUBO(0, Pipeline.Builder.getStageFromString("all"));
     }
 
-    private List<Image> createSamplerList() {
+    private List<ImageDescriptor> createSamplerList() {
         int currentLocation = 1;
 
-        List<Image> images = new ObjectArrayList<>();
+        List<ImageDescriptor> imageDescriptors = new ObjectArrayList<>();
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
             for(Uniform uniform : stageUniforms.samplers) {
-                images.add(new Image(currentLocation, uniform.type, uniform.name));
+                imageDescriptors.add(new ImageDescriptor(currentLocation, uniform.type, uniform.name));
                 currentLocation++;
             }
         }
 
-        return images;
+        return imageDescriptors;
     }
 
     public static String removeSemicolon(String s) {
@@ -134,8 +134,8 @@ public class UniformParser {
         return this.ubo;
     }
 
-    public List<Image> getSamplers() {
-        return this.images;
+    public List<ImageDescriptor> getSamplers() {
+        return this.imageDescriptors;
     }
 
     public record Uniform(String type, String name) {}

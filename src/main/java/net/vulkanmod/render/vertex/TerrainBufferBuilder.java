@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.logging.LogUtils;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.render.util.SortUtil;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -18,8 +19,8 @@ import java.nio.FloatBuffer;
 import java.util.function.IntConsumer;
 
 public class TerrainBufferBuilder implements VertexConsumer {
-	private static final float POS_CONV = 1900.0f;
-	private static final float UV_CONV = 65536.0f;
+	protected static final float POS_CONV = 1900.0f;
+	protected static final float UV_CONV = 65536.0f;
 
 	private static final int GROWTH_SIZE = 2097152;
 	private static final Logger LOGGER = LogUtils.getLogger();
@@ -27,7 +28,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	private ByteBuffer buffer;
 	private int renderedBufferCount;
 	private int renderedBufferPointer;
-	private int nextElementByte;
+	protected int nextElementByte;
 	private int vertices;
 	@Nullable
 	private VertexFormatElement currentElement;
@@ -44,10 +45,10 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	private float sortZ = Float.NaN;
 	private boolean indexOnly;
 
-	private long bufferPtr;
+	protected long bufferPtr;
 //    private long ptr;
 
-	VertexBuilder vertexBuilder;
+	protected VertexBuilder vertexBuilder;
 
 	public TerrainBufferBuilder(int i) {
 		this.buffer = MemoryTracker.create(i * 6);
@@ -342,58 +343,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		this.vertexBuilder.vertex(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
 	}
 
-	private void defaultVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
-		this.putFloat(0, x);
-		this.putFloat(4, y);
-		this.putFloat(8, z);
-		this.putByte(12, (byte)((int)(red * 255.0F)));
-		this.putByte(13, (byte)((int)(green * 255.0F)));
-		this.putByte(14, (byte)((int)(blue * 255.0F)));
-		this.putByte(15, (byte)((int)(alpha * 255.0F)));
-		this.putFloat(16, u);
-		this.putFloat(20, v);
-		byte i;
-		i = 24;
-
-		this.putShort(i, (short)(light & '\uffff'));
-		this.putShort(i + 2, (short)(light >> 16 & '\uffff'));
-		this.putByte(i + 4, BufferVertexConsumer.normalIntValue(normalX));
-		this.putByte(i + 5, BufferVertexConsumer.normalIntValue(normalY));
-		this.putByte(i + 6, BufferVertexConsumer.normalIntValue(normalZ));
-		this.nextElementByte += i + 8;
-		this.endVertex();
-	}
-
-	private void compressedVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light) {
-		long ptr = this.bufferPtr + this.nextElementByte;
-
-		short sX = (short) (x * POS_CONV + 0.1f);
-		short sY = (short) (y * POS_CONV + 0.1f);
-		short sZ = (short) (z * POS_CONV + 0.1f);
-
-		//Debug
-//		short x1 = (short) Math.round((x) * POS_CONV);
-//		float y1 = (short) Math.round((y) * POS_CONV);
-//		float z1 = (short) Math.round((z) * POS_CONV);
-//
-//		if(x1 != sX || y1 != sY || z1 != sZ)
-//			System.nanoTime();
-
-		MemoryUtil.memPutShort(ptr + 0, sX);
-		MemoryUtil.memPutShort(ptr + 2, sY);
-		MemoryUtil.memPutShort(ptr + 4, sZ);
-
-		int temp = VertexUtil.packColor(red, green, blue, alpha);
-		MemoryUtil.memPutInt(ptr + 8, temp);
-
-		MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
-		MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));
-
-		MemoryUtil.memPutInt(ptr + 16, light);
-
-		this.nextElementByte += 20;
-		this.endVertex();
-	}
+	public void setBlockAttributes(BlockState blockState) {}
 
 	@Override
 	public VertexConsumer vertex(double d, double e, double f) {
@@ -602,7 +552,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		}
 	}
 
-	interface VertexBuilder {
+	public interface VertexBuilder {
 		void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ);
 	}
 

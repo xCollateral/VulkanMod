@@ -22,24 +22,30 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import net.vulkanmod.render.chunk.RenderSection;
+import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import net.vulkanmod.render.chunk.TerrainShaderManager;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ChunkTask {
+public abstract class ChunkTask {
     private static TaskDispatcher taskDispatcher;
 
-    //TODO stats
     public static final boolean bench = false;
     public static AtomicInteger totalBuildTime = new AtomicInteger(0);
     public static AtomicInteger buildCount = new AtomicInteger(0);
+
+    public static BuildTask createBuildTask(RenderSection renderSection, RenderChunkRegion renderChunkRegion, boolean highPriority) {
+        return new BuildTask(renderSection, renderChunkRegion, highPriority);
+    }
 
     protected AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final RenderSection renderSection;
@@ -49,13 +55,9 @@ public class ChunkTask {
         this.renderSection = renderSection;
     }
 
-    public String name() {
-        return "generic_chk_task";
-    }
+    public abstract String name();
 
-    public CompletableFuture<Result> doTask(ThreadBuilderPack builderPack) {
-        return null;
-    }
+    public abstract CompletableFuture<Result> doTask(ThreadBuilderPack builderPack);
 
     public void cancel() {
         this.cancelled.set(true);
@@ -115,9 +117,8 @@ public class ChunkTask {
                     compiledChunk.renderableBlockEntities.addAll(compileResults.blockEntities);
                     compiledChunk.transparencyState = compileResults.transparencyState;
 
-                    if(!compileResults.renderedLayers.isEmpty()) {
+                    if(!compileResults.renderedLayers.isEmpty())
                         compiledChunk.isCompletelyEmpty = false;
-                    }
 
                     taskDispatcher.scheduleSectionUpdate(renderSection, compileResults.renderedLayers);
                     compiledChunk.renderTypes.addAll(compileResults.renderedLayers.keySet());
@@ -141,9 +142,9 @@ public class ChunkTask {
         private CompileResults compile(float camX, float camY, float camZ, ThreadBuilderPack chunkBufferBuilderPack) {
             CompileResults compileResults = new CompileResults();
 
-            BlockPos blockPos = new BlockPos(renderSection.xOffset(), renderSection.yOffset(), renderSection.zOffset()).immutable();
+            BlockPos startBlockPos = new BlockPos(renderSection.xOffset(), renderSection.yOffset(), renderSection.zOffset()).immutable();
 
-            BlockPos blockPos2 = blockPos.offset(15, 15, 15);
+            BlockPos endBlockPos = startBlockPos.offset(15, 15, 15);
             VisGraph visGraph = new VisGraph();
             RenderChunkRegion renderChunkRegion = this.region;
             this.region = null;
@@ -154,21 +155,21 @@ public class ChunkTask {
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
 
-                for(BlockPos blockPos3 : BlockPos.betweenClosed(blockPos, blockPos2)) {
-                    BlockState blockState = renderChunkRegion.getBlockState(blockPos3);
-                    if (blockState.isSolidRender(renderChunkRegion, blockPos3)) {
-                        visGraph.setOpaque(blockPos3);
+                for(BlockPos blockPos : BlockPos.betweenClosed(startBlockPos, endBlockPos)) {
+                    BlockState blockState = renderChunkRegion.getBlockState(blockPos);
+                    if (blockState.isSolidRender(renderChunkRegion, blockPos)) {
+                        visGraph.setOpaque(blockPos);
                     }
 
                     if (blockState.hasBlockEntity()) {
-                        BlockEntity blockEntity = renderChunkRegion.getBlockEntity(blockPos3);
+                        BlockEntity blockEntity = renderChunkRegion.getBlockEntity(blockPos);
                         if (blockEntity != null) {
                             this.handleBlockEntity(compileResults, blockEntity);
                         }
                     }
 
-                    BlockState blockState2 = renderChunkRegion.getBlockState(blockPos3);
-                    FluidState fluidState = blockState2.getFluidState();
+//                    BlockState blockState2 = renderChunkRegion.getBlockState(blockPos);
+                    FluidState fluidState = blockState.getFluidState();
                     RenderType renderType;
                     TerrainBufferBuilder bufferBuilder;
                     if (!fluidState.isEmpty()) {
@@ -182,7 +183,9 @@ public class ChunkTask {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, TerrainShaderManager.TERRAIN_VERTEX_FORMAT);
                         }
 
-                        blockRenderDispatcher.renderLiquid(blockPos3, renderChunkRegion, bufferBuilder, blockState2, fluidState);
+                        bufferBuilder.setBlockAttributes(fluidState.createLegacyBlock());
+
+                        blockRenderDispatcher.renderLiquid(blockPos, renderChunkRegion, bufferBuilder, blockState, fluidState);
                     }
 
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
@@ -196,9 +199,11 @@ public class ChunkTask {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, TerrainShaderManager.TERRAIN_VERTEX_FORMAT);
                         }
 
+                        bufferBuilder.setBlockAttributes(blockState);
+
                         poseStack.pushPose();
-                        poseStack.translate(blockPos3.getX() & 15, blockPos3.getY() & 15, blockPos3.getZ() & 15);
-                        blockRenderDispatcher.renderBatched(blockState, blockPos3, renderChunkRegion, poseStack, bufferBuilder, true, randomSource);
+                        poseStack.translate(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
+                        blockRenderDispatcher.renderBatched(blockState, blockPos, renderChunkRegion, poseStack, bufferBuilder, true, randomSource);
                         poseStack.popPose();
                     }
                 }
@@ -206,7 +211,7 @@ public class ChunkTask {
                 if (set.contains(RenderType.translucent())) {
                     TerrainBufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.translucent());
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
-                        bufferBuilder2.setQuadSortOrigin(camX - (float)blockPos.getX(), camY - (float)blockPos.getY(), camZ - (float)blockPos.getZ());
+                        bufferBuilder2.setQuadSortOrigin(camX - (float)startBlockPos.getX(), camY - (float)startBlockPos.getY(), camZ - (float)startBlockPos.getZ());
                         compileResults.transparencyState = bufferBuilder2.getSortState();
                     }
                 }
@@ -329,6 +334,5 @@ public class ChunkTask {
     public enum Result {
         CANCELLED,
         SUCCESSFUL;
-
     }
 }

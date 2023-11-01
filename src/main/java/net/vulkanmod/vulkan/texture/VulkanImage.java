@@ -20,6 +20,7 @@ import java.util.Objects;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK12.VK_SAMPLER_REDUCTION_MODE_MIN;
 
 public class VulkanImage {
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -125,7 +126,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.callocStack(stack);
+            VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
             viewInfo.sType(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
             viewInfo.image(image);
             viewInfo.viewType(VK_IMAGE_VIEW_TYPE_2D);
@@ -180,7 +181,7 @@ public class VulkanImage {
 
             copyImageToBuffer(pStagingBuffer.get(0), image, 0, width, height, 0, 0, 0, 0, 0);
 
-            MemoryManager.getInstance().MapAndCopy(pStagingAllocation.get(0), imageSize,
+            MemoryManager.MapAndCopy(pStagingAllocation.get(0),
                     (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), buffer)
             );
 
@@ -195,7 +196,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(this.currentLayout);
             barrier.newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -238,18 +239,18 @@ public class VulkanImage {
             return;
 
         CommandPool.CommandBuffer commandBuffer = Device.getGraphicsQueue().getCommandBuffer();
-        readOnlyLayout(commandBuffer);
+        readOnlyLayout(commandBuffer.getHandle());
         Device.getGraphicsQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
-    public void readOnlyLayout(CommandPool.CommandBuffer commandBuffer) {
+    public void readOnlyLayout(VkCommandBuffer commandBuffer) {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             return;
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.oldLayout(this.currentLayout);
             barrier.newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -273,7 +274,7 @@ public class VulkanImage {
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
 
-            vkCmdPipelineBarrier(commandBuffer.getHandle(),
+            vkCmdPipelineBarrier(commandBuffer,
                     sourceStage, destinationStage,
                     0,
                     null,
@@ -284,11 +285,52 @@ public class VulkanImage {
         this.currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
+    public void generalLayout(VkCommandBuffer commandBuffer) {
+        if (this.currentLayout == VK_IMAGE_LAYOUT_GENERAL)
+            return;
+
+        try(MemoryStack stack = stackPush()) {
+
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
+            barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+            barrier.oldLayout(this.currentLayout);
+            barrier.newLayout(VK_IMAGE_LAYOUT_GENERAL);
+            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+            barrier.image(this.id);
+
+            barrier.subresourceRange().baseMipLevel(0);
+            barrier.subresourceRange().levelCount(mipLevels);
+            barrier.subresourceRange().baseArrayLayer(0);
+            barrier.subresourceRange().layerCount(1);
+
+            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+
+            int sourceStage;
+            int destinationStage;
+
+            barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    sourceStage, destinationStage,
+                    0,
+                    null,
+                    null,
+                    barrier);
+        }
+
+        this.currentLayout = VK_IMAGE_LAYOUT_GENERAL;
+    }
+
     private void createTextureSampler(boolean blur, boolean clamp, boolean mipmap) {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.callocStack(stack);
+            VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack);
             samplerInfo.sType(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
 
             if(blur) {
@@ -328,6 +370,12 @@ public class VulkanImage {
                 samplerInfo.minLod(0.0F);
             }
 
+            //Reduction Mode
+//            VkSamplerReductionModeCreateInfo reductionModeInfo = VkSamplerReductionModeCreateInfo.calloc(stack);
+//            reductionModeInfo.sType$Default();
+//            reductionModeInfo.reductionMode(VK_SAMPLER_REDUCTION_MODE_MIN);
+//            samplerInfo.pNext(reductionModeInfo.address());
+
             LongBuffer pTextureSampler = stack.mallocLong(1);
 
             if(vkCreateSampler(getDevice(), samplerInfo, null, pTextureSampler) != VK_SUCCESS) {
@@ -355,7 +403,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
             region.bufferRowLength(bufferRowLenght);   // Tightly packed
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
@@ -364,7 +412,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
             vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
@@ -376,7 +424,7 @@ public class VulkanImage {
 
             CommandPool.CommandBuffer commandBuffer = Device.getGraphicsQueue().beginCommands();
 
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
+            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
             region.bufferRowLength(bufferRowLenght);   // Tightly packed
             region.bufferImageHeight(bufferImageHeight);  // Tightly packed
@@ -385,7 +433,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.callocStack(stack).set(width, height, 1));
+            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
 
@@ -396,83 +444,88 @@ public class VulkanImage {
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
-        transitionImageLayout(stack, commandBuffer, this.id, this.format, this.currentLayout, newLayout, this.mipLevels);
+        transitionImageLayout(stack, commandBuffer, this, newLayout);
 
         this.currentLayout = newLayout;
     }
 
-    public static void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, long image, int format, int oldLayout, int newLayout, int mipLevels) {
-
-        if(oldLayout == newLayout) {
+    public static void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int newLayout) {
+        if(image.currentLayout == newLayout) {
 //            System.out.println("new layout is equal to current layout");
             return;
         }
 
-        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
-        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        barrier.oldLayout(oldLayout);
-        barrier.newLayout(newLayout);
-//        barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-//        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-        barrier.image(image);
+        int sourceStage, srcAccessMask, destinationStage, dstAccessMask = 0;
 
-        barrier.subresourceRange().baseMipLevel(0);
-        barrier.subresourceRange().levelCount(mipLevels);
-        barrier.subresourceRange().baseArrayLayer(0);
-        barrier.subresourceRange().layerCount(1);
-
-        if(format == VK_FORMAT_D32_SFLOAT) {
-            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-        } else {
-            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        }
-
-        int sourceStage;
-        int destinationStage;
-
-        switch (oldLayout) {
+        switch (image.currentLayout) {
             case VK_IMAGE_LAYOUT_UNDEFINED -> {
-//                barrier.srcAccessMask(0);
+                srcAccessMask = 0;
                 sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             }
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> {
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
-                barrier.srcAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
                 sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
-                barrier.srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+                srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             }
             case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL -> {
-                barrier.srcAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
-                sourceStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+                srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                sourceStage = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
             }
-            default -> throw new RuntimeException("Unexpected value");
+            default -> throw new RuntimeException("Unexpected value:" + image.currentLayout);
         }
 
         switch (newLayout) {
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> {
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
-                barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
                 destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
-                barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+                dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             }
             case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL -> {
-                barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+                dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
             }
-            default -> throw new RuntimeException("Unexpected value");
+            default -> throw new RuntimeException("Unexpected value:" + newLayout);
         }
+
+        transitionLayout(stack, commandBuffer, image, image.currentLayout, newLayout,
+                sourceStage, srcAccessMask, destinationStage, dstAccessMask);
+    }
+
+    public static void transitionLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int oldLayout, int newLayout,
+                                        int sourceStage, int srcAccessMask, int destinationStage, int dstAccessMask) {
+
+        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
+        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        barrier.oldLayout(image.currentLayout);
+        barrier.newLayout(newLayout);
+        barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.image(image.getId());
+
+        barrier.subresourceRange().baseMipLevel(0);
+        barrier.subresourceRange().levelCount(image.mipLevels);
+        barrier.subresourceRange().baseArrayLayer(0);
+        barrier.subresourceRange().layerCount(1);
+
+        barrier.subresourceRange()
+                .aspectMask(image.format == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
+
+        barrier.srcAccessMask(srcAccessMask);
+        barrier.dstAccessMask(dstAccessMask);
 
         vkCmdPipelineBarrier(commandBuffer,
                 sourceStage, destinationStage,
@@ -480,6 +533,8 @@ public class VulkanImage {
                 null,
                 null,
                 barrier);
+
+        image.currentLayout = newLayout;
     }
 
     private static boolean hasStencilComponent(int format) {

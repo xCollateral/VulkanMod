@@ -14,8 +14,6 @@ import java.util.EnumMap;
 import java.util.Queue;
 
 public class TaskDispatcher {
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     private int highPriorityQuota = 2;
 
     private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
@@ -84,10 +82,10 @@ public class TaskDispatcher {
             return;
 
         if (chunkTask.highPriority) {
-                this.highPriorityTasks.offer(chunkTask);
-            } else {
-                this.lowPriorityTasks.offer(chunkTask);
-            }
+            this.highPriorityTasks.offer(chunkTask);
+        } else {
+            this.lowPriorityTasks.offer(chunkTask);
+        }
 
         synchronized (this) {
             notify();

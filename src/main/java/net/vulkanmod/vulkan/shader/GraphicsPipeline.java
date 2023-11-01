@@ -34,7 +34,7 @@ public class GraphicsPipeline extends Pipeline {
         super(builder.shaderPath);
         this.buffers = builder.UBOs;
         this.manualUBO = builder.manualUBO;
-        this.images = builder.images;
+        this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
@@ -243,6 +243,8 @@ public class GraphicsPipeline extends Pipeline {
             VertexFormatElement formatElement = elements.get(i);
             VertexFormatElement.Usage usage = formatElement.getUsage();
             VertexFormatElement.Type type = formatElement.getType();
+            int elementCount = formatElement.getCount();
+
             switch (usage) {
                 case POSITION :
                     if(type == VertexFormatElement.Type.FLOAT) {
@@ -303,6 +305,28 @@ public class GraphicsPipeline extends Pipeline {
                     break;
 
                 case PADDING:
+                    //Do nothing as padding format (VK_FORMAT_R8) is not supported everywhere
+                    break;
+
+                case GENERIC:
+                    if(type == VertexFormatElement.Type.SHORT && elementCount == 1){
+                        posDescription.format(VK_FORMAT_R16_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 2;
+                        break;
+                    }
+                    else if (type == VertexFormatElement.Type.INT && elementCount == 1) {
+                        posDescription.format(VK_FORMAT_R32_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                        break;
+                    }
+                    else {
+                        throw new RuntimeException(String.format("Unknown format: %s", usage));
+                    }
+
 
                 default:
                     throw new RuntimeException(String.format("Unknown format: %s", usage));

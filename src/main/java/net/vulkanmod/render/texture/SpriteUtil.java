@@ -1,7 +1,7 @@
 package net.vulkanmod.render.texture;
 
-import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +24,7 @@ public abstract class SpriteUtil {
         transitionedLayouts.add(image);
     }
 
-    public static void transitionLayouts(CommandPool.CommandBuffer commandBuffer) {
+    public static void transitionLayouts(VkCommandBuffer commandBuffer) {
         transitionedLayouts.forEach(image -> image.readOnlyLayout(commandBuffer));
 
         transitionedLayouts.clear();

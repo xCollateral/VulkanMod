@@ -176,7 +176,7 @@ public class MemoryManager {
         images.putIfAbsent(image.getId(), image);
     }
 
-    public void MapAndCopy(long allocation, long bufferSize, Consumer<PointerBuffer> consumer){
+    public static void MapAndCopy(long allocation, Consumer<PointerBuffer> consumer){
 
         try(MemoryStack stack = stackPush()) {
             PointerBuffer data = stack.mallocPointer(1);

@@ -137,7 +137,7 @@ public class RenderSection {
         RenderChunkRegion renderchunkregion = renderRegionCache.createRegion(WorldRenderer.getLevel(), blockpos.offset(-1, -1, -1), blockpos.offset(16, 16, 16), 1);
         boolean flag1 = this.compileStatus.compiledSection == CompiledSection.UNCOMPILED;
 
-        this.compileStatus.rebuildTask = new ChunkTask.BuildTask(this, renderchunkregion, !flag1);
+        this.compileStatus.rebuildTask = ChunkTask.createBuildTask(this, renderchunkregion, !flag1);
         return this.compileStatus.rebuildTask;
     }
 

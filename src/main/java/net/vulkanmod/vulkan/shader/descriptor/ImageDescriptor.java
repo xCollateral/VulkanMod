@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class Image implements Descriptor {
+public class ImageDescriptor implements Descriptor {
 
     private final int descriptorType;
     private final int binding;
@@ -10,17 +10,17 @@ public class Image implements Descriptor {
     public final String name;
     public final boolean useSampler;
 
-    public Image(int binding, String type, String name) {
+    public ImageDescriptor(int binding, String type, String name) {
         this(binding, type, name, true);
     }
 
-    public Image(int binding, String type, String name, boolean useSampler) {
+    public ImageDescriptor(int binding, String type, String name, boolean useSampler) {
         this.binding = binding;
         this.qualifier = type;
         this.name = name;
         this.useSampler = useSampler;
 
-        descriptorType = useSampler ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        descriptorType = useSampler ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     }
 
     @Override
@@ -35,6 +35,6 @@ public class Image implements Descriptor {
 
     @Override
     public int getStages() {
-        return VK_SHADER_STAGE_ALL_GRAPHICS;
+        return VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT;
     }
 }
