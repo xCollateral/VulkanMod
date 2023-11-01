@@ -28,6 +28,7 @@ Demostration Video:
 
 ## Known Issues
 
+- Linux may not work.
 
 ## Notes
 This is still a pre-alpha mod. Bugs are to be expected.
