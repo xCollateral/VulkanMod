@@ -21,6 +21,8 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
+    private static final int depthFormat = Device.findDepthFormat();
+    private static final int defDepthAspect = !hasStencilComponent(depthFormat) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
     private static VkDevice device = Vulkan.getDevice();
@@ -410,7 +412,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
 
             vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
@@ -431,7 +433,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
 
@@ -520,7 +522,7 @@ public class VulkanImage {
         barrier.subresourceRange().layerCount(1);
 
         barrier.subresourceRange()
-                .aspectMask(image.format == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
+                .aspectMask(image.format == depthFormat ? defDepthAspect : VK_IMAGE_ASPECT_COLOR_BIT);
 
         barrier.srcAccessMask(srcAccessMask);
         barrier.dstAccessMask(dstAccessMask);

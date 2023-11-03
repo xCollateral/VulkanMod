@@ -151,7 +151,7 @@ public class Framebuffer {
     }
 
     public VkViewport.Buffer viewport(MemoryStack stack) {
-        VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
+        VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
         viewport.x(0.0f);
         viewport.y(this.height);
         viewport.width(this.width);
@@ -163,9 +163,9 @@ public class Framebuffer {
     }
 
     public VkRect2D.Buffer scissor(MemoryStack stack) {
-        VkRect2D.Buffer scissor = VkRect2D.callocStack(1, stack);
-        scissor.offset(VkOffset2D.callocStack(stack).set(0, 0));
-        scissor.extent(VkExtent2D.malloc(stack).set(this.width, this.height));
+        VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
+        scissor.offset().set(0, 0);
+        scissor.extent().set(this.width, this.height);
 
         return scissor;
     }

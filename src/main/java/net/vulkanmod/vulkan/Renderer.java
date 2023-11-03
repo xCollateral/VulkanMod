@@ -209,7 +209,7 @@ public class Renderer {
             if(vkResult == VK_SUBOPTIMAL_KHR ) {
                 swapCahinUpdate = true;
             }
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapCahinUpdate) {
+            else if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapCahinUpdate) {
                 swapCahinUpdate = true;
 //                shouldRecreate = false;
 //                waitForSwapChain();
@@ -487,74 +487,39 @@ public class Renderer {
         if(framebuffer == null)
             return;
 
-        clearAttachments(v, framebuffer.getWidth(), framebuffer.getHeight());
+        clearDepthAttachment(v, framebuffer.getWidth(), framebuffer.getHeight());
     }
 
-    public static void clearAttachments(int v, int width, int height) {
-        if(skipRendering)
+    public static void clearDepthAttachment(int v, int width, int height) {
+        if(skipRendering || v == 0x4000 || v == 0x4100)
             return;
-
-        VkCommandBuffer commandBuffer = INSTANCE.currentCmdBuffer;
 
         try(MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear, it seems it works like a buffer: color and depth attributes override themselves
-            VkClearValue colorValue = VkClearValue.calloc(stack);
-            colorValue.color().float32(VRenderSystem.clearColor);
 
-            VkClearValue depthValue = VkClearValue.calloc(stack);
-            depthValue.depthStencil().depth(VRenderSystem.clearDepth);
-
-            int attachmentsCount;
-            VkClearAttachment.Buffer pAttachments;
-            if (v == 0x100) {
-                attachmentsCount = 1;
-
-                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
-
-                VkClearAttachment clearDepth = pAttachments.get(0);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else if (v == 0x4000) {
-                attachmentsCount = 1;
-
-                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
-
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.colorAttachment(0);
-                clearColor.clearValue(colorValue);
-            } else if (v == 0x4100) {
-                attachmentsCount = 2;
-
-                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
-
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.clearValue(colorValue);
-
-                VkClearAttachment clearDepth = pAttachments.get(1);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else {
-                throw new RuntimeException("unexpected value");
-            }
+  
+            VkClearAttachment.Buffer clearDepth = VkClearAttachment.malloc(1, stack);
+            clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+            clearDepth.clearValue().depthStencil().set(VRenderSystem.clearDepth, 0);
+            
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.calloc(stack);
-            renderArea.offset(VkOffset2D.calloc(stack).set(0, 0));
-            renderArea.extent(VkExtent2D.calloc(stack).set(width, height));
+            VkRect2D renderArea = VkRect2D.malloc(stack);
+            renderArea.offset().set(0, 0);
+            renderArea.extent().set(width, height);
 
-            VkClearRect.Buffer pRect = VkClearRect.calloc(1, stack);
-            pRect.get(0).rect(renderArea);
-            pRect.get(0).layerCount(1);
+            VkClearRect.Buffer pRect = VkClearRect.malloc(1, stack);
+            pRect.rect(renderArea);
+            pRect.baseArrayLayer(0);
+            pRect.layerCount(1);
 
-            vkCmdClearAttachments(commandBuffer, pAttachments, pRect);
+            vkCmdClearAttachments(INSTANCE.currentCmdBuffer, clearDepth, pRect);
         }
     }
 
     public static void setViewport(int x, int y, int width, int height) {
         try(MemoryStack stack = stackPush()) {
-            VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+            VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
             viewport.x(x);
             viewport.y(height + y);
             viewport.width(width);
@@ -563,8 +528,8 @@ public class Renderer {
             viewport.maxDepth(1.0f);
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
-            scissor.offset(VkOffset2D.malloc(stack).set(0, 0));
-            scissor.extent(VkExtent2D.malloc(stack).set(width, height));
+            scissor.offset().set(0, 0);
+            scissor.extent().set(width, height);
 
             vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
@@ -573,11 +538,11 @@ public class Renderer {
 
     public static void setScissor(int x, int y, int width, int height) {
         try(MemoryStack stack = stackPush()) {
-            int framebufferHeight = Renderer.getInstance().boundFramebuffer.getHeight();
+            int framebufferHeight = INSTANCE.boundFramebuffer.getHeight();
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
-            scissor.offset(VkOffset2D.malloc(stack).set(x, framebufferHeight - (y + height)));
-            scissor.extent(VkExtent2D.malloc(stack).set(width, height));
+            scissor.offset().set(x, framebufferHeight - (y + height));
+            scissor.extent().set(width, height);
 
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
         }
@@ -588,7 +553,7 @@ public class Renderer {
             return;
 
         try(MemoryStack stack = stackPush()) {
-            VkRect2D.Buffer scissor = Renderer.getInstance().boundFramebuffer.scissor(stack);
+            VkRect2D.Buffer scissor = INSTANCE.boundFramebuffer.scissor(stack);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
         }
     }
