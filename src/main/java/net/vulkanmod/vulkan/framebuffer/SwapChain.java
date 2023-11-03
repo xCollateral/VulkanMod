@@ -76,11 +76,10 @@ public class SwapChain extends Framebuffer {
 
         createSwapChain();
 
-        return this.swapChainImages.size();
+        return this.getFramesNum();
     }
 
     public void createSwapChain() {
-        int requestedFrames = Initializer.CONFIG.frameQueueSize;
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
@@ -101,14 +100,14 @@ public class SwapChain extends Framebuffer {
                 this.height = 0;
                 return;
             }
+            //minImageCount depends on driver: Mesa/RADV needs a min of 4, but most other drivers are at least 2 or 3
+            if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
+                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
 
-            //Workaround for Mesa
+            int requestedFrames = Initializer.CONFIG.minImageCount;
+
             IntBuffer imageCount = stack.ints(requestedFrames);
 //            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
-
-            if(surfaceProperties.capabilities.maxImageCount() > 0 && imageCount.get(0) > surfaceProperties.capabilities.maxImageCount()) {
-                imageCount.put(0, surfaceProperties.capabilities.maxImageCount());
-            }
 
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
@@ -119,7 +118,7 @@ public class SwapChain extends Framebuffer {
             this.format = surfaceFormat.format();
             this.extent2D = VkExtent2D.create().set(extent);
 
-            createInfo.minImageCount(imageCount.get(0));
+            createInfo.minImageCount(requestedFrames);
             createInfo.imageFormat(this.format);
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
@@ -162,6 +161,10 @@ public class SwapChain extends Framebuffer {
             vkGetSwapchainImagesKHR(device, swapChain, imageCount, pSwapchainImages);
 
             swapChainImages = new ArrayList<>(imageCount.get(0));
+
+            // minImageCount and Actual Image Count can differ with some Drivers,
+            // According to the spec, minImageCount is only the guaranteed min, not the actual image count
+            Initializer.LOGGER.info("Requested Images: "+requestedFrames + " -> Actual Image Count: "+imageCount.get(0));
 
             this.width = extent2D.width();
             this.height = extent2D.height();
@@ -232,7 +235,7 @@ public class SwapChain extends Framebuffer {
             this.renderPass.beginDynamicRendering(commandBuffer, stack);
         }
         else {
-            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentFrame()], stack);
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentImage()], stack);
         }
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
@@ -335,7 +338,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public VulkanImage getColorAttachment() {
-        return this.swapChainImages.get(Renderer.getCurrentFrame());
+        return this.swapChainImages.get(Renderer.getCurrentImage());
     }
 
     public long getImageView(int i) { return this.swapChainImages.get(i).getImageView(); }
@@ -427,5 +430,6 @@ public class SwapChain extends Framebuffer {
         return renderPass;
     }
 
-    public int getFramesNum() { return this.swapChainImages.size(); }
+    public int getFramesNum() { return Initializer.CONFIG.frameQueueSize; }
+    public int getImagesNum() { return this.swapChainImages.size(); }
 }

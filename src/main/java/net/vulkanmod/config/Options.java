@@ -3,17 +3,36 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
+import org.lwjgl.system.MemoryStack;
+
+import static net.vulkanmod.vulkan.Device.device;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+    private static final int minImages;
+
+    private static final int maxImages;
+
+
+    static
+    {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
+            minImages = surfaceProperties.capabilities.minImageCount();
+            int maxImageCount = surfaceProperties.capabilities.maxImageCount();
+
+            boolean hasInfiniteSwapChain = maxImageCount == 0; //Applicable if Mesa/RADV Driver are present
+            maxImages = hasInfiniteSwapChain ? 64 : maxImageCount;
+        }
+    }
 
 
     public static Option<?>[] getVideoOpts() {
@@ -168,14 +187,26 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Queue Frames", 2,
+                new RangeOption("Queue Frames", 1,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
+                        Manages the tradeoff between FPS and input lag
+                        Most GPUs only require 2 for max performance
+                        and usually don't have any performance benefits with 3 or higher""")),
+                new RangeOption("SwapChain Images", minImages,
+                        maxImages, 1,
+                        value -> {
+                            config.minImageCount = value;
+                            Renderer.scheduleSwapChainUpdate();
+                        }, () -> config.minImageCount)
+                        .setTooltip(Component.nullToEmpty("""
+                        Sets the number of Swapchain images
+                        Optimised automatically for best performance
+                        This can be reduced to minimise input lag but at the cost of decreased FPS""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)

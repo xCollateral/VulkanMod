@@ -46,7 +46,7 @@ public class GraphicsPipeline extends Pipeline {
             graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
                     this::createGraphicsPipeline);
 
-        createDescriptorSets(Vulkan.getSwapChainImages().size());
+        createDescriptorSets(Vulkan.getSwapChain().getFramesNum());
 
         PIPELINES.add(this);
     }

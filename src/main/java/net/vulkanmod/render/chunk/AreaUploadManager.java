@@ -56,7 +56,7 @@ public class AreaUploadManager {
 
         VkCommandBuffer commandBuffer = commandBuffers[currentFrame].getHandle();
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if(!dstBuffers.add(bufferId)) {
@@ -83,7 +83,7 @@ public class AreaUploadManager {
     }
 
     public void updateFrame() {
-        this.currentFrame = (this.currentFrame + 1) % FRAME_NUM;
+        this.currentFrame ^= this.currentFrame;
         waitUploads(this.currentFrame);
 
         this.dstBuffers.clear();

@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
+import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
@@ -21,7 +21,7 @@ public class UniformBuffers {
     private List<UniformBuffer> uniformBuffers;
 
     private final static int minOffset = (int) Device.deviceProperties.limits().minUniformBufferOffsetAlignment();
-    private final int imagesSize = getSwapChainImages().size();
+    private final int framesSize = getSwapChain().getFramesNum();
 
     CommandPool.CommandBuffer commandBuffer;
 
@@ -36,9 +36,9 @@ public class UniformBuffers {
     private void createUniformBuffers(int size, MemoryType memoryType) {
         this.bufferSize = size;
 
-        uniformBuffers = new ArrayList<>(imagesSize);
+        uniformBuffers = new ArrayList<>(framesSize);
 
-        for(int i = 0; i < imagesSize; ++i) {
+        for(int i = 0; i < framesSize; ++i) {
             uniformBuffers.add(new UniformBuffer(this.bufferSize, memoryType));
         }
     }
@@ -127,7 +127,7 @@ public class UniformBuffers {
 
                 int size = buffer.remaining();
 
-                StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
+                StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
                 stagingBuffer.copyBuffer(size, buffer);
 
                 TransferQueue.uploadBufferCmd(commandBuffer.getHandle(), stagingBuffer.id, stagingBuffer.offset, this.id, offset, size);
