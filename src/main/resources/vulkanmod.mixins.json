@@ -7,57 +7,52 @@
   "mixins": [
   ],
   "client": [
+    "InputConstantsM",
+    "WindowMixin",
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
     "chunk.LevelRendererMixin",
     "chunk.VisibilitySetMixin",
-
-    "compatibility.gl.GL11M",
     "compatibility.EffectInstanceM",
     "compatibility.ProgramM",
     "compatibility.UniformM",
-
+    "compatibility.gl.GL11M",
     "debug.ChunkBorderRendererM",
+    "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
-    "debug.DebugScreenOverlayM",
-
     "gui.ChatComponentM",
     "gui.DebugHudM",
     "gui.GuiM",
-
     "matrix.Matrix4fM",
-
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
-
-    "render.entity.EntityRendererM",
-    "render.model.ModelPartCubeM",
-    "render.model.ModelPartM",
-    "render.vertex.FaceBakeryM",
-    "render.vertex.BufferBuilderM",
-    "render.vertex.VertexBufferM",
-    "render.vertex.VertexConsumerM",
-    "render.vertex.LiquidBlockRendererM",
-    "render.vertex.VertexFormatMixin",
     "render.BufferUploaderM",
-    "render.RenderTargetMixin",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
     "render.GlStateManagerM",
-    "render.vertex.IndexTypeMixin",
+    "render.LevelRendererMixin",
+    "render.MainTargetMixin",
     "render.MinecraftMixin",
     "render.RenderSystemMixin",
+    "render.RenderTargetMixin",
     "render.ShaderInstanceM",
-    "render.MainTargetMixin",
-    "render.LevelRendererMixin",
-
+    "render.entity.EntityRendererM",
+    "render.model.ModelPartCubeM",
+    "render.model.ModelPartM",
+    "render.vertex.BufferBuilderM",
+    "render.vertex.FaceBakeryM",
+    "render.vertex.IndexTypeMixin",
+    "render.vertex.LiquidBlockRendererM",
+    "render.vertex.VertexBufferM",
+    "render.vertex.VertexConsumerM",
+    "render.vertex.VertexFormatMixin",
     "screen.OptionsScreenM",
-
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
     "texture.MLightTexture",
+    "texture.MNativeImage",
     "texture.MOverlayTexture",
     "texture.MPlayerSkinTexture",
     "texture.MSimpleTexture",
@@ -65,16 +60,11 @@
     "texture.MSpriteContents",
     "texture.MTextureManager",
     "texture.MTextureUtil",
-    "texture.MNativeImage",
-
     "util.ScreenshotRecorderM",
-
     "vertex.SpriteCoordinateExpanderM",
     "vertex.VertexMultiConsumersM$DoubleM",
     "vertex.VertexMultiConsumersM$MultipleM",
-    "vertex.VertexMultiConsumersM$SheetDecalM",
-
-    "WindowMixin"
+    "vertex.VertexMultiConsumersM$SheetDecalM"
   ],
   "injectors": {
     "defaultRequire": 1

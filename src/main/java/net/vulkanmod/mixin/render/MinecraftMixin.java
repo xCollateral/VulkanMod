@@ -1,8 +1,10 @@
 package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.IconSet;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.TimerQuery;
+import net.minecraft.SharedConstants;
 import net.minecraft.Util;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
@@ -18,8 +20,11 @@ import net.minecraft.client.resources.MobEffectTextureManager;
 import net.minecraft.client.resources.PaintingTextureManager;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.client.sounds.SoundManager;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.server.packs.VanillaPackResources;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
@@ -36,6 +41,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
+import java.io.IOException;
 import java.util.Optional;
 
 @Mixin(Minecraft.class)
@@ -67,6 +73,8 @@ public class MinecraftMixin {
         }
     }
 
+    @Shadow @Final private VanillaPackResources vanillaPackResources;
+
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void beginRender(int i, boolean bl) {
         Renderer.getInstance().beginFrame();
@@ -75,6 +83,17 @@ public class MinecraftMixin {
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
     private void submitRender(boolean tick, CallbackInfo ci) {
         Renderer.getInstance().endFrame();
+    }
+    /**
+     * @author
+     * @reason Only KWin supports setting the Icon on Wayland AFAIK
+     */
+    @Redirect(method="<init>", at=@At(value="INVOKE", target="Lcom/mojang/blaze3d/platform/Window;setIcon(Lnet/minecraft/server/packs/PackResources;Lcom/mojang/blaze3d/platform/IconSet;)V"))
+    private void bypassWaylandIcon(Window instance, PackResources packResources, IconSet iconSet) throws IOException {
+        if(!VideoResolution.isWayLand())
+        {
+            this.window.setIcon(this.vanillaPackResources, SharedConstants.getCurrentVersion().isStable() ? IconSet.RELEASE : IconSet.SNAPSHOT);
+        }
     }
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;bindWrite(Z)V"))

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static net.vulkanmod.vulkan.Device.device;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -32,6 +33,11 @@ public class SwapChain extends Framebuffer {
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
     }
+
+    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on most Wayland installations currently)
+    //Try to use Mailbox if possible (in case FreeSync/G-Sync needs it)
+    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR);
 
     private RenderPass renderPass;
     private long[] framebuffers;
@@ -354,7 +360,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
@@ -392,6 +398,21 @@ public class SwapChain extends Framebuffer {
         actualExtent.height(MathUtil.clamp(minExtent.height(), maxExtent.height(), actualExtent.height()));
 
         return actualExtent;
+    }
+
+    private static int checkPresentMode(int... requestedModes) {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = Device.querySurfaceProperties(device.getPhysicalDevice(), stack).presentModes;
+            for(int dMode : requestedModes) {
+                for (int i = 0; i < a.capacity(); i++) {
+                    if (a.get(i) == dMode) {
+                        return dMode;
+                    }
+                }
+            }
+            return VK_PRESENT_MODE_FIFO_KHR; //If None of the request modes exist/are supported by Driver
+        }
     }
 
     public boolean isVsync() {

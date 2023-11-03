@@ -14,7 +14,7 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getVendor() {
-        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().vendorId : "n/a";
+        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().vendorIdString : "n/a";
     }
 
     /**
