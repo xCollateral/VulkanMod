@@ -1,11 +1,14 @@
 package net.vulkanmod.mixin.render;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.PostChain;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
@@ -37,4 +40,9 @@ public abstract class LevelRendererMixin {
 //            this.entityOutlinesFramebuffer = null;
 //        }
     }
+
+    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void redirectClear2(int i, boolean bl) {}
+    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;clear(Z)V"))
+    private void redirectClear(RenderTarget instance, boolean bl) {}
 }

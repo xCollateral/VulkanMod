@@ -30,7 +30,7 @@ public class VRenderSystem {
 
     public static boolean cull = true;
 
-    public static float clearDepth = 1.0f;
+    public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
 
     public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);

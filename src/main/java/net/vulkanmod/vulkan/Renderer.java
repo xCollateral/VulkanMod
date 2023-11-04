@@ -16,6 +16,7 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -27,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
+import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -487,21 +490,50 @@ public class Renderer {
         if(framebuffer == null)
             return;
 
-        clearDepthAttachment(v, framebuffer.getWidth(), framebuffer.getHeight());
+        clearAttachments(v, framebuffer.getWidth(), framebuffer.getHeight());
     }
 
-    public static void clearDepthAttachment(int v, int width, int height) {
-        if(skipRendering || v == 0x4000 || v == 0x4100)
+    public static void clearAttachments(int v, int width, int height) {
+        if(skipRendering)
             return;
 
         try(MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear, it seems it works like a buffer: color and depth attributes override themselves
+            VkClearValue colorValue = VkClearValue.calloc(stack);
+            colorValue.color().float32(VRenderSystem.clearColor);
 
-  
-            VkClearAttachment.Buffer clearDepth = VkClearAttachment.malloc(1, stack);
-            clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-            clearDepth.clearValue().depthStencil().set(VRenderSystem.clearDepth, 0);
-            
+            VkClearValue depthValue = VkClearValue.calloc(stack);
+            depthValue.depthStencil().set(VRenderSystem.clearDepth, 0); //Use fast depth clears if possible
+
+            int attachmentsCount = v == (GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT) ? 2 : 1;
+            final VkClearAttachment.Buffer pAttachments = VkClearAttachment.malloc(attachmentsCount, stack);
+            switch (v) {
+                case GL_DEPTH_BUFFER_BIT -> {
+
+                    VkClearAttachment clearDepth = pAttachments.get(0);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                case GL_COLOR_BUFFER_BIT -> {
+
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.colorAttachment(0);
+                    clearColor.clearValue(colorValue);
+                }
+                case GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT -> {
+
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.colorAttachment(0);
+                    clearColor.clearValue(colorValue);
+
+                    VkClearAttachment clearDepth = pAttachments.get(1);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                default -> throw new RuntimeException("unexpected value");
+            }
 
             //Rect to clear
             VkRect2D renderArea = VkRect2D.malloc(stack);
@@ -513,7 +545,7 @@ public class Renderer {
             pRect.baseArrayLayer(0);
             pRect.layerCount(1);
 
-            vkCmdClearAttachments(INSTANCE.currentCmdBuffer, clearDepth, pRect);
+            vkCmdClearAttachments(INSTANCE.currentCmdBuffer, pAttachments, pRect);
         }
     }
 
