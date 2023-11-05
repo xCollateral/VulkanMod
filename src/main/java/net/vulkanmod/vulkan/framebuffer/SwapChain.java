@@ -29,6 +29,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class SwapChain extends Framebuffer {
     private static int DEFAULT_DEPTH_FORMAT = 0;
+    private static final int DEFAULT_IMAGE_COUNT = 3;
 
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
@@ -101,10 +102,8 @@ public class SwapChain extends Framebuffer {
                 return;
             }
             //minImageCount depends on driver: Mesa/RADV needs a min of 4, but most other drivers are at least 2 or 3
-            if(Initializer.CONFIG.minImageCount < surfaceProperties.capabilities.minImageCount())
-                Initializer.CONFIG.minImageCount = surfaceProperties.capabilities.minImageCount();
 
-            int requestedFrames = Initializer.CONFIG.minImageCount;
+            int requestedFrames = Math.max(DEFAULT_IMAGE_COUNT, surfaceProperties.capabilities.minImageCount());
 
             IntBuffer imageCount = stack.ints(requestedFrames);
 //            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));

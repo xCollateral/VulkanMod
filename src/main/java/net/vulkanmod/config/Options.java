@@ -16,23 +16,6 @@ public class Options {
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
-    private static final int minImages;
-
-    private static final int maxImages;
-
-
-    static
-    {
-        try(MemoryStack stack = MemoryStack.stackPush())
-        {
-            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
-            minImages = surfaceProperties.capabilities.minImageCount();
-            int maxImageCount = surfaceProperties.capabilities.maxImageCount();
-
-            boolean hasInfiniteSwapChain = maxImageCount == 0; //Applicable if Mesa/RADV Driver are present
-            maxImages = hasInfiniteSwapChain ? 64 : maxImageCount;
-        }
-    }
 
 
     public static Option<?>[] getVideoOpts() {
@@ -193,20 +176,7 @@ public class Options {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
-                        .setTooltip(Component.nullToEmpty("""
-                        Manages the tradeoff between FPS and input lag
-                        Most GPUs only require 2 for max performance
-                        and usually don't have any performance benefits with 3 or higher""")),
-                new RangeOption("SwapChain Images", minImages,
-                        maxImages, 1,
-                        value -> {
-                            config.minImageCount = value;
-                            Renderer.scheduleSwapChainUpdate();
-                        }, () -> config.minImageCount)
-                        .setTooltip(Component.nullToEmpty("""
-                        Sets the number of Swapchain images
-                        Optimised automatically for best performance
-                        This can be reduced to minimise input lag but at the cost of decreased FPS""")),
+                        .setTooltip(Component.nullToEmpty("")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
