@@ -30,7 +30,9 @@ Demostration Video:
 
 ## Notes
 This is still a pre-alpha mod. Bugs are to be expected.
+
 This mod is incompatible with ANY OpenGL mod such as Sodium, Iris, Distant Horizons, etc...
+
 VulkanMod uses [[Vulkan API](https://www.vulkan.org/)], a completely new next generation standard and incompatible with Minecraft Java OpenGL mod ecosystem.
 
 </div>
