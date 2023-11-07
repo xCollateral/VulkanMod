@@ -24,7 +24,7 @@ Demostration Video:
 [![CurseForge](https://cf.way2muchnoise.eu/full_635429_downloads.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
 
 - Fabric mod loader is needed.
-- Move `VulkanMod.jar` to `mods` folder of your Minecraft Instance.
+- Move `VulkanMod.jar` and `fabric-api.jar` to `mods` folder of your Minecraft Instance.
 
 ## Known Issues
 
