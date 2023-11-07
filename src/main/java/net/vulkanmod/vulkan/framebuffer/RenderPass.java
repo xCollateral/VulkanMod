@@ -227,7 +227,6 @@ public class RenderPass {
     public static class AttachmentInfo {
         final Type type;
         final int format;
-        VulkanImage attachment;
         int initialLayout;
         int loadOp;
         int storeOp;

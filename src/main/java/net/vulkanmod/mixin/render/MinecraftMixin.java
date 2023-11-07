@@ -140,7 +140,11 @@ public class MinecraftMixin {
         Vulkan.waitIdle();
 
     }
-    @Inject(method = "close", at = @At(value = "RETURN"))
+    /**
+     * @author
+     * @reason On Wayland the window (apparently) can only be safely destroyed after both SwapChain and VkInstance are Destroyed, and not before (Hence injecting at HEAD and not RETURN)
+     */
+    @Inject(method = "close", at = @At(value = "HEAD"))
     public void close2(CallbackInfo ci) {
 
         Vulkan.cleanUp();

@@ -426,6 +426,7 @@ public class Renderer {
 
         TerrainShaderManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
+        VTextureSelector.freeAll();
     }
 
     private void destroySyncObjects() {
