@@ -28,8 +28,8 @@ Demostration Video:
 
 ## Known Issues
 
-- [Linux/BSD] Flickering artifacts on Wayland graphic platform.
-- [MacOS] May not work or have performance issues.
+- `[Linux/BSD]` Flickering artifacts on Wayland graphic platform.
+- `[MacOS]` May not work or have performance issues.
 
 ## Notes
 This is still a pre-alpha mod. Bugs are to be expected.
