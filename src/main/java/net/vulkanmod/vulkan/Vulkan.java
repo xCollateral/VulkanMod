@@ -236,9 +236,9 @@ public class Vulkan {
 
             appInfo.sType(VK_STRUCTURE_TYPE_APPLICATION_INFO);
             appInfo.pApplicationName(stack.UTF8Safe("VulkanMod"));
-            appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
+            appInfo.applicationVersion(VK_API_VERSION_1_2);
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
-            appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
+            appInfo.engineVersion(VK_API_VERSION_1_2);
             appInfo.apiVersion(VK_API_VERSION_1_2);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack);
@@ -345,6 +345,7 @@ public class Vulkan {
             allocatorCreateInfo.device(Device.device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
+            allocatorCreateInfo.vulkanApiVersion(VK_API_VERSION_1_2);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 

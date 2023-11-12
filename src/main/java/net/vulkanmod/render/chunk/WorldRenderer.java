@@ -314,9 +314,9 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
 
             if(!renderSection.isCompletelyEmpty()) {
+                renderSection.getChunkArea().sectionQueue.add(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -355,9 +355,9 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().sectionQueue.add(renderSection);
 
             if(!renderSection.isCompletelyEmpty()) {
+                renderSection.getChunkArea().sectionQueue.add(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -577,20 +577,14 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        ObjectArrayList<RenderType> renderTypes;
-        if(Initializer.CONFIG.uniqueOpaqueLayer) {
-            renderTypes = TerrainRenderType.COMPACT_RENDER_TYPES;
-        } else {
-            renderTypes = TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
-        }
-
-        if(renderTypes.contains(renderType)) {
+        int currentFrame = Renderer.getCurrentFrame();
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES).contains(renderType)) {
             Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
             while(iterator.hasNext()) {
                 ChunkArea chunkArea = iterator.next();
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Renderer.getCurrentFrame()], chunkArea, renderType, camX, camY, camZ);
+                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], chunkArea, renderType, camX, camY, camZ);
                 } else {
                     chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, pipeline, renderType, camX, camY, camZ);
                 }
@@ -598,7 +592,7 @@ public class WorldRenderer {
         }
 
         if(layerName.equals("cutout") || layerName.equals("tripwire")) {
-            indirectBuffers[Renderer.getCurrentFrame()].submitUploads();
+            indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
         p.pop();

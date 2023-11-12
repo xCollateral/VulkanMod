@@ -71,7 +71,7 @@ public class Framebuffer {
     public void createImages() {
         if(this.hasColorAttachment) {
             this.colorAttachment = VulkanImage.createTextureImage(format, 1, width, height,
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                     0, linearFiltering, true);
         }
 
