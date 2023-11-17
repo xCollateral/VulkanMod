@@ -132,7 +132,6 @@ public class Vulkan {
 
     private static long allocator;
 
-    private static int FramesNum;
     private static StagingBuffer[] stagingBuffers;
 
     public static void initVulkan(long window) {
@@ -150,18 +149,16 @@ public class Vulkan {
         allocateImmediateCmdBuffer();
 
         createSwapChain();
-        MemoryManager.createInstance(swapChain.getFramesNum());
-
-        createStagingBuffers();
         Renderer.initRenderer();
+
     }
 
     static void createStagingBuffers() {
         if(stagingBuffers != null) {
-            Arrays.stream(stagingBuffers).forEach(Buffer::freeBuffer);
+            freeStagingBuffers();
         }
 
-        stagingBuffers = new StagingBuffer[getSwapChain().getFramesNum()];
+        stagingBuffers = new StagingBuffer[Renderer.getFramesNum()];
 
         for(int i = 0; i < stagingBuffers.length; ++i) {
             stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
@@ -170,19 +167,10 @@ public class Vulkan {
 
     private static void createSwapChain() {
         swapChain = new SwapChain();
-
-        FramesNum = swapChain.getFramesNum();
     }
 
     public static void recreateSwapChain() {
-        int newFramesNum = swapChain.recreateSwapChain();
-
-        if (FramesNum != newFramesNum) {
-            MemoryManager.createInstance(newFramesNum);
-            createStagingBuffers();
-        }
-
-        FramesNum = newFramesNum;
+        swapChain.recreateSwapChain();
     }
 
     public static void waitIdle() {
@@ -195,13 +183,12 @@ public class Vulkan {
         vkDestroyFence(Device.device, immediateFence, null);
 
         Pipeline.destroyPipelineCache();
-//        WorldRenderer.getInstance().cleanUp();
+
         Renderer.getInstance().cleanUpResources();
-        swapChain.getRenderPass().cleanUp();
         swapChain.cleanUp();
 
         freeStagingBuffers();
-//        VTextureSelector.freeAll();
+
         try {
             MemoryManager.getInstance().freeAllBuffers();
         } catch (Exception e) {
@@ -217,9 +204,7 @@ public class Vulkan {
     }
 
     private static void freeStagingBuffers() {
-        for(StagingBuffer buffer : stagingBuffers) {
-            MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
-        }
+        Arrays.stream(stagingBuffers).forEach(Buffer::freeBuffer);
     }
 
     private static void createInstance() {
@@ -236,9 +221,9 @@ public class Vulkan {
 
             appInfo.sType(VK_STRUCTURE_TYPE_APPLICATION_INFO);
             appInfo.pApplicationName(stack.UTF8Safe("VulkanMod"));
-            appInfo.applicationVersion(VK_API_VERSION_1_2);
-            appInfo.pEngineName(stack.UTF8Safe("No Engine"));
-            appInfo.engineVersion(VK_API_VERSION_1_2);
+            appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
+            appInfo.pEngineName(stack.UTF8Safe("VulkanMod Engine"));
+            appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.apiVersion(VK_API_VERSION_1_2);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack);

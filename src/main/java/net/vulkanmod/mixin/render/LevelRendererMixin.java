@@ -43,6 +43,7 @@ public abstract class LevelRendererMixin {
 
     @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void redirectClear2(int i, boolean bl) {}
+
     @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;clear(Z)V"))
     private void redirectClear(RenderTarget instance, boolean bl) {}
 }

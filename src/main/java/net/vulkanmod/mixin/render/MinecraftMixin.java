@@ -1,38 +1,19 @@
 package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.IconSet;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.TimerQuery;
-import net.minecraft.SharedConstants;
 import net.minecraft.Util;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.main.GameConfig;
-import net.minecraft.client.particle.ParticleEngine;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.VirtualScreen;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.MobEffectTextureManager;
-import net.minecraft.client.resources.PaintingTextureManager;
-import net.minecraft.client.resources.model.ModelManager;
-import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.server.packs.PackResources;
-import net.minecraft.server.packs.VanillaPackResources;
-import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.config.VideoResolution;
-import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -41,25 +22,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import java.io.IOException;
 import java.util.Optional;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
 
-    @Shadow @Final public ParticleEngine particleEngine;
-    @Shadow @Final public GameRenderer gameRenderer;
-    @Shadow @Final private ReloadableResourceManager resourceManager;
-    @Shadow @Final private FontManager fontManager;
-    @Shadow @Final private ModelManager modelManager;
-    @Shadow @Final private SoundManager soundManager;
-    @Shadow @Final private TextureManager textureManager;
-    @Shadow @Final private VirtualScreen virtualScreen;
-    @Shadow @Final private Window window;
-    @Shadow @Final private static Logger LOGGER;
-    @Shadow @Final public LevelRenderer levelRenderer;
-    @Shadow @Final private MobEffectTextureManager mobEffectTextures;
-    @Shadow @Final private PaintingTextureManager paintingTextures;
     @Shadow public boolean noRender;
     @Shadow @Final public Options options;
 
@@ -73,8 +40,6 @@ public class MinecraftMixin {
         }
     }
 
-    @Shadow @Final private VanillaPackResources vanillaPackResources;
-
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void beginRender(int i, boolean bl) {
         Renderer.getInstance().beginFrame();
@@ -83,17 +48,6 @@ public class MinecraftMixin {
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay()V", shift = At.Shift.BEFORE))
     private void submitRender(boolean tick, CallbackInfo ci) {
         Renderer.getInstance().endFrame();
-    }
-    /**
-     * @author
-     * @reason Only KWin supports setting the Icon on Wayland AFAIK
-     */
-    @Redirect(method="<init>", at=@At(value="INVOKE", target="Lcom/mojang/blaze3d/platform/Window;setIcon(Lnet/minecraft/server/packs/PackResources;Lcom/mojang/blaze3d/platform/IconSet;)V"))
-    private void bypassWaylandIcon(Window instance, PackResources packResources, IconSet iconSet) throws IOException {
-        if(!VideoResolution.isWayLand())
-        {
-            this.window.setIcon(this.vanillaPackResources, SharedConstants.getCurrentVersion().isStable() ? IconSet.RELEASE : IconSet.SNAPSHOT);
-        }
     }
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;bindWrite(Z)V"))
@@ -134,23 +88,16 @@ public class MinecraftMixin {
         Renderer.getInstance().resetBuffers();
     }
 
-
     @Inject(method = "close", at = @At(value = "HEAD"))
     public void close(CallbackInfo ci) {
         Vulkan.waitIdle();
-
     }
-    /**
-     * @author
-     * @reason On Wayland the window (apparently) can only be safely destroyed after both SwapChain and VkInstance are Destroyed, and not before (Hence injecting at HEAD and not RETURN)
-     */
-    @Inject(method = "close", at = @At(value = "HEAD"))
+
+
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/VirtualScreen;close()V"))
     public void close2(CallbackInfo ci) {
-
         Vulkan.cleanUp();
-
         Util.shutdownExecutors();
-
     }
 
     @Redirect(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;emergencySave()V"))

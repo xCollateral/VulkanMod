@@ -5,8 +5,6 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
-import static net.vulkanmod.vulkan.memory.AutoIndexBuffer.DrawType.QUADS;
-
 public class AutoIndexBuffer {
     int vertexCount;
     DrawType drawType;
@@ -46,7 +44,7 @@ public class AutoIndexBuffer {
     }
 
     public void checkCapacity(int vertexCount) {
-        if(this.drawType!=QUADS && vertexCount > this.vertexCount) {
+        if(vertexCount > this.vertexCount) {
             int newVertexCount = this.vertexCount * 2;
             System.out.println("Reallocating AutoIndexBuffer from " + this.vertexCount + " to " + newVertexCount);
 

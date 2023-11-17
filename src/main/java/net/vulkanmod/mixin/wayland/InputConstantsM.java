@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.wayland;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.vulkanmod.config.VideoResolution;
@@ -16,7 +16,8 @@ public class InputConstantsM {
      */
     @Overwrite
     public static void grabOrReleaseMouse(long l, int i, double d, double e) {
-        if (!VideoResolution.isWayLand()) GLFW.glfwSetCursorPos(l, d, e);
+        if (!VideoResolution.isWayLand())
+            GLFW.glfwSetCursorPos(l, d, e);
         GLFW.glfwSetInputMode(l, 208897, i);
     }
 }

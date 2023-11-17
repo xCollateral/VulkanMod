@@ -7,26 +7,32 @@
   "mixins": [
   ],
   "client": [
-    "InputConstantsM",
     "WindowMixin",
+
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
     "chunk.LevelRendererMixin",
     "chunk.VisibilitySetMixin",
+
     "compatibility.EffectInstanceM",
     "compatibility.ProgramM",
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
+
     "debug.ChunkBorderRendererM",
     "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
+
     "gui.ChatComponentM",
     "gui.DebugHudM",
     "gui.GuiM",
+
     "matrix.Matrix4fM",
+
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
+
     "render.BufferUploaderM",
     "render.GameRendererMixin",
     "render.GlProgramManagerMixin",
@@ -47,7 +53,9 @@
     "render.vertex.VertexBufferM",
     "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
+
     "screen.OptionsScreenM",
+
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
@@ -60,11 +68,16 @@
     "texture.MSpriteContents",
     "texture.MTextureManager",
     "texture.MTextureUtil",
+
     "util.ScreenshotRecorderM",
+
     "vertex.SpriteCoordinateExpanderM",
     "vertex.VertexMultiConsumersM$DoubleM",
     "vertex.VertexMultiConsumersM$MultipleM",
-    "vertex.VertexMultiConsumersM$SheetDecalM"
+    "vertex.VertexMultiConsumersM$SheetDecalM",
+
+    "wayland.InputConstantsM",
+    "wayland.MinecraftMixin"
   ],
   "injectors": {
     "defaultRequire": 1

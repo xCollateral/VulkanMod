@@ -83,7 +83,7 @@ public class AreaUploadManager {
     }
 
     public void updateFrame() {
-        this.currentFrame ^= this.currentFrame;
+        this.currentFrame = (this.currentFrame + 1) % FRAME_NUM;
         waitUploads(this.currentFrame);
 
         this.dstBuffers.clear();

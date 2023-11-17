@@ -87,9 +87,4 @@ public abstract class VTextureSelector {
 
     public static VulkanImage getWhiteTexture() { return whiteTexture; }
 
-    public static void freeAll()
-    {
-        framebufferTexture.doFree();
-        framebufferTexture2.doFree();
-    }
 }

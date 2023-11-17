@@ -16,8 +16,6 @@ public class Options {
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
-
-
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
                 new CyclingOption<>("Resolution",
@@ -170,13 +168,15 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Queue Frames", 1,
+                new RangeOption("Render queue size", 2,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
-                        .setTooltip(Component.nullToEmpty("")),
+                        .setTooltip(Component.nullToEmpty("""
+                        Higher values might help stabilize frametime
+                        but will increase input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
@@ -206,7 +206,7 @@ public class Options {
                         value -> config.entityCulling = value,
                         () -> config.entityCulling)
                         .setTooltip(Component.nullToEmpty("""
-                        Enables culling for entities on non visible sections.""")),
+                        Enables culling for entities on not visible sections.""")),
                 new SwitchOption("Indirect Draw",
                         value -> config.indirectDraw = value,
                         () -> config.indirectDraw)

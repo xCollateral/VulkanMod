@@ -21,7 +21,7 @@ public class UniformBuffers {
     private List<UniformBuffer> uniformBuffers;
 
     private final static int minOffset = (int) Device.deviceProperties.limits().minUniformBufferOffsetAlignment();
-    private final int framesSize = getSwapChain().getFramesNum();
+    private final int framesSize = Renderer.getFramesNum();
 
     CommandPool.CommandBuffer commandBuffer;
 

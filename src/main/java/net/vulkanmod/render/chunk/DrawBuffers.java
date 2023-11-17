@@ -217,36 +217,57 @@ public class DrawBuffers {
                 vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
             }
 
-
-
-    //        Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
-    //        Pipeline pipeline = TestShaders.getShaderPipeline(renderType);
-    //        Drawer.getInstance().bindPipeline(pipeline);
             pipeline.bindDescriptorSets(commandBuffer, Renderer.getCurrentFrame());
 
-    //        ResettableQueue<RenderSection> queue = chunkArea.sectionQueue;
+            int drawCount = 0;
+            ByteBuffer byteBuffer = stack.malloc(24 * queue.size());
+            long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
 
-
-            final long ptr = stack.nmalloc(16);
-            final long layout = pipeline.getLayout();
-            final float camX1 = (float) camX;
-            final float camY1 = (float) camY;
-            final float camZ1 = (float) camZ;
-
-            for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
+            var iterator = queue.iterator(isTranslucent);
+            while (iterator.hasNext()) {
                 RenderSection section = iterator.next();
                 DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
+                if(drawParameters.indexCount == 0) {
+                    continue;
+                }
 
-                MemoryUtil.memPutFloat(ptr + 0, section.xOffset - camX1);
-                MemoryUtil.memPutFloat(ptr + 4, section.yOffset - camY1);
-                MemoryUtil.memPutFloat(ptr + 8, section.zOffset - camZ1);
+                long ptr = bufferPtr + (drawCount * 24L);
+                MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
+                MemoryUtil.memPutInt(ptr + 4, drawParameters.firstIndex);
+                MemoryUtil.memPutInt(ptr + 8, drawParameters.vertexOffset);
 
-                nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
+                MemoryUtil.memPutFloat(ptr + 12, (float)((double) section.xOffset - camX));
+                MemoryUtil.memPutFloat(ptr + 16, (float)((double) section.yOffset - camY));
+                MemoryUtil.memPutFloat(ptr + 20, (float)((double) section.zOffset - camZ));
 
-                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
+                drawCount++;
 
             }
+
+            if(drawCount > 0) {
+                long offset;
+                int indexCount;
+                int firstIndex;
+                int vertexOffset;
+                for(int i = 0; i < drawCount; ++i) {
+
+                    offset = i * 24 + bufferPtr;
+
+                    indexCount    = MemoryUtil.memGetInt(offset + 0);
+                    firstIndex    = MemoryUtil.memGetInt(offset + 4);
+                    vertexOffset  = MemoryUtil.memGetInt(offset + 8);
+
+//                if(indexCount == 0) {
+//                    continue;
+//                }
+
+                    nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, offset + 12);
+
+                    vkCmdDrawIndexed(commandBuffer, indexCount, 1, firstIndex, vertexOffset, 0);
+                }
+            }
+
         }
     }
 

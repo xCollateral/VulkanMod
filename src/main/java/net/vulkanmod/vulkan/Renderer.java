@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -16,7 +17,6 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -42,9 +42,12 @@ public class Renderer {
 
     private static VkDevice device;
 
-    private static boolean swapCahinUpdate = false;
+    private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
-    public static void initRenderer() { INSTANCE = new Renderer(); }
+    public static void initRenderer() {
+        INSTANCE = new Renderer();
+        INSTANCE.init();
+    }
 
     public static Renderer getInstance() { return INSTANCE; }
 
@@ -56,7 +59,7 @@ public class Renderer {
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
 
-    private final Drawer drawer;
+    private Drawer drawer;
 
     private int framesNum;
     private int imagesNum;
@@ -78,16 +81,20 @@ public class Renderer {
 
     public Renderer() {
         device = Vulkan.getDevice();
+        framesNum = Initializer.CONFIG.frameQueueSize;
+        imagesNum = getSwapChain().getImagesNum();
+    }
+
+    private void init() {
+        MemoryManager.createInstance(Renderer.getFramesNum());
+        Vulkan.createStagingBuffers();
+
+        drawer = new Drawer();
+        drawer.createResources(framesNum);
 
         Uniforms.setupDefaultUniforms();
         TerrainShaderManager.init();
         AreaUploadManager.createInstance();
-
-        framesNum = getSwapChain().getFramesNum();
-        imagesNum = getSwapChain().getImagesNum();
-
-        drawer = new Drawer();
-        drawer.createResources(framesNum);
 
         allocateCommandBuffers();
         createSyncObjects();
@@ -163,9 +170,9 @@ public class Renderer {
         p.pop();
         p.push("Frame_fence");
 
-        if(swapCahinUpdate) {
+        if(swapChainUpdate) {
             recreateSwapChain();
-            swapCahinUpdate = false;
+            swapChainUpdate = false;
 
             if(getSwapChain().getWidth() == 0 && getSwapChain().getHeight() == 0) {
                 skipRendering = true;
@@ -210,14 +217,10 @@ public class Renderer {
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
             if(vkResult == VK_SUBOPTIMAL_KHR ) {
-                swapCahinUpdate = true;
+                swapChainUpdate = true;
             }
-            else if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                waitForSwapChain();
-//                recreateSwapChain();
-//                shouldRecreate = true;
+            else if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainUpdate) {
+                swapChainUpdate = true;
                 return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
@@ -319,7 +322,7 @@ public class Renderer {
     }
 
     private void submitFrame() {
-        if(swapCahinUpdate)
+        if(swapChainUpdate)
             return;
 
         try(MemoryStack stack = stackPush()) {
@@ -358,10 +361,8 @@ public class Renderer {
 
             vkResult = vkQueuePresentKHR(Device.getPresentQueue().queue(), presentInfo);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                recreateSwapChain();
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapChainUpdate) {
+                swapChainUpdate = true;
                 return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Failed to present swap chain image");
@@ -398,13 +399,15 @@ public class Renderer {
         //Semaphores need to be recreated in order to make them unsignaled
         destroySyncObjects();
 
-        int newFramesNum = getSwapChain().getFramesNum();
-        imagesNum = getSwapChain().getFramesNum();
+        int newFramesNum = Initializer.CONFIG.frameQueueSize;
+        imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {
             AreaUploadManager.INSTANCE.waitAllUploads();
 
             framesNum = newFramesNum;
+            MemoryManager.createInstance(newFramesNum);
+            createStagingBuffers();
             allocateCommandBuffers();
 
             Pipeline.recreateDescriptorSets(framesNum);
@@ -426,7 +429,6 @@ public class Renderer {
 
         TerrainShaderManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
-        VTextureSelector.freeAll();
     }
 
     private void destroySyncObjects() {
@@ -622,5 +624,5 @@ public class Renderer {
 
     public static VkCommandBuffer getCommandBuffer() { return INSTANCE.currentCmdBuffer; }
 
-    public static void scheduleSwapChainUpdate() { swapCahinUpdate = true; }
+    public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
 }
