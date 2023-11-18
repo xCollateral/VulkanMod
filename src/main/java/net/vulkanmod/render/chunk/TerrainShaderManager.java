@@ -8,7 +8,6 @@ import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class TerrainShaderManager {
@@ -18,8 +17,8 @@ public abstract class TerrainShaderManager {
         TERRAIN_VERTEX_FORMAT = format;
     }
 
-    static GraphicsPipeline terrainIndirectShader;
-    public static GraphicsPipeline terrainDirectShader;
+    static final GraphicsPipeline terrainIndirectShader=null;
+    public static GraphicsPipeline terrainShader;
 
     private static Function<RenderType, GraphicsPipeline> shaderGetter;
 
@@ -31,12 +30,12 @@ public abstract class TerrainShaderManager {
     }
 
     public static void setDefaultShader() {
-        setShaderGetter(renderType -> Initializer.CONFIG.indirectDraw ? terrainIndirectShader : terrainDirectShader);
+        setShaderGetter(renderType -> terrainShader);
     }
 
     private static void createBasicPipelines() {
-        terrainIndirectShader = createPipeline("terrain_indirect");
-        terrainDirectShader = createPipeline("terrain_direct");
+//        terrainIndirectShader = createPipeline("terrain_indirect");
+        terrainShader = createPipeline("terrain");
     }
 
     private static GraphicsPipeline createPipeline(String name) {
@@ -56,16 +55,8 @@ public abstract class TerrainShaderManager {
         shaderGetter = consumer;
     }
 
-    public static GraphicsPipeline getTerrainDirectShader(RenderType renderType) {
-        return terrainDirectShader;
-    }
-
-    public static GraphicsPipeline getTerrainIndirectShader(RenderType renderType) {
-        return terrainIndirectShader;
-    }
-
     public static void destroyPipelines() {
-        terrainIndirectShader.cleanUp();
-        terrainDirectShader.cleanUp();
+//        terrainIndirectShader.cleanUp();
+        terrainShader.cleanUp();
     }
 }

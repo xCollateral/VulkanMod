@@ -26,13 +26,15 @@ layout(location = 3) in ivec2 UV2;
 //layout(location = 4) in vec3 Normal;
 
 const float UV_INV = 1.0 / 65536.0;
-const float POSITION_INV = 1.0 / 1900.0;
+const vec4 UNPACK_FACTOR = vec4(127.*16.);
+const vec3 POSITION_INV = vec3(1.0 / 1900.0);
 
 void main() {
-    vec3 pos = (Position * POSITION_INV);
-    gl_Position = MVP * vec4(pos + ChunkOffset, 1.0);
+    const vec4 baseOffset = vec4(fma(Position,POSITION_INV,ChunkOffset), 1);
+    const vec4 xyz = fma(unpackSnorm4x8(gl_InstanceIndex),UNPACK_FACTOR,baseOffset);
+    gl_Position = MVP * xyz;
 
-    vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset, 1.0)).xyz);
+    vertexDistance = length((ModelViewMat * xyz).xyz);
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);
