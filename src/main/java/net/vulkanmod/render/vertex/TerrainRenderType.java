@@ -6,11 +6,11 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import java.util.EnumSet;
 
 public enum TerrainRenderType {
-    SOLID(RenderType.solid(), 0.0f),
-    CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f),
-    CUTOUT(RenderType.cutout(), 0.1f),
-    TRANSLUCENT(RenderType.translucent(), 0.0f),
-    TRIPWIRE(RenderType.tripwire(), 0.1f);
+    SOLID(RenderType.solid(), 0.0f, 2500000),
+    CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f, 2500000),
+    CUTOUT(RenderType.cutout(), 0.1f, 2500000),
+    TRANSLUCENT(RenderType.translucent(), 0.0f, 1000000),
+    TRIPWIRE(RenderType.tripwire(), 0.1f, 1000000);
 
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 
@@ -18,11 +18,13 @@ public enum TerrainRenderType {
     public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT, CUTOUT_MIPPED, TRANSLUCENT);
 
     final float alphaCutout;
-    public final int maxSize;
+    public final int maxSize;  //Not sure if this should be changed to UINT16_INDEX_MAX * vertexSize
+    public final int initialSize;
 
-    TerrainRenderType(RenderType renderType, float alphaCutout) {
+    TerrainRenderType(RenderType renderType, float alphaCutout, int initialSize) {
         this.alphaCutout = alphaCutout;
         this.maxSize = renderType.bufferSize();
+        this.initialSize = initialSize;
     }
 
     public void setCutoutUniform() {
