@@ -25,7 +25,7 @@ Demostration Video:
 [![CurseForge](https://cf.way2muchnoise.eu/full_635429_downloads.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
 
 ## Known Issues
-- `[Linux/BSD]` Flickering artifacts on Wayland graphic platform.
+- `[Linux/BSD]` Flickering artifacts on Wayland graphic platform with Nvidia GPUs.
 - `[MacOS]` May not work or have performance issues.
 
 ## Notes
