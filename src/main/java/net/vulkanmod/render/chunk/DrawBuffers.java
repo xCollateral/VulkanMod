@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -151,7 +152,7 @@ public class DrawBuffers {
 
                 long ptr = bufferPtr + (drawCount * 20L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, 1);
+                MemoryUtil.memPutInt(ptr + 4, drawParameters.indexCount != 0 ? 1 : 0);
                 MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
     //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
                 MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
@@ -240,10 +241,7 @@ public class DrawBuffers {
 
         for (var iterator = this.sectionQueues.get(terrainRenderType).iterator(isTranslucent); iterator.hasNext(); ) {
             final DrawParameters drawParameters = iterator.next();
-            if(drawParameters.indexCount == 0) {
-                throw new RuntimeException("Empty DrawCommand!");
-            }
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, drawParameters.indexCount != 0 ? 1 : 0, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
 
         }
 

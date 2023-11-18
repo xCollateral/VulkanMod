@@ -594,11 +594,10 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+        if((TerrainRenderType.COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
 
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
-            if(isTranslucent) Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
             terrainRenderType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame);

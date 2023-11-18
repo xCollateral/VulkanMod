@@ -8,14 +8,14 @@ import java.util.Iterator;
 public class DrawBufferSetQueue {
     private final int size;
     int[] set;
-    ResettableQueue<DrawBuffers> queue;
+    final StaticQueue<DrawBuffers> queue;
 
     public DrawBufferSetQueue(int size) {
         this.size = size;
 
         int t = (int) Math.ceil((float)size / Integer.SIZE);
         this.set = new int[t];
-        this.queue = new ResettableQueue<>(size);
+        this.queue = new StaticQueue<>(size);
     }
 
     public void add(DrawBuffers chunkArea) {
