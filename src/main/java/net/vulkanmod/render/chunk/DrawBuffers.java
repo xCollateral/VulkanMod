@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -13,25 +14,32 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
+import java.util.EnumMap;
 
+import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
 
     private static final int VERTEX_SIZE = TerrainShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    private final int index;
+    public final int index;
     private final Vector3i origin;
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
     AreaBuffer indexBuffer;
 
+
+    //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
+//    final StaticQueue<DrawParameters> sectionQueue = new StaticQueue<>(512);
+    private final EnumMap<TerrainRenderType, StaticQueue<DrawParameters>> sectionQueues = new EnumMap<>(TerrainRenderType.class);
+
     public DrawBuffers(int index, Vector3i origin) {
 
         this.index = index;
         this.origin = origin;
+        COMPACT_RENDER_TYPES.forEach(t -> sectionQueues.put(t, new StaticQueue<>(512)));
     }
 
     public void allocateBuffers() {
@@ -91,92 +99,90 @@ public class DrawBuffers {
 
         nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
     }
-    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
         int stride = 20;
 
-        int drawCount = 0;
+        final StaticQueue<DrawParameters> sectionQueue = this.sectionQueues.get(terrainRenderType);
+
+        if(sectionQueue.size() ==0) return;
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            ByteBuffer byteBuffer = stack.calloc(20 * sectionQueue.size());
+            long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
 
 
+            boolean isTranslucent = terrainRenderType == TRANSLUCENT;
 
-        MemoryStack stack = MemoryStack.stackPush();
-        ByteBuffer byteBuffer = stack.calloc(20 * queue.size());
-        long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
-
-
-        boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
-
-        VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-        if(isTranslucent) {
-            vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
-
-        var iterator = queue.iterator(isTranslucent);
-        while (iterator.hasNext()) {
-            RenderSection section = iterator.next();
-            DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
-
-            //Debug
-//            BlockPos o = section.origin;
-////            BlockPos pos = new BlockPos(-2188, 65, -1674);
-//
-////            Vec3 cameraPos = WorldRenderer.getCameraPos();
-//            BlockPos pos = new BlockPos(Minecraft.getInstance().getCameraEntity().blockPosition());
-//            if(o.getX() <= pos.getX() && o.getY() <= pos.getY() && o.getZ() <= pos.getZ() &&
-//                    o.getX() + 16 >= pos.getX() && o.getY() + 16 >= pos.getY() && o.getZ() + 16 >= pos.getZ()) {
-//                System.nanoTime();
-//
-//                }
-//
-//            }
-
-
-            //TODO
-            if(!drawParameters.ready && drawParameters.vertexBufferSegment.getOffset() != -1) {
-                if(!drawParameters.vertexBufferSegment.isReady())
-                    continue;
-                drawParameters.ready = true;
+            VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+            if (isTranslucent) {
+                vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
             }
 
-            long ptr = bufferPtr + (drawCount * 20L);
-            MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-            MemoryUtil.memPutInt(ptr + 4, 1);
-            MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
-//            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
-            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
-//            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
-            MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
+
+            int drawCount = 0;
+            for (var iterator = sectionQueue.iterator(isTranslucent); iterator.hasNext(); ) {
+
+                DrawParameters drawParameters = iterator.next();
+
+                //Debug
+    //            BlockPos o = section.origin;
+    ////            BlockPos pos = new BlockPos(-2188, 65, -1674);
+    //
+    ////            Vec3 cameraPos = WorldRenderer.getCameraPos();
+    //            BlockPos pos = new BlockPos(Minecraft.getInstance().getCameraEntity().blockPosition());
+    //            if(o.getX() <= pos.getX() && o.getY() <= pos.getY() && o.getZ() <= pos.getZ() &&
+    //                    o.getX() + 16 >= pos.getX() && o.getY() + 16 >= pos.getY() && o.getZ() + 16 >= pos.getZ()) {
+    //                System.nanoTime();
+    //
+    //                }
+    //
+    //            }
+
+
+                //TODO
+                if (!drawParameters.ready && drawParameters.vertexBufferSegment.getOffset() != -1) {
+                    if (!drawParameters.vertexBufferSegment.isReady())
+                        continue;
+                    drawParameters.ready = true;
+                }
+
+                long ptr = bufferPtr + (drawCount * 20L);
+                MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
+                MemoryUtil.memPutInt(ptr + 4, 1);
+                MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
+    //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
+                MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
+    //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
+                MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
 
 
 
-            drawCount++;
-        }
+                drawCount++;
+            }
 
-        if(drawCount == 0) {
-            MemoryStack.stackPop();
-            return 0;
-        }
+            if(drawCount == 0) {
+                return;
+            }
+
+//            if(drawCount!= size) Initializer.LOGGER.warn(drawCount+"-->"+ size);
+
+            byteBuffer.position(0);
+
+            indirectBuffer.recordCopyCmd(byteBuffer);
 
 
-        byteBuffer.position(0);
-
-        indirectBuffer.recordCopyCmd(byteBuffer);
-
-
-
-        LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
-        LongBuffer pOffset = stack.longs(0);
-        vkCmdBindVertexBuffers(commandBuffer, 0, pVertexBuffer, pOffset);
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), TerrainShaderManager.terrainShader.getLayout());
-        vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), TerrainShaderManager.terrainShader.getLayout());
+            vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
+        }
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
 
 //        MemoryUtil.memFree(byteBuffer);
-        MemoryStack.stackPop();
 
-        return drawCount;
+
     }
 
     private static void fakeIndirectCmd(VkCommandBuffer commandBuffer, IndirectBuffer indirectBuffer, int drawCount, ByteBuffer offsetBuffer) {
@@ -215,9 +221,9 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
+    public void buildDrawBatchesDirect(TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
 
-        boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+        boolean isTranslucent = terrainRenderType == TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -229,13 +235,11 @@ public class DrawBuffers {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 
-        for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
-            final DrawParameters drawParameters = iterator.next().getDrawParameters(terrainRenderType);
-
+        for (var iterator = this.sectionQueues.get(terrainRenderType).iterator(isTranslucent); iterator.hasNext(); ) {
+            final DrawParameters drawParameters = iterator.next();
             if(drawParameters.indexCount == 0) {
-                continue;
+                throw new RuntimeException("Empty DrawCommand!");
             }
-
             vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
 
         }
@@ -257,6 +261,14 @@ public class DrawBuffers {
 
     public boolean isAllocated() {
         return allocated;
+    }
+
+    public void addMeshlet(TerrainRenderType r, DrawParameters drawParameters) {
+        this.sectionQueues.get(r).add(drawParameters);
+    }
+
+    public void clear() {
+        this.sectionQueues.values().forEach(StaticQueue::clear);
     }
 
     public static class DrawParameters {

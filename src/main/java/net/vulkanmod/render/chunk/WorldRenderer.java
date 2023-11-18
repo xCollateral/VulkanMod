@@ -30,7 +30,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
-import net.vulkanmod.render.chunk.util.AreaSetQueue;
+import net.vulkanmod.render.chunk.util.DrawBufferSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.profiling.BuildTimeBench;
@@ -78,7 +78,7 @@ public class WorldRenderer {
 
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
-    private AreaSetQueue chunkAreaQueue;
+    private DrawBufferSetQueue drawBufferSetQueue;
     private short lastFrame = 0;
 
     private double xTransparentOld;
@@ -301,7 +301,7 @@ public class WorldRenderer {
     }
 
     private void resetUpdateQueues() {
-        this.chunkAreaQueue.clear();
+        this.drawBufferSetQueue.clear();
         this.sectionGrid.chunkAreaManager.resetQueues();
     }
 
@@ -318,8 +318,16 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
+                for(var t : renderSection.getCompiledSection().renderTypes)
+                {
+                    DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(t);
+                    if(drawParameters.indexCount>0)
+                    {
+                        drawBuffers.addMeshlet(t, drawParameters);
+                    }
+                }
+                this.drawBufferSetQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -359,8 +367,16 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
+                for(var t : renderSection.getCompiledSection().renderTypes)
+                {
+                    DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(t);
+                    if(drawParameters.indexCount>0)
+                    {
+                        drawBuffers.addMeshlet(t, drawParameters);
+                    }
+                }
+                this.drawBufferSetQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -498,7 +514,7 @@ public class WorldRenderer {
             }
 
             this.sectionGrid = new SectionGrid(this.level, this.minecraft.options.getEffectiveRenderDistance());
-            this.chunkAreaQueue = new AreaSetQueue(this.sectionGrid.chunkAreaManager.size);
+            this.drawBufferSetQueue = new DrawBufferSetQueue(this.sectionGrid.chunkAreaManager.size);
 
             this.onAllChangedCallbacks.forEach(Runnable::run);
 
@@ -587,14 +603,14 @@ public class WorldRenderer {
             terrainRenderType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
 
-            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent);
+            Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);
             while(iterator.hasNext()) {
-                ChunkArea chunkArea = iterator.next();
+                DrawBuffers chunkArea = iterator.next();
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], chunkArea.sectionQueue, terrainRenderType, camX, camY, camZ);
+                    chunkArea.buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, terrainRenderType, camX, camY, camZ);
+                    chunkArea.buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ);
                 }
             }
         }

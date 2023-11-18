@@ -1,8 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
-import net.vulkanmod.render.chunk.util.ResettableQueue;
-import net.vulkanmod.render.chunk.util.StaticQueue;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
@@ -15,9 +14,6 @@ public class ChunkArea {
     final Vector3i position;
 
     DrawBuffers drawBuffers;
-
-    //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
-    final StaticQueue<RenderSection> sectionQueue = new StaticQueue<>(512);
 
     public ChunkArea(int i, Vector3i origin) {
         this.index = i;
@@ -124,12 +120,12 @@ public class ChunkArea {
         this.drawBuffers = new DrawBuffers(this.index, this.position);
     }
 
-    public void addSection(RenderSection section) {
-        this.sectionQueue.add(section);
+    public void addSection(RenderSection section, TerrainRenderType r) {
+        this.drawBuffers.addMeshlet(r, section.getDrawParameters(r));
     }
 
     public void resetQueue() {
-        this.sectionQueue.clear();
+        this.drawBuffers.clear();
     }
 
     public void setPosition(int x, int y, int z) {
