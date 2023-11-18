@@ -28,13 +28,12 @@ import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 
 public abstract class ChunkTask {
     private static TaskDispatcher taskDispatcher;
@@ -151,7 +150,7 @@ public abstract class ChunkTask {
             PoseStack poseStack = new PoseStack();
             if (renderChunkRegion != null) {
                 ModelBlockRenderer.enableCaching();
-                Set<RenderType> set = new ReferenceArraySet<>(RenderType.chunkBufferLayers().size());
+                final EnumSet<TerrainRenderType> set = EnumSet.noneOf(TerrainRenderType.class);
                 RandomSource randomSource = RandomSource.create();
                 BlockRenderDispatcher blockRenderDispatcher = Minecraft.getInstance().getBlockRenderer();
 
@@ -170,10 +169,10 @@ public abstract class ChunkTask {
 
 //                    BlockState blockState2 = renderChunkRegion.getBlockState(blockPos);
                     FluidState fluidState = blockState.getFluidState();
-                    RenderType renderType;
+                    TerrainRenderType renderType;
                     TerrainBufferBuilder bufferBuilder;
                     if (!fluidState.isEmpty()) {
-                        renderType = ItemBlockRenderTypes.getRenderLayer(fluidState);
+                        renderType = TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState).name);
 
                         //Force compact RenderType
                         renderType = compactRenderTypes(renderType);
@@ -189,7 +188,7 @@ public abstract class ChunkTask {
                     }
 
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
-                        renderType = ItemBlockRenderTypes.getChunkRenderType(blockState);
+                        renderType = TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState).name);
 
                         //Force compact RenderType
                         renderType = compactRenderTypes(renderType);
@@ -208,19 +207,19 @@ public abstract class ChunkTask {
                     }
                 }
 
-                if (set.contains(RenderType.translucent())) {
-                    TerrainBufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(RenderType.translucent());
+                if (set.contains(TRANSLUCENT)) {
+                    TerrainBufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(TRANSLUCENT);
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
                         bufferBuilder2.setQuadSortOrigin(camX - (float)startBlockPos.getX(), camY - (float)startBlockPos.getY(), camZ - (float)startBlockPos.getZ());
                         compileResults.transparencyState = bufferBuilder2.getSortState();
                     }
                 }
 
-                for(RenderType renderType2 : set) {
+                for(TerrainRenderType renderType2 : set) {
                     TerrainBufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        compileResults.renderedLayers.put(TerrainRenderType.get(renderType2), uploadBuffer);
+                        compileResults.renderedLayers.put(renderType2, uploadBuffer);
                     }
 
                     if(renderedBuffer != null)
@@ -234,24 +233,24 @@ public abstract class ChunkTask {
             return compileResults;
         }
 
-        private RenderType compactRenderTypes(RenderType renderType) {
+        private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
 
             if(Initializer.CONFIG.uniqueOpaqueLayer) {
-                if (renderType != RenderType.translucent()) {
-                    if(renderType != RenderType.tripwire()) {
-                        renderType = RenderType.cutoutMipped();
+                if (renderType != TRANSLUCENT) {
+                    if(renderType != TRIPWIRE) {
+                        return CUTOUT_MIPPED;
                     }
                     else
-                        renderType = RenderType.translucent();
+                        return TRANSLUCENT;
                 }
             }
             else {
-                if (renderType != RenderType.translucent() && renderType != RenderType.cutoutMipped()) {
-                    if(renderType != RenderType.tripwire()) {
-                        renderType = RenderType.cutout();
+                if (renderType != TRANSLUCENT && renderType != CUTOUT_MIPPED) {
+                    if(renderType != TRIPWIRE) {
+                        return CUTOUT;
                     }
                     else
-                        renderType = RenderType.translucent();
+                        return TRANSLUCENT;
                 }
             }
 
@@ -306,8 +305,8 @@ public abstract class ChunkTask {
                 float f1 = (float)vec3.y;
                 float f2 = (float)vec3.z;
                 TerrainBufferBuilder.SortState transparencyState = this.compiledSection.transparencyState;
-                if (transparencyState != null && this.compiledSection.renderTypes.contains(TerrainRenderType.TRANSLUCENT)) {
-                    TerrainBufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
+                if (transparencyState != null && this.compiledSection.renderTypes.contains(TRANSLUCENT)) {
+                    TerrainBufferBuilder bufferbuilder = builderPack.builder(TRANSLUCENT);
                     bufferbuilder.begin(VertexFormat.Mode.QUADS, TerrainShaderManager.TERRAIN_VERTEX_FORMAT);
                     bufferbuilder.restoreSortState(transparencyState);
 //                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
@@ -319,7 +318,7 @@ public abstract class ChunkTask {
                     } else {
 
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TerrainRenderType.get(RenderType.translucent()), uploadBuffer);
+                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TRANSLUCENT, uploadBuffer);
                         renderedBuffer.release();
                         return CompletableFuture.completedFuture(Result.SUCCESSFUL);
 
