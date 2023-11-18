@@ -7,27 +7,13 @@ import net.minecraft.Util;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.main.GameConfig;
-import net.minecraft.client.particle.ParticleEngine;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.VirtualScreen;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.MobEffectTextureManager;
-import net.minecraft.client.resources.PaintingTextureManager;
-import net.minecraft.client.resources.model.ModelManager;
-import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -41,19 +27,6 @@ import java.util.Optional;
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
 
-    @Shadow @Final public ParticleEngine particleEngine;
-    @Shadow @Final public GameRenderer gameRenderer;
-    @Shadow @Final private ReloadableResourceManager resourceManager;
-    @Shadow @Final private FontManager fontManager;
-    @Shadow @Final private ModelManager modelManager;
-    @Shadow @Final private SoundManager soundManager;
-    @Shadow @Final private TextureManager textureManager;
-    @Shadow @Final private VirtualScreen virtualScreen;
-    @Shadow @Final private Window window;
-    @Shadow @Final private static Logger LOGGER;
-    @Shadow @Final public LevelRenderer levelRenderer;
-    @Shadow @Final private MobEffectTextureManager mobEffectTextures;
-    @Shadow @Final private PaintingTextureManager paintingTextures;
     @Shadow public boolean noRender;
     @Shadow @Final public Options options;
 
@@ -115,19 +88,16 @@ public class MinecraftMixin {
         Renderer.getInstance().resetBuffers();
     }
 
-
     @Inject(method = "close", at = @At(value = "HEAD"))
     public void close(CallbackInfo ci) {
         Vulkan.waitIdle();
-
     }
-    @Inject(method = "close", at = @At(value = "RETURN"))
+
+
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/VirtualScreen;close()V"))
     public void close2(CallbackInfo ci) {
-
         Vulkan.cleanUp();
-
         Util.shutdownExecutors();
-
     }
 
     @Redirect(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;emergencySave()V"))

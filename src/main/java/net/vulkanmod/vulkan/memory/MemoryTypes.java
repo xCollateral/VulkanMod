@@ -1,8 +1,6 @@
 package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.Device;
-import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkMemoryType;
@@ -65,7 +63,7 @@ public class MemoryTypes {
 
         @Override
         void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
             Device.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
@@ -87,7 +85,7 @@ public class MemoryTypes {
         @Override
         void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
             int bufferSize = byteBuffer.remaining();
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Renderer.getCurrentFrame());
+            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
 
             Device.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);

@@ -86,4 +86,5 @@ public abstract class VTextureSelector {
     public static VulkanImage getBoundTexture() { return boundTexture; }
 
     public static VulkanImage getWhiteTexture() { return whiteTexture; }
+
 }

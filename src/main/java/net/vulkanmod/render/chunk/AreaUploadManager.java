@@ -56,7 +56,7 @@ public class AreaUploadManager {
 
         VkCommandBuffer commandBuffer = commandBuffers[currentFrame].getHandle();
 
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
         if(!dstBuffers.add(bufferId)) {

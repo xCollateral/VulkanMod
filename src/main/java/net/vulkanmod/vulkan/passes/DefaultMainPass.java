@@ -19,23 +19,22 @@ public class DefaultMainPass implements MainPass {
     @Override
     public void begin(VkCommandBuffer commandBuffer, MemoryStack stack) {
         SwapChain swapChain = Vulkan.getSwapChain();
-        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentFrame());
+//        swapChain.colorAttachmentLayout(stack, commandBuffer, Renderer.getCurrentImage());
 
-        Framebuffer framebuffer = swapChain;
         swapChain.beginRenderPass(commandBuffer, stack);
-        Renderer.clearAttachments(0x4100, swapChain.getWidth(), swapChain.getHeight());
+//        Renderer.clearAttachments(0x4100, swapChain.getWidth(), swapChain.getHeight());
 //            Framebuffer framebuffer = this.hdrFinalFramebuffer;
 //        framebuffer.getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 //
 //        framebuffer.beginRenderPass(commandBuffer, renderPass, stack);
 
 //        this.boundFramebuffer = framebuffer;
-        Renderer.getInstance().setBoundFramebuffer(framebuffer);
+        Renderer.getInstance().setBoundFramebuffer(swapChain);
 
-        VkViewport.Buffer pViewport = framebuffer.viewport(stack);
+        VkViewport.Buffer pViewport = swapChain.viewport(stack);
         vkCmdSetViewport(commandBuffer, 0, pViewport);
 
-        VkRect2D.Buffer pScissor = framebuffer.scissor(stack);
+        VkRect2D.Buffer pScissor = swapChain.scissor(stack);
         vkCmdSetScissor(commandBuffer, 0, pScissor);
     }
 
@@ -66,9 +65,9 @@ public class DefaultMainPass implements MainPass {
 
         Framebuffer.endRenderPass(commandBuffer);
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            Vulkan.getSwapChain().presentLayout(stack, commandBuffer, Renderer.getCurrentFrame());
-        }
+//        try(MemoryStack stack = MemoryStack.stackPush()) {
+//            Vulkan.getSwapChain().presentLayout(stack, commandBuffer, Renderer.getCurrentImage());
+//        }
 
         int result = vkEndCommandBuffer(commandBuffer);
         if(result != VK_SUCCESS) {

@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.TerrainShaderManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -27,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
+import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -39,10 +42,12 @@ public class Renderer {
 
     private static VkDevice device;
 
-    private static boolean swapCahinUpdate = false;
+    private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
-
-    public static void initRenderer() { INSTANCE = new Renderer(); }
+    public static void initRenderer() {
+        INSTANCE = new Renderer();
+        INSTANCE.init();
+    }
 
     public static Renderer getInstance() { return INSTANCE; }
 
@@ -50,11 +55,14 @@ public class Renderer {
 
     public static int getCurrentFrame() { return currentFrame; }
 
+    public static int getCurrentImage() { return imageIndex; }
+
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
 
-    private final Drawer drawer;
+    private Drawer drawer;
 
     private int framesNum;
+    private int imagesNum;
     private List<VkCommandBuffer> commandBuffers;
     private ArrayList<Long> imageAvailableSemaphores;
     private ArrayList<Long> renderFinishedSemaphores;
@@ -64,6 +72,7 @@ public class Renderer {
     private RenderPass boundRenderPass;
 
     private static int currentFrame = 0;
+    private static int imageIndex;
     private VkCommandBuffer currentCmdBuffer;
 
     MainPass mainPass = DefaultMainPass.PASS;
@@ -72,15 +81,20 @@ public class Renderer {
 
     public Renderer() {
         device = Vulkan.getDevice();
+        framesNum = Initializer.CONFIG.frameQueueSize;
+        imagesNum = getSwapChain().getImagesNum();
+    }
+
+    private void init() {
+        MemoryManager.createInstance(Renderer.getFramesNum());
+        Vulkan.createStagingBuffers();
+
+        drawer = new Drawer();
+        drawer.createResources(framesNum);
 
         Uniforms.setupDefaultUniforms();
         TerrainShaderManager.init();
         AreaUploadManager.createInstance();
-
-        framesNum = getSwapChainImages().size();
-
-        drawer = new Drawer();
-        drawer.createResources(framesNum);
 
         allocateCommandBuffers();
         createSyncObjects();
@@ -156,9 +170,9 @@ public class Renderer {
         p.pop();
         p.push("Frame_fence");
 
-        if(swapCahinUpdate) {
+        if(swapChainUpdate) {
             recreateSwapChain();
-            swapCahinUpdate = false;
+            swapChainUpdate = false;
 
             if(getSwapChain().getWidth() == 0 && getSwapChain().getHeight() == 0) {
                 skipRendering = true;
@@ -196,6 +210,23 @@ public class Renderer {
         vkResetCommandBuffer(currentCmdBuffer, 0);
 
         try(MemoryStack stack = stackPush()) {
+
+            IntBuffer pImageIndex = stack.mallocInt(1);
+
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
+                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+
+            if(vkResult == VK_SUBOPTIMAL_KHR ) {
+                swapChainUpdate = true;
+            }
+            else if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainUpdate) {
+                swapChainUpdate = true;
+                return;
+            } else if(vkResult != VK_SUCCESS) {
+                throw new RuntimeException("Cannot get image: " + vkResult);
+            }
+
+            imageIndex = pImageIndex.get(0);
 
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -273,7 +304,7 @@ public class Renderer {
         drawer.resetBuffers(currentFrame);
 
         AreaUploadManager.INSTANCE.updateFrame();
-        Vulkan.getStagingBuffer(currentFrame).reset();
+        Vulkan.getStagingBuffer().reset();
     }
 
     public void addUsedPipeline(Pipeline pipeline) {
@@ -291,28 +322,12 @@ public class Renderer {
     }
 
     private void submitFrame() {
-        if(swapCahinUpdate)
+        if(swapChainUpdate)
             return;
 
         try(MemoryStack stack = stackPush()) {
 
-            IntBuffer pImageIndex = stack.mallocInt(1);
-
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
-                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                waitForSwapChain();
-//                recreateSwapChain();
-//                shouldRecreate = true;
-                return;
-            } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image: " + vkResult);
-            }
-
-            final int imageIndex = pImageIndex.get(0);
+            int vkResult;
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -342,14 +357,12 @@ public class Renderer {
             presentInfo.swapchainCount(1);
             presentInfo.pSwapchains(stack.longs(Vulkan.getSwapChain().getId()));
 
-            presentInfo.pImageIndices(pImageIndex);
+            presentInfo.pImageIndices(stack.ints(imageIndex));
 
             vkResult = vkQueuePresentKHR(Device.getPresentQueue().queue(), presentInfo);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapCahinUpdate) {
-                swapCahinUpdate = true;
-//                shouldRecreate = false;
-//                recreateSwapChain();
+            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || swapChainUpdate) {
+                swapChainUpdate = true;
                 return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Failed to present swap chain image");
@@ -386,12 +399,15 @@ public class Renderer {
         //Semaphores need to be recreated in order to make them unsignaled
         destroySyncObjects();
 
-        int newFramesNum = getSwapChain().getFramesNum();
+        int newFramesNum = Initializer.CONFIG.frameQueueSize;
+        imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {
             AreaUploadManager.INSTANCE.waitAllUploads();
 
             framesNum = newFramesNum;
+            MemoryManager.createInstance(newFramesNum);
+            createStagingBuffers();
             allocateCommandBuffers();
 
             Pipeline.recreateDescriptorSets(framesNum);
@@ -484,67 +500,61 @@ public class Renderer {
         if(skipRendering)
             return;
 
-        VkCommandBuffer commandBuffer = INSTANCE.currentCmdBuffer;
-
         try(MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear, it seems it works like a buffer: color and depth attributes override themselves
             VkClearValue colorValue = VkClearValue.calloc(stack);
             colorValue.color().float32(VRenderSystem.clearColor);
 
             VkClearValue depthValue = VkClearValue.calloc(stack);
-            depthValue.depthStencil().depth(VRenderSystem.clearDepth);
+            depthValue.depthStencil().set(VRenderSystem.clearDepth, 0); //Use fast depth clears if possible
 
-            int attachmentsCount;
-            VkClearAttachment.Buffer pAttachments;
-            if (v == 0x100) {
-                attachmentsCount = 1;
+            int attachmentsCount = v == (GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT) ? 2 : 1;
+            final VkClearAttachment.Buffer pAttachments = VkClearAttachment.malloc(attachmentsCount, stack);
+            switch (v) {
+                case GL_DEPTH_BUFFER_BIT -> {
 
-                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
+                    VkClearAttachment clearDepth = pAttachments.get(0);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                case GL_COLOR_BUFFER_BIT -> {
 
-                VkClearAttachment clearDepth = pAttachments.get(0);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else if (v == 0x4000) {
-                attachmentsCount = 1;
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.colorAttachment(0);
+                    clearColor.clearValue(colorValue);
+                }
+                case GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT -> {
 
-                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.colorAttachment(0);
+                    clearColor.clearValue(colorValue);
 
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.colorAttachment(0);
-                clearColor.clearValue(colorValue);
-            } else if (v == 0x4100) {
-                attachmentsCount = 2;
-
-                pAttachments = VkClearAttachment.calloc(attachmentsCount, stack);
-
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.clearValue(colorValue);
-
-                VkClearAttachment clearDepth = pAttachments.get(1);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else {
-                throw new RuntimeException("unexpected value");
+                    VkClearAttachment clearDepth = pAttachments.get(1);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
+                default -> throw new RuntimeException("unexpected value");
             }
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.calloc(stack);
-            renderArea.offset(VkOffset2D.calloc(stack).set(0, 0));
-            renderArea.extent(VkExtent2D.calloc(stack).set(width, height));
+            VkRect2D renderArea = VkRect2D.malloc(stack);
+            renderArea.offset().set(0, 0);
+            renderArea.extent().set(width, height);
 
-            VkClearRect.Buffer pRect = VkClearRect.calloc(1, stack);
-            pRect.get(0).rect(renderArea);
-            pRect.get(0).layerCount(1);
+            VkClearRect.Buffer pRect = VkClearRect.malloc(1, stack);
+            pRect.rect(renderArea);
+            pRect.baseArrayLayer(0);
+            pRect.layerCount(1);
 
-            vkCmdClearAttachments(commandBuffer, pAttachments, pRect);
+            vkCmdClearAttachments(INSTANCE.currentCmdBuffer, pAttachments, pRect);
         }
     }
 
     public static void setViewport(int x, int y, int width, int height) {
         try(MemoryStack stack = stackPush()) {
-            VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+            VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
             viewport.x(x);
             viewport.y(height + y);
             viewport.width(width);
@@ -553,8 +563,8 @@ public class Renderer {
             viewport.maxDepth(1.0f);
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
-            scissor.offset(VkOffset2D.malloc(stack).set(0, 0));
-            scissor.extent(VkExtent2D.malloc(stack).set(width, height));
+            scissor.offset().set(0, 0);
+            scissor.extent().set(width, height);
 
             vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
@@ -563,11 +573,11 @@ public class Renderer {
 
     public static void setScissor(int x, int y, int width, int height) {
         try(MemoryStack stack = stackPush()) {
-            int framebufferHeight = Renderer.getInstance().boundFramebuffer.getHeight();
+            int framebufferHeight = INSTANCE.boundFramebuffer.getHeight();
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
-            scissor.offset(VkOffset2D.malloc(stack).set(x, framebufferHeight - (y + height)));
-            scissor.extent(VkExtent2D.malloc(stack).set(width, height));
+            scissor.offset().set(x, framebufferHeight - (y + height));
+            scissor.extent().set(width, height);
 
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
         }
@@ -578,7 +588,7 @@ public class Renderer {
             return;
 
         try(MemoryStack stack = stackPush()) {
-            VkRect2D.Buffer scissor = Renderer.getInstance().boundFramebuffer.scissor(stack);
+            VkRect2D.Buffer scissor = INSTANCE.boundFramebuffer.scissor(stack);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
         }
     }
@@ -614,5 +624,5 @@ public class Renderer {
 
     public static VkCommandBuffer getCommandBuffer() { return INSTANCE.currentCmdBuffer; }
 
-    public static void scheduleSwapChainUpdate() { swapCahinUpdate = true; }
+    public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
 }

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static net.vulkanmod.vulkan.Device.device;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -28,10 +29,16 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class SwapChain extends Framebuffer {
     private static int DEFAULT_DEPTH_FORMAT = 0;
+    private static final int DEFAULT_IMAGE_COUNT = 3;
 
     public static int getDefaultDepthFormat() {
         return DEFAULT_DEPTH_FORMAT;
     }
+
+    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on most Wayland installations currently)
+    //Try to use Mailbox if possible (in case FreeSync/G-Sync needs it)
+    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR);
 
     private RenderPass renderPass;
     private long[] framebuffers;
@@ -54,7 +61,7 @@ public class SwapChain extends Framebuffer {
 
     }
 
-    public int recreateSwapChain() {
+    public void recreateSwapChain() {
         Synchronization.INSTANCE.waitFences();
 
         if(this.depthAttachment != null) {
@@ -69,12 +76,9 @@ public class SwapChain extends Framebuffer {
         }
 
         createSwapChain();
-
-        return this.swapChainImages.size();
     }
 
     public void createSwapChain() {
-        int requestedFrames = Initializer.CONFIG.frameQueueSize;
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
@@ -96,15 +100,13 @@ public class SwapChain extends Framebuffer {
                 return;
             }
 
-            //Workaround for Mesa
-            IntBuffer imageCount = stack.ints(requestedFrames);
-//            IntBuffer imageCount = stack.ints(Math.max(surfaceProperties.capabilities.minImageCount(), preferredImageCount));
+            //minImageCount depends on driver: Mesa/RADV needs a min of 4, but most other drivers are at least 2 or 3
+            //TODO using FIFO present mode with image num > 2 introduces (unnecessary) input lag
+            int requestedImages = Math.max(DEFAULT_IMAGE_COUNT, surfaceProperties.capabilities.minImageCount());
 
-            if(surfaceProperties.capabilities.maxImageCount() > 0 && imageCount.get(0) > surfaceProperties.capabilities.maxImageCount()) {
-                imageCount.put(0, surfaceProperties.capabilities.maxImageCount());
-            }
+            IntBuffer imageCount = stack.ints(requestedImages);
 
-            VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
+            VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.calloc(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
             createInfo.surface(Vulkan.getSurface());
@@ -113,7 +115,7 @@ public class SwapChain extends Framebuffer {
             this.format = surfaceFormat.format();
             this.extent2D = VkExtent2D.create().set(extent);
 
-            createInfo.minImageCount(imageCount.get(0));
+            createInfo.minImageCount(requestedImages);
             createInfo.imageFormat(this.format);
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
@@ -226,7 +228,7 @@ public class SwapChain extends Framebuffer {
             this.renderPass.beginDynamicRendering(commandBuffer, stack);
         }
         else {
-            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentFrame()], stack);
+            this.renderPass.beginRenderPass(commandBuffer, this.framebuffers[Renderer.getCurrentImage()], stack);
         }
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
@@ -294,7 +296,7 @@ public class SwapChain extends Framebuffer {
     public void cleanUp() {
         VkDevice device = Vulkan.getDevice();
 
-//        framebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
+        renderPass.cleanUp();
 
         if(!DYNAMIC_RENDERING) {
             Arrays.stream(framebuffers).forEach(id -> vkDestroyFramebuffer(device, id, null));
@@ -329,7 +331,7 @@ public class SwapChain extends Framebuffer {
     }
 
     public VulkanImage getColorAttachment() {
-        return this.swapChainImages.get(Renderer.getCurrentFrame());
+        return this.swapChainImages.get(Renderer.getCurrentImage());
     }
 
     public long getImageView(int i) { return this.swapChainImages.get(i).getImageView(); }
@@ -354,7 +356,7 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
@@ -394,6 +396,21 @@ public class SwapChain extends Framebuffer {
         return actualExtent;
     }
 
+    private static int checkPresentMode(int... requestedModes) {
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = Device.querySurfaceProperties(device.getPhysicalDevice(), stack).presentModes;
+            for(int dMode : requestedModes) {
+                for (int i = 0; i < a.capacity(); i++) {
+                    if (a.get(i) == dMode) {
+                        return dMode;
+                    }
+                }
+            }
+            return VK_PRESENT_MODE_FIFO_KHR; //If None of the request modes exist/are supported by Driver
+        }
+    }
+
     public boolean isVsync() {
         return vsync;
     }
@@ -405,6 +422,5 @@ public class SwapChain extends Framebuffer {
     public RenderPass getRenderPass() {
         return renderPass;
     }
-
-    public int getFramesNum() { return this.swapChainImages.size(); }
+    public int getImagesNum() { return this.swapChainImages.size(); }
 }

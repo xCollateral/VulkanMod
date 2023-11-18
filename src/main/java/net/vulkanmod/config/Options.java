@@ -3,18 +3,18 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
+import org.lwjgl.system.MemoryStack;
+
+import static net.vulkanmod.vulkan.Device.device;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
-
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -168,14 +168,15 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("Queue Frames", 2,
+                new RangeOption("Render queue size", 2,
                         5, 1,
                         value -> {
                             config.frameQueueSize = value;
                             Renderer.scheduleSwapChainUpdate();
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("""
-                        Sets the number of queue frames""")),
+                        Higher values might help stabilize frametime
+                        but will increase input lag""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
@@ -205,7 +206,7 @@ public class Options {
                         value -> config.entityCulling = value,
                         () -> config.entityCulling)
                         .setTooltip(Component.nullToEmpty("""
-                        Enables culling for entities on non visible sections.""")),
+                        Enables culling for entities on not visible sections.""")),
                 new SwitchOption("Indirect Draw",
                         value -> config.indirectDraw = value,
                         () -> config.indirectDraw)

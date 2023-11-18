@@ -28,7 +28,8 @@ public class DeviceInfo {
     public static final List<GraphicsCard> graphicsCards;
 
     private final VkPhysicalDevice device;
-    public final String vendorId;
+    private final int vendorId;
+    public final String vendorIdString;
     public final String deviceName;
     public final String driverVersion;
     public final String vkVersion;
@@ -57,7 +58,8 @@ public class DeviceInfo {
         }
 
         this.device = device;
-        this.vendorId = decodeVendor(properties.vendorID());
+        this.vendorId = properties.vendorID();
+        this.vendorIdString = decodeVendor(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(Device.deviceProperties.driverVersion(), Device.deviceProperties.vendorID());
         this.vkVersion = decDefVersion(getVkVer());
@@ -185,4 +187,10 @@ public class DeviceInfo {
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
     }
+
+    //Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:
+    // (e.g. such as in case we encounter a vendor specific driver bug)
+    public boolean isAMD() { return vendorId == 0x1022; }
+    public boolean isNvidia() { return vendorId == 0x10DE; }
+    public boolean isIntel() { return vendorId == 0x8086; }
 }

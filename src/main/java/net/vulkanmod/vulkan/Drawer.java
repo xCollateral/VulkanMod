@@ -22,6 +22,7 @@ public class Drawer {
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
     private static final long pBuffers = MemoryUtil.memAddress0(buffers);
     private static final long pOffsets = MemoryUtil.memAddress0(offsets);
+    private static final int UINT16_INDEX_MAX = 98304;
 
     private int framesNum;
     private VertexBuffer[] vertexBuffers;
@@ -34,7 +35,7 @@ public class Drawer {
 
     public Drawer() {
         //Index buffers
-        quadsIndexBuffer = new AutoIndexBuffer(100000, AutoIndexBuffer.DrawType.QUADS);
+        quadsIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.QUADS);
         triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
         triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
     }

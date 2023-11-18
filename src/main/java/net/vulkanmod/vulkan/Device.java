@@ -268,29 +268,28 @@ public class Device {
                     .containsAll(Vulkan.REQUIRED_EXTENSION);
         }
     }
-
+    // Use the optimal most performant depth format for the specific GPU
+    // Nvidia performs best with 24 bit depth, while AMD is most performant with 32-bit float
     public static int findDepthFormat() {
         return findSupportedFormat(
-                stackGet().ints(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT),
                 VK_IMAGE_TILING_OPTIMAL,
-                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT);
     }
 
-    private static int findSupportedFormat(IntBuffer formatCandidates, int tiling, int features) {
+    private static int findSupportedFormat(int tiling, int features, int... formatCandidates) {
 
         try(MemoryStack stack = stackPush()) {
 
             VkFormatProperties props = VkFormatProperties.calloc(stack);
 
-            for(int i = 0; i < formatCandidates.capacity(); ++i) {
-
-                int format = formatCandidates.get(i);
+            for (int format : formatCandidates) {
 
                 vkGetPhysicalDeviceFormatProperties(physicalDevice, format, props);
 
-                if(tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures() & features) == features) {
+                if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures() & features) == features) {
                     return format;
-                } else if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures() & features) == features) {
+                } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures() & features) == features) {
                     return format;
                 }
 
