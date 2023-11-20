@@ -232,11 +232,17 @@ public abstract class ChunkTask {
 
         private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
 
-            if (renderType != TRANSLUCENT) {
-                if (renderType != TRIPWIRE) {
-                    return CUTOUT_MIPPED;
-                } else
-                    return TRANSLUCENT;
+            if(Initializer.CONFIG.uniqueOpaqueLayer) {
+                if (renderType != TRANSLUCENT) {
+                    return renderType != TRIPWIRE ? CUTOUT_MIPPED : TRANSLUCENT;
+                }
+            }
+            else {
+               return switch (renderType) {
+                    case SOLID, CUTOUT_MIPPED -> CUTOUT_MIPPED;
+                    case CUTOUT -> CUTOUT;
+                    default -> TRANSLUCENT;
+                };
             }
 
             return renderType;

@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -39,11 +38,11 @@ public class DrawBuffers {
 
         this.index = index;
         this.origin = origin;
-        COMPACT_RENDER_TYPES.forEach(t -> sectionQueues.put(t, new StaticQueue<>(512)));
+        getActiveLayers().forEach(t -> sectionQueues.put(t, new StaticQueue<>(512)));
     }
 
     public void allocateBuffers() {
-        COMPACT_RENDER_TYPES.forEach(t -> areaBufferTypes.put(t, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, t.initialSize, VERTEX_SIZE)));
+        getActiveLayers().forEach(t -> areaBufferTypes.put(t, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, t.initialSize, VERTEX_SIZE)));
         this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
 
         this.allocated = true;
@@ -151,7 +150,7 @@ public class DrawBuffers {
 
                 long ptr = bufferPtr + (drawCount * 20L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, drawParameters.indexCount != 0 ? 1 : 0);
+                MemoryUtil.memPutInt(ptr + 4, 1);
                 MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
     //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
                 MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
@@ -240,7 +239,7 @@ public class DrawBuffers {
 
         for (var iterator = this.sectionQueues.get(terrainRenderType).iterator(isTranslucent); iterator.hasNext(); ) {
             final DrawParameters drawParameters = iterator.next();
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, drawParameters.indexCount != 0 ? 1 : 0, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
 
         }
 
