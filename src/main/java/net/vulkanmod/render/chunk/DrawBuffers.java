@@ -17,6 +17,7 @@ import java.util.EnumMap;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static net.vulkanmod.render.vertex.TerrainRenderType.getActiveLayers;
+import static org.lwjgl.system.JNI.callPV;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
@@ -25,6 +26,7 @@ public class DrawBuffers {
     private static final int INDEX_SIZE = Short.BYTES;
     public final int index;
     private final Vector3i origin;
+    private final int minHeight;
 
     private boolean allocated = false;
     AreaBuffer indexBuffer;
@@ -35,17 +37,20 @@ public class DrawBuffers {
 //    final StaticQueue<DrawParameters> sectionQueue = new StaticQueue<>(512);
     private final EnumMap<TerrainRenderType, StaticQueue<DrawParameters>> sectionQueues = new EnumMap<>(TerrainRenderType.class);
 
-    public DrawBuffers(int index, Vector3i origin) {
+    public DrawBuffers(int index, Vector3i origin, int minHeight) {
 
         this.index = index;
         this.origin = origin;
-        getActiveLayers().forEach(t -> sectionQueues.put(t, new StaticQueue<>(512)));
+        this.minHeight = minHeight;
+
     }
 
     public void allocateBuffers() {
 //        getActiveLayers().forEach(t -> areaBufferTypes.put(t, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, t.initialSize, VERTEX_SIZE)));
 //        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
 
+        //Don't allocate sectionQueues in constructor to avoid Unnecessary Heap Allocations
+        getActiveLayers().forEach(t -> sectionQueues.put(t, new StaticQueue<>(512)));
         this.allocated = true;
     }
 
@@ -86,12 +91,10 @@ public class DrawBuffers {
     }
 
     private AreaBuffer getAreaBufferCheckedAlloc(TerrainRenderType r) {
-        if(!this.areaBufferTypes.containsKey(r))
-        {
-            if(r==TRANSLUCENT) this.indexBuffer=new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, r.initialSize, INDEX_SIZE);
-            this.areaBufferTypes.put(r, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE));
-        }
-        return this.areaBufferTypes.get(r);
+        if (this.indexBuffer==null && r == TRANSLUCENT)
+            this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, r.initialSize, INDEX_SIZE);
+        
+        return this.areaBufferTypes.computeIfAbsent(r, t -> new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE));
     }
     private AreaBuffer getAreaBuffer(TerrainRenderType r) {
         return this.areaBufferTypes.get(r);
@@ -101,15 +104,16 @@ public class DrawBuffers {
         return this.areaBufferTypes.containsKey(r);
     }
 
-    private static int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
+    private int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
         final int xOffset1 = (xOffset & 127);
         final int zOffset1 = (zOffset & 127);
-        return yOffset << 18 | zOffset1 << 9 | xOffset1;
+        final int yOffset1 = (yOffset-this.minHeight & 127) ;
+        return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
     private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr) {
         VUtil.UNSAFE.putFloat(ptr + 0, (float) (this.origin.x - camX));
-        VUtil.UNSAFE.putFloat(ptr + 4, (float) -camY);
+        VUtil.UNSAFE.putFloat(ptr + 4, (float) (this.origin.y - camY));
         VUtil.UNSAFE.putFloat(ptr + 8, (float) (this.origin.z - camZ));
 
         nvkCmdPushConstants(commandBuffer, TerrainShaderManager.terrainShader.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);

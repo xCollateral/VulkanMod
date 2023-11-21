@@ -30,7 +30,7 @@ const vec4 UNPACK_FACTOR = vec4(127.*16.);
 const vec3 POSITION_INV = vec3(1.0 / 1900.0);
 
 void main() {
-    const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex)>> ivec3(0, 18, 9), 0, 9);
+    const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex)>> ivec3(0, 16, 8), 0, 8);
     const vec3 pos = baseOffset+fma(Position, vec3(POSITION_INV), ChunkOffset);
     const vec4 a = vec4(pos, 1);
     gl_Position = MVP * a;

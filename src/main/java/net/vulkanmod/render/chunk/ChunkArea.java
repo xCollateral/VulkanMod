@@ -15,10 +15,10 @@ public class ChunkArea {
 
     DrawBuffers drawBuffers;
 
-    public ChunkArea(int i, Vector3i origin) {
+    public ChunkArea(int i, Vector3i origin, int minHeight) {
         this.index = i;
         this.position = origin;
-        this.drawBuffers = new DrawBuffers(i, origin);
+        this.drawBuffers = new DrawBuffers(i, origin, minHeight);
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -116,9 +116,9 @@ public class ChunkArea {
         return this.drawBuffers;
     }
 
-    private void allocateDrawBuffers() {
-        this.drawBuffers = new DrawBuffers(this.index, this.position);
-    }
+//    private void allocateDrawBuffers() {
+//        this.drawBuffers = new DrawBuffers(this.index, this.position);
+//    }
 
     public void addSection(RenderSection section, TerrainRenderType r) {
         this.drawBuffers.addMeshlet(r, section.getDrawParameters(r));
