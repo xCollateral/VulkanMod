@@ -155,6 +155,9 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Improves performance by using a unique render layer for opaque terrain rendering.
                         It changes distant grass aspect and may cause unexpected texture behaviour""")),
+                new SwitchOption("enableCutouts",
+                        value -> config.enableCutouts = value,
+                        () -> config.enableCutouts),
                 new CyclingOption<>("Mipmap Levels",
                         new Integer[]{0, 1, 2, 3, 4},
                         value -> Component.nullToEmpty(value.toString()),

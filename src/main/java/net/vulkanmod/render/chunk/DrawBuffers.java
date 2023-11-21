@@ -15,7 +15,8 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
-import static net.vulkanmod.render.vertex.TerrainRenderType.*;
+import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
+import static net.vulkanmod.render.vertex.TerrainRenderType.getActiveLayers;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
@@ -42,8 +43,8 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        getActiveLayers().forEach(t -> areaBufferTypes.put(t, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, t.initialSize, VERTEX_SIZE)));
-        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
+//        getActiveLayers().forEach(t -> areaBufferTypes.put(t, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, t.initialSize, VERTEX_SIZE)));
+//        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
 
         this.allocated = true;
     }
@@ -54,7 +55,7 @@ public class DrawBuffers {
         drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
         if(!buffer.indexOnly) {
-            getAreaBuffer(r).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
+            getAreaBufferCheckedAlloc(r).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
@@ -84,8 +85,20 @@ public class DrawBuffers {
         return drawParameters;
     }
 
+    private AreaBuffer getAreaBufferCheckedAlloc(TerrainRenderType r) {
+        if(!this.areaBufferTypes.containsKey(r))
+        {
+            if(r==TRANSLUCENT) this.indexBuffer=new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, r.initialSize, INDEX_SIZE);
+            this.areaBufferTypes.put(r, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE));
+        }
+        return this.areaBufferTypes.get(r);
+    }
     private AreaBuffer getAreaBuffer(TerrainRenderType r) {
         return this.areaBufferTypes.get(r);
+    }
+
+    private boolean hasRenderType(TerrainRenderType r) {
+        return this.areaBufferTypes.containsKey(r);
     }
 
     private static int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
@@ -106,7 +119,7 @@ public class DrawBuffers {
 
         final StaticQueue<DrawParameters> sectionQueue = this.sectionQueues.get(terrainRenderType);
 
-        if(sectionQueue.size() ==0) return;
+        if(!hasRenderType(terrainRenderType)) return;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             ByteBuffer byteBuffer = stack.calloc(20 * sectionQueue.size());
@@ -224,7 +237,7 @@ public class DrawBuffers {
     }
 
     public void buildDrawBatchesDirect(TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
-
+        if(!this.hasRenderType(terrainRenderType)) return;
         boolean isTranslucent = terrainRenderType == TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
@@ -251,7 +264,8 @@ public class DrawBuffers {
             return;
 
         this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
-        this.indexBuffer.freeBuffer();
+        if(this.areaBufferTypes.containsKey(TRANSLUCENT)) this.indexBuffer.freeBuffer();
+        this.areaBufferTypes.clear();
 
 
         this.indexBuffer = null;
@@ -293,7 +307,7 @@ public class DrawBuffers {
             this.vertexOffset = 0;
 
             int segmentOffset = this.vertexBufferSegment.getOffset();
-            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
+            if(chunkArea != null && chunkArea.drawBuffers.hasRenderType(r) && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
                 chunkArea.drawBuffers.getAreaBuffer(r).setSegmentFree(this.vertexBufferSegment);
                 if(r==TRANSLUCENT||this.indexBufferSegment!=null) chunkArea.drawBuffers.indexBuffer.setSegmentFree(this.indexBufferSegment);

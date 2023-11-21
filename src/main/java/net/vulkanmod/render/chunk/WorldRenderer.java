@@ -594,11 +594,11 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+        if ((!Initializer.CONFIG.enableCutouts | Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
 
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
-
+            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             terrainRenderType.setCutoutUniform();
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
 

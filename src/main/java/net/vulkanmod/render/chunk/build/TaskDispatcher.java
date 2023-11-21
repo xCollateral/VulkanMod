@@ -9,6 +9,7 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Queue;
 
 public class TaskDispatcher {
