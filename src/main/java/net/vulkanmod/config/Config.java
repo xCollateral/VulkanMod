@@ -21,6 +21,7 @@ public class Config {
     public boolean uniqueOpaqueLayer = false;
     public boolean enableCutouts = true;
     public boolean entityCulling = true;
+    public boolean animations = true;
 
     private static Path path;
 
