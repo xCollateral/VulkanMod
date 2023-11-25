@@ -319,6 +319,7 @@ public class WorldRenderer {
 
             if(!renderSection.isCompletelyEmpty()) {
                 final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
+                //                drawBuffers.addRenderTypes(renderTypes);
                 for(var t : renderSection.getCompiledSection().renderTypes)
                 {
                     DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(t);
@@ -594,7 +595,7 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if ((!Initializer.CONFIG.enableCutouts | Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+        if ((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
 
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);

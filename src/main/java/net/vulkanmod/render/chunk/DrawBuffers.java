@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -14,6 +15,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
+import java.util.Set;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static net.vulkanmod.render.vertex.TerrainRenderType.getActiveLayers;
@@ -30,7 +32,7 @@ public class DrawBuffers {
 
     private boolean allocated = false;
     AreaBuffer indexBuffer;
-
+    AreaBuffer vertexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
 
     //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
@@ -48,7 +50,7 @@ public class DrawBuffers {
     public void allocateBuffers() {
 //        getActiveLayers().forEach(t -> areaBufferTypes.put(t, new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, t.initialSize, VERTEX_SIZE)));
 //        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
-
+        if(!Initializer.CONFIG.perRenderTypeAreaBuffers) vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
         //Don't allocate sectionQueues in constructor to avoid Unnecessary Heap Allocations
         getActiveLayers().forEach(t -> sectionQueues.put(t, new StaticQueue<>(512)));
         this.allocated = true;
@@ -71,6 +73,8 @@ public class DrawBuffers {
         }
 
         if(!buffer.autoIndices) {
+            if (this.indexBuffer==null)
+                this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TRANSLUCENT.initialSize, INDEX_SIZE);
             this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
             firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
@@ -89,12 +93,9 @@ public class DrawBuffers {
 
         return drawParameters;
     }
-
+    //Exploit Pass by Reference to allow all keys to be the same AreaBufferObject (if perRenderTypeAreaBuffers is disabled)
     private AreaBuffer getAreaBufferCheckedAlloc(TerrainRenderType r) {
-        if (this.indexBuffer==null && r == TRANSLUCENT)
-            this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, r.initialSize, INDEX_SIZE);
-        
-        return this.areaBufferTypes.computeIfAbsent(r, t -> new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE));
+        return this.areaBufferTypes.computeIfAbsent(r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE) : this.vertexBuffer);
     }
     private AreaBuffer getAreaBuffer(TerrainRenderType r) {
         return this.areaBufferTypes.get(r);
@@ -267,12 +268,17 @@ public class DrawBuffers {
         if(!this.allocated)
             return;
 
-        this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
+        if(Initializer.CONFIG.perRenderTypeAreaBuffers) {
+            this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
+        }
+        else if(this.vertexBuffer!=null) this.vertexBuffer.freeBuffer();
+
         if(this.areaBufferTypes.containsKey(TRANSLUCENT)) this.indexBuffer.freeBuffer();
         this.areaBufferTypes.clear();
 
 
         this.indexBuffer = null;
+        this.vertexBuffer = null;
         this.allocated = false;
     }
 
@@ -287,7 +293,11 @@ public class DrawBuffers {
     public void clear() {
         this.sectionQueues.values().forEach(StaticQueue::clear);
     }
-    
+
+    public void addRenderTypes(Set<TerrainRenderType> renderTypes) {
+        renderTypes.forEach(renderType ->  this.sectionQueues.computeIfAbsent(renderType, r->new StaticQueue<>(512)));
+    }
+
 //    public void clear(TerrainRenderType r) {
 //        this.sectionQueues.get(r).clear();
 //    }

@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -19,7 +20,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = false;
-    public boolean enableCutouts = true;
+    public boolean perRenderTypeAreaBuffers = true;
     public boolean entityCulling = true;
     public boolean animations = true;
 

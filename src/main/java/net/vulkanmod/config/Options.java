@@ -155,9 +155,6 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Improves performance by using a unique render layer for opaque terrain rendering.
                         It changes distant grass aspect and may cause unexpected texture behaviour""")),
-                new SwitchOption("enableCutouts",
-                        value -> config.enableCutouts = value,
-                        () -> config.enableCutouts),
                 new SwitchOption("Animations",
                         value -> config.animations = value,
                         () -> config.animations),
@@ -218,7 +215,17 @@ public class Options {
                         () -> config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems."""))
+                        Enabling it might help in CPU limited systems.""")),
+                new SwitchOption("Per RenderType AreaBuffers",
+                        value -> {
+                            //fre before updating the Config Value
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                            config.perRenderTypeAreaBuffers = value;
+                        },
+                        () -> config.perRenderTypeAreaBuffers).setTooltip(Component.nullToEmpty("""
+                        Improves GPU Performance
+                        But increases VRAM Usage slightly
+                        May vary on System and/or GPU configuration""")),
         };
 
     }
