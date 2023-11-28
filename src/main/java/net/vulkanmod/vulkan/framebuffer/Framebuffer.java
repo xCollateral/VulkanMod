@@ -136,15 +136,6 @@ public class Framebuffer {
         Renderer.getInstance().setBoundFramebuffer(this);
     }
 
-    public static void endRenderPass(VkCommandBuffer commandBuffer) {
-        if(!DYNAMIC_RENDERING)
-            Renderer.getInstance().endRenderPass();
-        else
-            KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
-
-        Renderer.getInstance().setBoundRenderPass(null);
-    }
-
     public void bindAsTexture(VkCommandBuffer commandBuffer, MemoryStack stack) {
         this.colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VTextureSelector.bindFramebufferTexture(this.colorAttachment);

@@ -186,7 +186,10 @@ public class SwapChain extends Framebuffer {
         this.hasColorAttachment = true;
         this.hasDepthAttachment = true;
 
-        this.renderPass = new RenderPass.Builder(this).build();
+        RenderPass.Builder builder = RenderPass.builder(this);
+        builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+        this.renderPass = builder.build();
     }
 
     private void createFramebuffers() {
@@ -235,14 +238,14 @@ public class SwapChain extends Framebuffer {
         Renderer.getInstance().setBoundFramebuffer(this);
     }
 
-    public void colorAttachmentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int frame) {
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
+    public void colorAttachmentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int imageIdx) {
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
             barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
             barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-            barrier.oldLayout(this.currentLayout[frame]);
-//            barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            barrier.oldLayout(this.currentLayout[imageIdx]);
+            barrier.oldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             barrier.newLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            barrier.image(this.swapChainImages.get(frame).getId());
+            barrier.image(this.swapChainImages.get(imageIdx).getId());
 //            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 
             barrier.subresourceRange().baseMipLevel(0);
@@ -252,8 +255,10 @@ public class SwapChain extends Framebuffer {
 
             barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
 
+            barrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
             vkCmdPipelineBarrier(commandBuffer,
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,  // srcStageMask
+                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,  // srcStageMask
                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
                     0,
                     null,
@@ -261,7 +266,8 @@ public class SwapChain extends Framebuffer {
                     barrier// pImageMemoryBarriers
             );
 
-            this.currentLayout[frame] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            this.currentLayout[imageIdx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            this.swapChainImages.get(imageIdx).setCurrentLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
 
     public void presentLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int frame) {

@@ -262,7 +262,15 @@ public class Renderer {
     }
 
     public void endRenderPass() {
-        this.boundRenderPass.endRenderPass(currentCmdBuffer);
+        endRenderPass(currentCmdBuffer);
+    }
+
+    public void endRenderPass(VkCommandBuffer commandBuffer) {
+        if(!DYNAMIC_RENDERING)
+            this.boundRenderPass.endRenderPass(currentCmdBuffer);
+        else
+            KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
+
         this.boundRenderPass = null;
     }
 
@@ -275,7 +283,6 @@ public class Renderer {
             this.endRendering();
 
             try (MemoryStack stack = stackPush()) {
-                //TODO
 //                framebuffer.beginRenderPass(currentCmdBuffer, stack);
             }
 
