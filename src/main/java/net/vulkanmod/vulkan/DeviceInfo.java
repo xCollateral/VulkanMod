@@ -159,13 +159,13 @@ public class DeviceInfo {
         }
     }
 
-    public static String debugString(PointerBuffer ppPhysicalDevices, Set<String> requiredExtensions, VkInstance instance) {
+    public static String debugString(GPUCandidate[] ppPhysicalDevices, Set<String> requiredExtensions) {
         try (MemoryStack stack = stackPush()) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("\n");
 
-            for(int i = 0; i < ppPhysicalDevices.capacity();i++) {
-                VkPhysicalDevice device = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
+            for(int i = 0; i < ppPhysicalDevices.length;i++) {
+                VkPhysicalDevice device = ppPhysicalDevices[i].physicalDevice();
 
                 VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.callocStack(stack);
                 vkGetPhysicalDeviceProperties(device, deviceProperties);

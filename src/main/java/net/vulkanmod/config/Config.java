@@ -20,6 +20,7 @@ public class Config {
     public boolean indirectDraw = false;
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
+    public int selectedGPU=-1;
 
     private static Path path;
 

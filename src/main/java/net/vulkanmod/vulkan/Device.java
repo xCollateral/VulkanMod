@@ -2,12 +2,15 @@ package net.vulkanmod.vulkan;
 
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.queue.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -42,52 +45,45 @@ public class Device {
 
         try(MemoryStack stack = stackPush()) {
 
-            IntBuffer deviceCount = stack.ints(0);
 
-            vkEnumeratePhysicalDevices(instance, deviceCount, null);
+            GPUCandidate[] ppPhysicalDevices = getAvailableGPUs(instance, stack);
 
-            if(deviceCount.get(0) == 0) {
-                throw new RuntimeException("Failed to find GPUs with Vulkan support");
-            }
 
-            PointerBuffer ppPhysicalDevices = stack.mallocPointer(deviceCount.get(0));
 
-            vkEnumeratePhysicalDevices(instance, deviceCount, ppPhysicalDevices);
+            final GPUCandidate currentDevice;
 
-            ArrayList<VkPhysicalDevice> integratedGPUs = new ArrayList<>();
-            ArrayList<VkPhysicalDevice> otherDevices = new ArrayList<>();
 
-            VkPhysicalDevice currentDevice = null;
-            boolean flag = false;
-
-            for(int i = 0; i < ppPhysicalDevices.capacity();i++) {
-
-                currentDevice = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
-
-                VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
-                vkGetPhysicalDeviceProperties(currentDevice, deviceProperties);
-
-                if(isDeviceSuitable(currentDevice)) {
-                    if(deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
-                        flag = true;
-                        break;
-                    }
-                    else if(deviceProperties.deviceType() == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) integratedGPUs.add(currentDevice);
-                    else otherDevices.add(currentDevice);
+            final int selectedGPU = Math.min(Initializer.CONFIG.selectedGPU, ppPhysicalDevices.length-1);
+            if(selectedGPU !=-1)
+            {
+                currentDevice = ppPhysicalDevices[selectedGPU];
+                Initializer.LOGGER.info("User Selection Detected" + selectedGPU);
+                Initializer.LOGGER.info("Using Selected GPU Device: "+currentDevice.deviceName());
+                Initializer.LOGGER.info("Skipping Suitability Checks");
+                if(!isDeviceSuitable(currentDevice))
+                {
+                    Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION));
+                    throw new RuntimeException("Failed to find a suitable GPU");
 
                 }
             }
+            else{
 
-            if(!flag) {
-                if(!integratedGPUs.isEmpty()) currentDevice = integratedGPUs.get(0);
-                else if(!otherDevices.isEmpty()) currentDevice = otherDevices.get(0);
-                else {
-                    Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION, instance));
+
+                Initializer.LOGGER.info(ppPhysicalDevices.length + " Devices Detected");
+                currentDevice = enumerateGPUCandidates(ppPhysicalDevices);
+
+                if(currentDevice==null) {
+                    Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION));
                     throw new RuntimeException("Failed to find a suitable GPU");
                 }
+                Initializer.CONFIG.selectedGPU=currentDevice.i();
             }
 
-            physicalDevice = currentDevice;
+
+            Initializer.LOGGER.info("Using GPU Device: "+currentDevice.deviceName());
+            physicalDevice = currentDevice.physicalDevice();
+
 
             //Get device properties
             deviceProperties = VkPhysicalDeviceProperties.malloc();
@@ -100,6 +96,99 @@ public class Device {
 
             deviceInfo = new DeviceInfo(physicalDevice, deviceProperties);
         }
+    }
+
+
+    @Nullable
+    private static GPUCandidate getGPUMatchingName(GPUCandidate[] ppPhysicalDevices, String selectedGPU) {
+        for (GPUCandidate gpuCandidate1 : ppPhysicalDevices) {
+            if (Objects.equals(gpuCandidate1.deviceName(), selectedGPU)) {
+                return gpuCandidate1;
+            }
+        }
+        return null;
+    }
+
+    private static GPUCandidate getGPUForName(GPUCandidate[] ppPhysicalDevices, String selectedGPU) {
+        for (var a : ppPhysicalDevices)
+        {
+            if(a.deviceName().equals(selectedGPU))
+            {
+                return a;
+            }
+
+
+
+        }
+        return null;
+    }
+
+    private static GPUCandidate enumerateGPUCandidates(GPUCandidate... ppPhysicalDevices) {
+
+
+
+        ArrayList<GPUCandidate> dGPUs = new ArrayList<>();
+        ArrayList<GPUCandidate> iGPUs = new ArrayList<>();
+        ArrayList<GPUCandidate> misc = new ArrayList<>();
+
+        for(var e : ppPhysicalDevices) {
+
+
+            if(isDeviceSuitable(e)) {
+
+                switch (e.deviceType())
+                {
+                    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU -> dGPUs.add(e);
+                    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU-> iGPUs.add(e);
+                    case VK_PHYSICAL_DEVICE_TYPE_OTHER, VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU, VK_PHYSICAL_DEVICE_TYPE_CPU -> misc.add(e);
+                    default -> Initializer.LOGGER.error("Device doesn't seem to be an actual GPU, Skipping...");
+                }
+
+            }
+        }
+        final GPUCandidate currentDevice;
+
+        if(!dGPUs.isEmpty()) currentDevice = dGPUs.get(0);
+        else if(!iGPUs.isEmpty()) currentDevice = iGPUs.get(0);
+        else if(!misc.isEmpty()) currentDevice = misc.get(0);
+        else return null;
+        return currentDevice;
+    }
+
+    @NotNull
+    private static IntBuffer getGPUsCount(VkInstance instance, MemoryStack stack) {
+        IntBuffer deviceCount = stack.ints(0);
+
+        vkEnumeratePhysicalDevices(instance, deviceCount, null);
+
+        if(deviceCount.get(0) == 0) {
+            throw new RuntimeException("Failed to find GPUs with Vulkan support");
+        }
+        return deviceCount;
+    }
+
+    @NotNull
+    private static GPUCandidate[] getAvailableGPUs(VkInstance instance, MemoryStack stack) {
+        IntBuffer deviceCount = getGPUsCount(instance, stack);
+
+        PointerBuffer ppPhysicalDevices = stack.mallocPointer(deviceCount.get(0));
+        vkEnumeratePhysicalDevices(instance, deviceCount, ppPhysicalDevices);
+
+        VkPhysicalDeviceProperties.Buffer vkPhysicalDeviceProperties = VkPhysicalDeviceProperties.malloc(deviceCount.get(0), stack);
+
+
+        var gpuCandidates = new GPUCandidate[deviceCount.get(0)];
+
+        for(int i = 0; i < ppPhysicalDevices.capacity(); i++) {
+
+            var a = new VkPhysicalDevice(ppPhysicalDevices.get(i), instance);
+
+            VkPhysicalDeviceProperties deviceProperties = vkPhysicalDeviceProperties.get(i);
+            vkGetPhysicalDeviceProperties(a, deviceProperties);
+            gpuCandidates[i]=new GPUCandidate(a, deviceProperties.deviceNameString(), deviceProperties.deviceType(), i);
+        }
+
+        return gpuCandidates;
     }
 
     static void createLogicalDevice() {
@@ -220,16 +309,16 @@ public class Device {
         return glfwExtensions;
     }
 
-    private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        Queue.QueueFamilyIndices indices = findQueueFamilies(device);
+    private static boolean isDeviceSuitable(GPUCandidate device) {
+        VkPhysicalDevice vkPhysicalDevice = device.physicalDevice();
+        boolean extensionsSupported = checkDeviceExtensionSupport(vkPhysicalDevice);
 
-        boolean extensionsSupported = checkDeviceExtensionSupport(device);
         boolean swapChainAdequate = false;
 
         if(extensionsSupported) {
             try(MemoryStack stack = stackPush()) {
-                SurfaceProperties surfaceProperties = querySurfaceProperties(device, stack);
+                SurfaceProperties surfaceProperties = querySurfaceProperties(vkPhysicalDevice, stack);
                 swapChainAdequate = surfaceProperties.formats.hasRemaining() && surfaceProperties.presentModes.hasRemaining();
             }
         }
@@ -237,11 +326,23 @@ public class Device {
         boolean anisotropicFilterSupported = false;
         try(MemoryStack stack = stackPush()) {
             VkPhysicalDeviceFeatures supportedFeatures = VkPhysicalDeviceFeatures.mallocStack(stack);
-            vkGetPhysicalDeviceFeatures(device, supportedFeatures);
+            vkGetPhysicalDeviceFeatures(vkPhysicalDevice, supportedFeatures);
             anisotropicFilterSupported = supportedFeatures.samplerAnisotropy();
         }
 
-        return indices.isSuitable() && extensionsSupported && swapChainAdequate;
+
+
+        boolean hasQueues = findQueueFamilies(vkPhysicalDevice).isSuitable();
+        Initializer.LOGGER.info("Checking GPU Device: "+device.deviceName()+"...");
+        Initializer.LOGGER.info("Type: "+ device.getDeviceTypeString());
+        Initializer.LOGGER.info("   Has Queues: "+hasQueues);
+        Initializer.LOGGER.info("   Has Swapchain Functionality: "+extensionsSupported);
+        Initializer.LOGGER.info("   Has Presentable Surface Formats: "+swapChainAdequate);
+        Initializer.LOGGER.info((hasQueues && extensionsSupported && swapChainAdequate) ? "Device Suitable!" : "Device not Suitable!");
+
+        return hasQueues && extensionsSupported && swapChainAdequate;
+
+
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -348,6 +449,16 @@ public class Device {
         }
 
         return details;
+    }
+
+    public static String[] getAvailableGPUNames(VkInstance instance, MemoryStack stack) {
+        var a = getAvailableGPUs(instance, stack);
+
+        final String[] aa = new String[a.length];
+        for (int j = 0; j < aa.length; j++) {
+            aa[j] = a[j].deviceName();
+        }
+        return aa;
     }
 
     public static class SurfaceProperties {

@@ -4,17 +4,25 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+
 import net.vulkanmod.vulkan.Device;
 import net.vulkanmod.vulkan.Renderer;
 import org.lwjgl.system.MemoryStack;
 
-import static net.vulkanmod.vulkan.Device.device;
+
+import net.vulkanmod.vulkan.Vulkan;
+
+import java.util.stream.IntStream;
+
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+
+
+    private static final String[] GPUNames = Vulkan.getAvailableGPUs();
 
     public static Option<?>[] getVideoOpts() {
         return new Option[] {
@@ -212,7 +220,15 @@ public class Options {
                         () -> config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems."""))
+                        Enabling it might help in CPU limited systems.""")),
+                new RangeOption("GPU Selector", 0, GPUNames.length-1, 1,
+
+                        value -> GPUNames[value],
+
+                        value -> config.selectedGPU = value,
+                        () -> config.selectedGPU)
+                        .setTooltip(Component.nullToEmpty("""
+                        GPU Selector""")),
         };
 
     }
