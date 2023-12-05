@@ -17,6 +17,6 @@ public class MSpriteContents {
         if(!SpriteUtil.shouldUpload())
             ci.cancel();
 
-        SpriteUtil.addTransitionedLayout(VTextureSelector.getBoundTexture());
+        SpriteUtil.addTransitionedLayout(VTextureSelector.getBoundTexture(0));
     }
 }

@@ -24,6 +24,7 @@ public class Framebuffer {
     protected int depthFormat;
     protected int width, height;
     protected boolean linearFiltering;
+    protected boolean depthLinearFiltering;
     protected int attachmentCount;
 
     boolean hasColorAttachment;
@@ -58,6 +59,7 @@ public class Framebuffer {
         this.width = builder.width;
         this.height = builder.height;
         this.linearFiltering = builder.linearFiltering;
+        this.depthLinearFiltering = builder.depthLinearFiltering;
         this.hasColorAttachment = builder.hasColorAttachment;
         this.hasDepthAttachment = builder.hasDepthAttachment;
 
@@ -70,15 +72,18 @@ public class Framebuffer {
 
     public void createImages() {
         if(this.hasColorAttachment) {
-            this.colorAttachment = VulkanImage.createTextureImage(format, 1, width, height,
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    0, linearFiltering, true);
+            this.colorAttachment = VulkanImage.builder(this.width, this.height)
+                    .setFormat(format)
+                    .setUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+                    .setLinearFiltering(linearFiltering)
+                    .setClamp(true)
+                    .createVulkanImage();
         }
 
         if(this.hasDepthAttachment) {
             this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    linearFiltering, true);
+                    depthLinearFiltering, true);
 
             this.attachmentCount++;
         }
@@ -138,7 +143,7 @@ public class Framebuffer {
 
     public void bindAsTexture(VkCommandBuffer commandBuffer, MemoryStack stack) {
         this.colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        VTextureSelector.bindFramebufferTexture(this.colorAttachment);
+        VTextureSelector.bindTexture(3, this.colorAttachment);
     }
 
     public VkViewport.Buffer viewport(MemoryStack stack) {

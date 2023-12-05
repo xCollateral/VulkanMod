@@ -1,9 +1,8 @@
 package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import it.unimi.dsi.fastutil.bytes.Byte2LongArrayMap;
-import it.unimi.dsi.fastutil.bytes.Byte2LongMap;
 import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -14,39 +13,38 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.util.Objects;
 
-import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.texture.SamplerManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
-    private static final int depthFormat = Device.findDepthFormat();
-    private static final int defDepthAspect = !hasStencilComponent(depthFormat) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
-    private static VkDevice device = Vulkan.getDevice();
+    private static final VkDevice DEVICE = Vulkan.getDevice();
 
     private long id;
     private long allocation;
-    private long imageView;
+    private long mainImageView;
 
-    private final Byte2LongMap samplers = new Byte2LongArrayMap();
-    private Sampler textureSampler;
+    private long[] levelImageViews;
+
+    private long sampler;
 
     public final int format;
+    public final int aspect;
     public final int mipLevels;
     public final int width;
     public final int height;
     public final int formatSize;
-
-    private int usage;
+    private final int usage;
 
     private int currentLayout;
 
+    //Used for swap chain images
     public VulkanImage(long id, int format, int mipLevels, int width, int height, int formatSize, int usage, long imageView) {
         this.id = id;
-        this.imageView = imageView;
+        this.mainImageView = imageView;
 
         this.mipLevels = mipLevels;
         this.width = width;
@@ -54,33 +52,45 @@ public class VulkanImage {
         this.formatSize = formatSize;
         this.format = format;
         this.usage = usage;
+        this.aspect = getAspect(this.format);
     }
 
-    private VulkanImage(int format, int mipLevels, int width, int height, int usage, int formatSize) {
-        this.mipLevels = mipLevels;
-        this.width = width;
-        this.height = height;
-        this.formatSize = formatSize;
-        this.format = format;
-        this.usage = usage;
+    private VulkanImage(Builder builder) {
+        this.mipLevels = builder.mipLevels;
+        this.width = builder.width;
+        this.height = builder.height;
+        this.formatSize = builder.formatSize;
+        this.format = builder.format;
+        this.usage = builder.usage;
+        this.aspect = getAspect(this.format);
     }
 
-    public static VulkanImage createTextureImage(int format, int mipLevels, int width, int height, int usage, int formatSize, boolean blur, boolean clamp) {
-        VulkanImage image = new VulkanImage(format, mipLevels, width, height, usage, formatSize);
+    public static VulkanImage createTextureImage(Builder builder) {
+        VulkanImage image = new VulkanImage(builder);
 
-        image.createImage(mipLevels, width, height, format, usage);
-        image.imageView = createImageView(image.id, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
-        image.createTextureSampler(blur, clamp, mipLevels > 1);
+        image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
+        image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
+
+        image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
+
+        if(builder.levelViews) {
+            image.levelImageViews = new long[builder.mipLevels];
+
+            for(int i = 0; i < builder.mipLevels; ++i) {
+                image.levelImageViews[i] = createImageView(image.id, image.format, image.aspect, i, 1);
+            }
+        }
 
         return image;
     }
 
     public static VulkanImage createDepthImage(int format, int width, int height, int usage, boolean blur, boolean clamp) {
-        VulkanImage image = new VulkanImage(format, 1, width, height, usage, 0);
-
-        image.createImage(1, width, height, format, usage);
-        image.imageView = createImageView(image.id, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-        image.createTextureSampler(blur, clamp, false);
+        VulkanImage image = VulkanImage.builder(width, height)
+                .setFormat(format)
+                .setUsage(usage)
+                .setLinearFiltering(blur)
+                .setClamp(clamp)
+                .createVulkanImage();
 
         return image;
     }
@@ -91,8 +101,13 @@ public class VulkanImage {
             ByteBuffer buffer = stack.malloc(4);
             buffer.putInt(0, i);
 
-            VulkanImage image = createTextureImage(DefaultFormat, 1, 1, 1, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 4, false, false);
-            image.uploadSubTextureAsync(0,image.width, image.height, 0, 0, 0, 0, 0, buffer);
+            VulkanImage image = VulkanImage.builder(1, 1)
+                    .setFormat(DefaultFormat)
+                    .setUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+                    .setLinearFiltering(false)
+                    .setClamp(false)
+                    .createVulkanImage();
+            image.uploadSubTextureAsync(0, image.width, image.height, 0, 0, 0, 0, 0, buffer);
             return image;
 //            return createTextureImage(1, 1, 4, false, false, buffer);
         }
@@ -116,13 +131,18 @@ public class VulkanImage {
             allocation = pAllocation.get(0);
 
             MemoryManager.addImage(this);
-
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
+    public static int getAspect(int format) {
+        return format == SwapChain.getDefaultDepthFormat() ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
     public static long createImageView(long image, int format, int aspectFlags, int mipLevels) {
+        return createImageView(image, format, aspectFlags, 0, mipLevels);
+    }
+
+    public static long createImageView(long image, int format, int aspectFlags, int baseMipLevel, int mipLevels) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -132,14 +152,14 @@ public class VulkanImage {
             viewInfo.viewType(VK_IMAGE_VIEW_TYPE_2D);
             viewInfo.format(format);
             viewInfo.subresourceRange().aspectMask(aspectFlags);
-            viewInfo.subresourceRange().baseMipLevel(0);
+            viewInfo.subresourceRange().baseMipLevel(baseMipLevel);
             viewInfo.subresourceRange().levelCount(mipLevels);
             viewInfo.subresourceRange().baseArrayLayer(0);
             viewInfo.subresourceRange().layerCount(1);
 
             LongBuffer pImageView = stack.mallocLong(1);
 
-            if(vkCreateImageView(device, viewInfo, null, pImageView) != VK_SUCCESS) {
+            if(vkCreateImageView(DEVICE, viewInfo, null, pImageView) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create texture image view");
             }
 
@@ -212,77 +232,16 @@ public class VulkanImage {
         transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
-    private void createTextureSampler(boolean blur, boolean clamp, boolean mipmap) {
+    public void updateTextureSampler(boolean blur, boolean clamp, boolean mipFiltering) {
+        byte flags = blur ? LINEAR_FILTERING_BIT : 0;
+        flags |= clamp ? CLAMP_BIT : 0;
+        flags |= mipFiltering ? MIPMAP_FILTERING_BIT : 0;
 
-        try(MemoryStack stack = stackPush()) {
-
-            VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack);
-            samplerInfo.sType(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-
-            if(blur) {
-                samplerInfo.magFilter(VK_FILTER_LINEAR);
-                samplerInfo.minFilter(VK_FILTER_LINEAR);
-            } else {
-                samplerInfo.magFilter(VK_FILTER_NEAREST);
-                samplerInfo.minFilter(VK_FILTER_NEAREST);
-            }
-
-
-            if(clamp) {
-                samplerInfo.addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-                samplerInfo.addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-                samplerInfo.addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-            } else {
-                samplerInfo.addressModeU(VK_SAMPLER_ADDRESS_MODE_REPEAT);
-                samplerInfo.addressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT);
-                samplerInfo.addressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT);
-            }
-
-            samplerInfo.anisotropyEnable(false);
-            //samplerInfo.maxAnisotropy(16.0f);
-            samplerInfo.borderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE);
-            samplerInfo.unnormalizedCoordinates(false);
-            samplerInfo.compareEnable(false);
-            samplerInfo.compareOp(VK_COMPARE_OP_ALWAYS);
-
-            if(mipmap) {
-                samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
-                samplerInfo.maxLod(mipLevels);
-                samplerInfo.minLod(0.0F);
-                samplerInfo.mipLodBias(-0.5F);
-            } else {
-                samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
-                samplerInfo.maxLod(0.0F);
-                samplerInfo.minLod(0.0F);
-            }
-
-            //Reduction Mode
-//            VkSamplerReductionModeCreateInfo reductionModeInfo = VkSamplerReductionModeCreateInfo.calloc(stack);
-//            reductionModeInfo.sType$Default();
-//            reductionModeInfo.reductionMode(VK_SAMPLER_REDUCTION_MODE_MIN);
-//            samplerInfo.pNext(reductionModeInfo.address());
-
-            LongBuffer pTextureSampler = stack.mallocLong(1);
-
-            if(vkCreateSampler(getDevice(), samplerInfo, null, pTextureSampler) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create texture sampler");
-            }
-
-            textureSampler = new Sampler(this, pTextureSampler.get(0));
-
-            byte mask = (byte) ((blur ? 1 : 0) | (mipmap ? 2 : 0));
-            this.samplers.put(mask, textureSampler.sampler);
-        }
+        this.updateTextureSampler(flags);
     }
 
-    public void updateTextureSampler(boolean blur, boolean clamp, boolean mipmap) {
-        byte mask = (byte) ((blur ? 1 : 0) | (mipmap ? 2 : 0));
-        long sampler = this.samplers.get(mask);
-
-        if(sampler == 0L)
-            createTextureSampler(blur, clamp, mipmap);
-        else
-            this.textureSampler = new Sampler(this, sampler);
+    public void updateTextureSampler(byte flags) {
+        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, flags);
     }
 
     private void copyBufferToImageCmd(CommandPool.CommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
@@ -298,7 +257,7 @@ public class VulkanImage {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent().set(width, height, 1);
+            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
             vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
@@ -325,14 +284,12 @@ public class VulkanImage {
 
             long fence = Device.getGraphicsQueue().submitCommands(commandBuffer);
 
-            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
+            vkWaitForFences(DEVICE, fence, true, VUtil.UINT64_MAX);
         }
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
         transitionImageLayout(stack, commandBuffer, this, newLayout);
-
-        this.currentLayout = newLayout;
     }
 
     public static void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int newLayout) {
@@ -393,6 +350,12 @@ public class VulkanImage {
 
     public static void transitionLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int oldLayout, int newLayout,
                                         int sourceStage, int srcAccessMask, int destinationStage, int dstAccessMask) {
+        transitionLayout(stack, commandBuffer, image, 0, oldLayout, newLayout,
+                sourceStage, srcAccessMask, destinationStage, dstAccessMask);
+    }
+
+    public static void transitionLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int baseLevel, int oldLayout, int newLayout,
+                                        int sourceStage, int srcAccessMask, int destinationStage, int dstAccessMask) {
 
         VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
         barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -402,13 +365,12 @@ public class VulkanImage {
         barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
         barrier.image(image.getId());
 
-        barrier.subresourceRange().baseMipLevel(0);
-        barrier.subresourceRange().levelCount(image.mipLevels);
+        barrier.subresourceRange().baseMipLevel(baseLevel);
+        barrier.subresourceRange().levelCount(VK_REMAINING_MIP_LEVELS);
         barrier.subresourceRange().baseArrayLayer(0);
-        barrier.subresourceRange().layerCount(1);
+        barrier.subresourceRange().layerCount(VK_REMAINING_ARRAY_LAYERS);
 
-        barrier.subresourceRange()
-                .aspectMask(image.format == depthFormat ? defDepthAspect : VK_IMAGE_ASPECT_COLOR_BIT);
+        barrier.subresourceRange().aspectMask(image.aspect);
 
         barrier.srcAccessMask(srcAccessMask);
         barrier.dstAccessMask(dstAccessMask);
@@ -434,11 +396,7 @@ public class VulkanImage {
     public void doFree() {
         MemoryManager.freeImage(this.id, this.allocation);
 
-        vkDestroyImageView(Vulkan.getDevice(), this.imageView, null);
-
-        for (long sampler : samplers.values()) {
-            vkDestroySampler(Vulkan.getDevice(), sampler, null);
-        }
+        vkDestroyImageView(Vulkan.getDevice(), this.mainImageView, null);
     }
 
     public int getCurrentLayout() {
@@ -450,9 +408,22 @@ public class VulkanImage {
     }
 
     public long getId() { return id;}
+
     public long getAllocation() { return allocation;}
-    public long getImageView() { return imageView; }
-    public Sampler getTextureSampler() { return textureSampler; }
+
+    public long getImageView() { return mainImageView; }
+
+    public long getLevelImageView(int i) { return levelImageViews[i]; }
+
+    public long[] getLevelImageViews() { return levelImageViews; }
+
+    public long getSampler() {
+        return sampler;
+    }
+
+    public static Builder builder(int width, int height) {
+        return new Builder(width, height);
+    }
 
     public static class Builder {
         final int width;
@@ -460,11 +431,12 @@ public class VulkanImage {
 
         int format = VulkanImage.DefaultFormat;
         int formatSize;
-        int mipLevels = 1;
+        byte mipLevels = 1;
         int usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-        boolean linearFiltering = false;
-        boolean clamp = false;
+        byte samplerFlags = 0;
+
+        boolean levelViews = false;
 
         public Builder(int width, int height) {
             this.width = width;
@@ -482,7 +454,11 @@ public class VulkanImage {
         }
 
         public Builder setMipLevels(int n) {
-            this.mipLevels = n;
+            this.mipLevels = (byte) n;
+
+            if(n > 1)
+                this.samplerFlags |= MIPMAP_FILTERING_BIT;
+
             return this;
         }
 
@@ -492,19 +468,29 @@ public class VulkanImage {
         }
 
         public Builder setLinearFiltering(boolean b) {
-            this.linearFiltering = b;
+            this.samplerFlags |= b ? LINEAR_FILTERING_BIT : 0;
             return this;
         }
 
         public Builder setClamp(boolean b) {
-            this.clamp = b;
+            this.samplerFlags |= b ? CLAMP_BIT : 0;
+            return this;
+        }
+
+        public Builder setSamplerReductionModeMin() {
+            this.samplerFlags = REDUCTION_MIN_BIT | LINEAR_FILTERING_BIT;
+            return this;
+        }
+
+        public Builder setLevelViews(boolean b) {
+            this.levelViews = b;
             return this;
         }
 
         public VulkanImage createVulkanImage() {
             this.formatSize = formatSize(this.format);
 
-            return VulkanImage.createTextureImage(this.format, this.mipLevels, this.width, this.height, this.usage, this.formatSize, this.linearFiltering, this.clamp);
+            return VulkanImage.createTextureImage(this);
         }
 
         private static int convertFormat(NativeImage.InternalGlFormat format) {
@@ -519,23 +505,10 @@ public class VulkanImage {
             return switch (format) {
                 case VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB -> 4;
                 case VK_FORMAT_R8_UNORM -> 1;
-                default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));
+
+//                default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));
+                default -> 0;
             };
         }
-    }
-
-    public record Sampler(VulkanImage image, long sampler) {
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Sampler sampler1 = (Sampler) o;
-
-            if (sampler != sampler1.sampler) return false;
-            return Objects.equals(image, sampler1.image);
-        }
-
     }
 }

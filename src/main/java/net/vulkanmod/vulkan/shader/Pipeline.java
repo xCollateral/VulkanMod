@@ -181,6 +181,10 @@ public abstract class Pipeline {
 
     public long getLayout() { return pipelineLayout; }
 
+    public List<ImageDescriptor> getImageDescriptors() {
+        return imageDescriptors;
+    }
+
     public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
         UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
         this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -218,11 +222,13 @@ public abstract class Pipeline {
         private int currentIdx = -1;
 
         private final int frame;
-        private final VulkanImage.Sampler[] boundTextures = new VulkanImage.Sampler[imageDescriptors.size()];
+        private final ImageDescriptor.State[] boundTextures = new ImageDescriptor.State[imageDescriptors.size()];
         private final IntBuffer dynamicOffsets = MemoryUtil.memAllocInt(buffers.size());
 
         DescriptorSets(int frame) {
             this.frame = frame;
+
+            Arrays.setAll(boundTextures, i -> new ImageDescriptor.State(0, 0));
 
             try(MemoryStack stack = stackPush()) {
                 this.createDescriptorPool(stack);
@@ -269,12 +275,14 @@ public abstract class Pipeline {
             boolean changed = false;
             for(int j = 0; j < imageDescriptors.size(); ++j) {
                 ImageDescriptor imageDescriptor = imageDescriptors.get(j);
+                VulkanImage image = imageDescriptor.getImage();
+                long view = imageDescriptor.getImageView(image);
+                long sampler = image.getSampler();
 
-                VulkanImage.Sampler texture = VTextureSelector.getTexture(imageDescriptor.name).getTextureSampler();
-                if(imageDescriptor.useSampler)
-                    texture.image().readOnlyLayout();
+                if(imageDescriptor.isReadOnlyLayout)
+                    image.readOnlyLayout();
 
-                if(this.boundTextures[j] != texture) {
+                if(!this.boundTextures[j].isCurrentState(view, sampler)) {
                     changed = true;
                     break;
                 }
@@ -331,19 +339,20 @@ public abstract class Pipeline {
 
             for(int j = 0; j < imageDescriptors.size(); ++j) {
                 ImageDescriptor imageDescriptor = imageDescriptors.get(j);
-                VulkanImage image = VTextureSelector.getTexture(imageDescriptor.name);
-                VulkanImage.Sampler textureSampler = image.getTextureSampler();
+                VulkanImage image = imageDescriptor.getImage();
+                long view = imageDescriptor.getImageView(image);
+                long sampler = image.getSampler();
+                int layout = imageDescriptor.getLayout();
+
+                if(imageDescriptor.isReadOnlyLayout)
+                    image.readOnlyLayout();
 
                 imageInfo[j] = VkDescriptorImageInfo.calloc(1, stack);
-                imageInfo[j].imageView(image.getImageView());
+                imageInfo[j].imageLayout(layout);
+                imageInfo[j].imageView(view);
 
-                if(imageDescriptor.useSampler) {
-                    imageInfo[j].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    imageInfo[j].sampler(textureSampler.sampler());
-                    image.readOnlyLayout();
-                } else {
-                    imageInfo[j].imageLayout(VK_IMAGE_LAYOUT_GENERAL);
-                }
+                if(imageDescriptor.useSampler)
+                    imageInfo[j].sampler(sampler);
 
                 VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
                 samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
@@ -354,7 +363,7 @@ public abstract class Pipeline {
                 samplerDescriptorWrite.pImageInfo(imageInfo[j]);
                 samplerDescriptorWrite.dstSet(currentSet);
 
-                this.boundTextures[j] = textureSampler;
+                this.boundTextures[j].set(view, sampler);
                 ++i;
             }
 

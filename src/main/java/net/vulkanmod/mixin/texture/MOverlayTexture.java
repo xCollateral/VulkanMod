@@ -22,7 +22,7 @@ public class MOverlayTexture {
     private void overlay(DynamicTexture instance) {
 
         VTextureSelector.setOverlayTexture(((VAbstractTextureI)this.texture).getVulkanImage());
-        VTextureSelector.setActiveTexture(2);
+        VTextureSelector.setActiveTexture(1);
     }
 
 //    @Inject(method = "<init>", at = @At(value = "RETURN", target = "Lnet/minecraft/client/texture/NativeImageBackedTexture;bindTexture()V"))
