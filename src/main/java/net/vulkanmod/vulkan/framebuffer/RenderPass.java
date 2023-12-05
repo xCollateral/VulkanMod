@@ -83,7 +83,7 @@ public class RenderPass {
                         .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
                         .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
                         .initialLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                        .finalLayout(colorAttachmentInfo.finalLayout);
+                        .finalLayout(depthAttachmentInfo.finalLayout);
 
                 VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1)
                         .attachment(1)
@@ -235,7 +235,7 @@ public class RenderPass {
         public AttachmentInfo(Type type, int format) {
             this.type = type;
             this.format = format;
-            this.finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            this.finalLayout = type.defaultLayout;
 
             this.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             this.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -261,8 +261,14 @@ public class RenderPass {
         }
 
         public enum Type {
-            COLOR,
-            DEPTH
+            COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            DEPTH(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+            final int defaultLayout;
+
+            Type(int layout) {
+                defaultLayout = layout;
+            }
         }
     }
 
