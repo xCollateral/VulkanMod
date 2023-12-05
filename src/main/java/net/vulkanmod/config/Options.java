@@ -221,9 +221,9 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
-                new RangeOption("GPU Selector", 0, GPUNames.length-1, 1,
+                new RangeOption("GPU Selector", -1, GPUNames.length-1, 1,
 
-                        value -> GPUNames[value],
+                        value -> (value!=-1 ? GPUNames[value] : "Unselected"),
 
                         value -> config.selectedGPU = value,
                         () -> config.selectedGPU)

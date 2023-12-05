@@ -77,7 +77,6 @@ public class Device {
                     Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION));
                     throw new RuntimeException("Failed to find a suitable GPU");
                 }
-                Initializer.CONFIG.selectedGPU=currentDevice.i();
             }
 
 
