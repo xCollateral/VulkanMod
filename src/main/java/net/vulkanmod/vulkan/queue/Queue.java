@@ -105,7 +105,7 @@ public abstract class Queue {
                     indices.transferFamily = i;
                 }
 
-                if(indices.presentFamily == null) {
+                if(indices.presentFamily == VK_QUEUE_FAMILY_IGNORED) {
                     vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
                     if(presentSupport.get(0) == VK_TRUE) {
@@ -116,7 +116,7 @@ public abstract class Queue {
                 if(indices.isComplete()) break;
             }
 
-            if(indices.transferFamily == null) {
+            if(indices.transferFamily == VK_QUEUE_FAMILY_IGNORED) {
 
                 int fallback = -1;
                 for(int i = 0; i < queueFamilies.capacity(); i++) {
@@ -142,7 +142,7 @@ public abstract class Queue {
                 }
             }
             
-            if(indices.computeFamily == null) {
+            if(indices.computeFamily == VK_QUEUE_FAMILY_IGNORED) {
                 for(int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
@@ -153,11 +153,11 @@ public abstract class Queue {
                 }
             }
 
-            if (indices.graphicsFamily == null)
+            if (indices.graphicsFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (indices.presentFamily == null)
+            if (indices.presentFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with present support.");
-            if (indices.computeFamily == null)
+            if (indices.computeFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
             return indices;
@@ -165,19 +165,14 @@ public abstract class Queue {
     }
 
     public static class QueueFamilyIndices {
-
-        // We use Integer to use null as the empty value
-        public Integer graphicsFamily;
-        public Integer presentFamily;
-        public Integer transferFamily;
-        public Integer computeFamily;
+        public int graphicsFamily, presentFamily, transferFamily, computeFamily;
 
         public boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null && transferFamily != null && computeFamily != null;
+            return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED && transferFamily != VK_QUEUE_FAMILY_IGNORED && computeFamily != VK_QUEUE_FAMILY_IGNORED;
         }
 
         public boolean isSuitable() {
-            return graphicsFamily != null && presentFamily != null;
+            return graphicsFamily != VK_QUEUE_FAMILY_IGNORED && presentFamily != VK_QUEUE_FAMILY_IGNORED;
         }
 
         public int[] unique() {

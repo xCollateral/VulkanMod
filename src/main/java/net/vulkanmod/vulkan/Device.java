@@ -46,37 +46,24 @@ public class Device {
         try(MemoryStack stack = stackPush()) {
 
 
-            GPUCandidate[] ppPhysicalDevices = getAvailableGPUs(instance, stack);
-
+            final GPUCandidate[] ppPhysicalDevices = getAvailableGPUs(instance, stack);
 
 
             final GPUCandidate currentDevice;
 
 
             final int selectedGPU = Math.min(Initializer.CONFIG.selectedGPU, ppPhysicalDevices.length-1);
-            if(selectedGPU !=-1)
-            {
-                currentDevice = ppPhysicalDevices[selectedGPU];
-                Initializer.LOGGER.info("User Selection Detected" + selectedGPU);
-                Initializer.LOGGER.info("Using Selected GPU Device: "+currentDevice.deviceName());
-                Initializer.LOGGER.info("Skipping Suitability Checks");
-                if(!isDeviceSuitable(currentDevice))
-                {
-                    Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION));
-                    throw new RuntimeException("Failed to find a suitable GPU");
-
-                }
+            if(selectedGPU !=-1) {
+                GPUCandidate ppPhysicalDevice = ppPhysicalDevices[selectedGPU];
+                currentDevice = isDeviceSuitable(ppPhysicalDevice) ? ppPhysicalDevice : null;
             }
-            else{
+            else currentDevice = enumerateGPUCandidates(ppPhysicalDevices);
 
 
-                Initializer.LOGGER.info(ppPhysicalDevices.length + " Devices Detected");
-                currentDevice = enumerateGPUCandidates(ppPhysicalDevices);
-
-                if(currentDevice==null) {
-                    Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION));
-                    throw new RuntimeException("Failed to find a suitable GPU");
-                }
+            if(currentDevice==null)
+            {
+                Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION));
+                throw new RuntimeException("Failed to find a suitable GPU");
             }
 
 
@@ -97,34 +84,9 @@ public class Device {
         }
     }
 
-
-    @Nullable
-    private static GPUCandidate getGPUMatchingName(GPUCandidate[] ppPhysicalDevices, String selectedGPU) {
-        for (GPUCandidate gpuCandidate1 : ppPhysicalDevices) {
-            if (Objects.equals(gpuCandidate1.deviceName(), selectedGPU)) {
-                return gpuCandidate1;
-            }
-        }
-        return null;
-    }
-
-    private static GPUCandidate getGPUForName(GPUCandidate[] ppPhysicalDevices, String selectedGPU) {
-        for (var a : ppPhysicalDevices)
-        {
-            if(a.deviceName().equals(selectedGPU))
-            {
-                return a;
-            }
-
-
-
-        }
-        return null;
-    }
-
     private static GPUCandidate enumerateGPUCandidates(GPUCandidate... ppPhysicalDevices) {
 
-
+        Initializer.LOGGER.info(ppPhysicalDevices.length + " Devices Detected");
 
         ArrayList<GPUCandidate> dGPUs = new ArrayList<>();
         ArrayList<GPUCandidate> iGPUs = new ArrayList<>();
