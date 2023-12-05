@@ -55,7 +55,7 @@ public class Device {
             final int selectedGPU = Math.min(Initializer.CONFIG.selectedGPU, ppPhysicalDevices.length-1);
             if(selectedGPU !=-1) {
                 GPUCandidate ppPhysicalDevice = ppPhysicalDevices[selectedGPU];
-                currentDevice = isDeviceSuitable(ppPhysicalDevice) ? ppPhysicalDevice : null;
+                currentDevice = isDeviceSuitable(ppPhysicalDevice) ? ppPhysicalDevice : enumerateGPUCandidates(ppPhysicalDevices);
             }
             else currentDevice = enumerateGPUCandidates(ppPhysicalDevices);
 
