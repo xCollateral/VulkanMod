@@ -16,7 +16,6 @@ import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
@@ -113,7 +112,7 @@ public abstract class Pipeline {
 
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
-            if(vkCreateDescriptorSetLayout(Device.device, layoutInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
+            if(vkCreateDescriptorSetLayout(DeviceManager.device, layoutInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create descriptor set layout");
             }
 

@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.vulkanmod.interfaces.VertexFormatMixed;
-import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
@@ -196,7 +196,7 @@ public class GraphicsPipeline extends Pipeline {
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
-            if(vkCreateGraphicsPipelines(Device.device, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
+            if(vkCreateGraphicsPipelines(DeviceManager.device, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create graphics pipeline");
             }
 
@@ -339,18 +339,18 @@ public class GraphicsPipeline extends Pipeline {
     }
 
     public void cleanUp() {
-        vkDestroyShaderModule(Device.device, vertShaderModule, null);
-        vkDestroyShaderModule(Device.device, fragShaderModule, null);
+        vkDestroyShaderModule(DeviceManager.device, vertShaderModule, null);
+        vkDestroyShaderModule(DeviceManager.device, fragShaderModule, null);
 
         destroyDescriptorSets();
 
         graphicsPipelines.forEach((state, pipeline) -> {
-            vkDestroyPipeline(Device.device, pipeline, null);
+            vkDestroyPipeline(DeviceManager.device, pipeline, null);
         });
         graphicsPipelines.clear();
 
-        vkDestroyDescriptorSetLayout(Device.device, descriptorSetLayout, null);
-        vkDestroyPipelineLayout(Device.device, pipelineLayout, null);
+        vkDestroyDescriptorSetLayout(DeviceManager.device, descriptorSetLayout, null);
+        vkDestroyPipelineLayout(DeviceManager.device, pipelineLayout, null);
 
         PIPELINES.remove(this);
         Renderer.getInstance().removeUsedPipeline(this);

@@ -4,11 +4,10 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
-import org.lwjgl.system.MemoryStack;
 
-import static net.vulkanmod.vulkan.Device.device;
+import java.util.stream.IntStream;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
@@ -212,7 +211,23 @@ public class Options {
                         () -> config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems."""))
+                        Enabling it might help in CPU limited systems.""")),
+                new CyclingOption<>("Device selector",
+                        IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
+                        value -> {
+                            String t;
+
+                            if(value == -1)
+                                t = "Auto";
+                            else
+                                t = DeviceManager.suitableDevices.get(value).deviceName;
+
+                            return Component.nullToEmpty(t);
+                        },
+                        value -> config.device = value,
+                        () -> config.device)
+                        .setTooltip(Component.nullToEmpty(
+                                String.format("Current device: %s", DeviceManager.deviceInfo.deviceName)))
         };
 
     }

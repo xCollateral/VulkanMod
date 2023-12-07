@@ -170,7 +170,7 @@ public class VulkanImage {
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         long imageSize = buffer.limit();
 
-        CommandPool.CommandBuffer commandBuffer = Device.getGraphicsQueue().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
         try(MemoryStack stack = stackPush()) {
             transferDstLayout(stack, commandBuffer.getHandle());
         }
@@ -183,7 +183,7 @@ public class VulkanImage {
         copyBufferToImageCmd(commandBuffer, stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
-        long fence = Device.getGraphicsQueue().endIfNeeded(commandBuffer);
+        long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
@@ -220,11 +220,11 @@ public class VulkanImage {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             return;
 
-        CommandPool.CommandBuffer commandBuffer = Device.getGraphicsQueue().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
             readOnlyLayout(stack, commandBuffer.getHandle());
         }
-        Device.getGraphicsQueue().submitCommands(commandBuffer);
+        DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
@@ -267,7 +267,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            CommandPool.CommandBuffer commandBuffer = Device.getGraphicsQueue().beginCommands();
+            CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
 
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
@@ -282,7 +282,7 @@ public class VulkanImage {
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
 
-            long fence = Device.getGraphicsQueue().submitCommands(commandBuffer);
+            long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
 
             vkWaitForFences(DEVICE, fence, true, VUtil.UINT64_MAX);
         }

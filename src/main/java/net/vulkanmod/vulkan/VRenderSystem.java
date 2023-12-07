@@ -19,7 +19,7 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class VRenderSystem {
+public abstract class VRenderSystem {
     private static long window;
 
     public static boolean depthTest = true;
@@ -61,7 +61,7 @@ public class VRenderSystem {
     public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer; }
 
     public static int maxSupportedTextureSize() {
-        return Device.deviceProperties.limits().maxImageDimension2D();
+        return DeviceManager.deviceProperties.limits().maxImageDimension2D();
     }
 
     public static void renderCrosshair(int p_69348_, boolean p_69349_, boolean p_69350_, boolean p_69351_) {

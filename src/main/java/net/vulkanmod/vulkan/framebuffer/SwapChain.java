@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.framebuffer;
 
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.util.MathUtil;
-import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static net.vulkanmod.vulkan.Device.device;
+import static net.vulkanmod.vulkan.DeviceManager.device;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.util.VUtil.UINT32_MAX;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
@@ -52,7 +52,7 @@ public class SwapChain extends Framebuffer {
     private int[] currentLayout;
 
     public SwapChain() {
-        DEFAULT_DEPTH_FORMAT = Device.findDepthFormat();
+        DEFAULT_DEPTH_FORMAT = DeviceManager.findDepthFormat();
 
         this.attachmentCount = 2;
 
@@ -82,7 +82,7 @@ public class SwapChain extends Framebuffer {
 
         try(MemoryStack stack = stackPush()) {
             VkDevice device = Vulkan.getDevice();
-            Device.SurfaceProperties surfaceProperties = Device.querySurfaceProperties(device.getPhysicalDevice(), stack);
+            DeviceManager.SurfaceProperties surfaceProperties = DeviceManager.querySurfaceProperties(device.getPhysicalDevice(), stack);
 
             VkSurfaceFormatKHR surfaceFormat = getFormat(surfaceProperties.formats);
             int presentMode = getPresentMode(surfaceProperties.presentModes);
@@ -405,7 +405,7 @@ public class SwapChain extends Framebuffer {
     private static int checkPresentMode(int... requestedModes) {
         try(MemoryStack stack = MemoryStack.stackPush())
         {
-            var a = Device.querySurfaceProperties(device.getPhysicalDevice(), stack).presentModes;
+            var a = DeviceManager.querySurfaceProperties(device.getPhysicalDevice(), stack).presentModes;
             for(int dMode : requestedModes) {
                 for (int i = 0; i < a.capacity(); i++) {
                     if (a.get(i) == dMode) {

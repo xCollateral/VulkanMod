@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
-import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -31,8 +31,8 @@ public abstract class Queue {
 
     Queue(MemoryStack stack, int familyIndex, boolean initCommandPool) {
         PointerBuffer pQueue = stack.mallocPointer(1);
-        vkGetDeviceQueue(Device.device, familyIndex, 0, pQueue);
-        this.queue = new VkQueue(pQueue.get(0), Device.device);
+        vkGetDeviceQueue(DeviceManager.device, familyIndex, 0, pQueue);
+        this.queue = new VkQueue(pQueue.get(0), DeviceManager.device);
 
         if(initCommandPool)
             this.commandPool = new CommandPool(familyIndex);

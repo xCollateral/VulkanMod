@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkMemoryType;
@@ -15,8 +15,8 @@ public class MemoryTypes {
 
     public static void createMemoryTypes() {
 
-        for(int i = 0; i < Device.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = Device.memoryProperties.memoryTypes(i);
+        for(int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
+            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
 
             //GPU only Memory
             if(memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
@@ -38,8 +38,8 @@ public class MemoryTypes {
             if(GPU_MEM != null) return;
         }
 
-        for(int i = 0; i < Device.memoryProperties.memoryTypeCount(); ++i) {
-            VkMemoryType memoryType = Device.memoryProperties.memoryTypes(i);
+        for(int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
+            VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
 
             //gpu-cpu shared memory
             if((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) != 0) {
@@ -66,7 +66,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer((int) bufferSize, byteBuffer);
 
-            Device.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
+            DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), buffer.getUsedBytes(), bufferSize);
         }
 
         @Override
@@ -79,7 +79,7 @@ public class MemoryTypes {
                 throw new IllegalArgumentException("dst size is less than src size.");
             }
 
-            return Device.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
+            return DeviceManager.getTransferQueue().copyBufferCmd(src.getId(), 0, dst.getId(), 0, src.bufferSize);
         }
 
         @Override
@@ -88,7 +88,7 @@ public class MemoryTypes {
             StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
             stagingBuffer.copyBuffer(bufferSize, byteBuffer);
 
-            Device.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
+            DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
 
         }
 

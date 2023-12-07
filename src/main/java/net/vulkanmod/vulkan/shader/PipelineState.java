@@ -10,6 +10,9 @@ import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.VK_COMPARE_OP_EQUAL;
 
 public class PipelineState {
+    private static final int DEFAULT_DEPTH_OP = 515;
+//    private static final int DEFAULT_DEPTH_OP = 518;
+
     public static final BlendState DEFAULT_BLEND_STATE = defaultBlendInfo().createBlendState();
     public static final DepthState DEFAULT_DEPTH_STATE = defaultDepthState();
     public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
@@ -66,7 +69,7 @@ public class PipelineState {
     }
 
     public static DepthState defaultDepthState() {
-        return new DepthState(true, true, 515);
+        return new DepthState(true, true, DEFAULT_DEPTH_OP);
     }
 
     public static ColorMask defaultColorMask() { return new ColorMask(true, true, true, true); }
@@ -294,6 +297,12 @@ public class PipelineState {
                 case 514 -> VK_COMPARE_OP_EQUAL;
                 default -> throw new RuntimeException("unknown blend factor..");
 
+//                case 515 -> VK_COMPARE_OP_GREATER_OR_EQUAL;
+//                case 519 -> VK_COMPARE_OP_ALWAYS;
+//                case 516 -> VK_COMPARE_OP_GREATER;
+//                case 518 -> VK_COMPARE_OP_LESS_OR_EQUAL;
+//                case 514 -> VK_COMPARE_OP_EQUAL;
+//                default -> throw new RuntimeException("unknown blend factor..");
 
 //                public static final int GL_NEVER = 512;
 //                public static final int GL_LESS = 513;

@@ -24,7 +24,7 @@ public class AreaUploadManager {
         INSTANCE = new AreaUploadManager();
     }
 
-    Queue queue = Device.getTransferQueue();
+    Queue queue = DeviceManager.getTransferQueue();
 
     ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
     CommandPool.CommandBuffer[] commandBuffers;

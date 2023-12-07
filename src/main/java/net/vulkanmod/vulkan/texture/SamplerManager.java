@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.texture;
 
 import it.unimi.dsi.fastutil.shorts.Short2LongMap;
 import it.unimi.dsi.fastutil.shorts.Short2LongOpenHashMap;
-import net.vulkanmod.vulkan.Device;
+import net.vulkanmod.vulkan.DeviceManager;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSamplerCreateInfo;
@@ -99,7 +99,7 @@ public abstract class SamplerManager {
 
     public static void cleanUp() {
         for(long id : SAMPLERS.values()) {
-            vkDestroySampler(Device.device, id, null);
+            vkDestroySampler(DeviceManager.device, id, null);
         }
     }
 

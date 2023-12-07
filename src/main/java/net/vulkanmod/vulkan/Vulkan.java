@@ -5,11 +5,8 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -111,7 +108,7 @@ public class Vulkan {
     }
 
     public static VkDevice getDevice() {
-        return Device.device;
+        return DeviceManager.device;
     }
 
     public static long getAllocator() {
@@ -139,8 +136,8 @@ public class Vulkan {
         setupDebugMessenger();
         createSurface(window);
 
-        Device.pickPhysicalDevice(instance);
-        Device.createLogicalDevice();
+        DeviceManager.pickPhysicalDevice(instance);
+        DeviceManager.createLogicalDevice();
 
         createVma();
         MemoryTypes.createMemoryTypes();
@@ -174,13 +171,13 @@ public class Vulkan {
     }
 
     public static void waitIdle() {
-        vkDeviceWaitIdle(Device.device);
+        vkDeviceWaitIdle(DeviceManager.device);
     }
 
     public static void cleanUp() {
-        vkDeviceWaitIdle(Device.device);
-        vkDestroyCommandPool(Device.device, commandPool, null);
-        vkDestroyFence(Device.device, immediateFence, null);
+        vkDeviceWaitIdle(DeviceManager.device);
+        vkDestroyCommandPool(DeviceManager.device, commandPool, null);
+        vkDestroyFence(DeviceManager.device, immediateFence, null);
 
         Pipeline.destroyPipelineCache();
 
@@ -197,7 +194,7 @@ public class Vulkan {
 
         vmaDestroyAllocator(allocator);
 
-        Device.destroy();
+        DeviceManager.destroy();
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, null);
         KHRSurface.vkDestroySurfaceKHR(instance, surface, null);
         vkDestroyInstance(instance, null);
@@ -323,11 +320,11 @@ public class Vulkan {
         try(MemoryStack stack = stackPush()) {
 
             VmaVulkanFunctions vulkanFunctions = VmaVulkanFunctions.calloc(stack);
-            vulkanFunctions.set(instance, Device.device);
+            vulkanFunctions.set(instance, DeviceManager.device);
 
             VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo.calloc(stack);
-            allocatorCreateInfo.physicalDevice(Device.physicalDevice);
-            allocatorCreateInfo.device(Device.device);
+            allocatorCreateInfo.physicalDevice(DeviceManager.physicalDevice);
+            allocatorCreateInfo.device(DeviceManager.device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
             allocatorCreateInfo.vulkanApiVersion(VK_API_VERSION_1_2);
@@ -355,7 +352,7 @@ public class Vulkan {
 
             LongBuffer pCommandPool = stack.mallocLong(1);
 
-            if (vkCreateCommandPool(Device.device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
+            if (vkCreateCommandPool(DeviceManager.device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
             }
 
@@ -373,16 +370,16 @@ public class Vulkan {
             allocInfo.commandBufferCount(1);
 
             PointerBuffer pCommandBuffer = stack.mallocPointer(1);
-            vkAllocateCommandBuffers(Device.device, allocInfo, pCommandBuffer);
-            immediateCmdBuffer = new VkCommandBuffer(pCommandBuffer.get(0), Device.device);
+            vkAllocateCommandBuffers(DeviceManager.device, allocInfo, pCommandBuffer);
+            immediateCmdBuffer = new VkCommandBuffer(pCommandBuffer.get(0), DeviceManager.device);
 
             VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
             fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
             fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
             LongBuffer pFence = stack.mallocLong(1);
-            vkCreateFence(Device.device, fenceInfo, null, pFence);
-            vkResetFences(Device.device,  pFence.get(0));
+            vkCreateFence(DeviceManager.device, fenceInfo, null, pFence);
+            vkResetFences(DeviceManager.device,  pFence.get(0));
 
             immediateFence = pFence.get(0);
         }
@@ -406,10 +403,10 @@ public class Vulkan {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
 
-            vkQueueSubmit(Device.getGraphicsQueue().queue(), submitInfo, immediateFence);
+            vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, immediateFence);
 
-            vkWaitForFences(Device.device, immediateFence, true, VUtil.UINT64_MAX);
-            vkResetFences(Device.device, immediateFence);
+            vkWaitForFences(DeviceManager.device, immediateFence, true, VUtil.UINT64_MAX);
+            vkResetFences(DeviceManager.device, immediateFence);
             vkResetCommandBuffer(immediateCmdBuffer, 0);
         }
 
@@ -460,6 +457,6 @@ public class Vulkan {
 
     public static StagingBuffer getStagingBuffer() { return stagingBuffers[Renderer.getCurrentFrame()]; }
 
-    public static DeviceInfo getDeviceInfo() { return Device.deviceInfo; }
+    public static DeviceInfo getDeviceInfo() { return DeviceManager.deviceInfo; }
 }
 

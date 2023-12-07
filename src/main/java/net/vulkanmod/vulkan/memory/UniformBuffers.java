@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.vulkanmod.vulkan.Vulkan.getSwapChain;
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
@@ -20,7 +19,7 @@ public class UniformBuffers {
 
     private List<UniformBuffer> uniformBuffers;
 
-    private final static int minOffset = (int) Device.deviceProperties.limits().minUniformBufferOffsetAlignment();
+    private final static int minOffset = (int) DeviceManager.deviceProperties.limits().minUniformBufferOffsetAlignment();
     private final int framesSize = Renderer.getFramesNum();
 
     CommandPool.CommandBuffer commandBuffer;
@@ -83,7 +82,7 @@ public class UniformBuffers {
         if(commandBuffer == null)
             return;
 
-        Device.getTransferQueue().submitCommands(commandBuffer);
+        DeviceManager.getTransferQueue().submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
         commandBuffer = null;
     }
@@ -123,7 +122,7 @@ public class UniformBuffers {
             }
             else {
                 if(commandBuffer == null)
-                    commandBuffer = Device.getTransferQueue().beginCommands();
+                    commandBuffer = DeviceManager.getTransferQueue().beginCommands();
 
                 int size = buffer.remaining();
 
