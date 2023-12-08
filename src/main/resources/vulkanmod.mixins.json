@@ -4,8 +4,7 @@
   "package": "net.vulkanmod.mixin",
   "compatibilityLevel": "JAVA_17",
   "plugin": "net.vulkanmod.mixin.MixinPlugin",
-  "mixins": [
-  ],
+  "mixins": [],
   "client": [
     "WindowMixin",
 
@@ -13,7 +12,7 @@
     "chunk.FrustumMixin",
     "chunk.LevelRendererMixin",
     "chunk.VisibilitySetMixin",
-
+    "chunk.CubicSamplerM",
     "compatibility.EffectInstanceM",
     "compatibility.ProgramM",
     "compatibility.UniformM",
