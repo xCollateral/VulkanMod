@@ -8,18 +8,11 @@ import org.joml.Vector3i;
 
 import java.util.Arrays;
 
-public class ChunkArea {
-    public final int index;
-    private final byte[] inFrustum = new byte[64];
-
-    final Vector3i position;
-
-    DrawBuffers drawBuffers;
+public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuffers drawBuffers)
+{
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
-        this.index = i;
-        this.position = origin;
-        this.drawBuffers = new DrawBuffers(i, origin, minHeight);
+        this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight));
     }
 
     public void updateFrustum(VFrustum frustum) {

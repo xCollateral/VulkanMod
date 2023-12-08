@@ -261,7 +261,7 @@ public class WorldRenderer {
             int k = Mth.floor(vec3.x / 16.0D) * 16;
             int l = Mth.floor(vec3.z / 16.0D) * 16;
 
-            List<RenderSection> list = Lists.newArrayList();
+
 
             for(int i1 = -this.lastViewDistance; i1 <= this.lastViewDistance; ++i1) {
                 for(int j1 = -this.lastViewDistance; j1 <= this.lastViewDistance; ++j1) {
@@ -270,7 +270,7 @@ public class WorldRenderer {
                     if (renderSection1 != null) {
                         renderSection1.setGraphInfo(null, (byte) 0);
                         renderSection1.setLastFrame(this.lastFrame);
-                        list.add(renderSection1);
+                        this.chunkQueue.add(renderSection1);
 
                     }
                 }
@@ -280,10 +280,6 @@ public class WorldRenderer {
 //            list.sort(Comparator.comparingDouble((p_194358_) -> {
 //                return blockpos.distSqr(p_194358_.chunk.getOrigin().offset(8, 8, 8));
 //            }));
-
-            for (RenderSection chunkInfo : list) {
-                this.chunkQueue.add(chunkInfo);
-            }
 
         } else {
             renderSection.setGraphInfo(null, (byte) 0);

@@ -23,7 +23,7 @@ public enum TerrainRenderType {
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
     public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
 
-    final int initialSize;
+    public final int initialSize;
     final float alphaCutout;
 
     TerrainRenderType(RenderType renderType, float alphaCutout) {

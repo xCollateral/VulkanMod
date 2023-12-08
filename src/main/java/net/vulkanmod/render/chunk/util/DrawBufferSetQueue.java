@@ -1,32 +1,25 @@
 package net.vulkanmod.render.chunk.util;
 
-import net.vulkanmod.render.chunk.ChunkArea;
 import net.vulkanmod.render.chunk.DrawBuffers;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
-public class DrawBufferSetQueue {
-    private final int size;
-    final int[] set;
-    final StaticQueue<DrawBuffers> queue;
+public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> queue)
+{
 
     public DrawBufferSetQueue(int size) {
-        this.size = size;
-
-        int t = (int) Math.ceil((float)size / Integer.SIZE);
-        this.set = new int[t];
-        this.queue = new StaticQueue<>(size);
+        this(size, new int[(int) Math.ceil((float)size / Integer.SIZE)], new StaticQueue<>(size));
     }
 
     public void add(DrawBuffers chunkArea) {
-        if(chunkArea.index >= this.size)
+        if(chunkArea.areaIndex >= this.size)
             throw new IndexOutOfBoundsException();
 
-        int i = chunkArea.index >> 5;
-        if((this.set[i] & (1 << (chunkArea.index & 31))) == 0) {
+        int i = chunkArea.areaIndex >> 5;
+        if((this.set[i] & (1 << (chunkArea.areaIndex & 31))) == 0) {
             queue.add(chunkArea);
-            this.set[i] |= (1 << (chunkArea.index & 31));
+            this.set[i] |= (1 << (chunkArea.areaIndex & 31));
         }
     }
 
