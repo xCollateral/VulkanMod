@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -42,6 +41,7 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -49,7 +49,6 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import javax.annotation.Nullable;
 import java.util.*;
 
-import static net.vulkanmod.render.chunk.TerrainShaderManager.terrainShader;
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 
 public class WorldRenderer {
@@ -594,19 +593,22 @@ public class WorldRenderer {
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(rType)) {
 
 
-            Renderer.getInstance().bindGraphicsPipeline(terrainShader);
+            GraphicsPipeline terrainShader1 = TerrainShaderManager.getTerrainShader(rType);
+            Renderer.getInstance().bindGraphicsPipeline(terrainShader1);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
             rType.setCutoutUniform();
-            terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
+            terrainShader1.bindDescriptorSets(commandBuffer, currentFrame);
+
+            final long layout = terrainShader1.getLayout();
 
             for(Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);iterator.hasNext();) {
                 DrawBuffers drawBuffers = iterator.next();
 
                 if(indirectDraw) {
-                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], rType, camX, camY, camZ);
+                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], rType, camX, camY, camZ, layout);
                 } else {
-                    drawBuffers.buildDrawBatchesDirect(rType, camX, camY, camZ);
+                    drawBuffers.buildDrawBatchesDirect(rType, camX, camY, camZ, layout);
                 }
             }
         }

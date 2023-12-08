@@ -486,6 +486,11 @@ public abstract class Pipeline {
             this.imageDescriptors = imageDescriptors;
         }
 
+        public void compileShaders2(SPIRV vertShaderSPIRV1, SPIRV fragShaderSPIRV1) {
+            this.vertShaderSPIRV = vertShaderSPIRV1;
+            this.fragShaderSPIRV = fragShaderSPIRV1;
+        }
+
         public void compileShaders() {
             String resourcePath = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
 
