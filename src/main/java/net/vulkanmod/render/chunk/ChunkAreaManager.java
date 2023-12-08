@@ -45,7 +45,7 @@ public class ChunkAreaManager {
                 for(int l = 0; l < this.xzSize; ++l) {
                     int i1 = this.getAreaIndex(j, k, l);
                     Vector3i vector3i = new Vector3i(j << BASE_SH_XZ + 4, k << BASE_SH_Y + 4, l << BASE_SH_XZ + 4);
-                    this.chunkAreasArr[i1] = new ChunkArea(i1, vector3i);
+                    this.chunkAreasArr[i1] = new ChunkArea(i1, vector3i, minHeight);
                 }
             }
         }

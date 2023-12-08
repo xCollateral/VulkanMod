@@ -150,7 +150,7 @@ public class TaskDispatcher {
             UploadBuffer uploadBuffer = uploadBuffers.get(renderType);
 
             if(uploadBuffer != null) {
-                drawBuffers.upload(uploadBuffer, section.getDrawParameters(renderType));
+                drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType));
             } else {
                 section.getDrawParameters(renderType).reset(renderArea);
             }
@@ -167,7 +167,7 @@ public class TaskDispatcher {
         ChunkArea renderArea = section.getChunkArea();
         DrawBuffers drawBuffers = renderArea.getDrawBuffers();
 
-        drawBuffers.upload(uploadBuffer, section.getDrawParameters(renderType));
+        drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType));
     }
 
     public int getIdleThreadsCount() {
