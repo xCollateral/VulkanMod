@@ -238,20 +238,12 @@ public abstract class ChunkTask {
 
             if(Initializer.CONFIG.uniqueOpaqueLayer) {
                 if (renderType != RenderType.translucent()) {
-                    if(renderType != RenderType.tripwire()) {
-                        renderType = RenderType.cutoutMipped();
-                    }
-                    else
-                        renderType = RenderType.translucent();
+                    renderType = renderType == RenderType.tripwire() ? RenderType.translucent() : RenderType.cutoutMipped();
                 }
             }
             else {
-                if (renderType != RenderType.translucent() && renderType != RenderType.cutoutMipped()) {
-                    if(renderType != RenderType.tripwire()) {
-                        renderType = RenderType.cutout();
-                    }
-                    else
-                        renderType = RenderType.translucent();
+                if (renderType != RenderType.translucent() && renderType != RenderType.cutout()) {
+                    renderType = renderType == RenderType.tripwire() ? RenderType.translucent() : RenderType.cutoutMipped();
                 }
             }
 
