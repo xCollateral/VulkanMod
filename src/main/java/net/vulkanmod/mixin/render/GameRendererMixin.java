@@ -44,7 +44,6 @@ public abstract class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTranslucentShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTranslucentMovingBlockShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentNoCrumblingShader;
     @Shadow private @Nullable static ShaderInstance rendertypeArmorCutoutNoCullShader;
     @Shadow private @Nullable static ShaderInstance rendertypeEntitySolidShader;
     @Shadow private @Nullable static ShaderInstance rendertypeEntityCutoutShader;
@@ -152,9 +151,6 @@ public abstract class GameRendererMixin {
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
                 rendertypeTranslucentMovingBlockShader = shaderInstance;
-            }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent_no_crumbling", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
-                rendertypeTranslucentNoCrumblingShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeArmorCutoutNoCullShader = shaderInstance;
