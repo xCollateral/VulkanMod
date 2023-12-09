@@ -11,8 +11,6 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceProvider;
-import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -97,6 +95,8 @@ public abstract class GameRendererMixin {
     @Shadow public ShaderInstance blitShader;
 
     @Shadow protected abstract ShaderInstance preloadShader(ResourceProvider resourceProvider, String string, VertexFormat vertexFormat);
+
+    @Shadow public abstract float getRenderDistance();
 
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
@@ -354,5 +354,15 @@ public abstract class GameRendererMixin {
 
     @Redirect(method = "render", at = @At(value="INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", ordinal = 0))
     private void remClear(int i, boolean bl) {}
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public float getDepthFar() {
+//        return this.getRenderDistance() * 4.0F;
+        return Float.POSITIVE_INFINITY;
+    }
 
 }
