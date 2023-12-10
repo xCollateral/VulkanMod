@@ -25,12 +25,12 @@ import java.util.List;
 import java.util.Optional;
 
 public class OptionScreenV extends Screen {
-    private final List<OptionList2> optionLists;
-    private Option<?>[] videoOpts;
-    private Option<?>[] graphicsOpts;
-    private Option<?>[] otherOpts;
+    private final List<VOptionList> optionLists;
+    private final Option<?>[] videoOpts;
+    private final Option<?>[] graphicsOpts;
+    private final Option<?>[] otherOpts;
     private final Screen parent;
-    private OptionList2 currentList;
+    private VOptionList currentList;
 
     private CustomButtonWidget videoButton;
     private CustomButtonWidget graphicsButton;
@@ -62,15 +62,20 @@ public class OptionScreenV extends Screen {
         int bottom = 32;
 
         this.optionLists.clear();
-        OptionList2 optionList = new OptionList2(this.minecraft, this.width, this.height, top, this.height - bottom, 25);
+        VOptionList optionList = new VOptionList(this.minecraft, this.width, this.height, top, bottom, 25);
         optionList.addAll(this.videoOpts);
         this.optionLists.add(optionList);
-        optionList = new OptionList2(this.minecraft, this.width, this.height, top, this.height - bottom, 25);
+        optionList = new VOptionList(this.minecraft, this.width, this.height, top, bottom, 25);
         optionList.addAll(this.graphicsOpts);
         this.optionLists.add(optionList);
-        optionList = new OptionList2(this.minecraft, this.width, this.height, top, this.height - bottom, 25);
+        optionList = new VOptionList(this.minecraft, this.width, this.height, top, bottom, 25);
         optionList.addAll(this.otherOpts);
         this.optionLists.add(optionList);
+
+//        this.optionLists2.clear();
+//        VOptionList optionList2 = new VOptionList(this.minecraft, this.width, this.height, top, bottom, 25);
+//        optionList2.addAll(this.videoOpts);
+//        this.optionLists2.add(optionList2);
 
         this.videoButton = new CustomButtonWidget(20, 6, 60, 20, Component.literal("Video"), button -> this.setOptionList(button, optionLists.get(0)));
         this.graphicsButton = new CustomButtonWidget(81, 6, 60, 20, Component.literal("Graphics"), button -> this.setOptionList(button, optionLists.get(1)));
@@ -155,10 +160,12 @@ public class OptionScreenV extends Screen {
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         this.updateStatus();
 
+        this.renderBackground(guiGraphics, 0, 0, 0);
+
         this.currentList.render(guiGraphics, mouseX, mouseY, delta);
         renderButtons(guiGraphics, mouseX, mouseY, delta);
 
-        List<FormattedCharSequence> list = getHoveredButtonTooltip(this.currentList, mouseX, mouseY);
+        List<FormattedCharSequence> list = getHoveredButtonTooltip2(this.currentList, mouseX, mouseY);
         if (list != null) {
             guiGraphics.renderTooltip(this.minecraft.font, list, mouseX, mouseY);
         }
@@ -170,7 +177,7 @@ public class OptionScreenV extends Screen {
         }
     }
 
-    private List<FormattedCharSequence> getHoveredButtonTooltip(OptionList2 buttonList, int mouseX, int mouseY) {
+    private List<FormattedCharSequence> getHoveredButtonTooltip2(VOptionList buttonList, int mouseX, int mouseY) {
         Optional<OptionWidget> optional = buttonList.getHoveredButton(mouseX, mouseY);
         if (optional.isPresent()) {
             if(optional.get().getTooltip() == null) return null;
@@ -195,7 +202,7 @@ public class OptionScreenV extends Screen {
         this.applyButton.active = modified;
     }
 
-    public void setOptionList(CustomButtonWidget button, OptionList2 optionList) {
+    public void setOptionList(CustomButtonWidget button, VOptionList optionList) {
         this.currentList = optionList;
 
         this.buildPage();

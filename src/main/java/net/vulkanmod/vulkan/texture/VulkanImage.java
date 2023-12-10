@@ -232,10 +232,10 @@ public class VulkanImage {
         transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
-    public void updateTextureSampler(boolean blur, boolean clamp, boolean mipFiltering) {
+    public void updateTextureSampler(boolean blur, boolean clamp, boolean mipmaps) {
         byte flags = blur ? LINEAR_FILTERING_BIT : 0;
         flags |= clamp ? CLAMP_BIT : 0;
-        flags |= mipFiltering ? MIPMAP_FILTERING_BIT : 0;
+        flags |= mipmaps ? USE_MIPMAPS_BIT : 0;
 
         this.updateTextureSampler(flags);
     }
@@ -457,7 +457,7 @@ public class VulkanImage {
             this.mipLevels = (byte) n;
 
             if(n > 1)
-                this.samplerFlags |= MIPMAP_FILTERING_BIT;
+                this.samplerFlags |= USE_MIPMAPS_BIT;
 
             return this;
         }

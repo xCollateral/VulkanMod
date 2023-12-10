@@ -68,14 +68,14 @@ public abstract class SamplerManager {
             samplerInfo.compareEnable(false);
             samplerInfo.compareOp(VK_COMPARE_OP_ALWAYS);
 
-            if((flags & MIPMAP_FILTERING_BIT) != 0) {
+            if((flags & USE_MIPMAPS_BIT) != 0) {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(mipLevels);
                 samplerInfo.minLod(0.0F);
                 samplerInfo.mipLodBias(MIP_BIAS);
             } else {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST);
-                samplerInfo.maxLod(mipLevels);
+                samplerInfo.maxLod(0.0F);
                 samplerInfo.minLod(0.0F);
             }
 
@@ -105,7 +105,7 @@ public abstract class SamplerManager {
 
     public static final byte LINEAR_FILTERING_BIT = 1;
     public static final byte CLAMP_BIT = 2;
-    public static final byte MIPMAP_FILTERING_BIT = 4;
+    public static final byte USE_MIPMAPS_BIT = 4;
     public static final byte REDUCTION_MIN_BIT = 8;
     public static final byte REDUCTION_MAX_BIT = 16;
 }

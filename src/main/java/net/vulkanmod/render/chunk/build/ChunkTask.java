@@ -241,20 +241,12 @@ public abstract class ChunkTask {
 
             if(Initializer.CONFIG.uniqueOpaqueLayer) {
                 if (renderType != TRANSLUCENT) {
-                    if(renderType != TRIPWIRE) {
-                        renderType = CUTOUT_MIPPED;
-                    }
-                    else
-                        renderType = TRANSLUCENT;
+                    renderType = renderType == TRIPWIRE ? TRANSLUCENT : CUTOUT_MIPPED;
                 }
             }
             else {
-                if (renderType != TRANSLUCENT && renderType != CUTOUT_MIPPED) {
-                    if(renderType != TRIPWIRE) {
-                        renderType = CUTOUT;
-                    }
-                    else
-                        renderType = TRANSLUCENT;
+                if (renderType != TRANSLUCENT && renderType != CUTOUT) {
+                    renderType = renderType == TRIPWIRE ? TRANSLUCENT : CUTOUT_MIPPED;
                 }
             }
 
