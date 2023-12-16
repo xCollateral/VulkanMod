@@ -5,22 +5,33 @@ import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.SPIRVUtils;
 
+import java.util.Objects;
 import java.util.function.Function;
 
+import static net.vulkanmod.render.vertex.TerrainRenderType.CUTOUT;
+import static net.vulkanmod.render.vertex.TerrainRenderType.SOLID;
+import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShaderAbsoluteFile;
+
 public abstract class TerrainShaderManager {
+    private static final String resourcePath1 = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
+    private static final String basePath = String.format("basic/%s/%s", "terrain", "terrain");
     public static VertexFormat TERRAIN_VERTEX_FORMAT;
+    private static final SPIRVUtils.SPIRV vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", resourcePath1, basePath), SPIRVUtils.ShaderKind.VERTEX_SHADER);
+
 
     public static void setTerrainVertexFormat(VertexFormat format) {
         TERRAIN_VERTEX_FORMAT = format;
     }
 
-    static final GraphicsPipeline terrainIndirectShader=null;
-    public static GraphicsPipeline terrainShader;
+    static GraphicsPipeline terrainShaderEarlyZ;
+    static GraphicsPipeline terrainShader;
 
-    private static Function<RenderType, GraphicsPipeline> shaderGetter;
+    private static Function<TerrainRenderType, GraphicsPipeline> shaderGetter;
 
     public static void init() {
         setTerrainVertexFormat(CustomVertexFormat.COMPRESSED_TERRAIN);
@@ -34,29 +45,32 @@ public abstract class TerrainShaderManager {
     }
 
     private static void createBasicPipelines() {
-//        terrainIndirectShader = createPipeline("terrain_indirect");
+        terrainShaderEarlyZ = createPipeline("terrain_Z");
         terrainShader = createPipeline("terrain");
     }
 
-    private static GraphicsPipeline createPipeline(String name) {
-        String path = String.format("basic/%s/%s", name, name);
+    private static GraphicsPipeline createPipeline(String fragPath) {
+        String pathF = String.format("basic/%s/%s", "terrain", fragPath);
 
-        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(CustomVertexFormat.COMPRESSED_TERRAIN, path);
+        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(CustomVertexFormat.COMPRESSED_TERRAIN, basePath);
         pipelineBuilder.parseBindingsJSON();
-        pipelineBuilder.compileShaders();
+
+
+        SPIRVUtils.SPIRV fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", resourcePath1, pathF), SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+        pipelineBuilder.compileShaders2(vertShaderSPIRV, fragShaderSPIRV);
         return pipelineBuilder.createGraphicsPipeline();
     }
 
-    public static GraphicsPipeline getTerrainShader(RenderType renderType) {
-        return shaderGetter.apply(renderType);
+    public static GraphicsPipeline getTerrainShader(TerrainRenderType renderType) {
+        return renderType == TerrainRenderType.TRANSLUCENT ? terrainShaderEarlyZ : terrainShader;
     }
 
-    public static void setShaderGetter(Function<RenderType, GraphicsPipeline> consumer) {
+    public static void setShaderGetter(Function<TerrainRenderType, GraphicsPipeline> consumer) {
         shaderGetter = consumer;
     }
 
     public static void destroyPipelines() {
-//        terrainIndirectShader.cleanUp();
+        terrainShaderEarlyZ.cleanUp();
         terrainShader.cleanUp();
     }
 }

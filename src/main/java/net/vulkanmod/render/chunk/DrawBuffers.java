@@ -87,14 +87,15 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr) {
+    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr, long layout) {
         VUtil.UNSAFE.putFloat(ptr + 0, (float) (this.origin.x - camX));
         VUtil.UNSAFE.putFloat(ptr + 4, (float) (this.origin.y - camY));
         VUtil.UNSAFE.putFloat(ptr + 8, (float) (this.origin.z - camZ));
 
-        nvkCmdPushConstants(commandBuffer, TerrainShaderManager.terrainShader.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
+        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
     }
-    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
+
+    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
         int stride = 20;
 
         int drawCount = 0;
@@ -171,7 +172,8 @@ public class DrawBuffers {
         vkCmdBindVertexBuffers(commandBuffer, 0, pVertexBuffer, pOffset);
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
-        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16));
+
+        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
         vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
@@ -218,7 +220,8 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
+
+    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
 
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
@@ -227,7 +230,8 @@ public class DrawBuffers {
             long pVertexBuffer = stack.npointer(vertexBuffer.getId());
             long pOffset = stack.npointer(0);
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, (pVertexBuffer), (pOffset));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16));
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
+
 
 
             if(isTranslucent) {
