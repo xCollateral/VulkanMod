@@ -39,16 +39,17 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
+
+import static net.vulkanmod.render.chunk.TerrainShaderManager.terrainShader;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -570,23 +571,29 @@ public class WorldRenderer {
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
-        Renderer renderer = Renderer.getInstance();
-        GraphicsPipeline pipeline = TerrainShaderManager.getTerrainShader(renderType);
-        renderer.bindGraphicsPipeline(pipeline);
-        Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
+        final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+
 
         p.push("draw batches");
 
-        int currentFrame = Renderer.getCurrentFrame();
+        final int currentFrame = Renderer.getCurrentFrame();
         if((Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES).contains(renderType)) {
+            final TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
+
+            Renderer.getInstance().bindGraphicsPipeline(terrainShader);
+            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+
+            terrainRenderType.setCutoutUniform();
+            terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
+
             Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
             while(iterator.hasNext()) {
                 ChunkArea chunkArea = iterator.next();
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], chunkArea, renderType, camX, camY, camZ);
+                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], chunkArea.sectionQueue, terrainRenderType, camX, camY, camZ);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, pipeline, renderType, camX, camY, camZ);
+                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, terrainRenderType, camX, camY, camZ);
                 }
             }
         }
@@ -597,11 +604,7 @@ public class WorldRenderer {
         }
         p.pop();
 
-        //Need to reset push constant in case the pipeline will still be used for rendering
-        if(!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
-        }
+
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
