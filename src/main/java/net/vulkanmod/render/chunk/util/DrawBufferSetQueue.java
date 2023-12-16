@@ -1,25 +1,18 @@
 package net.vulkanmod.render.chunk.util;
 
-import net.vulkanmod.render.chunk.ChunkArea;
+import net.vulkanmod.render.chunk.DrawBuffers;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 
-public class AreaSetQueue {
-    private final int size;
-    int[] set;
-    ResettableQueue<ChunkArea> queue;
+public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> queue)
+{
 
-    public AreaSetQueue(int size) {
-        this.size = size;
-
-        int t = (int) Math.ceil((float)size / Integer.SIZE);
-        this.set = new int[t];
-        this.queue = new ResettableQueue<>(size);
+    public DrawBufferSetQueue(int size) {
+        this(size, new int[(int) Math.ceil((float)size / Integer.SIZE)], new StaticQueue<>(size));
     }
 
-    public void add(ChunkArea chunkArea) {
+    public void add(DrawBuffers chunkArea) {
         if(chunkArea.index >= this.size)
             throw new IndexOutOfBoundsException();
 
@@ -36,11 +29,11 @@ public class AreaSetQueue {
         this.queue.clear();
     }
 
-    public Iterator<ChunkArea> iterator(boolean reverseOrder) {
+    public Iterator<DrawBuffers> iterator(boolean reverseOrder) {
         return queue.iterator(reverseOrder);
     }
 
-    public Iterator<ChunkArea> iterator() {
+    public Iterator<DrawBuffers> iterator() {
         return this.iterator(false);
     }
 

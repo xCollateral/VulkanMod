@@ -220,7 +220,7 @@ public abstract class ChunkTask {
                     TerrainBufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        compileResults.renderedLayers.put(TerrainRenderType.get(renderType2), uploadBuffer);
+                        compileResults.renderedLayers.put(TerrainRenderType.get(renderType2.name), uploadBuffer);
                     }
 
                     if(renderedBuffer != null)
@@ -311,7 +311,7 @@ public abstract class ChunkTask {
                     } else {
 
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TerrainRenderType.get(RenderType.translucent()), uploadBuffer);
+                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TerrainRenderType.TRANSLUCENT, uploadBuffer);
                         renderedBuffer.release();
                         return CompletableFuture.completedFuture(Result.SUCCESSFUL);
 

@@ -2,26 +2,17 @@ package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
 import net.vulkanmod.render.chunk.util.StaticQueue;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
 import java.util.Arrays;
 
-public class ChunkArea {
-    public final int index;
-    private final byte[] inFrustum = new byte[64];
-
-    final Vector3i position;
-
-    DrawBuffers drawBuffers;
-
-    //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
-    final StaticQueue<RenderSection> sectionQueue = new StaticQueue<>(512);
+public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuffers drawBuffers)
+{
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
-        this.index = i;
-        this.position = origin;
-        this.drawBuffers = new DrawBuffers(i, origin, minHeight);
+        this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight));
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -123,12 +114,12 @@ public class ChunkArea {
 //        this.drawBuffers = new DrawBuffers(this.index, this.position);
 //    }
 
-    public void addSection(RenderSection section) {
-        this.sectionQueue.add(section);
+    public void addSection(RenderSection section, TerrainRenderType renderType) {
+        this.drawBuffers.addDrawCommands(renderType, section.getDrawParameters(renderType));
     }
 
     public void resetQueue() {
-        this.sectionQueue.clear();
+        this.drawBuffers.clear();
     }
 
     public void setPosition(int x, int y, int z) {

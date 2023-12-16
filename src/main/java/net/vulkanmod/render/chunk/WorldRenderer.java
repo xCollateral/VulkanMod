@@ -30,7 +30,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
-import net.vulkanmod.render.chunk.util.AreaSetQueue;
+import net.vulkanmod.render.chunk.util.DrawBufferSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.profiling.BuildTimeBench;
@@ -50,7 +50,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import javax.annotation.Nullable;
 import java.util.*;
 
-import static net.vulkanmod.render.chunk.TerrainShaderManager.terrainShader;
+import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -78,7 +78,7 @@ public class WorldRenderer {
 
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
-    private AreaSetQueue chunkAreaQueue;
+    private DrawBufferSetQueue drawBufferSetQueue;
     private short lastFrame = 0;
 
     private double xTransparentOld;
@@ -301,7 +301,7 @@ public class WorldRenderer {
     }
 
     private void resetUpdateQueues() {
-        this.chunkAreaQueue.clear();
+        this.drawBufferSetQueue.clear();
         this.sectionGrid.chunkAreaManager.resetQueues();
     }
 
@@ -316,10 +316,18 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
+                //                drawBuffers.addRenderTypes(renderTypes);
+                for(var t : renderSection.getCompiledSection().renderTypes)
+                {
+                    DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(t);
+                    if(drawParameters.indexCount>0)
+                    {
+                        drawBuffers.addDrawCommands(t, drawParameters);
+                    }
+                }
+                this.drawBufferSetQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -359,8 +367,17 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
+                //                drawBuffers.addRenderTypes(renderTypes);
+                for(var t : renderSection.getCompiledSection().renderTypes)
+                {
+                    DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(t);
+                    if(drawParameters.indexCount>0)
+                    {
+                        drawBuffers.addDrawCommands(t, drawParameters);
+                    }
+                }
+                this.drawBufferSetQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
             }
 
@@ -498,7 +515,7 @@ public class WorldRenderer {
             }
 
             this.sectionGrid = new SectionGrid(this.level, this.minecraft.options.getEffectiveRenderDistance());
-            this.chunkAreaQueue = new AreaSetQueue(this.sectionGrid.chunkAreaManager.size);
+            this.drawBufferSetQueue = new DrawBufferSetQueue(this.sectionGrid.chunkAreaManager.size);
 
             this.onAllChangedCallbacks.forEach(Runnable::run);
 
@@ -546,12 +563,12 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        final String layerName = getLayerName(renderType);
+        final TerrainRenderType terrainRenderType = get(renderType.name);
 
 //        p.pushMilestone("layer " + layerName);
-        if(layerName.equals("solid"))
+        if(terrainRenderType.equals(SOLID))
             p.push("Opaque_terrain_pass");
-        else if(layerName.equals("translucent"))
+        else if(terrainRenderType.equals(TRANSLUCENT))
         {
             p.pop();
             p.push("Translucent_terrain_pass");
@@ -567,7 +584,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
         });
-        boolean flag = renderType == RenderType.translucent();
+        boolean isTranslucent = terrainRenderType == TRANSLUCENT;
         boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
@@ -578,8 +595,8 @@ public class WorldRenderer {
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES).contains(renderType)) {
-            final TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+
 
             GraphicsPipeline terrainShader = TerrainShaderManager.getTerrainShader(terrainRenderType);
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
@@ -590,19 +607,18 @@ public class WorldRenderer {
 
             final long layout = terrainShader.getLayout();
 
-
-            for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag); iterator.hasNext(); ) {
-                ChunkArea chunkArea = iterator.next();
+            for(Iterator<DrawBuffers> iterator = this.drawBufferSetQueue.iterator(isTranslucent);iterator.hasNext();) {
+                DrawBuffers drawBuffers = iterator.next();
 
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], chunkArea.sectionQueue, terrainRenderType, camX, camY, camZ, layout);
+                    drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], terrainRenderType, camX, camY, camZ, layout);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, terrainRenderType, camX, camY, camZ, layout);
+                    drawBuffers.buildDrawBatchesDirect(terrainRenderType, camX, camY, camZ, layout);
                 }
             }
         }
 
-        if(layerName.equals("cutout") || layerName.equals("tripwire")) {
+        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
@@ -615,39 +631,17 @@ public class WorldRenderer {
 
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
-        switch (layerName) {
-            case "cutout" -> {
+        switch (terrainRenderType) {
+            case CUTOUT -> {
                 p.pop();
 //                p.pop();
 //                p.push("Render_level_2");
                 p.push("entities");
             }
 //            case "translucent" -> p.pop();
-            case "tripwire" -> p.pop();
+            case TRIPWIRE -> p.pop();
         }
 
-    }
-
-    private static String getLayerName(RenderType renderType) {
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
-
-        String layerName;
-        if (solid.equals(renderType)) {
-            layerName = "solid";
-        } else if (cutout.equals(renderType)) {
-            layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
-            layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
-            layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
-            layerName = "translucent";
-        } else layerName = "unk";
-        return layerName;
     }
 
     private void sortTranslucentSections(double camX, double camY, double camZ) {
