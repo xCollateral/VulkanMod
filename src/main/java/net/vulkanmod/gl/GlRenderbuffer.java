@@ -1,12 +1,10 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
@@ -15,69 +13,49 @@ import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class GlTexture {
+public class GlRenderbuffer {
     private static int ID_COUNTER = 1;
-    private static final Int2ReferenceOpenHashMap<GlTexture> map = new Int2ReferenceOpenHashMap<>();
-    private static int boundTextureId = 0;
-    private static GlTexture boundTexture;
+    private static final Int2ReferenceOpenHashMap<GlRenderbuffer> map = new Int2ReferenceOpenHashMap<>();
+    private static int boundId = 0;
+    private static GlRenderbuffer bound;
 
-    public static int genTextureId() {
+    public static int genId() {
         int id = ID_COUNTER;
-        map.put(id, new GlTexture(id));
+        map.put(id, new GlRenderbuffer(id));
         ID_COUNTER++;
         return id;
     }
 
-    public static void bindTexture(int id) {
-        boundTextureId = id;
-        boundTexture = map.get(id);
+    public static void bindRenderbuffer(int target, int id) {
+        boundId = id;
+        bound = map.get(id);
 
         if(id <= 0)
             return;
 
-        if(boundTexture == null)
+        if(bound == null)
             throw new NullPointerException("bound texture is null");
 
-        VulkanImage vulkanImage = boundTexture.vulkanImage;
+        VulkanImage vulkanImage = bound.vulkanImage;
         if(vulkanImage != null)
             VTextureSelector.bindTexture(vulkanImage);
     }
 
-    public static void glDeleteTextures(int i) {
-        GlTexture glTexture = map.remove(i);
-        VulkanImage image = glTexture != null ? glTexture.vulkanImage : null;
-        if(image != null)
-            MemoryManager.getInstance().addToFreeable(image);
+    public static void deleteRenderbuffer(int i) {
+        map.remove(i);
     }
 
-    public static GlTexture getTexture(int id) {
-        if (id == 0)
-            return null;
-
+    public static GlRenderbuffer getRenderbuffer(int id) {
         return map.get(id);
     }
 
-    public static void texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, @Nullable ByteBuffer pixels) {
+    public static void renderbufferStorage(int target, int internalFormat, int width, int height) {
         if(width == 0 || height == 0)
             return;
 
-        //TODO levels
-        if(level != 0)
-            throw new UnsupportedOperationException();
+        bound.internalFormat = internalFormat;
 
-        boundTexture.internalFormat = internalFormat;
-
-        boundTexture.allocateIfNeeded(width, height, format, type);
-
-        if(pixels != null)
-            boundTexture.uploadImage(pixels);
-    }
-
-    public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
-        if(width == 0 || height == 0)
-            return;
-
-        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, pixels);
+        bound.allocateIfNeeded(width, height, internalFormat);
     }
 
     public static void texParameteri(int target, int pName, int param) {
@@ -85,13 +63,13 @@ public class GlTexture {
             throw new UnsupportedOperationException();
 
         switch (pName) {
-            case GL30.GL_TEXTURE_MAX_LEVEL -> boundTexture.setMaxLevel(param);
-            case GL30.GL_TEXTURE_MAX_LOD -> boundTexture.setMaxLod(param);
+            case GL30.GL_TEXTURE_MAX_LEVEL -> bound.setMaxLevel(param);
+            case GL30.GL_TEXTURE_MAX_LOD -> bound.setMaxLod(param);
             case GL30.GL_TEXTURE_MIN_LOD -> {}
             case GL30.GL_TEXTURE_LOD_BIAS -> {}
 
-            case GL11.GL_TEXTURE_MAG_FILTER -> boundTexture.setMagFilter(param);
-            case GL11.GL_TEXTURE_MIN_FILTER -> boundTexture.setMinFilter(param);
+            case GL11.GL_TEXTURE_MAG_FILTER -> bound.setMagFilter(param);
+            case GL11.GL_TEXTURE_MIN_FILTER -> bound.setMinFilter(param);
 
             default -> {}
         }
@@ -100,13 +78,13 @@ public class GlTexture {
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
-        if(boundTexture == null || target == GL11.GL_TEXTURE_2D)
+        if(bound == null || target == GL11.GL_TEXTURE_2D)
             return -1;
 
         return switch (pName) {
-            case GL11.GL_TEXTURE_INTERNAL_FORMAT -> GlUtil.getGlFormat(boundTexture.vulkanImage.format);
-            case GL11.GL_TEXTURE_WIDTH -> boundTexture.vulkanImage.width;
-            case GL11.GL_TEXTURE_HEIGHT -> boundTexture.vulkanImage.height;
+            case GL11.GL_TEXTURE_INTERNAL_FORMAT -> GlUtil.getGlFormat(bound.vulkanImage.format);
+            case GL11.GL_TEXTURE_WIDTH -> bound.vulkanImage.width;
+            case GL11.GL_TEXTURE_HEIGHT -> bound.vulkanImage.height;
 
             default -> -1;
         };
@@ -116,22 +94,17 @@ public class GlTexture {
         if(target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException();
 
-        boundTexture.generateMipmaps();
-    }
-
-    public static void getTexImage(int tex, int level, int format, int type, long pixels) {
-        VulkanImage image = boundTexture.vulkanImage;
-        ImageUtil.downloadTexture(image, pixels);
+        bound.generateMipmaps();
     }
 
     public static void setVulkanImage(int id, VulkanImage vulkanImage) {
-        GlTexture texture = map.get(id);
+        GlRenderbuffer texture = map.get(id);
 
         texture.vulkanImage = vulkanImage;
     }
 
-    public static GlTexture getBoundTexture() {
-        return boundTexture;
+    public static GlRenderbuffer getBound() {
+        return bound;
     }
 
     final int id;
@@ -143,16 +116,16 @@ public class GlTexture {
     int maxLod = 0;
     int minFilter, magFilter = GL11.GL_LINEAR;
 
-    public GlTexture(int id) {
+    public GlRenderbuffer(int id) {
         this.id = id;
     }
 
-    void allocateIfNeeded(int width, int height, int format, int type) {
-        int vkFormat = GlUtil.vulkanFormat(format, type);
+    void allocateIfNeeded(int width, int height, int format) {
+        int vkFormat = GlUtil.vulkanFormat(format);
 
         needsUpdate |= vulkanImage == null ||
                 vulkanImage.width != width || vulkanImage.height != height ||
-                 vkFormat != vulkanImage.format;
+                vkFormat != vulkanImage.format;
 
         if(needsUpdate) {
             allocateImage(width, height, vkFormat);
@@ -261,5 +234,4 @@ public class GlTexture {
     public void setVulkanImage(VulkanImage vulkanImage) {
         this.vulkanImage = vulkanImage;
     }
-
 }

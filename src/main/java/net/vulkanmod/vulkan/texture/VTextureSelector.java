@@ -5,7 +5,7 @@ import net.vulkanmod.Initializer;
 import java.nio.ByteBuffer;
 
 public abstract class VTextureSelector {
-    private static final int SIZE = 8;
+    public static final int SIZE = 8;
 
     private static final VulkanImage[] boundTextures = new VulkanImage[SIZE];
 
@@ -50,7 +50,7 @@ public abstract class VTextureSelector {
 
     public static VulkanImage getTexture(String name) {
         return switch (name) {
-            case "Sampler0" -> boundTextures[0];
+            case "Sampler0", "DiffuseSampler" -> boundTextures[0];
             case "Sampler1" -> boundTextures[1];
             case "Sampler2" -> boundTextures[2];
             case "Sampler3" -> boundTextures[3];

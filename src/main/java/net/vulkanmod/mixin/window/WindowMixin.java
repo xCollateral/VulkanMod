@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin;
+package net.vulkanmod.mixin.window;
 
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -212,19 +213,19 @@ public abstract class WindowMixin {
     @Overwrite
     private void onFramebufferResize(long window, int width, int height) {
         if (window == this.window) {
-            int k = this.getWidth();
-            int m = this.getHeight();
-            if (width != 0 && height != 0) {
+            int prevWidth = this.getWidth();
+            int prevHeight = this.getHeight();
+
+            if(width > 0 && height > 0) {
                 this.framebufferWidth = width;
                 this.framebufferHeight = height;
-                if (this.framebufferWidth != k || this.framebufferHeight != m) {
-                    this.eventHandler.resizeDisplay();
-                }
+//                if (this.framebufferWidth != prevWidth || this.framebufferHeight != prevHeight) {
+//                    this.eventHandler.resizeDisplay();
+//                }
 
+                Renderer.scheduleSwapChainUpdate();
             }
 
-            if(width > 0 && height > 0)
-                Renderer.scheduleSwapChainUpdate();
         }
     }
 

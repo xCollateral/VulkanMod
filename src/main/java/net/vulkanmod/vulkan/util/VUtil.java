@@ -63,16 +63,16 @@ public class VUtil {
     }
 
     public static void memcpy(ByteBuffer src, ByteBuffer dst) {
-        //src.limit((int)size);
-//        dst.put(src);
-
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
     }
 
+    public static void memcpy(ByteBuffer src, long dstPtr) {
+        MemoryUtil.memCopy(MemoryUtil.memAddress0(src), dstPtr, src.capacity());
+    }
+
     public static void memcpy(ByteBuffer src, ByteBuffer dst, long offset) {
         dst.position((int)offset);
-//        dst.put(src);
 
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
@@ -81,7 +81,6 @@ public class VUtil {
     public static void memcpy(ByteBuffer src, ByteBuffer dst, int size, long offset) {
         dst.position((int)offset);
         src.limit(size);
-//        dst.put(src);
 
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
