@@ -122,8 +122,9 @@ public class WorldRenderer {
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {
         if(INSTANCE != null)
-            throw new RuntimeException("WorldRenderer re-initialization");
-        return INSTANCE = new WorldRenderer(renderBuffers);
+            return INSTANCE;
+        else
+            return INSTANCE = new WorldRenderer(renderBuffers);
     }
 
     public static WorldRenderer getInstance() {
