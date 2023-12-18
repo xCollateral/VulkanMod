@@ -1,32 +1,24 @@
 package net.vulkanmod.render.chunk.build;
 
-import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 
-import java.util.Map;
+import java.util.EnumMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class ThreadBuilderPack {
-    private static Function<RenderType, TerrainBufferBuilder> terrainBuilderConstructor;
+    private static final Function<TerrainRenderType, TerrainBufferBuilder> terrainBuilderConstructor = renderType -> new TerrainBufferBuilder(renderType.bufferSize);
 
-    public static void defaultTerrainBuilderConstructor() {
-        terrainBuilderConstructor = renderType -> new TerrainBufferBuilder(renderType.bufferSize());
-    }
 
-    public static void setTerrainBuilderConstructor(Function<RenderType, TerrainBufferBuilder> constructor) {
-        terrainBuilderConstructor = constructor;
-    }
-
-    private final Map<RenderType, TerrainBufferBuilder> builders;
+    private final EnumMap<TerrainRenderType, TerrainBufferBuilder> builders=new EnumMap<>(TerrainRenderType.class);
 
     public ThreadBuilderPack() {
-        builders = RenderType.chunkBufferLayers().stream().collect(Collectors.toMap(
-                (renderType) -> renderType,
-                renderType -> terrainBuilderConstructor.apply(renderType)));
+        for (TerrainRenderType renderType : TerrainRenderType.getActiveLayers()) {
+            builders.put(renderType, terrainBuilderConstructor.apply(renderType));
+        }
     }
 
-    public TerrainBufferBuilder builder(RenderType renderType) {
+    public TerrainBufferBuilder builder(TerrainRenderType renderType) {
         return this.builders.get(renderType);
     }
 

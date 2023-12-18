@@ -123,7 +123,7 @@ public class DrawBuffers {
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-        if(this.indexBuffer!=null && isTranslucent) {
+        if(isTranslucent) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 
@@ -247,7 +247,7 @@ public class DrawBuffers {
         }
 
 
-        if(this.indexBuffer!=null && isTranslucent) {
+        if(isTranslucent) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 

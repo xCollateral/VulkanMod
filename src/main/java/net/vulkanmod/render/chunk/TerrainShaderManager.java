@@ -37,7 +37,6 @@ public abstract class TerrainShaderManager {
         setTerrainVertexFormat(CustomVertexFormat.COMPRESSED_TERRAIN);
         createBasicPipelines();
         setDefaultShader();
-        ThreadBuilderPack.defaultTerrainBuilderConstructor();
     }
 
     public static void setDefaultShader() {
