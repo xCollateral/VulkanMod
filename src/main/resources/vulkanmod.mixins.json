@@ -59,11 +59,13 @@
 
     "screen.OptionsScreenM",
 
+    "texture.mip.MipmapGeneratorM",
+    "texture.image.MNativeImage",
+    "texture.image.NativeImageAccessor",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
     "texture.MLightTexture",
-    "texture.MNativeImage",
     "texture.MOverlayTexture",
     "texture.MPlayerSkinTexture",
     "texture.MSimpleTexture",

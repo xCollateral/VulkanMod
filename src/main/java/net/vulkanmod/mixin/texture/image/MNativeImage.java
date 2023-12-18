@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.texture;
+package net.vulkanmod.mixin.texture.image;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
