@@ -717,6 +717,14 @@ public class WorldRenderer {
         this.needsUpdate = true;
     }
 
+    public boolean needsUpdate() {
+        return this.needsUpdate;
+    }
+
+    public int getVisibleSectionsCount() {
+        return this.chunkQueue.size();
+    }
+
     public void setSectionDirty(int x, int y, int z, boolean flag) {
         this.sectionGrid.setDirty(x, y, z, flag);
     }

@@ -4,11 +4,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -171,13 +173,31 @@ public abstract class LevelRendererMixin {
         return this.worldRenderer.getChunkStatistics();
     }
 
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public boolean hasRenderedAllSections() {
+        return this.worldRenderer.needsUpdate();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public int countRenderedSections() {
+        return this.worldRenderer.getVisibleSectionsCount();
+    }
+
     @Inject(method = "renderClouds", at = @At("HEAD"))
     private void pushProfiler2(PoseStack poseStack, Matrix4f matrix4f, float f, double d, double e, double g, CallbackInfo ci) {
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("clouds");
     }
 
-    @Inject(method = "renderClouds", at = @At("TAIL"))
+    @Inject(method = "renderClouds", at = @At("RETURN"))
     private void popProfiler2(PoseStack poseStack, Matrix4f matrix4f, float f, double d, double e, double g, CallbackInfo ci) {
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.pop();

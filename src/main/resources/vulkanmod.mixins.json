@@ -46,6 +46,7 @@
     "render.entity.EntityRendererM",
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
+    "render.particle.SingleQuadParticleM",
     "render.target.MainTargetMixin",
     "render.target.RenderTargetMixin",
     "render.vertex.BufferBuilderM",
@@ -80,8 +81,10 @@
     "vertex.VertexMultiConsumersM$SheetDecalM",
 
     "wayland.InputConstantsM",
-    "wayland.MinecraftMixin"
     "wayland.MinecraftMixin",
+
+    "texture.mip.MipmapGeneratorM",
+
     "compatibility.PostChainM",
     "compatibility.PostPassM"
   ],
