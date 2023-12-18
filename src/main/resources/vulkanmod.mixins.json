@@ -7,7 +7,8 @@
   "mixins": [
   ],
   "client": [
-    "WindowMixin",
+    "window.WindowMixin",
+    "window.WindowAccessor",
 
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
@@ -18,6 +19,7 @@
     "compatibility.ProgramM",
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
+    "compatibility.gl.GL30M",
 
     "debug.ChunkBorderRendererM",
     "debug.DebugScreenOverlayM",
@@ -38,14 +40,14 @@
     "render.GlProgramManagerMixin",
     "render.GlStateManagerM",
     "render.LevelRendererMixin",
-    "render.MainTargetMixin",
     "render.MinecraftMixin",
     "render.RenderSystemMixin",
-    "render.RenderTargetMixin",
     "render.ShaderInstanceM",
     "render.entity.EntityRendererM",
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
+    "render.target.MainTargetMixin",
+    "render.target.RenderTargetMixin",
     "render.vertex.BufferBuilderM",
     "render.vertex.FaceBakeryM",
     "render.vertex.IndexTypeMixin",
@@ -71,6 +73,7 @@
 
     "util.ScreenshotRecorderM",
 
+    "vertex.EntityOutlineGeneratorM",
     "vertex.SpriteCoordinateExpanderM",
     "vertex.VertexMultiConsumersM$DoubleM",
     "vertex.VertexMultiConsumersM$MultipleM",
@@ -78,6 +81,9 @@
 
     "wayland.InputConstantsM",
     "wayland.MinecraftMixin"
+    "wayland.MinecraftMixin",
+    "compatibility.PostChainM",
+    "compatibility.PostPassM"
   ],
   "injectors": {
     "defaultRequire": 1

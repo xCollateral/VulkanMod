@@ -7,5 +7,7 @@ accessible class net/minecraft/client/model/geom/ModelPart$Polygon
 accessible class net/minecraft/client/model/geom/ModelPart$Vertex
 accessible class net/minecraft/client/gui/Gui$HeartType
 
+accessible class net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator
+
 #1.20
 accessible field com/mojang/blaze3d/systems/RenderSystem vertexSorting Lcom/mojang/blaze3d/vertex/VertexSorting;
