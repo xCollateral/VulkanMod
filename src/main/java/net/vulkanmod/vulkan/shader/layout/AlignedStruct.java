@@ -7,30 +7,30 @@ import java.util.List;
 
 public abstract class AlignedStruct {
 
-    protected List<Field> fields = new ArrayList<>();
+    protected List<Uniform> uniforms = new ArrayList<>();
     protected int size;
 
-    protected AlignedStruct(List<Field.FieldInfo> infoList, int size) {
+    protected AlignedStruct(List<Uniform.Info> infoList, int size) {
         this.size = size;
 
         if(infoList == null)
             return;
 
-        for(Field.FieldInfo fieldInfo : infoList) {
+        for(Uniform.Info info : infoList) {
 
-            Field field = Field.createField(fieldInfo);
-            this.fields.add(field);
+            Uniform uniform = Uniform.createField(info);
+            this.uniforms.add(uniform);
         }
     }
 
     public void update(long ptr) {
-        for(Field field : this.fields) {
-            field.update(ptr);
+        for(Uniform uniform : this.uniforms) {
+            uniform.update(ptr);
         }
     }
 
-    public List<Field> getFields() {
-        return this.fields;
+    public List<Uniform> getUniforms() {
+        return this.uniforms;
     }
 
     public int getSize() {
@@ -39,33 +39,33 @@ public abstract class AlignedStruct {
 
     public static class Builder {
 
-        final List<Field.FieldInfo> fields = new ArrayList<>();
+        final List<Uniform.Info> uniformsInfo = new ArrayList<>();
         protected int currentOffset = 0;
 
-        public void addFieldInfo(String type, String name, int count) {
-            Field.FieldInfo fieldInfo = Field.createFieldInfo(type, name, count);
+        public void addUniformInfo(String type, String name, int count) {
+            Uniform.Info info = Uniform.createUniformInfo(type, name, count);
 
-            this.currentOffset = fieldInfo.computeAlignmentOffset(this.currentOffset);
-            this.currentOffset += fieldInfo.size;
-            this.fields.add(fieldInfo);
+            this.currentOffset = info.computeAlignmentOffset(this.currentOffset);
+            this.currentOffset += info.size;
+            this.uniformsInfo.add(info);
         }
 
-        public void addFieldInfo(String type, String name) {
-            Field.FieldInfo fieldInfo = Field.createFieldInfo(type, name);
+        public void addUniformInfo(String type, String name) {
+            Uniform.Info info = Uniform.createUniformInfo(type, name);
 
-            this.currentOffset = fieldInfo.computeAlignmentOffset(this.currentOffset);
-            this.currentOffset += fieldInfo.size;
-            this.fields.add(fieldInfo);
+            this.currentOffset = info.computeAlignmentOffset(this.currentOffset);
+            this.currentOffset += info.size;
+            this.uniformsInfo.add(info);
         }
 
         public UBO buildUBO(int binding, int stages) {
             //offset is expressed in floats/ints
-            return new UBO(binding, stages, this.currentOffset * 4, this.fields);
+            return new UBO(binding, stages, this.currentOffset * 4, this.uniformsInfo);
         }
 
         public PushConstants buildPushConstant() {
-            if(this.fields.isEmpty()) return null;
-            return new PushConstants(this.fields, this.currentOffset * 4);
+            if(this.uniformsInfo.isEmpty()) return null;
+            return new PushConstants(this.uniformsInfo, this.currentOffset * 4);
         }
 
     }

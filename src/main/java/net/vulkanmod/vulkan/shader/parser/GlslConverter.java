@@ -10,7 +10,7 @@ import java.util.StringTokenizer;
 
 public class GlslConverter {
 
-//    private Queue<Integer> stack = new ArrayDeque<>();
+    //    private Queue<Integer> stack = new ArrayDeque<>();
     private int count;
     ShaderStage shaderStage;
     private State state;
@@ -21,9 +21,9 @@ public class GlslConverter {
     private String vshConverted;
     private String fshConverted;
 
-    public void process(VertexFormat vertexFormat, String vertShader, String fragShader) {
+    public void process(String vertShader, String fragShader) {
         this.uniformParser = new UniformParser(this);
-        this.inOutParser = new InputOutputParser(this, vertexFormat);
+        this.inOutParser = new InputOutputParser(this);
 
         StringBuilder vshOut = new StringBuilder();
         StringBuilder fshOut = new StringBuilder();

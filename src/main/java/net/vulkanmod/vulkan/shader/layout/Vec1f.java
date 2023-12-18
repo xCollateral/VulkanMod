@@ -1,22 +1,26 @@
 package net.vulkanmod.vulkan.shader.layout;
 
 import net.vulkanmod.vulkan.shader.Uniforms;
+import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.function.Supplier;
 
-public class Vec1f extends Field {
+public class Vec1f extends Uniform {
     private Supplier<Float> floatSupplier;
 
-    public Vec1f(FieldInfo fieldInfo) {
-        super(fieldInfo);
+    public Vec1f(Info info) {
+        super(info);
     }
 
     void setSupplier() {
-        this.floatSupplier = Uniforms.vec1f_uniformMap.get(this.fieldInfo.name);
+        this.floatSupplier = Uniforms.vec1f_uniformMap.get(this.info.name);
+    }
 
-        Validate.notNull(this.floatSupplier, "Field name not found: " + this.fieldInfo.name);
+    @Override
+    public void setSupplier(Supplier<MappedBuffer> supplier) {
+        this.floatSupplier = () -> supplier.get().getFloat(0);
     }
 
     void update(long ptr) {

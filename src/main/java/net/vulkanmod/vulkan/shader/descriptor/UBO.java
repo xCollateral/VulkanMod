@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
-import net.vulkanmod.vulkan.shader.layout.Field;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ public class UBO extends AlignedStruct implements Descriptor {
     private final int binding;
     private final int stages;
 
-    public UBO(int binding, int stages, int size, List<Field.FieldInfo> infoList) {
+    public UBO(int binding, int stages, int size, List<Uniform.Info> infoList) {
         super(infoList, size);
         this.binding = binding;
         this.stages = stages;

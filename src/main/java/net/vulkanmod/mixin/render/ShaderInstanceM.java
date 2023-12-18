@@ -3,7 +3,6 @@ package net.vulkanmod.mixin.render;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.shaders.Program;
-import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
@@ -12,11 +11,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.util.GsonHelper;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.layout.Field;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.parser.GlslConverter;
 import net.vulkanmod.vulkan.util.MappedBuffer;
@@ -33,7 +31,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -46,23 +43,23 @@ import java.util.function.Supplier;
 @Mixin(ShaderInstance.class)
 public class ShaderInstanceM implements ShaderMixed {
 
-    @Shadow @Final private Map<String, Uniform> uniformMap;
+    @Shadow @Final private Map<String, com.mojang.blaze3d.shaders.Uniform> uniformMap;
     @Shadow @Final private String name;
 
-    @Shadow @Final @Nullable public Uniform MODEL_VIEW_MATRIX;
-    @Shadow @Final @Nullable public Uniform PROJECTION_MATRIX;
-    @Shadow @Final @Nullable public Uniform COLOR_MODULATOR;
-    @Shadow @Final @Nullable public Uniform LINE_WIDTH;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform MODEL_VIEW_MATRIX;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform PROJECTION_MATRIX;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform COLOR_MODULATOR;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform LINE_WIDTH;
 
-    @Shadow @Final @Nullable public Uniform INVERSE_VIEW_ROTATION_MATRIX;
-    @Shadow @Final @Nullable public Uniform GLINT_ALPHA;
-    @Shadow @Final @Nullable public Uniform FOG_START;
-    @Shadow @Final @Nullable public Uniform FOG_END;
-    @Shadow @Final @Nullable public Uniform FOG_COLOR;
-    @Shadow @Final @Nullable public Uniform FOG_SHAPE;
-    @Shadow @Final @Nullable public Uniform TEXTURE_MATRIX;
-    @Shadow @Final @Nullable public Uniform GAME_TIME;
-    @Shadow @Final @Nullable public Uniform SCREEN_SIZE;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform INVERSE_VIEW_ROTATION_MATRIX;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform GLINT_ALPHA;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform FOG_START;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform FOG_END;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform FOG_COLOR;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform FOG_SHAPE;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform TEXTURE_MATRIX;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform GAME_TIME;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform SCREEN_SIZE;
     private GraphicsPipeline pipeline;
     boolean isLegacy = false;
 
@@ -73,6 +70,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void create(ResourceProvider resourceProvider, String name, VertexFormat format, CallbackInfo ci) {
+
         try {
             if(Pipeline.class.getResourceAsStream(String.format("/assets/vulkanmod/shaders/minecraft/core/%s/%s.json", name, name)) == null) {
                 createLegacyShader(resourceProvider, new ResourceLocation("shaders/core/" + name + ".json"), format);
@@ -182,11 +180,11 @@ public class ShaderInstanceM implements ShaderMixed {
 
     private void setUniformSuppliers(UBO ubo) {
 
-        for(Field field : ubo.getFields()) {
-            Uniform uniform = this.uniformMap.get(field.getName());
+        for(Uniform v_uniform : ubo.getUniforms()) {
+            com.mojang.blaze3d.shaders.Uniform uniform = this.uniformMap.get(v_uniform.getName());
 
             if(uniform == null) {
-                throw new NullPointerException(String.format("Field: %s not present in map: %s", field.getName(), this.uniformMap));
+                throw new NullPointerException(String.format("Field: %s not present in map: %s", v_uniform.getName(), this.uniformMap));
             }
 
             Supplier<MappedBuffer> supplier;
@@ -205,7 +203,7 @@ public class ShaderInstanceM implements ShaderMixed {
             supplier = () -> mappedBuffer;
             //TODO vec1
 
-            field.setSupplier(supplier);
+            v_uniform.setSupplier(supplier);
         }
 
     }
@@ -232,12 +230,12 @@ public class ShaderInstanceM implements ShaderMixed {
             GlslConverter converter = new GlslConverter();
             Pipeline.Builder builder = new Pipeline.Builder(format);
 
-            converter.process(format, vshSrc, fshSrc);
+            converter.process(vshSrc, fshSrc);
             UBO ubo = converter.getUBO();
             this.setUniformSuppliers(ubo);
 
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
-            builder.compileShaders(converter.getVshConverted(), converter.getFshConverted());
+            builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 
             this.pipeline = builder.createGraphicsPipeline();
             this.isLegacy = true;

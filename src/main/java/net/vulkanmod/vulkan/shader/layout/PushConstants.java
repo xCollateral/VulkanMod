@@ -4,7 +4,7 @@ import java.util.List;
 
 public class PushConstants extends AlignedStruct {
 
-    protected PushConstants(List<Field.FieldInfo> infoList, int size) {
+    protected PushConstants(List<Uniform.Info> infoList, int size) {
         super(infoList, size);
     }
 

@@ -336,7 +336,7 @@ public abstract class GameRendererMixin {
             throw new RuntimeException("Blit shader already preloaded");
         } else {
             try {
-                this.blitShader = new ShaderInstance(resourceProvider, "blit_screen", DefaultVertexFormat.BLIT_SCREEN);
+                this.blitShader = new ShaderInstance(resourceProvider, "blit_screen", DefaultVertexFormat.POSITION_TEX);
             } catch (IOException var3) {
                 throw new RuntimeException("could not preload blit shader", var3);
             }
@@ -358,8 +358,8 @@ public abstract class GameRendererMixin {
 //        Renderer.clearAttachments(0x100);
 //    }
 
-    @Redirect(method = "render", at = @At(value="INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", ordinal = 0))
-    private void remClear(int i, boolean bl) {}
+//    @Redirect(method = "render", at = @At(value="INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", ordinal = 0))
+//    private void remClear(int i, boolean bl) {}
 
     /**
      * @author
