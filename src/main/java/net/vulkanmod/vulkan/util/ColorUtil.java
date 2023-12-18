@@ -11,23 +11,17 @@ public class ColorUtil {
         colorConsumer = b ? new GammaColorConsumer() : new DefaultColorConsumer();
     }
 
-    public static int packColorInt(float r, float g, float b, float a) {
-        int color = 0;
-        color += (int)(a * 255) << 24;
-        color += (int)(r * 255) << 16;
-        color += (int)(g * 255) << 8;
-        color += (int)(b * 255);
+    public static int packColorIntRGBA(float r, float g, float b, float a) {
+//        int color = ((int)(r * 255.0f) & 0xFF) << 24 | ((int)(g * 255.0f) & 0xFF) << 16 | ((int)(b * 255.0f) & 0xFF) << 8 | ((int)(a * 255.0f) & 0xFF);
+        int color = ((int)(a * 255.0f) & 0xFF) << 24 | ((int)(b * 255.0f) & 0xFF) << 16 | ((int)(g * 255.0f) & 0xFF) << 8 | ((int)(r * 255.0f) & 0xFF);
 
         return color;
     }
 
     public static int BGRAtoRGBA(int v) {
         byte r = (byte) (v >> 16);
-        byte g = (byte) (v >> 8);
         byte b = (byte) (v);
-        byte a = (byte) (v >> 24);
-
-        return r & 0xFF | (g << 8) & 0xFF00 | (b << 16) & 0xFF0000 | (a << 24) & 0xFF000000;
+        return r & 0xFF | (b << 16) & 0xFF0000 | v & 0xFF00FF00;
     }
 
     public static float gamma(float f) {

@@ -1,10 +1,12 @@
-#version 150
+#version 450
 
-uniform vec4 ColorModulator;
+layout(location = 0) in vec4 vertexColor;
 
-in vec4 vertexColor;
+layout(binding = 1) uniform UBO{
+    vec4 ColorModulator;
+};
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec4 color = vertexColor;

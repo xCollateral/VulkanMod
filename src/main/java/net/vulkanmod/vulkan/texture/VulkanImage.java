@@ -13,6 +13,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.util.Arrays;
 
 import static net.vulkanmod.vulkan.texture.SamplerManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -135,7 +136,15 @@ public class VulkanImage {
     }
 
     public static int getAspect(int format) {
-        return format == SwapChain.getDefaultDepthFormat() ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+        return isDepthFormat(format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    public static boolean isDepthFormat(int format) {
+        return switch (format) {
+            case VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT,
+                    VK_FORMAT_D32_SFLOAT_S8_UINT -> true;
+            default -> false;
+        };
     }
 
     public static long createImageView(long image, int format, int aspectFlags, int mipLevels) {
@@ -180,36 +189,13 @@ public class VulkanImage {
 
         stagingBuffer.copyBuffer((int)imageSize, buffer);
 
-        copyBufferToImageCmd(commandBuffer, stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
+        ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
 
         long fence = DeviceManager.getGraphicsQueue().endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
-    }
-
-    public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
-        try(MemoryStack stack = stackPush()) {
-            long imageSize = width * height * formatSize;
-
-            LongBuffer pStagingBuffer = stack.mallocLong(1);
-            PointerBuffer pStagingAllocation = stack.pointers(0L);
-            MemoryManager.getInstance().createBuffer(imageSize,
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-                    pStagingBuffer,
-                    pStagingAllocation);
-
-            copyImageToBuffer(pStagingBuffer.get(0), image, 0, width, height, 0, 0, 0, 0, 0);
-
-            MemoryManager.MapAndCopy(pStagingAllocation.get(0),
-                    (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), buffer)
-            );
-
-            MemoryManager.freeBuffer(pStagingBuffer.get(0), pStagingAllocation.get(0));
-        }
-
     }
 
     private void transferDstLayout(MemoryStack stack, VkCommandBuffer commandBuffer) {
@@ -241,51 +227,11 @@ public class VulkanImage {
     }
 
     public void updateTextureSampler(byte flags) {
-        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, flags);
+        updateTextureSampler(this.mipLevels - 1, flags);
     }
 
-    private void copyBufferToImageCmd(CommandPool.CommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
-
-        try(MemoryStack stack = stackPush()) {
-
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
-            region.bufferOffset(bufferOffset);
-            region.bufferRowLength(bufferRowLenght);   // Tightly packed
-            region.bufferImageHeight(bufferImageHeight);  // Tightly packed
-            region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            region.imageSubresource().mipLevel(mipLevel);
-            region.imageSubresource().baseArrayLayer(0);
-            region.imageSubresource().layerCount(1);
-            region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
-
-            vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
-        }
-    }
-
-    private static void copyImageToBuffer(long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
-
-        try(MemoryStack stack = stackPush()) {
-
-            CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
-
-            VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
-            region.bufferOffset(bufferOffset);
-            region.bufferRowLength(bufferRowLenght);   // Tightly packed
-            region.bufferImageHeight(bufferImageHeight);  // Tightly packed
-            region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            region.imageSubresource().mipLevel(mipLevel);
-            region.imageSubresource().baseArrayLayer(0);
-            region.imageSubresource().layerCount(1);
-            region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent().set(width, height, 1);
-
-            vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
-
-            long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
-
-            vkWaitForFences(DEVICE, fence, true, VUtil.UINT64_MAX);
-        }
+    public void updateTextureSampler(int maxLod, byte flags) {
+        this.sampler = SamplerManager.getTextureSampler((byte) maxLod, flags);
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
@@ -309,6 +255,10 @@ public class VulkanImage {
                 srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
+                srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
                 srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
                 sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -327,6 +277,10 @@ public class VulkanImage {
         switch (newLayout) {
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> {
                 dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            }
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> {
+                dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
                 destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             }
             case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
@@ -394,9 +348,18 @@ public class VulkanImage {
     }
 
     public void doFree() {
+        if(this.id == 0L)
+            return;
+
         MemoryManager.freeImage(this.id, this.allocation);
 
         vkDestroyImageView(Vulkan.getDevice(), this.mainImageView, null);
+
+        if(this.levelImageViews != null)
+            Arrays.stream(this.levelImageViews).forEach(
+                    imageView -> vkDestroyImageView(Vulkan.getDevice(), this.mainImageView, null));
+
+        this.id = 0L;
     }
 
     public int getCurrentLayout() {
@@ -432,7 +395,7 @@ public class VulkanImage {
         int format = VulkanImage.DefaultFormat;
         int formatSize;
         byte mipLevels = 1;
-        int usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        int usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
         byte samplerFlags = 0;
 
@@ -464,6 +427,11 @@ public class VulkanImage {
 
         public Builder setUsage(int usage) {
             this.usage = usage;
+            return this;
+        }
+
+        public Builder addUsage(int usage) {
+            this.usage |= usage;
             return this;
         }
 
@@ -503,7 +471,9 @@ public class VulkanImage {
 
         private static int formatSize(int format) {
             return switch (format) {
-                case VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB -> 4;
+                case VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB,
+                        VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT,
+                        VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R8G8B8A8_SINT-> 4;
                 case VK_FORMAT_R8_UNORM -> 1;
 
 //                default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));

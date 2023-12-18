@@ -1,39 +1,39 @@
 package net.vulkanmod.gl;
 
-import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.texture.SamplerManager;
+import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.system.MemoryStack;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
 public class GlTexture {
-    private static int ID_COUNT = 0;
+    private static int ID_COUNTER = 1;
     private static final Int2ReferenceOpenHashMap<GlTexture> map = new Int2ReferenceOpenHashMap<>();
     private static int boundTextureId = 0;
     private static GlTexture boundTexture;
 
     public static int genTextureId() {
-        int id = ID_COUNT;
+        int id = ID_COUNTER;
         map.put(id, new GlTexture(id));
-        ID_COUNT++;
+        ID_COUNTER++;
         return id;
     }
 
     public static void bindTexture(int id) {
-        if(id == -1)
-            return;
-
         boundTextureId = id;
         boundTexture = map.get(id);
+
+        if(id <= 0)
+            return;
 
         if(boundTexture == null)
             throw new NullPointerException("bound texture is null");
@@ -44,10 +44,16 @@ public class GlTexture {
     }
 
     public static void glDeleteTextures(int i) {
-        map.remove(i);
+        GlTexture glTexture = map.remove(i);
+        VulkanImage image = glTexture != null ? glTexture.vulkanImage : null;
+        if(image != null)
+            MemoryManager.getInstance().addToFreeable(image);
     }
 
     public static GlTexture getTexture(int id) {
+        if (id == 0)
+            return null;
+
         return map.get(id);
     }
 
@@ -55,13 +61,16 @@ public class GlTexture {
         if(width == 0 || height == 0)
             return;
 
+        //TODO levels
+        if(level != 0)
+            throw new UnsupportedOperationException();
+
         boundTexture.internalFormat = internalFormat;
 
-        if(width != boundTexture.vulkanImage.width || height != boundTexture.vulkanImage.height || vulkanFormat(format, type) != boundTexture.vulkanImage.format) {
-            boundTexture.allocateVulkanImage(width, height);
-        }
+        boundTexture.allocateIfNeeded(width, height, format, type);
 
-        boundTexture.uploadImage(pixels);
+        if(pixels != null)
+            boundTexture.uploadImage(pixels);
     }
 
     public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
@@ -71,17 +80,48 @@ public class GlTexture {
         VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, pixels);
     }
 
+    public static void texParameteri(int target, int pName, int param) {
+        if(target != GL11.GL_TEXTURE_2D)
+            throw new UnsupportedOperationException();
+
+        switch (pName) {
+            case GL30.GL_TEXTURE_MAX_LEVEL -> boundTexture.setMaxLevel(param);
+            case GL30.GL_TEXTURE_MAX_LOD -> boundTexture.setMaxLod(param);
+            case GL30.GL_TEXTURE_MIN_LOD -> {}
+            case GL30.GL_TEXTURE_LOD_BIAS -> {}
+
+            case GL11.GL_TEXTURE_MAG_FILTER -> boundTexture.setMagFilter(param);
+            case GL11.GL_TEXTURE_MIN_FILTER -> boundTexture.setMinFilter(param);
+
+            default -> {}
+        }
+
+        //TODO
+    }
+
     public static int getTexLevelParameter(int target, int level, int pName) {
         if(boundTexture == null || target == GL11.GL_TEXTURE_2D)
             return -1;
 
         return switch (pName) {
-            case GL11.GL_TEXTURE_INTERNAL_FORMAT -> getGlFormat(boundTexture.vulkanImage.format);
+            case GL11.GL_TEXTURE_INTERNAL_FORMAT -> GlUtil.getGlFormat(boundTexture.vulkanImage.format);
             case GL11.GL_TEXTURE_WIDTH -> boundTexture.vulkanImage.width;
             case GL11.GL_TEXTURE_HEIGHT -> boundTexture.vulkanImage.height;
 
             default -> -1;
         };
+    }
+
+    public static void generateMipmap(int target) {
+        if(target != GL11.GL_TEXTURE_2D)
+            throw new UnsupportedOperationException();
+
+        boundTexture.generateMipmaps();
+    }
+
+    public static void getTexImage(int tex, int level, int format, int type, long pixels) {
+        VulkanImage image = boundTexture.vulkanImage;
+        ImageUtil.downloadTexture(image, pixels);
     }
 
     public static void setVulkanImage(int id, VulkanImage vulkanImage) {
@@ -98,40 +138,120 @@ public class GlTexture {
     VulkanImage vulkanImage;
     int internalFormat;
 
+    boolean needsUpdate = false;
+    int maxLevel = 0;
+    int maxLod = 0;
+    int minFilter, magFilter = GL11.GL_LINEAR;
+
     public GlTexture(int id) {
         this.id = id;
     }
 
-    private void allocateVulkanImage(int width, int height) {
+    void allocateIfNeeded(int width, int height, int format, int type) {
+        int vkFormat = GlUtil.vulkanFormat(format, type);
+
+        needsUpdate |= vulkanImage == null ||
+                vulkanImage.width != width || vulkanImage.height != height ||
+                 vkFormat != vulkanImage.format;
+
+        if(needsUpdate) {
+            allocateImage(width, height, vkFormat);
+            updateSampler();
+
+            needsUpdate = false;
+        }
+    }
+
+    void allocateImage(int width, int height, int vkFormat) {
         if(this.vulkanImage != null)
             this.vulkanImage.free();
 
-        this.vulkanImage = new VulkanImage.Builder(width, height).createVulkanImage();
+        if(VulkanImage.isDepthFormat(vkFormat))
+            this.vulkanImage = VulkanImage.createDepthImage(vkFormat,
+                    width, height,
+                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                    false, true);
+        else
+            this.vulkanImage = new VulkanImage.Builder(width, height)
+                    .setMipLevels(maxLevel + 1)
+                    .setFormat(vkFormat)
+                    .addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                    .createVulkanImage();
+
         VTextureSelector.bindTexture(this.vulkanImage);
     }
 
-    private void uploadImage(@Nullable ByteBuffer pixels) {
+    void updateSampler() {
+        if(vulkanImage == null)
+            return;
+
+        byte samplerFlags = magFilter == GL11.GL_LINEAR ? SamplerManager.LINEAR_FILTERING_BIT : 0;
+        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
+        vulkanImage.updateTextureSampler(maxLod, samplerFlags);
+    }
+
+    private void uploadImage(ByteBuffer pixels) {
         int width = this.vulkanImage.width;
         int height = this.vulkanImage.height;
 
-        if(pixels != null) {
-
-            if(internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
-
-                ByteBuffer RGBA_buffer = Util.RGBtoRGBA_buffer(pixels);
-                this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
-                MemoryUtil.memFree(RGBA_buffer);
-
-                return;
-            }
-
+        if(internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
+            ByteBuffer RGBA_buffer = GlUtil.RGBtoRGBA_buffer(pixels);
+            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
+            MemoryUtil.memFree(RGBA_buffer);
+        } else
             this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
+
+    }
+
+    void generateMipmaps() {
+        //TODO test
+        ImageUtil.generateMipmaps(vulkanImage);
+    }
+
+    void setMaxLevel(int l) {
+        if(l < 0)
+            throw new IllegalStateException("max level cannot be < 0.");
+
+        if(maxLevel != l) {
+            maxLevel = l;
+            needsUpdate = true;
         }
-        else {
-            pixels = MemoryUtil.memCalloc(width * height * 4);
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
-            MemoryUtil.memFree(pixels);
+    }
+
+    void setMaxLod(int l) {
+        if(l < 0)
+            throw new IllegalStateException("max level cannot be < 0.");
+
+        if(maxLod != l) {
+            maxLod = l;
+            updateSampler();
         }
+    }
+
+    void setMagFilter(int v) {
+        switch (v) {
+            case GL11.GL_LINEAR, GL11.GL_NEAREST
+                    -> {}
+
+            default -> throw new IllegalArgumentException("illegal mag filter value: " + v);
+        }
+
+        this.magFilter = v;
+        updateSampler();
+    }
+
+    void setMinFilter(int v) {
+        switch (v) {
+            case GL11.GL_LINEAR, GL11.GL_NEAREST,
+                    GL11.GL_LINEAR_MIPMAP_LINEAR, GL11.GL_NEAREST_MIPMAP_LINEAR,
+                    GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST
+                    -> {}
+
+            default -> throw new IllegalArgumentException("illegal min filter value: " + v);
+        }
+
+        this.magFilter = v;
+        updateSampler();
     }
 
     public VulkanImage getVulkanImage() {
@@ -140,31 +260,6 @@ public class GlTexture {
 
     public void setVulkanImage(VulkanImage vulkanImage) {
         this.vulkanImage = vulkanImage;
-    }
-
-    private static int vulkanFormat(int glFormat, int type) {
-        return switch (glFormat) {
-            case GL11.GL_RGBA ->
-                    switch (type) {
-                        case GL11.GL_UNSIGNED_BYTE -> VK_FORMAT_R8G8B8A8_UNORM;
-                        default -> throw new IllegalStateException("Unexpected value: " + type);
-                    };
-            case GL11.GL_RED ->
-                    switch (type) {
-                        case GL11.GL_UNSIGNED_BYTE -> VK_FORMAT_R8_UNORM;
-                        default -> throw new IllegalStateException("Unexpected value: " + type);
-                    };
-
-            default -> throw new IllegalStateException("Unexpected value: " + glFormat);
-        };
-    }
-
-    public static int getGlFormat(int vFormat) {
-        return switch (vFormat) {
-            case VK_FORMAT_R8G8B8A8_UNORM -> GL11.GL_RGBA;
-            case VK_FORMAT_R8_UNORM -> GL11.GL_RED;
-            default -> throw new IllegalStateException("Unexpected value: " + vFormat);
-        };
     }
 
 }

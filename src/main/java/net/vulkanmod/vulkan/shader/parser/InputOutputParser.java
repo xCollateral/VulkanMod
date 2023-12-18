@@ -10,10 +10,10 @@ import static net.vulkanmod.vulkan.shader.parser.UniformParser.removeSemicolon;
 
 public class InputOutputParser {
     private final GlslConverter converterInstance;
-    private final VertexFormat vertexFormat;
+    private VertexFormat vertexFormat;
 
-    private AttributeSet vertInAttributes = new AttributeSet();
-    private AttributeSet vertOutAttributes = new AttributeSet();
+    private final AttributeSet vertInAttributes = new AttributeSet();
+    private final AttributeSet vertOutAttributes = new AttributeSet();
 
     private GlslConverter.ShaderStage shaderStage;
 
@@ -22,9 +22,8 @@ public class InputOutputParser {
     private String type;
     private String name;
 
-    public InputOutputParser(GlslConverter converterInstance, VertexFormat vertexFormat) {
+    public InputOutputParser(GlslConverter converterInstance) {
         this.converterInstance = converterInstance;
-        this.vertexFormat = vertexFormat;
     }
 
     public boolean parseToken(String token) {
@@ -92,7 +91,7 @@ public class InputOutputParser {
             }
             builder.append("\n");
 
-            //TODO
+            //TODO multi attachments?
             builder.append(String.format("layout(location = 0) out vec4 fragColor;\n\n"));
         }
 

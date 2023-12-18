@@ -3,10 +3,8 @@ package net.vulkanmod.mixin.render.vertex;
 import com.mojang.blaze3d.vertex.*;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.interfaces.VertexFormatMixed;
-import net.vulkanmod.render.util.SortUtil;
 import net.vulkanmod.render.vertex.VertexUtil;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -17,7 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.function.IntConsumer;
 
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderM extends DefaultedVertexConsumer
@@ -79,7 +76,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 
         }
         else {
-            this.vertex(x, y, z);
+            this.position(x, y, z);
             this.fastColor(packedColor);
             this.fastUv(u, v);
             this.fastOverlay(overlay);
@@ -91,7 +88,26 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 
     }
 
-    public void vertex(float x, float y, float z) {
+    public void vertex(float x, float y, float z, float u, float v, int packedColor, int light) {
+        this.ptr = this.nextElementPtr();
+
+        MemoryUtil.memPutFloat(ptr + 0, x);
+        MemoryUtil.memPutFloat(ptr + 4, y);
+        MemoryUtil.memPutFloat(ptr + 8, z);
+
+        MemoryUtil.memPutFloat(ptr + 12, u);
+        MemoryUtil.memPutFloat(ptr + 16, v);
+
+        MemoryUtil.memPutInt(ptr + 20, packedColor);
+
+        MemoryUtil.memPutInt(ptr + 24, light);
+
+        this.nextElementByte += 28;
+        this.endVertex();
+
+    }
+
+    public void position(float x, float y, float z) {
         MemoryUtil.memPutFloat(ptr + 0, x);
         MemoryUtil.memPutFloat(ptr + 4, y);
         MemoryUtil.memPutFloat(ptr + 8, z);
@@ -100,15 +116,17 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     }
 
     public void fastColor(int packedColor) {
-        if (this.currentElement.getUsage() != VertexFormatElement.Usage.COLOR) return;
+        if (this.currentElement.getUsage() != VertexFormatElement.Usage.COLOR)
+            return;
 
-        MemoryUtil.memPutFloat(ptr + 12, packedColor);
+        MemoryUtil.memPutInt(ptr + 12, packedColor);
 
         this.nextElement();
     }
 
     public void fastUv(float u, float v) {
-        if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV) return;
+        if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV)
+            return;
 
         MemoryUtil.memPutFloat(ptr + 16, u);
         MemoryUtil.memPutFloat(ptr + 20, v);
@@ -117,7 +135,8 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     }
 
     public void fastOverlay(int o) {
-        if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV) return;
+        if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV)
+            return;
 
         MemoryUtil.memPutInt(ptr + 24, o);
 
@@ -125,7 +144,8 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     }
 
     public void light(int l) {
-        if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV) return;
+        if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV)
+            return;
 
         MemoryUtil.memPutInt(ptr + 28, l);
 
@@ -133,7 +153,8 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     }
 
     public void fastNormal(int packedNormal) {
-        if (this.currentElement.getUsage() != VertexFormatElement.Usage.NORMAL) return;
+        if (this.currentElement.getUsage() != VertexFormatElement.Usage.NORMAL)
+            return;
 
         MemoryUtil.memPutInt(ptr + 32, packedNormal);
 

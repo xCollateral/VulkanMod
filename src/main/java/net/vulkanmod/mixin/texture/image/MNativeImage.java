@@ -1,8 +1,9 @@
-package net.vulkanmod.mixin.texture;
+package net.vulkanmod.mixin.texture.image;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.texture.ImageUtil;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.ColorUtil;
@@ -16,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.ByteBuffer;
+import java.util.Locale;
 
 @Mixin(NativeImage.class)
 public abstract class MNativeImage {
@@ -38,6 +40,8 @@ public abstract class MNativeImage {
     @Shadow public abstract void setPixelRGBA(int i, int j, int k);
 
     @Shadow public abstract int getPixelRGBA(int i, int j);
+
+    @Shadow protected abstract void checkAllocated();
 
     private ByteBuffer buffer;
 
@@ -76,18 +80,22 @@ public abstract class MNativeImage {
     public void downloadTexture(int level, boolean removeAlpha) {
         RenderSystem.assertOnRenderThread();
 
-        VulkanImage.downloadTexture(this.width, this.height, 4, this.buffer, Vulkan.getSwapChain().getColorAttachment().getId());
+        ImageUtil.downloadTexture(VTextureSelector.getBoundTexture(0), this.pixels);
 
         if (removeAlpha && this.format.hasAlpha()) {
-            for (int i = 0; i < this.height; ++i) {
-                for (int j = 0; j < this.getWidth(); ++j) {
-                    int v = this.getPixelRGBA(j, i);
+            if (this.format != NativeImage.Format.RGBA) {
+                throw new IllegalArgumentException(String.format(Locale.ROOT, "getPixelRGBA only works on RGBA images; have %s", this.format));
+            }
 
-                    if(Vulkan.getSwapChain().isBGRAformat)
-                        v = ColorUtil.BGRAtoRGBA(v);
+            for (long l = 0; l < this.width * this.height * 4L; l+=4) {
+                int v =  MemoryUtil.memGetInt(this.pixels + l);
 
-                    this.setPixelRGBA(j, i, v | 255 << this.format.alphaOffset());
-                }
+                //TODO
+                if(Vulkan.getSwapChain().isBGRAformat)
+                    v = ColorUtil.BGRAtoRGBA(v);
+
+                v = v | 255 << this.format.alphaOffset();
+                MemoryUtil.memPutInt(this.pixels + l, v);
             }
         }
 

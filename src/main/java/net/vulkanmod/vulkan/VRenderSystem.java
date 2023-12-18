@@ -261,8 +261,8 @@ public abstract class VRenderSystem {
         VRenderSystem.window = window;
     }
 
-    public static void depthFunc(int p_69457_) {
-        depthFun = p_69457_;
+    public static void depthFunc(int depthFun) {
+        VRenderSystem.depthFun = depthFun;
     }
 
     public static void enableBlend() {

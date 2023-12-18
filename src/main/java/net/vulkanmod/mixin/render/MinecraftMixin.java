@@ -2,6 +2,7 @@ package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.TimerQuery;
 import net.minecraft.Util;
 import net.minecraft.client.GraphicsStatus;
@@ -40,8 +41,10 @@ public class MinecraftMixin {
         }
     }
 
+    //Main target (framebuffer) ops
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void beginRender(int i, boolean bl) {
+        RenderSystem.clear(i, bl);
         Renderer.getInstance().beginFrame();
     }
 
@@ -52,15 +55,18 @@ public class MinecraftMixin {
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;bindWrite(Z)V"))
     private void redirectMainTarget1(RenderTarget instance, boolean bl) {
+        Renderer.getInstance().getMainPass().mainTargetBindWrite();
     }
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;unbindWrite()V"))
     private void redirectMainTarget2(RenderTarget instance) {
+        Renderer.getInstance().getMainPass().mainTargetUnbindWrite();
     }
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;blitToScreen(II)V"))
     private void removeBlit(RenderTarget instance, int i, int j) {
     }
+
 
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;yield()V"))
     private void removeThreadYield() {

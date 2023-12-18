@@ -89,7 +89,9 @@ public abstract class GameRendererMixin {
     @Shadow private static @Nullable ShaderInstance rendertypeGuiTextHighlightShader;
     @Shadow private static @Nullable ShaderInstance rendertypeGuiGhostRecipeOverlayShader;
 
-    @Shadow protected abstract void shutdownShaders();
+    @Shadow private @Nullable static ShaderInstance positionColorLightmapShader;
+    @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
+    @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
 
     @Shadow public ShaderInstance blitShader;
 
@@ -116,14 +118,14 @@ public abstract class GameRendererMixin {
 
             ShaderInstance positionColor = new ShaderInstance(provider, "position_color", DefaultVertexFormat.POSITION_COLOR);
             list1.add(Pair.of(positionColor, (shaderInstance) -> positionColorShader = shaderInstance));
-//            list1.add(Pair.of(new ShaderInstance(provider, "position_color_lightmap", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (p_172705_) -> {
-//               positionColorLightmapShader = p_172705_;
+//            list1.add(Pair.of(new ShaderInstance(provider, "position_color_lightmap", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
+//               positionColorLightmapShader = shaderInstance;
 //            }));
             list1.add(Pair.of(new ShaderInstance(provider, "position_color_tex", DefaultVertexFormat.POSITION_COLOR_TEX), (shaderInstance) -> {
                 positionColorTexShader = shaderInstance;
             }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "position_color_tex_lightmap", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (p_172699_) -> {
-//               positionColorTexLightmapShader = p_172699_;
+//            list1.add(Pair.of(new ShaderInstance(provider, "position_color_tex_lightmap", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
+//               positionColorTexLightmapShader = shaderInstance;
 //            }));
             list1.add(Pair.of(new ShaderInstance(provider, "position_tex", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
                 positionTexShader = shaderInstance;
@@ -134,8 +136,8 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "position_tex_color_normal", DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL), (shaderInstance) -> {
                 positionTexColorNormalShader = shaderInstance;
             }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (p_172687_) -> {
-//               positionTexLightmapColorShader = p_172687_;
+//            list1.add(Pair.of(new ShaderInstance(provider, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (shaderInstance) -> {
+//               positionTexLightmapColorShader = shaderInstance;
 //            }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
                 rendertypeSolidShader = shaderInstance;
@@ -254,12 +256,9 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_see_through", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
                 rendertypeTextSeeThroughShader = shaderInstance;
             }));
-            list1.add(Pair.of(positionColor, (shaderInstance) -> {
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_background_see_through", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
                 rendertypeTextBackgroundSeeThroughShader = shaderInstance;
             }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_background_see_through", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
-//                rendertypeTextBackgroundSeeThroughShader = shaderInstance;
-//            }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_intensity_see_through", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
                 rendertypeTextIntensitySeeThroughShader = shaderInstance;
             }));
@@ -303,10 +302,7 @@ public abstract class GameRendererMixin {
             throw new RuntimeException("could not reload shaders", ioexception);
         }
 
-        final var clearList = ImmutableList.copyOf(this.shaders.values());
-        MemoryManager.getInstance().addFrameOp(() -> clearList.forEach((ShaderInstance::close)));
-        //this.shutdownShaders();
-        //TODO: clear shaders
+        this.shutdownShaders();
         list1.forEach((pair) -> {
             ShaderInstance shaderinstance = pair.getFirst();
             this.shaders.put(shaderinstance.getName(), shaderinstance);
@@ -321,12 +317,26 @@ public abstract class GameRendererMixin {
      * @reason
      */
     @Overwrite
+    private void shutdownShaders() {
+        RenderSystem.assertOnRenderThread();
+
+        final var clearList = ImmutableList.copyOf(this.shaders.values());
+        MemoryManager.getInstance().addFrameOp(() -> clearList.forEach((ShaderInstance::close)));
+
+        this.shaders.clear();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
     public void preloadUiShader(ResourceProvider resourceProvider) {
         if (this.blitShader != null) {
             throw new RuntimeException("Blit shader already preloaded");
         } else {
             try {
-                this.blitShader = new ShaderInstance(resourceProvider, "blit_screen", DefaultVertexFormat.BLIT_SCREEN);
+                this.blitShader = new ShaderInstance(resourceProvider, "blit_screen", DefaultVertexFormat.POSITION_TEX);
             } catch (IOException var3) {
                 throw new RuntimeException("could not preload blit shader", var3);
             }
@@ -348,8 +358,8 @@ public abstract class GameRendererMixin {
 //        Renderer.clearAttachments(0x100);
 //    }
 
-    @Redirect(method = "render", at = @At(value="INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", ordinal = 0))
-    private void remClear(int i, boolean bl) {}
+//    @Redirect(method = "render", at = @At(value="INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", ordinal = 0))
+//    private void remClear(int i, boolean bl) {}
 
     /**
      * @author

@@ -33,24 +33,4 @@ void main() {
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }
 
-/*
-#version 150
-
-#moj_import <fog.glsl>
-
-uniform sampler2D Sampler0;
-
-uniform vec4 ColorModulator;
-uniform float FogStart;
-uniform float FogEnd;
-uniform vec4 FogColor;
-
-in vec2 texCoord0;
-in float vertexDistance;
-in vec4 vertexColor;
-in vec4 normal;
-
-out vec4 fragColor;
-*/
-
 

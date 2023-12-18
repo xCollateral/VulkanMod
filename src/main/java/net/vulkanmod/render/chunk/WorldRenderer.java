@@ -124,8 +124,9 @@ public class WorldRenderer {
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {
         if(INSTANCE != null)
-            throw new RuntimeException("WorldRenderer re-initialization");
-        return INSTANCE = new WorldRenderer(renderBuffers);
+            return INSTANCE;
+        else
+            return INSTANCE = new WorldRenderer(renderBuffers);
     }
 
     public static WorldRenderer getInstance() {
@@ -398,48 +399,40 @@ public class WorldRenderer {
     }
 
     private void addNode(RenderSection renderSection, RenderSection relativeChunk, Direction direction) {
-        if (relativeChunk.setLastFrame(this.lastFrame)) {
-
-            int d;
-            if (renderSection.mainDir != direction && !renderSection.isCompletelyEmpty())
-                d = renderSection.directionChanges + 1;
-            else
-                d = renderSection.directionChanges;
+        if (relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) >= 0) {
+            return;
+        }
+        else if (relativeChunk.getLastFrame() == this.lastFrame) {
+            int d = renderSection.mainDir != direction && !renderSection.isCompletelyEmpty() ?
+                    renderSection.directionChanges + 1 : renderSection.directionChanges;
 
             relativeChunk.addDir(direction);
 
-            if(d < relativeChunk.directionChanges)
-                relativeChunk.directionChanges = (byte) d;
+            relativeChunk.directionChanges = d < relativeChunk.directionChanges ? (byte) d : relativeChunk.directionChanges;
 
+            return;
         }
-        else if (relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) < 0 ) {
-
-            if(relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) == FrustumIntersection.INTERSECT) {
-                if(frustum.cubeInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
-                        relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16) >= 0)
-                    return;
-            }
-
-            relativeChunk.setGraphInfo(direction, (byte) (renderSection.step + 1));
-            relativeChunk.setDirections(renderSection.directions, direction);
-            this.chunkQueue.add(relativeChunk);
-
-            byte d;
-            if ((renderSection.sourceDirs & (1 << direction.ordinal())) == 0 && !renderSection.isCompletelyEmpty())
-            {
-                if(renderSection.step > 4) {
-                    d = (byte) (renderSection.directionChanges + 1);
-                }
-                else {
-                    d = 0;
-                }
-
-            }
-            else
-                d = renderSection.directionChanges;
-
-            relativeChunk.directionChanges = d;
+        else if(relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex) == FrustumIntersection.INTERSECT) {
+            if(frustum.cubeInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
+                    relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16) >= 0)
+                return;
         }
+
+        relativeChunk.setLastFrame(this.lastFrame);
+
+        relativeChunk.setGraphInfo(direction, (byte) (renderSection.step + 1));
+        relativeChunk.setDirections(renderSection.directions, direction);
+        this.chunkQueue.add(relativeChunk);
+
+        byte d;
+        if ((renderSection.sourceDirs & (1 << direction.ordinal())) == 0 && !renderSection.isCompletelyEmpty())
+        {
+            d = renderSection.step > 4 ? (byte) (renderSection.directionChanges + 1) : 0;
+        }
+        else
+            d = renderSection.directionChanges;
+
+        relativeChunk.directionChanges = d;
     }
 
     public boolean scheduleUpdate(RenderSection section, int limit) {
@@ -714,6 +707,14 @@ public class WorldRenderer {
 
     public void setNeedsUpdate() {
         this.needsUpdate = true;
+    }
+
+    public boolean needsUpdate() {
+        return this.needsUpdate;
+    }
+
+    public int getVisibleSectionsCount() {
+        return this.chunkQueue.size();
     }
 
     public void setSectionDirty(int x, int y, int z, boolean flag) {

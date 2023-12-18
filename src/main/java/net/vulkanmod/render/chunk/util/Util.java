@@ -44,6 +44,9 @@ public class Util {
     }
 
     public static int align(int i, int alignment) {
+        if(alignment == 0)
+            return i;
+
         int r = i % alignment;
         return r != 0 ? i + alignment - r : i;
     }

@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.render;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
+import net.vulkanmod.gl.GlRenderbuffer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
@@ -122,7 +123,7 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _texParameter(int i, int j, int k) {
-        //TODO
+        GlTexture.texParameteri(i, j, k);
     }
 
     /**
@@ -146,7 +147,7 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _pixelStore(int pname, int param) {
-
+        //Used during upload to set copy offsets
     }
 
     /**
@@ -193,6 +194,12 @@ public class GlStateManagerM {
         RenderSystem.assertOnRenderThreadOrInit();
         VRenderSystem.clearColor(f, g, h, i);
     }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _clearDepth(double d) {}
 
     /**
      * @author
@@ -251,9 +258,8 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static int glGenRenderbuffers() {
-        //TODO
         RenderSystem.assertOnRenderThreadOrInit();
-        return GlFramebuffer.genFramebufferId();
+        return GlRenderbuffer.genId();
     }
 
     /**
@@ -271,7 +277,7 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _glFramebufferTexture2D(int i, int j, int k, int l, int m) {
         RenderSystem.assertOnRenderThreadOrInit();
-        GlFramebuffer.glFramebufferTexture2D(i, j, k, l, m);
+        GlFramebuffer.framebufferTexture2D(i, j, k, l, m);
     }
 
     /**
@@ -280,7 +286,7 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _glBindRenderbuffer(int i, int j) {
         RenderSystem.assertOnRenderThreadOrInit();
-        GlFramebuffer.bindRenderbuffer(i, j);
+        GlRenderbuffer.bindRenderbuffer(i, j);
     }
 
     /**
@@ -288,9 +294,8 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _glFramebufferRenderbuffer(int i, int j, int k, int l) {
-        //TODO
         RenderSystem.assertOnRenderThreadOrInit();
-        GlFramebuffer.glFramebufferRenderbuffer(i, j, k, l);
+        GlFramebuffer.framebufferRenderbuffer(i, j, k, l);
     }
 
     /**
@@ -299,8 +304,7 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static void _glRenderbufferStorage(int i, int j, int k, int l) {
         RenderSystem.assertOnRenderThreadOrInit();
-//        GL30.glRenderbufferStorage(i, j, k, l);
-        GlFramebuffer.glRenderbufferStorage(i, j, k, l);
+        GlRenderbuffer.renderbufferStorage(i, j, k, l);
     }
 
     /**

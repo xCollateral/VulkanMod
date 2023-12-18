@@ -10,7 +10,7 @@ import java.util.StringTokenizer;
 
 public class GlslConverter {
 
-//    private Queue<Integer> stack = new ArrayDeque<>();
+    //    private Queue<Integer> stack = new ArrayDeque<>();
     private int count;
     ShaderStage shaderStage;
     private State state;
@@ -21,9 +21,9 @@ public class GlslConverter {
     private String vshConverted;
     private String fshConverted;
 
-    public void process(VertexFormat vertexFormat, String vertShader, String fragShader) {
+    public void process(String vertShader, String fragShader) {
         this.uniformParser = new UniformParser(this);
-        this.inOutParser = new InputOutputParser(this, vertexFormat);
+        this.inOutParser = new InputOutputParser(this);
 
         StringBuilder vshOut = new StringBuilder();
         StringBuilder fshOut = new StringBuilder();
@@ -34,7 +34,6 @@ public class GlslConverter {
 
         var iterator = Arrays.stream(lines).iterator();
 
-        //TODO version
         while (iterator.hasNext()) {
             String line = iterator.next();
 
@@ -79,8 +78,6 @@ public class GlslConverter {
         vshOut.insert(0, "#version 450\n\n");
         fshOut.insert(0, "#version 450\n\n");
 
-        //TODO check
-        //TODO ubo
         this.vshConverted = vshOut.toString();
         this.fshConverted = fshOut.toString();
 
@@ -95,20 +92,23 @@ public class GlslConverter {
 
         String token = tokenizer.nextToken();
 
-        if(token.matches("uniform")) {
-            this.state = State.MATCHING_UNIFORM;
-        }
-        else if(token.matches("in")) {
-            this.state = State.MATCHING_IN_OUT;
-        }
-        else if(token.matches("out")) {
-            this.state = State.MATCHING_IN_OUT;
-        }
-        else if(token.matches("#version")) {
-            return null;
-        }
-        else {
-            return line;
+        switch (token) {
+            case "uniform" -> this.state = State.MATCHING_UNIFORM;
+            case "in", "out" -> this.state = State.MATCHING_IN_OUT;
+            case "#version" -> {
+                return  null;
+            }
+            case "#moj_import" -> {
+                if(tokenizer.countTokens() != 1) {
+                    throw new IllegalArgumentException("Token count != 1");
+                }
+
+                return String.format("#include %s", tokenizer.nextToken());
+            }
+
+            default -> {
+                return line;
+            }
         }
 
         if(tokenizer.countTokens() < 2) {

@@ -1,14 +1,15 @@
 package net.vulkanmod.mixin.compatibility.gl;
 
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeType;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -61,7 +62,7 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glClear(@NativeType("GLbitfield") int mask) {
-        //TODO
+        VRenderSystem.clear(mask);
     }
 
     /**
@@ -80,7 +81,7 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glClearColor(@NativeType("GLfloat") float red, @NativeType("GLfloat") float green, @NativeType("GLfloat") float blue, @NativeType("GLfloat") float alpha) {
-        //TODO
+        VRenderSystem.clearColor(red, green, blue, alpha);
     }
 
     /**
@@ -126,7 +127,7 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glTexParameteri(@NativeType("GLenum") int target, @NativeType("GLenum") int pname, @NativeType("GLint") int param) {
-        //TODO
+        GlTexture.texParameteri(target, pname, param);
     }
 
     /**
@@ -153,5 +154,23 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glDisable(@NativeType("GLenum") int target) {
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glGetTexImage(@NativeType("GLenum") int tex, @NativeType("GLint") int level, @NativeType("GLenum") int format, @NativeType("GLenum") int type, @NativeType("void *") long pixels) {
+        GlTexture.getTexImage(tex, level, format, type, pixels);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glCopyTexSubImage2D(@NativeType("GLenum") int target, @NativeType("GLint") int level, @NativeType("GLint") int xoffset, @NativeType("GLint") int yoffset, @NativeType("GLint") int x, @NativeType("GLint") int y, @NativeType("GLsizei") int width, @NativeType("GLsizei") int height) {
+        //TODO
     }
 }

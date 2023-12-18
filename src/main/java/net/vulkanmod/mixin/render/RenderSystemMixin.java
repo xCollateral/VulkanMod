@@ -9,10 +9,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -56,6 +58,20 @@ public abstract class RenderSystemMixin {
             VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).getVulkanImage());
 
             //shaderTextures[i] = abstractTexture.getId();
+        }
+
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _setShaderTexture(int i, int id) {
+        if (i >= 0 && i < VTextureSelector.SIZE) {
+            GlTexture glTexture = GlTexture.getTexture(id);
+            VulkanImage vulkanImage = glTexture != null ? glTexture.getVulkanImage() : null;
+
+            VTextureSelector.bindTexture(i, vulkanImage);
         }
 
     }

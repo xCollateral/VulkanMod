@@ -2,7 +2,7 @@ package net.vulkanmod.mixin.compatibility;
 
 import com.mojang.blaze3d.preprocessor.GlslPreprocessor;
 import com.mojang.blaze3d.shaders.Program;
-import net.vulkanmod.gl.Util;
+import net.vulkanmod.gl.GlUtil;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 import org.apache.commons.io.IOUtils;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,9 +35,9 @@ public class ProgramM {
 //                return i;
 //            }
 
-            //TODO
+            //TODO maybe not needed?
             glslPreprocessor.process(string3);
-            SPIRVUtils.compileShader(string2 + ":" + string, string3, Util.extToShaderKind(type.getExtension()));
+            SPIRVUtils.compileShader(string2 + ":" + string, string3, GlUtil.extToShaderKind(type.getExtension()));
         }
         return 0;
     }

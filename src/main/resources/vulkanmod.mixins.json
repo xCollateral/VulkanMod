@@ -7,7 +7,8 @@
   "mixins": [
   ],
   "client": [
-    "WindowMixin",
+    "window.WindowMixin",
+    "window.WindowAccessor",
 
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
@@ -18,6 +19,7 @@
     "compatibility.ProgramM",
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
+    "compatibility.gl.GL30M",
 
     "debug.ChunkBorderRendererM",
     "debug.DebugScreenOverlayM",
@@ -38,14 +40,15 @@
     "render.GlProgramManagerMixin",
     "render.GlStateManagerM",
     "render.LevelRendererMixin",
-    "render.MainTargetMixin",
     "render.MinecraftMixin",
     "render.RenderSystemMixin",
-    "render.RenderTargetMixin",
     "render.ShaderInstanceM",
     "render.entity.EntityRendererM",
     "render.model.ModelPartCubeM",
     "render.model.ModelPartM",
+    "render.particle.SingleQuadParticleM",
+    "render.target.MainTargetMixin",
+    "render.target.RenderTargetMixin",
     "render.vertex.BufferBuilderM",
     "render.vertex.FaceBakeryM",
     "render.vertex.IndexTypeMixin",
@@ -56,11 +59,13 @@
 
     "screen.OptionsScreenM",
 
+    "texture.mip.MipmapGeneratorM",
+    "texture.image.MNativeImage",
+    "texture.image.NativeImageAccessor",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
     "texture.MLightTexture",
-    "texture.MNativeImage",
     "texture.MOverlayTexture",
     "texture.MPlayerSkinTexture",
     "texture.MSimpleTexture",
@@ -71,13 +76,19 @@
 
     "util.ScreenshotRecorderM",
 
+    "vertex.EntityOutlineGeneratorM",
     "vertex.SpriteCoordinateExpanderM",
     "vertex.VertexMultiConsumersM$DoubleM",
     "vertex.VertexMultiConsumersM$MultipleM",
     "vertex.VertexMultiConsumersM$SheetDecalM",
 
     "wayland.InputConstantsM",
-    "wayland.MinecraftMixin"
+    "wayland.MinecraftMixin",
+
+    "texture.mip.MipmapGeneratorM",
+
+    "compatibility.PostChainM",
+    "compatibility.PostPassM"
   ],
   "injectors": {
     "defaultRequire": 1
