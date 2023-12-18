@@ -1,17 +1,14 @@
 package net.vulkanmod.render.vertex;
 
+import net.vulkanmod.vulkan.util.ColorUtil;
+
 public class VertexUtil {
 
     private static final float NORM_INV = 1.0f / 127.0f;
     private static final float COLOR_INV = 1.0f / 255.0f;
 
     public static int packColor(float r, float g, float b, float a) {
-        r *= 255.0f;
-        g *= 255.0f;
-        b *= 255.0f;
-        a *= 255.0f;
-
-        return ((int)r & 0xFF) | ((int)g & 0xFF) << 8 |  ((int)b & 0xFF) << 16 | ((int)a & 0xFF) << 24;
+        return ColorUtil.packColorIntRGBA(r, g, b, a);
     }
 
     public static int packNormal(float x, float y, float z) {
