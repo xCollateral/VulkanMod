@@ -16,6 +16,7 @@ import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
@@ -475,9 +476,6 @@ public abstract class Pipeline {
                     && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
                     "Cannot create Pipeline: resources missing");
 
-            if(this.manualUBO != null)
-                this.UBOs.add(this.manualUBO);
-
             return new GraphicsPipeline(this);
         }
 
@@ -576,6 +574,7 @@ public abstract class Pipeline {
                 this.currentBinding = binding;
 
             this.manualUBO = new ManualUBO(binding, stage, size);
+            this.UBOs.add(this.manualUBO);
         }
 
         private void parseSamplerNode(JsonElement jsonelement) {
@@ -584,7 +583,8 @@ public abstract class Pipeline {
 
             this.currentBinding++;
 
-            this.imageDescriptors.add(new ImageDescriptor(this.currentBinding, "sampler2D", name));
+            int imageIdx = VTextureSelector.getTextureIdx(name);
+            this.imageDescriptors.add(new ImageDescriptor(this.currentBinding, "sampler2D", name, imageIdx));
         }
 
         private void parsePushConstantNode(JsonArray jsonArray) {

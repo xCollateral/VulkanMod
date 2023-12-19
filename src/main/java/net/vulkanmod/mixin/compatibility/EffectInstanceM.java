@@ -1,6 +1,7 @@
 package net.vulkanmod.mixin.compatibility;
 
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.shaders.BlendMode;
 import com.mojang.blaze3d.shaders.EffectProgram;
 import com.mojang.blaze3d.shaders.Program;
@@ -11,17 +12,15 @@ import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
-import net.vulkanmod.vulkan.shader.layout.Vec1f;
-import net.vulkanmod.vulkan.shader.layout.Vec1i;
 import net.vulkanmod.vulkan.shader.parser.GlslConverter;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -149,16 +148,8 @@ public class EffectInstanceM {
                 throw new RuntimeException("out of bounds value for uniform " + uniform);
             }
 
-//            if(v_uniform instanceof Vec1f) {
-//                ((Vec1f)v_uniform).setSupplier();
-//            }
-//            else if(v_uniform instanceof Vec1i) {
-//
-//            }
-
             MappedBuffer mappedBuffer = MappedBuffer.createFromBuffer(byteBuffer);
             supplier = () -> mappedBuffer;
-            //TODO vec1 - maybe done
 
             v_uniform.setSupplier(supplier);
         }
@@ -199,7 +190,7 @@ public class EffectInstanceM {
             String string = this.samplerNames.get(i);
             IntSupplier intSupplier = this.samplerMap.get(string);
             if (intSupplier != null) {
-                RenderSystem.activeTexture('蓀' + i);
+                RenderSystem.activeTexture(GL30.GL_TEXTURE0 + i);
                 int j = intSupplier.getAsInt();
                 if (j != -1) {
                     RenderSystem.bindTexture(j);
@@ -213,6 +204,27 @@ public class EffectInstanceM {
         }
 
         renderer.uploadAndBindUBOs(pipeline);
+
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public void clear() {
+        RenderSystem.assertOnRenderThread();
+        ProgramManager.glUseProgram(0);
+        lastProgramId = -1;
+        lastAppliedEffect = null;
+        lastPipeline = null;
+
+        for(int i = 0; i < this.samplerLocations.size(); ++i) {
+            if (this.samplerMap.get(this.samplerNames.get(i)) != null) {
+                GlStateManager._activeTexture(GL30.GL_TEXTURE0 + i);
+                GlStateManager._bindTexture(0);
+            }
+        }
 
     }
 }

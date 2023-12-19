@@ -20,6 +20,7 @@ public class GlTexture {
     private static final Int2ReferenceOpenHashMap<GlTexture> map = new Int2ReferenceOpenHashMap<>();
     private static int boundTextureId = 0;
     private static GlTexture boundTexture;
+    private static int activeTexture = 0;
 
     public static int genTextureId() {
         int id = ID_COUNTER;
@@ -40,7 +41,7 @@ public class GlTexture {
 
         VulkanImage vulkanImage = boundTexture.vulkanImage;
         if(vulkanImage != null)
-            VTextureSelector.bindTexture(vulkanImage);
+            VTextureSelector.bindTexture(activeTexture, vulkanImage);
     }
 
     public static void glDeleteTextures(int i) {
@@ -57,6 +58,13 @@ public class GlTexture {
         return map.get(id);
     }
 
+    public static void activeTexture(int i) {
+        activeTexture = i - GL30.GL_TEXTURE0;
+
+        if(activeTexture < 0 || activeTexture > VTextureSelector.SIZE - 1)
+            throw new IllegalArgumentException("value: " + activeTexture);
+    }
+
     public static void texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, @Nullable ByteBuffer pixels) {
         if(width == 0 || height == 0)
             return;
@@ -68,6 +76,7 @@ public class GlTexture {
         boundTexture.internalFormat = internalFormat;
 
         boundTexture.allocateIfNeeded(width, height, format, type);
+        VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage);
 
         if(pixels != null)
             boundTexture.uploadImage(pixels);
@@ -177,8 +186,6 @@ public class GlTexture {
                     .setFormat(vkFormat)
                     .addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
                     .createVulkanImage();
-
-        VTextureSelector.bindTexture(this.vulkanImage);
     }
 
     void updateSampler() {
