@@ -193,7 +193,7 @@ public class Renderer {
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
 
         p.pop();
-        p.start();
+        p.round();
         p.push("Begin_rendering");
 
 //        AreaUploadManager.INSTANCE.updateFrame();

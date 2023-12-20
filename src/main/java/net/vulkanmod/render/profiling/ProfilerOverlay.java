@@ -1,6 +1,7 @@
 package net.vulkanmod.render.profiling;
 
 import com.google.common.base.Strings;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -10,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 
@@ -19,11 +19,30 @@ import java.util.List;
 import java.util.Objects;
 
 public class ProfilerOverlay {
+    private static final long POLL_PERIOD = 100000000;
+
     public static ProfilerOverlay INSTANCE;
     public static boolean shouldRender;
 
+    private static List<Profiler2.Result> lastResults;
+    private static long lastPollTime;
+    private static float frametime;
+
+    private static int node = -1;
+
     public static void createInstance(Minecraft minecraft) {
         INSTANCE = new ProfilerOverlay(minecraft);
+    }
+
+    public static void toggle() {
+        shouldRender = !shouldRender;
+
+        Profiler2.setActive(shouldRender);
+    }
+
+    public static void onKeyPress(int key) {
+//        int v = key - InputConstants.KEY_0;
+//        node = v >= 0 && v <= 15 ? v-1 : node;
     }
 
     Minecraft minecraft;
@@ -35,7 +54,6 @@ public class ProfilerOverlay {
     }
 
     public void render(PoseStack poseStack) {
-
         this.drawProfilerInfo(poseStack);
     }
 
@@ -81,17 +99,20 @@ public class ProfilerOverlay {
         list.add("");
         list.add("Profiler");
 
-        List<Profiler2.Result> results = Profiler2.getMainProfiler().getResults();
+        updateResults();
 
-        float frametime = results.get(0).getValue();
+        if(lastResults == null)
+            return list;
+
         int fps = (int) (1000.0f / frametime);
 
         list.add(String.format("FPS: %d Frametime: %.3f", fps, frametime));
         list.add("");
 
-        for (int i = 1; i < results.size(); i++) {
-            Profiler2.Result result = results.get(i);
+        for (int i = 0; i < lastResults.size(); i++) {
+            Profiler2.Result result = lastResults.get(i);
             list.add(result.toString());
+//            list.add(String.format("[%d] %s", i, result.toString()));
         }
 
         //Section build stats
@@ -103,5 +124,30 @@ public class ProfilerOverlay {
             list.add(String.format("Total build time: %d ms for %d builds", ChunkTask.totalBuildTime.get(), ChunkTask.buildCount.get()));
 
         return list;
+    }
+
+    private void updateResults() {
+        if((System.nanoTime() - lastPollTime) < POLL_PERIOD && lastResults != null)
+            return;
+
+        List<Profiler2.Result> results = Profiler2.getMainProfiler().getResults();
+
+        if(results == null)
+            return;
+
+        frametime = results.get(0).getValue();
+        lastResults = results;
+
+//        if(node >= 0) {
+//            lastResults = Profiler2.getMainProfiler().getResults(node);
+//            if(lastResults == null) {
+//                lastResults = results;
+//                node = -1;
+//            }
+//        }
+//        else
+//            lastResults = results;
+
+        lastPollTime = System.nanoTime();
     }
 }
