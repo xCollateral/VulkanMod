@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.chunk.util.DrawBufferSetQueue;
@@ -591,7 +592,7 @@ public class WorldRenderer {
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
 
 
-            GraphicsPipeline terrainShader = TerrainShaderManager.getTerrainShader(terrainRenderType);
+            GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
             terrainShader.bindDescriptorSets(commandBuffer, currentFrame);

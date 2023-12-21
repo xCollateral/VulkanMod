@@ -1,22 +1,23 @@
 package net.vulkanmod.render.profiling;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-//TODO
+//TODO needs a rework
 public class Profiler2 {
     private static final boolean DEBUG = false;
+    private static final boolean FORCE_ACTIVE = false;
 
     private static final float CONVERSION = 1000.0f;
     private static final float INV_CONVERSION = 1.0f / CONVERSION;
-    private static final long POLL_PERIOD = 100000000;
     private static final int SAMPLE_NUM = 200;
 
     private static final float TRIGGER_TIME = 10.0f * 1000;
-    private static final boolean ACTIVE = true;
+    public static boolean ACTIVE = FORCE_ACTIVE;
 
     private static final Profiler2 MAIN_PROFILER = new Profiler2("Main");
 
@@ -24,96 +25,87 @@ public class Profiler2 {
         return MAIN_PROFILER;
     }
 
+    public static void setActive(boolean b) {
+        if(!FORCE_ACTIVE)
+            ACTIVE = b;
+
+        if(!ACTIVE) {
+            MAIN_PROFILER.entriesStack.clear();
+            MAIN_PROFILER.slowEntries.clear();
+            MAIN_PROFILER.hasStarted = false;
+        }
+    }
+
     private final String name;
     private Entries entries;
     private final LinkedList<Entries> entriesStack = new LinkedList<>();
-    private long startTime;
-    private long endTime;
     private boolean hasStarted = false;
 
     private final LinkedList<Entries> slowEntries = new LinkedList<>();
 
-    private List<Result> lastResults;
-    private long lastPollTime;
-
     public Profiler2(String s) {
         this.name = s;
-        entries = new Entries(s);
-    }
-
-    public void start() {
-        if(!ACTIVE)
-            return;
-        if(this.hasStarted)
-            this.round();
-
-//        this.startTime = System.nanoTime();
-        this.hasStarted = true;
     }
 
     public void push(String s) {
-        //long time = entries.get(entries.size() - 1).getB();
-//        float time = convert(System.nanoTime() - startTime);
-//        float time = System.nanoTime();
-//        entries.values.add(new Entry(s, time));
-        if(ACTIVE)
+        if(ACTIVE && hasStarted)
             entries.push(s);
     }
 
     public void pop() {
-        if(ACTIVE)
+        if(ACTIVE && hasStarted)
             entries.pop();
     }
-
-//    public void pushMilestone(String s) {
-//        //long time = entries.get(entries.size() - 1).getB();
-//        float time = convert(System.nanoTime() - startTime);
-//        entries.milestones.add(new Entry(s, time));
-//    }
-
-//    public void end() {
-////        Profiler.setCurrentProfiler(defaultProfiler);
-//        this.hasStarted = false;
-//        entries.values.clear();
-////        entries.milestones.clear();
-//    }
-
-//    public static Profiler getProfiler(String name) {
-//        return activeProfilers.computeIfAbsent(name, Profiler::new);
-//    }
 
     public void round() {
         if(!ACTIVE)
             return;
 
+        if(!hasStarted) {
+            entries = new Entries();
+            hasStarted = true;
+            return;
+        }
+
         entries.round();
 //        entries.calculateValues();
 
+        //Slow entries
         if(entries.mainNode.value >= TRIGGER_TIME * 2) {
-            if(slowEntries.size() > SAMPLE_NUM) slowEntries.pollLast();
+            if(slowEntries.size() > SAMPLE_NUM)
+                slowEntries.pollLast();
             slowEntries.push(entries);
         }
 
-        if(entriesStack.size() > SAMPLE_NUM) entriesStack.pollLast();
+        if(entriesStack.size() > SAMPLE_NUM)
+            entriesStack.pollLast();
         entriesStack.push(entries);
-        entries = new Entries(name);
-        this.hasStarted = false;
+
+        entries = new Entries();
     }
 
-    public List<Result> getResults() {
-        if((System.nanoTime() - lastPollTime) < POLL_PERIOD && lastResults != null)
-            return lastResults;
+    public List<Result> getResults(int... indices) {
+        if(!hasStarted || this.entriesStack.isEmpty())
+            return null;
 
         Entries entries = this.entriesStack.getLast();
+        Node startNode = entries.mainNode;
 
-        var nodes = entries.mainNode.children;
+        //TODO select index on entries iteration
+//        for (int i : indices) {
+//            if(i < 0 || i >= startNode.children.size()) {
+//                return null;
+//            }
+//
+//            startNode = startNode.children.get(i);
+//        }
 
-//        List<String> names = new ArrayList<>();
-//        List<Float> values = new ArrayList<>();
+        var nodes = startNode.children;
 
         List<Result> results = new ArrayList<>();
 
-        results.add(new Result(entries.mainNode.name));
+        //First is whole start node result
+        results.add(new Result(startNode.name));
 
         for (Node node : nodes) {
             results.add(new Result(node.name));
@@ -151,9 +143,7 @@ public class Profiler2 {
 //        }
 
         results.forEach(Result::computeAvg);
-
-        lastPollTime = System.nanoTime();
-        return lastResults = results;
+        return results;
     }
 
     public static class Result {
@@ -187,29 +177,23 @@ public class Profiler2 {
     }
 
     private static class Entries {
-//        LinkedList<Node> stack = new LinkedList<>();
-//        LinkedList<Entry> values = new LinkedList<>();
-//        Object2FloatMap<String> valueMap;
-        Node mainNode;
+        final Node mainNode;
         Node currentNode;
 
         byte level = 0;
 
-        Entries(String name) {
-            mainNode = new Node(null, name);
+        Entries() {
+            mainNode = new Node(null, "Main");
             currentNode = mainNode;
         }
 
         void push(String s) {
-            //            this.stack.add(node);
             currentNode = new Node(currentNode, s);
 
             level++;
         }
 
         void pop() {
-//            Node entry = this.stack.pop();
-//            this.values.add(new Node(entry.name, convert(endTime - entries.deltaTime)));
             Node parent = currentNode.parent;
 
             if (parent == null)
@@ -261,18 +245,12 @@ public class Profiler2 {
 
     private static class Node {
 //        byte level, index;
-        String name;
+        final String name;
+        final long start;
         float value;
-        long start;
 
         Node parent;
-        LinkedList<Node> children = new LinkedList<>();
-
-//        public Node(@Nullable Node parent, String name, float value) {
-//            this.parent = parent;
-//            this.name = name;
-//            this.value = value;
-//        }
+        List<Node> children = new ObjectArrayList<>();
 
         public Node(@Nullable Node parent, String name) {
             this.parent = parent;

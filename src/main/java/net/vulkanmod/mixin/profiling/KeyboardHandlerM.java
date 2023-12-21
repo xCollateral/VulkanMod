@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.BuildTimeBench;
 import net.vulkanmod.render.profiling.ProfilerOverlay;
+import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,12 +19,14 @@ public class KeyboardHandlerM {
             target = "Lnet/minecraft/client/KeyMapping;set(Lcom/mojang/blaze3d/platform/InputConstants$Key;Z)V",
             ordinal = 0, shift = At.Shift.AFTER))
     private void injOverlayToggle(long l, int i, int j, int k, int m, CallbackInfo ci) {
-        if(InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 342) && i == 297)
-//        if(i == 297)
-            ProfilerOverlay.shouldRender = !ProfilerOverlay.shouldRender;
-
-        if(InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 342) && i == 299) {
-            BuildTimeBench.startBench();
+        if(InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_ALT)) {
+            switch (i) {
+                case GLFW.GLFW_KEY_F8 -> ProfilerOverlay.toggle();
+                case GLFW.GLFW_KEY_F10 -> BuildTimeBench.startBench();
+            }
+        }
+        else if(ProfilerOverlay.shouldRender) {
+            ProfilerOverlay.onKeyPress(i);
         }
     }
 }

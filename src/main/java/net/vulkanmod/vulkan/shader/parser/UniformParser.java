@@ -115,7 +115,8 @@ public class UniformParser {
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
             for(Uniform uniform : stageUniforms.samplers) {
-                imageDescriptors.add(new ImageDescriptor(currentLocation, uniform.type, uniform.name));
+                int imageIdx = currentLocation - 1;
+                imageDescriptors.add(new ImageDescriptor(currentLocation, uniform.type, uniform.name, imageIdx));
                 currentLocation++;
             }
         }

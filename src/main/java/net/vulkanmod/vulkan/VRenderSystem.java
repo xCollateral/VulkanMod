@@ -66,57 +66,6 @@ public abstract class VRenderSystem {
         return DeviceManager.deviceProperties.limits().maxImageDimension2D();
     }
 
-    public static void renderCrosshair(int p_69348_, boolean p_69349_, boolean p_69350_, boolean p_69351_) {
-        RenderSystem.assertOnRenderThread();
-//        GlStateManager._disableTexture();
-//        GlStateManager._depthMask(false);
-//        GlStateManager._disableCull();
-        VRenderSystem.depthMask(false);
-        RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
-        Tesselator tesselator = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferbuilder = tesselator.getBuilder();
-        RenderSystem.lineWidth(4.0F);
-        bufferbuilder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-        if (p_69349_) {
-            bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
-            bufferbuilder.vertex((double)p_69348_, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
-        }
-
-        if (p_69350_) {
-            bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
-            bufferbuilder.vertex(0.0D, (double)p_69348_, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
-        }
-
-        if (p_69351_) {
-            bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
-            bufferbuilder.vertex(0.0D, 0.0D, (double)p_69348_).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
-        }
-
-        tesselator.end();
-        RenderSystem.lineWidth(2.0F);
-        bufferbuilder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-        if (p_69349_) {
-            bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
-            bufferbuilder.vertex((double)p_69348_, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
-        }
-
-        if (p_69350_) {
-            bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
-            bufferbuilder.vertex(0.0D, (double)p_69348_, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
-        }
-
-        if (p_69351_) {
-            bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
-            bufferbuilder.vertex(0.0D, 0.0D, (double)p_69348_).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
-        }
-
-        tesselator.end();
-        RenderSystem.lineWidth(1.0F);
-//        GlStateManager._enableCull();
-        RenderSystem.depthMask(true);
-//        GlStateManager._enableTexture();
-    }
-
     public static void applyMVP(Matrix4f MV, Matrix4f P) {
         applyModelViewMatrix(MV);
         applyProjectionMatrix(P);

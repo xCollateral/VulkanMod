@@ -122,6 +122,14 @@ public class GlStateManagerM {
      * @author
      */
     @Overwrite(remap = false)
+    public static void _activeTexture(int i) {
+        GlTexture.activeTexture(i);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
     public static void _texParameter(int i, int j, int k) {
         GlTexture.texParameteri(i, j, k);
     }

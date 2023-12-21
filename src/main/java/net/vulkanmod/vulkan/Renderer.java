@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.chunk.AreaUploadManager;
-import net.vulkanmod.render.chunk.TerrainShaderManager;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -95,7 +95,7 @@ public class Renderer {
         drawer.createResources(framesNum);
 
         Uniforms.setupDefaultUniforms();
-        TerrainShaderManager.init();
+        PipelineManager.init();
         AreaUploadManager.createInstance();
 
         allocateCommandBuffers();
@@ -193,7 +193,7 @@ public class Renderer {
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
 
         p.pop();
-        p.start();
+        p.round();
         p.push("Begin_rendering");
 
 //        AreaUploadManager.INSTANCE.updateFrame();
@@ -433,7 +433,7 @@ public class Renderer {
 
         drawer.cleanUpResources();
 
-        TerrainShaderManager.destroyPipelines();
+        PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
     }
 
@@ -586,6 +586,23 @@ public class Renderer {
 
             vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
+        }
+    }
+
+    public static void resetViewport() {
+        try(MemoryStack stack = stackPush()) {
+            int width = getSwapChain().getWidth();
+            int height = getSwapChain().getHeight();
+
+            VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
+            viewport.x(0.0f);
+            viewport.y(height);
+            viewport.width(width);
+            viewport.height(-height);
+            viewport.minDepth(0.0f);
+            viewport.maxDepth(1.0f);
+
+            vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
         }
     }
 
