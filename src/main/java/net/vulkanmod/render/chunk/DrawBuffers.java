@@ -4,6 +4,7 @@ import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -13,6 +14,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.LongBuffer;
 import java.util.EnumMap;
 import java.util.Set;
@@ -99,12 +101,15 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long ptr, long layout) {
-        VUtil.UNSAFE.putFloat(ptr + 0, (float) (this.origin.x - camX));
-        VUtil.UNSAFE.putFloat(ptr + 4, (float) (this.origin.y - camY));
-        VUtil.UNSAFE.putFloat(ptr + 8, (float) (this.origin.z - camZ));
+    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout, FloatBuffer mPtr) {
 
-        nvkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 12, ptr);
+
+        float camX1 = (float)(camX-(this.origin.x));
+        float camY1 = (float)(camY-(this.origin.y));
+        float camZ1 = (float)(camZ-(this.origin.z));
+        VRenderSystem.translateMVP(-camX1, -camY1, -camZ1, mPtr);
+        vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
+//        VRenderSystem.translateMVP(camX1, camY1, camZ1);
     }
 
     public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
@@ -185,9 +190,9 @@ public class DrawBuffers {
         vkCmdBindVertexBuffers(commandBuffer, 0, pVertexBuffer, pOffset);
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
+        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
+        vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, 20);
 
-        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
-        vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
 
@@ -240,10 +245,8 @@ public class DrawBuffers {
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            long pVertexBuffer = stack.npointer(vertexBuffer.getId());
-            long pOffset = stack.npointer(0);
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, (pVertexBuffer), (pOffset));
-            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, stack.nmalloc(16), layout);
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
         }
 
 
