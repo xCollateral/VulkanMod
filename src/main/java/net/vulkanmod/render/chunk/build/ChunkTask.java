@@ -22,7 +22,7 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import net.vulkanmod.render.chunk.RenderSection;
-import net.vulkanmod.render.chunk.TerrainShaderManager;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -180,7 +180,7 @@ public abstract class ChunkTask {
 
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         if (set.add(renderType)) {
-                            bufferBuilder.begin(VertexFormat.Mode.QUADS, TerrainShaderManager.TERRAIN_VERTEX_FORMAT);
+                            bufferBuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
                         }
 
                         bufferBuilder.setBlockAttributes(fluidState.createLegacyBlock());
@@ -196,7 +196,7 @@ public abstract class ChunkTask {
 
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType);
                         if (set.add(renderType)) {
-                            bufferBuilder.begin(VertexFormat.Mode.QUADS, TerrainShaderManager.TERRAIN_VERTEX_FORMAT);
+                            bufferBuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
                         }
 
                         bufferBuilder.setBlockAttributes(blockState);
@@ -300,7 +300,7 @@ public abstract class ChunkTask {
                 TerrainBufferBuilder.SortState transparencyState = this.compiledSection.transparencyState;
                 if (transparencyState != null && this.compiledSection.renderTypes.contains(TerrainRenderType.TRANSLUCENT)) {
                     TerrainBufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
-                    bufferbuilder.begin(VertexFormat.Mode.QUADS, TerrainShaderManager.TERRAIN_VERTEX_FORMAT);
+                    bufferbuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
                     bufferbuilder.restoreSortState(transparencyState);
 //                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
                     bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.xOffset(), f1 - (float) renderSection.yOffset(), f2 - (float) renderSection.zOffset());

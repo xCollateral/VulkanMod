@@ -1,4 +1,4 @@
-package net.vulkanmod.render.chunk;
+package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
@@ -8,10 +8,9 @@ import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
-public abstract class TerrainShaderManager {
+public abstract class PipelineManager {
     public static VertexFormat TERRAIN_VERTEX_FORMAT;
 
     public static void setTerrainVertexFormat(VertexFormat format) {
@@ -20,6 +19,7 @@ public abstract class TerrainShaderManager {
 
     static GraphicsPipeline terrainIndirectShader;
     public static GraphicsPipeline terrainDirectShader;
+    public static GraphicsPipeline fastBlitPipeline;
 
     private static Function<RenderType, GraphicsPipeline> shaderGetter;
 
@@ -35,14 +35,15 @@ public abstract class TerrainShaderManager {
     }
 
     private static void createBasicPipelines() {
-        terrainIndirectShader = createPipeline("terrain_indirect");
-        terrainDirectShader = createPipeline("terrain_direct");
+        terrainIndirectShader = createPipeline("terrain_indirect", CustomVertexFormat.COMPRESSED_TERRAIN);
+        terrainDirectShader = createPipeline("terrain_direct", CustomVertexFormat.COMPRESSED_TERRAIN);
+        fastBlitPipeline = createPipeline("blit", CustomVertexFormat.NONE);
     }
 
-    private static GraphicsPipeline createPipeline(String name) {
+    private static GraphicsPipeline createPipeline(String name, VertexFormat vertexFormat) {
         String path = String.format("basic/%s/%s", name, name);
 
-        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(CustomVertexFormat.COMPRESSED_TERRAIN, path);
+        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(vertexFormat, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders();
         return pipelineBuilder.createGraphicsPipeline();
@@ -64,8 +65,11 @@ public abstract class TerrainShaderManager {
         return terrainIndirectShader;
     }
 
+    public static GraphicsPipeline getFastBlitPipeline() { return fastBlitPipeline; }
+
     public static void destroyPipelines() {
         terrainIndirectShader.cleanUp();
         terrainDirectShader.cleanUp();
+        fastBlitPipeline.cleanUp();
     }
 }

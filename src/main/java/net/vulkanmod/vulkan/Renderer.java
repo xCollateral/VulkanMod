@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.chunk.AreaUploadManager;
-import net.vulkanmod.render.chunk.TerrainShaderManager;
+import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -95,7 +95,7 @@ public class Renderer {
         drawer.createResources(framesNum);
 
         Uniforms.setupDefaultUniforms();
-        TerrainShaderManager.init();
+        PipelineManager.init();
         AreaUploadManager.createInstance();
 
         allocateCommandBuffers();
@@ -433,7 +433,7 @@ public class Renderer {
 
         drawer.cleanUpResources();
 
-        TerrainShaderManager.destroyPipelines();
+        PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
     }
 
