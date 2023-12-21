@@ -6,6 +6,8 @@ import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.client.renderer.PostPass;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -64,9 +66,13 @@ public class PostPassM {
         this.outTarget.clear(Minecraft.ON_OSX);
         this.outTarget.bindWrite(false);
 
-        this.effect.apply();
-
+        VRenderSystem.disableCull();
         RenderSystem.depthFunc(519);
+
+        Renderer.setViewport(0, this.outTarget.height, this.outTarget.width, -this.outTarget.height);
+        Renderer.resetScissor();
+
+        this.effect.apply();
 
         BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
         bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
@@ -87,5 +93,6 @@ public class PostPassM {
             }
         }
 
+        VRenderSystem.enableCull();
     }
 }

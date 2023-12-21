@@ -589,6 +589,23 @@ public class Renderer {
         }
     }
 
+    public static void resetViewport() {
+        try(MemoryStack stack = stackPush()) {
+            int width = getSwapChain().getWidth();
+            int height = getSwapChain().getHeight();
+
+            VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
+            viewport.x(0.0f);
+            viewport.y(height);
+            viewport.width(width);
+            viewport.height(-height);
+            viewport.minDepth(0.0f);
+            viewport.maxDepth(1.0f);
+
+            vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
+        }
+    }
+
     public static void setScissor(int x, int y, int width, int height) {
         if(INSTANCE.boundFramebuffer == null)
             return;
