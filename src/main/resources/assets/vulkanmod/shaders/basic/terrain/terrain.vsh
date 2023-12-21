@@ -3,12 +3,12 @@
 #include "light.glsl"
 
 layout(binding = 0) uniform UniformBufferObject {
-    vec4 dummy;
+    vec3 dummy;
 };
 
 layout(push_constant) uniform pushConstant {
     mat4 MVP;
-    mat4 ModelViewMat;
+    mat4 ProjMat;
 };
 
 layout(binding = 3) uniform sampler2D Sampler2;
@@ -34,7 +34,7 @@ void main() {
     const vec4 xyz = vec4(pos, 1);
     gl_Position = MVP * xyz;
 
-    vertexDistance = length((ModelViewMat * xyz).xyz);
+    vertexDistance = length((ProjMat * xyz).xyz);
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);
@@ -48,9 +48,9 @@ void main() {
 //layout(location = 4) in vec3 Normal;
 
 //void main() {
-//    gl_Position = MVP * vec4(Position + ChunkOffset, 1.0);
+//    gl_Position = MVP * vec4(Position, 1.0);
 //
-//    vertexDistance = length((ModelViewMat * vec4(Position + ChunkOffset, 1.0)).xyz);
+//    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
 //    vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
 //    texCoord0 = UV0;
 //    //    normal = MVP * vec4(Normal, 0.0);
