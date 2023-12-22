@@ -44,17 +44,17 @@ public abstract class SingleQuadParticleM extends Particle {
      */
     @Overwrite
     public void render(VertexConsumer vertexConsumer, Camera camera, float f) {
-        float xOffset = (float)(Mth.lerp(f, this.xo, this.x));
-        float yOffset = (float)(Mth.lerp(f, this.yo, this.y));
-        float zOffset = (float)(Mth.lerp(f, this.zo, this.z));
+        double lx = (Mth.lerp(f, this.xo, this.x));
+        double ly = (Mth.lerp(f, this.yo, this.y));
+        double lz = (Mth.lerp(f, this.zo, this.z));
 
-        if(cull(WorldRenderer.getInstance(), xOffset, yOffset, zOffset))
+        if(cull(WorldRenderer.getInstance(), (float) lx, (float) ly, (float) lz))
             return;
 
         Vec3 vec3 = camera.getPosition();
-        xOffset -= (float) vec3.x();
-        yOffset -= (float) vec3.y();
-        zOffset -= (float) vec3.z();
+        float offsetX = (float) (lx - vec3.x());
+        float offsetY = (float) (ly - vec3.y());
+        float offsetZ = (float) (lz - vec3.z());
 
         Quaternionf quaternionf;
         if (this.roll != 0.0F) {
@@ -71,7 +71,7 @@ public abstract class SingleQuadParticleM extends Particle {
             Vector3f vector3f = vector3fs[k];
             vector3f.rotate(quaternionf);
             vector3f.mul(j);
-            vector3f.add(xOffset, yOffset, zOffset);
+            vector3f.add(offsetX, offsetY, offsetZ);
         }
 
         float u0 = this.getU0();
