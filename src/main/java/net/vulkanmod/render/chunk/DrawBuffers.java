@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.joml.Matrix4f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -103,14 +104,18 @@ public class DrawBuffers {
     }
 
     private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout, FloatBuffer mPtr) {
+        
+            float x = (float)(camX-(this.origin.x));
+            float y = (float)(camY-(this.origin.y));
+            float z = (float)(camZ-(this.origin.z));
 
+            Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer.asFloatBuffer());
+            Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer.asFloatBuffer());
 
-        float camX1 = (float)(camX-(this.origin.x));
-        float camY1 = (float)(camY-(this.origin.y));
-        float camZ1 = (float)(camZ-(this.origin.z));
-        VRenderSystem.translateMVP(-camX1, -camY1, -camZ1, mPtr);
-        vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
-//        VRenderSystem.translateMVP(camX1, camY1, camZ1);
+            MVP.translate(-x, -y, -z).get(mPtr);
+            MV.translate(-x, -y, -z).get(16,mPtr);
+
+            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
 
     public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
