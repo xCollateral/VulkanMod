@@ -109,8 +109,8 @@ public class DrawBuffers {
             float y = (float)(camY-(this.origin.y));
             float z = (float)(camZ-(this.origin.z));
 
-            Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer.asFloatBuffer());
-            Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer.asFloatBuffer());
+            Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer().asFloatBuffer());
+            Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer().asFloatBuffer());
 
             MVP.translate(-x, -y, -z).get(mPtr);
             MV.translate(-x, -y, -z).get(16,mPtr);

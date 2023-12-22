@@ -4,22 +4,18 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
-public class MappedBuffer {
+public record MappedBuffer( ByteBuffer buffer, long ptr) {
 
-    public final ByteBuffer buffer;
-    public final long ptr;
 
     public static MappedBuffer createFromBuffer(ByteBuffer buffer) {
-        return new MappedBuffer(buffer, MemoryUtil.memAddress0(buffer));
+        return new MappedBuffer(buffer);
     }
-    MappedBuffer(ByteBuffer buffer, long ptr) {
-        this.buffer = buffer;
-        this.ptr = ptr;
+    public static MappedBuffer getMappedBuffer(ByteBuffer buffer, long ptr) {
+        return new MappedBuffer(buffer, ptr);
     }
 
-    public MappedBuffer(int size) {
-        this.buffer = MemoryUtil.memAlloc(size);
-        this.ptr = MemoryUtil.memAddress0(this.buffer);
+    public MappedBuffer(ByteBuffer buffer) {
+        this(buffer, MemoryUtil.memAddress0(buffer));
     }
 
     public void putFloat(int idx, float f) {

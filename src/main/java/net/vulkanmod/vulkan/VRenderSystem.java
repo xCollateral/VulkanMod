@@ -3,19 +3,12 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.joml.Math;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -33,21 +26,21 @@ public abstract class VRenderSystem {
     public static boolean cull = true;
 
     public static final float clearDepth = 1.0f;
-    public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
+    public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4); //Avoid the driver caching dirty memory as a clear Color
 
-    public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer TextureMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer MVP = new MappedBuffer(16 * 4);
+    public static final MappedBuffer modelViewMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
+    public static final MappedBuffer projectionMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
+    public static final MappedBuffer TextureMatrix = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
+    public static final MappedBuffer MVP = new MappedBuffer(MemoryUtil.memAlloc(16 * 4));
 
-    public static MappedBuffer ChunkOffset = new MappedBuffer(3 * 4);
-    public static MappedBuffer lightDirection0 = new MappedBuffer(3 * 4);
-    public static MappedBuffer lightDirection1 = new MappedBuffer(3 * 4);
+    public static final MappedBuffer ChunkOffset = new MappedBuffer(MemoryUtil.memAlloc(3 * 4));
+    public static final MappedBuffer lightDirection0 = new MappedBuffer(MemoryUtil.memAlloc(3 * 4));
+    public static final MappedBuffer lightDirection1 = new MappedBuffer(MemoryUtil.memAlloc(3 * 4));
 
-    public static MappedBuffer shaderColor = new MappedBuffer(4 * 4);
-    public static MappedBuffer shaderFogColor = new MappedBuffer(4 * 4);
+    public static final MappedBuffer shaderColor = new MappedBuffer(MemoryUtil.memAlloc(4 * 4));
+    public static final MappedBuffer shaderFogColor = new MappedBuffer(MemoryUtil.memAlloc(4 * 4));
 
-    public static MappedBuffer screenSize = new MappedBuffer(2 * 4);
+    public static final MappedBuffer screenSize = new MappedBuffer(MemoryUtil.memAlloc(2 * 4));
 
     public static float alphaCutout = 0.0f;
 
@@ -60,7 +53,7 @@ public abstract class VRenderSystem {
         Vulkan.initVulkan(window);
     }
 
-    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer; }
+    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer(); }
 
     public static int maxSupportedTextureSize() {
         return DeviceManager.deviceProperties.limits().maxImageDimension2D();
@@ -73,23 +66,22 @@ public abstract class VRenderSystem {
     }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
-        mat.get(modelViewMatrix.buffer.asFloatBuffer());
+        mat.get(modelViewMatrix.buffer().asFloatBuffer());
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
 
     public static void applyProjectionMatrix(Matrix4f mat) {
-        mat.get(projectionMatrix.buffer.asFloatBuffer());
+        mat.get(projectionMatrix.buffer().asFloatBuffer());
     }
 
     public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
-
-        P.mul(MV).get(MVP.buffer);
+        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer().asFloatBuffer());
+        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer().asFloatBuffer());
+        P.mul(MV).get(MVP.buffer());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
-        mat.get(TextureMatrix.buffer.asFloatBuffer());
+        mat.get(TextureMatrix.buffer().asFloatBuffer());
     }
 
     public static MappedBuffer getTextureMatrix() {
@@ -109,7 +101,7 @@ public abstract class VRenderSystem {
     }
 
     public static void setChunkOffset(float f1, float f2, float f3) {
-        long ptr = ChunkOffset.ptr;
+        long ptr = ChunkOffset.ptr();
         VUtil.UNSAFE.putFloat(ptr, f1);
         VUtil.UNSAFE.putFloat(ptr + 4, f2);
         VUtil.UNSAFE.putFloat(ptr + 8, f3);
