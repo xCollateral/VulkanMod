@@ -320,14 +320,9 @@ public class WorldRenderer {
 
             if(!renderSection.isCompletelyEmpty()) {
                 final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
-                //                drawBuffers.addRenderTypes(renderTypes);
-                for(var t : renderSection.getCompiledSection().renderTypes)
-                {
-                    DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(t);
-                    if(drawParameters.indexCount>0)
-                    {
-                        drawBuffers.addDrawCommands(t, drawParameters);
-                    }
+                //Empty drawCmds never seem to occur anymore, which should be completely impossible but it somehow works
+                for(var t : renderSection.getCompiledSection().renderTypes) {
+                    drawBuffers.addDrawCommands(t, renderSection.getDrawParameters(t));
                 }
                 this.drawBufferSetQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
@@ -370,14 +365,9 @@ public class WorldRenderer {
 
             if(!renderSection.isCompletelyEmpty()) {
                 final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
-                //                drawBuffers.addRenderTypes(renderTypes);
-                for(var t : renderSection.getCompiledSection().renderTypes)
-                {
-                    DrawBuffers.DrawParameters drawParameters = renderSection.getDrawParameters(t);
-                    if(drawParameters.indexCount>0)
-                    {
-                        drawBuffers.addDrawCommands(t, drawParameters);
-                    }
+                //Empty drawCmds never seem to occur anymore, which should be completely impossible but it somehow works
+                for(var t : renderSection.getCompiledSection().renderTypes) {
+                    drawBuffers.addDrawCommands(t, renderSection.getDrawParameters(t));
                 }
                 this.drawBufferSetQueue.add(drawBuffers);
                 this.nonEmptyChunks++;
