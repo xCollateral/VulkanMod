@@ -13,6 +13,7 @@
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
     "chunk.LevelRendererMixin",
+    "chunk.RenderBuffersM",
     "chunk.VisibilitySetMixin",
 
     "compatibility.EffectInstanceM",
