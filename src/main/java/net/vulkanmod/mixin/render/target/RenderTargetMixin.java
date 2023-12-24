@@ -95,6 +95,10 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 //
 //    }
 
+    /**
+     * @author
+     */
+    @Overwrite
     public void bindRead() {
         RenderSystem.assertOnRenderThread();
 //        GlStateManager._bindTexture(this.colorTextureId);
@@ -107,11 +111,19 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         }
     }
 
+    /**
+     * @author
+     */
+    @Overwrite
     public void unbindRead() {
         RenderSystem.assertOnRenderThreadOrInit();
         GlTexture.bindTexture(0);
     }
 
+    /**
+     * @author
+     */
+    @Overwrite
     public void bindWrite(boolean bl) {
         if (!RenderSystem.isOnRenderThread()) {
             RenderSystem.recordRenderCall(() -> {
@@ -123,6 +135,10 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     }
 
+    /**
+     * @author
+     */
+    @Overwrite
     private void _bindWrite(boolean bl) {
         RenderSystem.assertOnRenderThreadOrInit();
 
@@ -140,6 +156,10 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
             clear(false);
     }
 
+    /**
+     * @author
+     */
+    @Overwrite
     public void unbindWrite() {
         if (!RenderSystem.isOnRenderThread()) {
             RenderSystem.recordRenderCall(() -> {
