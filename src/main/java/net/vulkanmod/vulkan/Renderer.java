@@ -582,7 +582,7 @@ public class Renderer {
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
             scissor.offset().set(0, 0);
-            scissor.extent().set(width, height);
+            scissor.extent().set(width, Math.abs(height));
 
             vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
             vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
