@@ -1,5 +1,6 @@
 package net.vulkanmod.gl;
 
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.framebuffer.SwapChain;
 import net.vulkanmod.vulkan.shader.SPIRVUtils;
 import org.apache.commons.lang3.Validate;
@@ -70,7 +71,7 @@ public abstract class GlUtil {
 //                        case GL11.GL_FLOAT -> VK_FORMAT_D32_SFLOAT;
 //                        default -> throw new IllegalStateException("Unexpected value: " + type);
 //                    };
-                    SwapChain.getDefaultDepthFormat();
+                    Vulkan.getDefaultDepthFormat();
 
             default -> throw new IllegalStateException("Unexpected format: " + glFormat);
         };
@@ -84,7 +85,7 @@ public abstract class GlUtil {
 //                        case GL11.GL_FLOAT -> VK_FORMAT_D32_SFLOAT;
 //                        default -> throw new IllegalStateException("Unexpected value: " + type);
 //                    };
-                    SwapChain.getDefaultDepthFormat();
+                    Vulkan.getDefaultDepthFormat();
 
             default -> throw new IllegalStateException("Unexpected value: " + glInternalFormat);
         };
@@ -93,6 +94,8 @@ public abstract class GlUtil {
     public static int getGlFormat(int vFormat) {
         return switch (vFormat) {
             case VK_FORMAT_R8G8B8A8_UNORM -> GL11.GL_RGBA;
+            case VK_FORMAT_B8G8R8A8_UNORM -> GL30.GL_BGRA;
+            case VK_FORMAT_R8G8_UNORM -> GL30.GL_RG;
             case VK_FORMAT_R8_UNORM -> GL11.GL_RED;
             default -> throw new IllegalStateException("Unexpected value: " + vFormat);
         };
