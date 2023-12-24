@@ -298,17 +298,21 @@ public abstract class DeviceManager {
                     .containsAll(Vulkan.REQUIRED_EXTENSION);
         }
     }
+
     // Use the optimal most performant depth format for the specific GPU
     // Nvidia performs best with 24 bit depth, while AMD is most performant with 32-bit float
-    public static int findDepthFormat() {
+    public static int findDepthFormat(boolean use24BitsDepthFormat) {
+        int[] formats = use24BitsDepthFormat ? new int[]
+                {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT}
+                : new int[] {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT};
+
         return findSupportedFormat(
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT);
+                formats);
     }
 
     private static int findSupportedFormat(int tiling, int features, int... formatCandidates) {
-
         try(MemoryStack stack = stackPush()) {
 
             VkFormatProperties props = VkFormatProperties.calloc(stack);

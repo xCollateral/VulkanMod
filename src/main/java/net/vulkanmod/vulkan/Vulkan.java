@@ -131,6 +131,9 @@ public class Vulkan {
 
     private static StagingBuffer[] stagingBuffers;
 
+    public static boolean use24BitsDepthFormat = true;
+    private static int DEFAULT_DEPTH_FORMAT = 0;
+
     public static void initVulkan(long window) {
         createInstance();
         setupDebugMessenger();
@@ -145,6 +148,7 @@ public class Vulkan {
         createCommandPool();
         allocateImmediateCmdBuffer();
 
+        setupDepthFormat();
         createSwapChain();
         Renderer.initRenderer();
 
@@ -160,6 +164,10 @@ public class Vulkan {
         for(int i = 0; i < stagingBuffers.length; ++i) {
             stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
         }
+    }
+
+    static void setupDepthFormat() {
+        DEFAULT_DEPTH_FORMAT = DeviceManager.findDepthFormat(use24BitsDepthFormat);
     }
 
     private static void createSwapChain() {
@@ -437,6 +445,10 @@ public class Vulkan {
             Renderer.scheduleSwapChainUpdate();
             swapChain.setVsync(b);
         }
+    }
+
+    public static int getDefaultDepthFormat() {
+        return DEFAULT_DEPTH_FORMAT;
     }
 
     public static long getSurface() { return surface; }

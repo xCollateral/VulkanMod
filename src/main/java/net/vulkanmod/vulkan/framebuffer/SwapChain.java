@@ -28,12 +28,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class SwapChain extends Framebuffer {
-    private static int DEFAULT_DEPTH_FORMAT = 0;
     private static final int DEFAULT_IMAGE_COUNT = 3;
-
-    public static int getDefaultDepthFormat() {
-        return DEFAULT_DEPTH_FORMAT;
-    }
 
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
     //(As Immediate Mode (and by extension Screen tearing) doesn't exist on most Wayland installations currently)
@@ -52,13 +47,10 @@ public class SwapChain extends Framebuffer {
     private int[] currentLayout;
 
     public SwapChain() {
-        DEFAULT_DEPTH_FORMAT = DeviceManager.findDepthFormat();
-
         this.attachmentCount = 2;
 
-        this.depthFormat = DEFAULT_DEPTH_FORMAT;
+        this.depthFormat = Vulkan.getDefaultDepthFormat();
         createSwapChain();
-
     }
 
     public void recreateSwapChain() {

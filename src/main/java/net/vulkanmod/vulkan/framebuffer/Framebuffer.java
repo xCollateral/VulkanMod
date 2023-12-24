@@ -227,7 +227,7 @@ public class Framebuffer {
 
             this.createImages = true;
             this.format = DEFAULT_FORMAT;
-            this.depthFormat = SwapChain.getDefaultDepthFormat();
+            this.depthFormat = Vulkan.getDefaultDepthFormat();
             this.linearFiltering = true;
             this.depthLinearFiltering = false;
 

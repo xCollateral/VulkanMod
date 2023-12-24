@@ -141,8 +141,9 @@ public class VulkanImage {
 
     public static boolean isDepthFormat(int format) {
         return switch (format) {
-            case VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT,
-                    VK_FORMAT_D32_SFLOAT_S8_UINT -> true;
+            case VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D24_UNORM_S8_UINT,
+                    VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+                    VK_FORMAT_D16_UNORM -> true;
             default -> false;
         };
     }
