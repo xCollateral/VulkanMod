@@ -214,7 +214,9 @@ public class DrawBuffers {
         boolean ready = false;
 
         DrawParameters(boolean translucent) {
-            indexBufferSegment = translucent ? new AreaBuffer.Segment() : null;
+            if(translucent) {
+                indexBufferSegment = new AreaBuffer.Segment();
+            }
         }
 
         public void reset(ChunkArea chunkArea, TerrainRenderType r) {

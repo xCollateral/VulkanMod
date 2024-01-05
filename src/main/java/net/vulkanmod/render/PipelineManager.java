@@ -56,6 +56,7 @@ public abstract class PipelineManager {
 
         return pipelineBuilder.createGraphicsPipeline();
     }
+
     public static GraphicsPipeline getTerrainShader(TerrainRenderType renderType) {
         return shaderGetter.apply(renderType);
     }
