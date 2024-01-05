@@ -15,6 +15,8 @@
     "chunk.LevelRendererMixin",
     "chunk.RenderBuffersM",
     "chunk.VisibilitySetMixin",
+    "chunk.ClientPacketListenerM",
+    "chunk.ClientChunkCacheM",
 
     "compatibility.EffectInstanceM",
     "compatibility.ProgramM",

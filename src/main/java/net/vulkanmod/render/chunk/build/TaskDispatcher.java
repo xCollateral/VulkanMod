@@ -1,16 +1,17 @@
 package net.vulkanmod.render.chunk.build;
 
 import com.google.common.collect.Queues;
-import com.mojang.logging.LogUtils;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.ChunkArea;
 import net.vulkanmod.render.chunk.DrawBuffers;
 import net.vulkanmod.render.chunk.RenderSection;
+import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
+import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Queue;
 
@@ -20,9 +21,9 @@ public class TaskDispatcher {
     private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
     public final ThreadBuilderPack fixedBuffers;
 
-    //TODO volatile?
-    private boolean stopThreads;
+    private volatile boolean stopThreads;
     private Thread[] threads;
+    private BuilderResources[] resources;
     private int idleThreads;
     private final Queue<ChunkTask> highPriorityTasks = Queues.newConcurrentLinkedQueue();
     private final Queue<ChunkTask> lowPriorityTasks = Queues.newConcurrentLinkedQueue();
@@ -39,24 +40,35 @@ public class TaskDispatcher {
     }
 
     public void createThreads(int n) {
-        if(!this.stopThreads)
+        if(!this.stopThreads) {
+            Arrays.stream(resources).forEach(BuilderResources::resetCounters);
             return;
+        }
 
         this.stopThreads = false;
 
+        if(this.resources != null) {
+            for (BuilderResources resources : this.resources) {
+                resources.clear();
+            }
+        }
+
         this.threads = new Thread[n];
+        this.resources = new BuilderResources[n];
 
         for (int i = 0; i < n; i++) {
-            ThreadBuilderPack builderPack = new ThreadBuilderPack();
-            Thread thread = new Thread(
-                    () -> runTaskThread(builderPack));
+            BuilderResources builderResources = new BuilderResources();
+            Thread thread = new Thread(() -> runTaskThread(builderResources),
+                    "Builder-" + i);
+            thread.setPriority(Thread.NORM_PRIORITY);
 
             this.threads[i] = thread;
+            this.resources[i] = builderResources;
             thread.start();
         }
     }
 
-    private void runTaskThread(ThreadBuilderPack builderPack) {
+    private void runTaskThread(BuilderResources builderResources) {
         while(!this.stopThreads) {
             ChunkTask task = this.pollTask();
 
@@ -74,7 +86,7 @@ public class TaskDispatcher {
             if(task == null)
                 continue;
 
-            task.doTask(builderPack);
+            task.doTask(builderResources);
         }
     }
 
@@ -89,7 +101,7 @@ public class TaskDispatcher {
         }
 
         synchronized (this) {
-            notify();
+            this.notify();
         }
     }
 
@@ -110,7 +122,7 @@ public class TaskDispatcher {
         this.stopThreads = true;
 
         synchronized (this) {
-            notifyAll();
+            this.notifyAll();
         }
 
         for (Thread thread : this.threads) {
@@ -196,9 +208,11 @@ public class TaskDispatcher {
     }
 
     public String getStats() {
-//        this.toBatchCount = this.highPriorityTasks.size() + this.lowPriorityTasks.size();
-//        return String.format("tB: %03d, toUp: %02d, FB: %02d", this.toBatchCount, this.toUpload.size(), this.freeBufferCount);
-        return String.format("iT: %d", this.idleThreads);
+        int taskCount = highPriorityTasks.size() + lowPriorityTasks.size();
+        return String.format("iT: %d Ts: %d", this.idleThreads, taskCount);
     }
 
+    public BuilderResources[] getResourcesArray() {
+        return resources;
+    }
 }

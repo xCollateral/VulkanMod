@@ -1,21 +1,21 @@
 package net.vulkanmod.render.chunk;
 
 import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.chunk.RenderChunkRegion;
-import net.minecraft.client.renderer.chunk.RenderRegionCache;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.vulkanmod.render.chunk.build.ChunkTask;
-import net.vulkanmod.render.chunk.build.CompiledSection;
-import net.vulkanmod.render.chunk.build.TaskDispatcher;
+import net.vulkanmod.render.chunk.build.*;
+import net.vulkanmod.render.chunk.build.task.BuildTask;
+import net.vulkanmod.render.chunk.build.task.ChunkTask;
+import net.vulkanmod.render.chunk.build.task.CompiledSection;
+import net.vulkanmod.render.chunk.build.task.SortTransparencyTask;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -69,7 +69,6 @@ public class RenderSection {
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
-
     }
 
     public RenderSection setGraphInfo(@Nullable Direction from, byte step) {
@@ -112,36 +111,49 @@ public class RenderSection {
         }
 
         if (this.getCompiledSection().renderTypes.contains(TerrainRenderType.TRANSLUCENT)) {
-            this.compileStatus.sortTask = new ChunkTask.SortTransparencyTask(this);
+            this.compileStatus.sortTask = new SortTransparencyTask(this);
             taskDispatcher.schedule(this.compileStatus.sortTask);
         }
     }
 
-    public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
-        ChunkTask.BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
+    public boolean rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache) {
+        BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
+
+        if(chunkCompileTask == null)
+            return false;
+
         dispatcher.schedule(chunkCompileTask);
+        return true;
     }
 
-    public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
-        ChunkTask.BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
-        chunkCompileTask.doTask(dispatcher.fixedBuffers);
-    }
+//    public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
+//        ChunkTask.BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
+//        chunkCompileTask.doTask(dispatcher.fixedBuffers);
+//    }
 
-    public ChunkTask.BuildTask createCompileTask(RenderRegionCache renderRegionCache) {
+    public BuildTask createCompileTask(RenderRegionBuilder renderRegionCache) {
         boolean flag = this.cancelTasks();
-        BlockPos blockpos = new BlockPos(this.xOffset, this.yOffset, this.zOffset).immutable();
-        RenderChunkRegion renderchunkregion = renderRegionCache.createRegion(WorldRenderer.getLevel(), blockpos.offset(-1, -1, -1), blockpos.offset(16, 16, 16), 1);
-        boolean flag1 = this.compileStatus.compiledSection == CompiledSection.UNCOMPILED;
 
-        this.compileStatus.rebuildTask = ChunkTask.createBuildTask(this, renderchunkregion, !flag1);
-        return this.compileStatus.rebuildTask;
+        Level level = WorldRenderer.getLevel();
+        int secX = xOffset >> 4;
+        int secZ = zOffset >> 4;
+        int secY = (yOffset - level.getMinBuildHeight()) >> 4;
+
+        if(!ChunkStatusMap.INSTANCE.chunkRenderReady(secX, secZ))
+            return null;
+
+        RenderRegion renderRegion = renderRegionCache.createRegion(level, secX, secY, secZ);
+
+        boolean flag1 = this.compileStatus.compiledSection == CompiledSection.UNCOMPILED;
+        this.compileStatus.buildTask = ChunkTask.createBuildTask(this, renderRegion, !flag1 || flag);
+        return this.compileStatus.buildTask;
     }
 
     protected boolean cancelTasks() {
         boolean flag = false;
-        if (this.compileStatus.rebuildTask != null) {
-            this.compileStatus.rebuildTask.cancel();
-            this.compileStatus.rebuildTask = null;
+        if (this.compileStatus.buildTask != null) {
+            this.compileStatus.buildTask.cancel();
+            this.compileStatus.buildTask = null;
             flag = true;
         }
 
@@ -231,12 +243,15 @@ public class RenderSection {
     }
 
     public void updateGlobalBlockEntities(Collection<BlockEntity> fullSet) {
+        if (fullSet.isEmpty())
+            return;
+
         Set<BlockEntity> set = Sets.newHashSet(fullSet);
         Set<BlockEntity> set1;
         Set<BlockEntity> sectionSet;
         synchronized(globalBlockEntitiesMap) {
             sectionSet = globalBlockEntitiesMap.computeIfAbsent(this,
-                    (section) -> new HashSet<>());
+                    (section) -> new ObjectOpenHashSet<>());
         }
 
         if(sectionSet.size() != fullSet.size() || !sectionSet.containsAll(fullSet)) {
@@ -297,7 +312,7 @@ public class RenderSection {
 
     static class CompileStatus {
         CompiledSection compiledSection = CompiledSection.UNCOMPILED;
-        ChunkTask.BuildTask rebuildTask;
-        ChunkTask.SortTransparencyTask sortTask;
+        BuildTask buildTask;
+        SortTransparencyTask sortTask;
     }
 }

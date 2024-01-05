@@ -270,8 +270,6 @@ public class SectionGrid {
 
     private void setNeighbours(RenderSection section, CircularIntList xList, CircularIntList zList,
                                int xIdx, int zIdx, int x, int y, int z) {
-        //TODO: maybe connect neighbours on section compile
-
         int eastX = xList.getNext(xIdx);
         int westX = xList.getPrevious(xIdx);
         int northZ = zList.getPrevious(zIdx);
@@ -344,12 +342,12 @@ public class SectionGrid {
         section.setChunkArea(chunkArea);
     }
 
-    public void setDirty(int sectionX, int sectionY, int sectionZ, boolean p_110863_) {
+    public void setDirty(int sectionX, int sectionY, int sectionZ, boolean playerAffected) {
         int i = Math.floorMod(sectionX, this.gridWidth);
         int j = Math.floorMod(sectionY - this.level.getMinSection(), this.gridHeight);
         int k = Math.floorMod(sectionZ, this.gridWidth);
         RenderSection renderSection = this.chunks[this.getChunkIndex(i, j, k)];
-        renderSection.setDirty(p_110863_);
+        renderSection.setDirty(playerAffected);
     }
 
     @Nullable

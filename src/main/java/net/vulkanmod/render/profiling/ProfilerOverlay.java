@@ -1,7 +1,6 @@
 package net.vulkanmod.render.profiling;
 
 import com.google.common.base.Strings;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -11,7 +10,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.vulkanmod.render.chunk.build.ChunkTask;
+import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.chunk.build.task.ChunkTask;
+import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ public class ProfilerOverlay {
     private static List<Profiler2.Result> lastResults;
     private static long lastPollTime;
     private static float frametime;
+
+    private static String buildStats;
 
     private static int node = -1;
 
@@ -118,10 +121,10 @@ public class ProfilerOverlay {
         //Section build stats
         list.add("");
         list.add("");
-        list.add(String.format("Build time: %.2f ms", BuildTimeBench.getBenchTime()));
+        list.add(String.format("Build time: %.0fms", BuildTimeBench.getBenchTime()));
 
-        if(ChunkTask.bench)
-            list.add(String.format("Total build time: %d ms for %d builds", ChunkTask.totalBuildTime.get(), ChunkTask.buildCount.get()));
+        if(ChunkTask.BENCH)
+            list.add(buildStats);
 
         return list;
     }
@@ -149,5 +152,21 @@ public class ProfilerOverlay {
 //            lastResults = results;
 
         lastPollTime = System.nanoTime();
+
+        if(ChunkTask.BENCH)
+            buildStats = getBuildStats();
+    }
+
+    private String getBuildStats() {
+        var resourcesArray = WorldRenderer.getInstance().getTaskDispatcher().getResourcesArray();
+
+        int totalTime = 0, buildCount = 0;
+        for(BuilderResources resources1 : resourcesArray) {
+            totalTime += resources1.getTotalBuildTime();
+            buildCount += resources1.getBuildCount();
+        }
+
+        return String.format("Builders time: %dms avg %dms (%d builds)",
+                totalTime, totalTime / resourcesArray.length, buildCount);
     }
 }

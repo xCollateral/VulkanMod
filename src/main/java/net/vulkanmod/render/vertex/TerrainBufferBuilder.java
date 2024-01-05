@@ -271,32 +271,32 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	}
 
 	private RenderedBuffer storeRenderedBuffer() {
-		int i = this.mode.indexCount(this.vertices);
-		int j = !this.indexOnly ? this.vertices * this.format.getVertexSize() : 0;
-		VertexFormat.IndexType indexType = VertexFormat.IndexType.least(i);
+		int indexCount = this.mode.indexCount(this.vertices);
+		int vertexBufferSize = !this.indexOnly ? this.vertices * this.format.getVertexSize() : 0;
+		VertexFormat.IndexType indexType = VertexFormat.IndexType.least(indexCount);
 		boolean bl;
-		int l;
-		int k;
+		int size;
+		int indexBufferSize;
 		if (this.sortingPoints != null) {
-			k = Mth.roundToward(i * indexType.bytes, 4);
-			this.ensureCapacity(k);
+			indexBufferSize = Mth.roundToward(indexCount * indexType.bytes, 4);
+			this.ensureCapacity(indexBufferSize);
 			this.putSortedQuadIndices(indexType);
 			bl = false;
-			this.nextElementByte += k;
-			l = j + k;
+			this.nextElementByte += indexBufferSize;
+			size = vertexBufferSize + indexBufferSize;
 		} else {
 			bl = true;
-			l = j;
+			size = vertexBufferSize;
 		}
 
 		int ptr = this.renderedBufferPointer;
-		this.renderedBufferPointer += l;
+		this.renderedBufferPointer += size;
 		++this.renderedBufferCount;
-		DrawState drawState = new DrawState(this.format, this.vertices, i, this.mode, indexType, this.indexOnly, bl);
+		DrawState drawState = new DrawState(this.format, this.vertices, indexCount, this.mode, indexType, this.indexOnly, bl);
 		return new RenderedBuffer(ptr, drawState);
 	}
 
-	private void reset() {
+	public void reset() {
 		this.building = false;
 		this.vertices = 0;
 		this.currentElement = null;

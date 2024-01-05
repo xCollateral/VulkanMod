@@ -19,6 +19,10 @@ public class VertexUtil {
         return ((int)x & 0xFF) | ((int)y & 0xFF) << 8|  ((int)z & 0xFF) << 16;
     }
 
+    public static float unpackColor(int i, int s) {
+        return ((i >> s) & 0xFF) * COLOR_INV;
+    }
+
     public static float unpackColorR(int i) {
         return ((i >> 24) & 0xFF) * COLOR_INV;
     }

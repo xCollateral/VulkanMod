@@ -11,11 +11,11 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.chunk.RenderRegionCache;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
@@ -29,8 +29,8 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
-import net.vulkanmod.render.chunk.build.ChunkTask;
-import net.vulkanmod.render.chunk.build.TaskDispatcher;
+import net.vulkanmod.render.chunk.build.*;
+import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
@@ -88,7 +88,7 @@ public class WorldRenderer {
     IndirectBuffer[] indirectBuffers;
 //    UniformBuffers uniformBuffers;
 
-    public RenderRegionCache renderRegionCache;
+    public RenderRegionBuilder renderRegionCache;
     int nonEmptyChunks;
 
     private final List<Runnable> onAllChangedCallbacks = new ObjectArrayList<>();
@@ -96,9 +96,12 @@ public class WorldRenderer {
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
         this.renderBuffers = renderBuffers;
+        this.renderRegionCache = new RenderRegionBuilder();
         this.taskDispatcher = new TaskDispatcher();
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
+
+        BlockRenderer.setBlockColors(BlockColors.createDefault());
 
         Renderer.getInstance().addOnResizeCallback(() -> {
             if(this.indirectBuffers.length != Renderer.getFramesNum())
@@ -198,7 +201,7 @@ public class WorldRenderer {
         if (!isCapturedFrustum) {
 
             //Debug
-//            this.needsUpdate = true;
+            this.needsUpdate = true;
 //            this.needsUpdate = false;
 
             if (this.needsUpdate) {
@@ -218,7 +221,7 @@ public class WorldRenderer {
                 this.initUpdate();
                 this.initializeQueueForFullUpdate(camera);
 
-                this.renderRegionCache = new RenderRegionCache();
+//                this.renderRegionCache = new RenderRegionCache2();
 
                 if(flag)
                     this.updateRenderChunks();
@@ -298,15 +301,10 @@ public class WorldRenderer {
 
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
-
-        int buildLimit = taskDispatcher.getIdleThreadsCount() * (Minecraft.getInstance().options.enableVsync().get() ? 6 : 3);
-
-        if(buildLimit == 0)
-            this.needsUpdate = true;
+//        int buildLimit = 32;
 
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
-
 
             if(!renderSection.isCompletelyEmpty()) {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);
@@ -315,6 +313,7 @@ public class WorldRenderer {
             }
 
             this.scheduleUpdate(renderSection);
+//            buildLimit -= this.scheduleUpdate(renderSection, buildLimit) ? -1 : 0;
 
             if(renderSection.directionChanges > maxDirectionsChanges)
                 continue;
@@ -333,20 +332,13 @@ public class WorldRenderer {
                 }
             }
         }
-
     }
 
     private void updateRenderChunksSpectator() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
 
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
-
-        if(rebuildLimit == 0)
-            this.needsUpdate = true;
-
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
-
 
             if(!renderSection.isCompletelyEmpty()) {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);
@@ -410,43 +402,35 @@ public class WorldRenderer {
         if(!section.isDirty())
             return;
 
+        if(section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache))
+            section.setNotDirty();
+    }
+
+    public boolean scheduleUpdate(RenderSection section, int budget) {
+        if(!section.isDirty())
+            return false;
+
+        if(budget <= 0)
+            return false;
+
         section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache);
         section.setNotDirty();
+        return true;
     }
 
     public void compileSections(Camera camera) {
-        this.minecraft.getProfiler().push("populate_chunks_to_compile");
-//        RenderRegionCache renderregioncache = new RenderRegionCache();
-//        BlockPos cameraPos = camera.getBlockPosition();
-//        List<RenderSection> list = Lists.newArrayList();
-
-        this.minecraft.getProfiler().popPush("upload");
+//        this.minecraft.getProfiler().push("populate_chunks_to_compile");
+//        this.minecraft.getProfiler().popPush("upload");
 
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Uploads");
+
         if(this.taskDispatcher.uploadAllPendingUploads())
             this.needsUpdate = true;
         profiler.pop();
-        this.minecraft.getProfiler().popPush("schedule_async_compile");
 
-//        //debug
-//        Profiler p = null;
-//        if(!list.isEmpty()) {
-//            p = Profiler.getProfiler("compileChunks");
-//            p.start();
-//        }
-
-
-//        for(RenderSection renderSection : list) {
-//            renderSection.rebuildChunkAsync(this.taskDispatcher, renderregioncache);
-////            renderSection.rebuildChunkSync(this.taskDispatcher, renderregioncache);
-//            renderSection.setNotDirty();
-//        }
-
-//        if(!list.isEmpty()) {
-//            p.round();
-//        }
-        this.minecraft.getProfiler().pop();
+//        this.minecraft.getProfiler().popPush("schedule_async_compile");
+//        this.minecraft.getProfiler().pop();
     }
 
     public boolean isSectionCompiled(BlockPos blockPos) {
@@ -459,6 +443,7 @@ public class WorldRenderer {
 //            this.graphicsChanged();
             this.level.clearTintCaches();
 
+            this.renderRegionCache.clear();
             this.taskDispatcher.createThreads();
 
             this.needsUpdate = true;
@@ -494,8 +479,10 @@ public class WorldRenderer {
         this.lastCameraSectionX = Integer.MIN_VALUE;
         this.lastCameraSectionY = Integer.MIN_VALUE;
         this.lastCameraSectionZ = Integer.MIN_VALUE;
+
 //        this.entityRenderDispatcher.setLevel(level);
         this.level = level;
+        ChunkStatusMap.createInstance(renderDistance);
         if (level != null) {
             this.allChanged();
         }  else {

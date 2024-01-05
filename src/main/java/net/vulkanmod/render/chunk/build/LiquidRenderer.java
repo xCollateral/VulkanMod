@@ -4,6 +4,9 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.Iterator;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -15,6 +18,7 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HalfTransparentBlock;
@@ -34,6 +38,17 @@ public class LiquidRenderer {
     private final TextureAtlasSprite[] lavaIcons = new TextureAtlasSprite[2];
     private final TextureAtlasSprite[] waterIcons = new TextureAtlasSprite[2];
     private TextureAtlasSprite waterOverlay;
+
+    public void renderLiquid(BlockPos blockPos, BlockAndTintGetter blockAndTintGetter, VertexConsumer vertexConsumer, BlockState blockState, FluidState fluidState) {
+        try {
+            tessellate(blockAndTintGetter, blockPos, vertexConsumer, blockState, fluidState);
+        } catch (Throwable var9) {
+            CrashReport crashReport = CrashReport.forThrowable(var9, "Tesselating liquid in world");
+            CrashReportCategory crashReportCategory = crashReport.addCategory("Block being tesselated");
+            CrashReportCategory.populateBlockDetails(crashReportCategory, blockAndTintGetter, blockPos, (BlockState)null);
+            throw new ReportedException(crashReport);
+        }
+    }
 
     public void setupSprites() {
         this.lavaIcons[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.LAVA.defaultBlockState()).getParticleIcon();
@@ -91,7 +106,7 @@ public class LiquidRenderer {
         FluidState fluidState7 = blockState7.getFluidState();
 
         boolean bl2 = !isNeighborSameFluid(fluidState, fluidState3);
-        boolean renderDownFace = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.DOWN, fluidState2) && !isFaceOccludedByNeighbor(blockAndTintGetter, blockPos, Direction.DOWN, 0.8888889F, blockState2);
+        boolean renderDownFace = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.DOWN, fluidState2) && !isFaceOccludedByNeighbor(blockAndTintGetter, blockPos, Direction.DOWN, MAX_FLUID_HEIGHT, blockState2);
         boolean bl4 = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.NORTH, fluidState4);
         boolean bl5 = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.SOUTH, fluidState5);
         boolean bl6 = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.WEST, fluidState6);
@@ -148,14 +163,14 @@ public class LiquidRenderer {
                 TextureAtlasSprite textureAtlasSprite;
                 float ah;
                 float ai;
-                float r1;
+                float ak;
                 if (vec3.x == 0.0 && vec3.z == 0.0) {
                     textureAtlasSprite = textureAtlasSprites[0];
-                    z = textureAtlasSprite.getU(0.0f);
-                    aa = textureAtlasSprite.getV(0.0f);
+                    z = textureAtlasSprite.getU(0.0F);
+                    aa = textureAtlasSprite.getV(0.0F);
                     ab = z;
-                    ac = textureAtlasSprite.getV(16.0f);
-                    ad = textureAtlasSprite.getU(16.0f);
+                    ac = textureAtlasSprite.getV(1.0F);
+                    ad = textureAtlasSprite.getU(1.0F);
                     ae = ac;
                     af = ad;
                     ag = aa;
@@ -164,15 +179,15 @@ public class LiquidRenderer {
                     ah = (float)Mth.atan2(vec3.z, vec3.x) - 1.5707964F;
                     ai = Mth.sin(ah) * 0.25F;
                     float aj = Mth.cos(ah) * 0.25F;
-                    r1 = 8.0F;
-                    z = textureAtlasSprite.getU((8.0F + (-aj - ai) * 16.0F));
-                    aa = textureAtlasSprite.getV((8.0F + (-aj + ai) * 16.0F));
-                    ab = textureAtlasSprite.getU((8.0F + (-aj + ai) * 16.0F));
-                    ac = textureAtlasSprite.getV((8.0F + (aj + ai) * 16.0F));
-                    ad = textureAtlasSprite.getU((8.0F + (aj + ai) * 16.0F));
-                    ae = textureAtlasSprite.getV((8.0F + (aj - ai) * 16.0F));
-                    af = textureAtlasSprite.getU((8.0F + (aj - ai) * 16.0F));
-                    ag = textureAtlasSprite.getV((8.0F + (-aj - ai) * 16.0F));
+                    ak = 0.5F;
+                    z = textureAtlasSprite.getU(0.5F + (-aj - ai));
+                    aa = textureAtlasSprite.getV(0.5F + -aj + ai);
+                    ab = textureAtlasSprite.getU(0.5F + -aj + ai);
+                    ac = textureAtlasSprite.getV(0.5F + aj + ai);
+                    ad = textureAtlasSprite.getU(0.5F + aj + ai);
+                    ae = textureAtlasSprite.getV(0.5F + (aj - ai));
+                    af = textureAtlasSprite.getU(0.5F + (aj - ai));
+                    ag = textureAtlasSprite.getV(0.5F + (-aj - ai));
                 }
 
                 float al = (z + ab + ad + af) / 4.0F;
@@ -187,34 +202,34 @@ public class LiquidRenderer {
                 ae = Mth.lerp(ai, ae, ah);
                 ag = Mth.lerp(ai, ag, ah);
                 int am = this.getLightColor(blockAndTintGetter, blockPos);
-                r1 = k * f;
+                ak = k * f;
                 float g1 = k * g;
                 float b1 = k * h;
 
-//                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, r1, g1, b1, z, aa, am);
-//                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, r1, g1, b1, ab, ac, am);
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, r1, g1, b1, ad, ae, am);
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, r1, g1, b1, af, ag, am);
-//                if (fluidState.shouldRenderBackwardUpFace(blockAndTintGetter, blockPos.above())) {
-//                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, r1, g1, b1, z, aa, am);
-//                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, r1, g1, b1, af, ag, am);
-//                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, r1, g1, b1, ad, ae, am);
-//                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, r1, g1, b1, ab, ac, am);
-//                }
-
-                Vector3f normal = new Vector3f(0.0f, r - p, 1.0f).cross(1.0f, q - p, 1.0f);
-                normal.normalize();
-
-                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, r1, g1, b1, z, aa, am, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, r1, g1, b1, ab, ac, am, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, r1, g1, b1, ad, ae, am, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, r1, g1, b1, af, ag, am, normal.x(), normal.y(), normal.z());
+                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am);
+                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am);
+                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am);
+                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am);
                 if (fluidState.shouldRenderBackwardUpFace(blockAndTintGetter, blockPos.above())) {
-                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, r1, g1, b1, z, aa, am, normal.x(), normal.y(), normal.z());
-                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, r1, g1, b1, af, ag, am, normal.x(), normal.y(), normal.z());
-                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, r1, g1, b1, ad, ae, am, normal.x(), normal.y(), normal.z());
-                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, r1, g1, b1, ab, ac, am, normal.x(), normal.y(), normal.z());
+                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am);
+                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am);
+                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am);
+                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am);
                 }
+
+//                Vector3f normal = new Vector3f(0.0f, r - p, 1.0f).cross(1.0f, q - p, 1.0f);
+//                normal.normalize();
+//
+//                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am, normal.x(), normal.y(), normal.z());
+//                if (fluidState.shouldRenderBackwardUpFace(blockAndTintGetter, blockPos.above())) {
+//                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am, normal.x(), normal.y(), normal.z());
+//                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am, normal.x(), normal.y(), normal.z());
+//                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am, normal.x(), normal.y(), normal.z());
+//                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am, normal.x(), normal.y(), normal.z());
+//                }
             }
 
             if (renderDownFace) {
@@ -227,18 +242,18 @@ public class LiquidRenderer {
                 ae = j * g;
                 ag = j * h;
 
-//                this.vertex(vertexConsumer, x0, y0 + (double)y, z0 + 1.0, ac, ae, ag, z, af, ap);
-//                this.vertex(vertexConsumer, x0, y0 + (double)y, z0, ac, ae, ag, z, ad, ap);
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0, ac, ae, ag, ab, ad, ap);
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0 + 1.0, ac, ae, ag, ab, af, ap);
+                this.vertex(vertexConsumer, x0, y0 + (double)y, z0 + 1.0, ac, ae, ag, z, af, ap);
+                this.vertex(vertexConsumer, x0, y0 + (double)y, z0, ac, ae, ag, z, ad, ap);
+                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0, ac, ae, ag, ab, ad, ap);
+                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0 + 1.0, ac, ae, ag, ab, af, ap);
 
-                Vector3f normal = new Vector3f(0.0f, 0.0f, -1.0f).cross(1.0f, 0.0f, -1.0f);
-                normal.normalize();
-
-                this.vertex(vertexConsumer, x0, y0 + (double)y, z0 + 1.0, ac, ae, ag, z, af, ap, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, x0, y0 + (double)y, z0, ac, ae, ag, z, ad, ap, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0, ac, ae, ag, ab, ad, ap, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0 + 1.0, ac, ae, ag, ab, af, ap,normal.x(), normal.y(), normal.z());
+//                Vector3f normal = new Vector3f(0.0f, 0.0f, -1.0f).cross(1.0f, 0.0f, -1.0f);
+//                normal.normalize();
+//
+//                this.vertex(vertexConsumer, x0, y0 + (double)y, z0 + 1.0, ac, ae, ag, z, af, ap, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, x0, y0 + (double)y, z0, ac, ae, ag, z, ad, ap, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0, ac, ae, ag, ab, ad, ap, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0 + 1.0, ac, ae, ag, ab, af, ap,normal.x(), normal.y(), normal.z());
             }
 
             int aq = this.getLightColor(blockAndTintGetter, blockPos);
@@ -308,40 +323,40 @@ public class LiquidRenderer {
                     }
                 }
 
-                float av = textureAtlasSprite2.getU(0.0f);
-                float aw = textureAtlasSprite2.getU(8.0f);
-                float ax = textureAtlasSprite2.getV((1.0F - af) * 16.0F * 0.5F);
-                float ay = textureAtlasSprite2.getV((1.0F - aa) * 16.0F * 0.5F);
-                float az = textureAtlasSprite2.getV(8.0f);
+                float av = textureAtlasSprite2.getU(0.0F);
+                float aw = textureAtlasSprite2.getU(0.5F);
+                float ax = textureAtlasSprite2.getV((1.0F - af) * 0.5F);
+                float ay = textureAtlasSprite2.getV((1.0F - aa) * 0.5F);
+                float az = textureAtlasSprite2.getV(0.5F);
                 float ba = direction.getAxis() == Direction.Axis.Z ? l : m;
                 float bb = k * ba * f;
                 float bc = k * ba * g;
                 float bd = k * ba * h;
 
-//                this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
-//                this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
-//                this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
-//                this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
-//                if (textureAtlasSprite2 != this.waterOverlay) {
-//                    this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
-//                    this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
-//                    this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
-//                    this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
-//                }
-
-                Vector3f normal = new Vector3f((float) (as - ar), (aa - af), (float) (au - at)).cross((float) (as - ar), (y - af), (float) (au - at));
-                normal.normalize();
-
-                this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq, normal.x(), normal.y(), normal.z());
-                this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq, normal.x(), normal.y(), normal.z());
+                this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
+                this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
+                this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
+                this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
                 if (textureAtlasSprite2 != this.waterOverlay) {
                     this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
                     this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
                     this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
                     this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
                 }
+
+//                Vector3f normal = new Vector3f((float) (as - ar), (aa - af), (float) (au - at)).cross((float) (as - ar), (y - af), (float) (au - at));
+//                normal.normalize();
+//
+//                this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq, normal.x(), normal.y(), normal.z());
+//                this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq, normal.x(), normal.y(), normal.z());
+//                if (textureAtlasSprite2 != this.waterOverlay) {
+//                    this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
+//                    this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
+//                    this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
+//                    this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
+//                }
             }
         }
     }
@@ -407,12 +422,28 @@ public class LiquidRenderer {
     }
 
     private int getLightColor(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos) {
-        int i = LevelRenderer.getLightColor(blockAndTintGetter, blockPos);
-        int j = LevelRenderer.getLightColor(blockAndTintGetter, blockPos.above());
+        BlockPos above = blockPos.above();
+        int i = getLightColor(blockAndTintGetter, blockAndTintGetter.getBlockState(blockPos), blockPos);
+        int j = getLightColor(blockAndTintGetter, blockAndTintGetter.getBlockState(above), above);
         int k = i & 255;
         int l = j & 255;
         int m = i >> 16 & 255;
         int n = j >> 16 & 255;
         return (Math.max(k, l)) | (Math.max(m, n)) << 16;
+    }
+
+    public static int getLightColor(BlockAndTintGetter blockAndTintGetter, BlockState blockState, BlockPos blockPos) {
+        if (blockState.emissiveRendering(blockAndTintGetter, blockPos)) {
+            return 15728880;
+        } else {
+            int i = blockAndTintGetter.getBrightness(LightLayer.SKY, blockPos);
+            int j = blockAndTintGetter.getBrightness(LightLayer.BLOCK, blockPos);
+            int k = blockState.getLightEmission();
+            if (j < k) {
+                j = k;
+            }
+
+            return i << 20 | j << 4;
+        }
     }
 }
