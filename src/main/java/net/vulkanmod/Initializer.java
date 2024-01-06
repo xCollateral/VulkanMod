@@ -26,7 +26,6 @@ public class Initializer implements ClientModInitializer {
 
 		LOGGER.info("== VulkanMod ==");
 
-		VideoResolution.init();
 
 		var configPath = FabricLoader.getInstance()
 				.getConfigDir()
@@ -34,14 +33,15 @@ public class Initializer implements ClientModInitializer {
 
 		CONFIG = loadConfig(configPath);
 
+		VideoResolution.init();
 	}
 
 	private static Config loadConfig(Path path) {
 		Config config = Config.load(path);
 		if(config == null) {
 			config = new Config();
-			config.write();
 		}
+		config.write();
 		return config;
 	}
 
