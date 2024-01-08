@@ -1,28 +1,24 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
-import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.StaticQueue;
+import net.vulkanmod.render.vertex.TerrainRenderType;
+import org.jetbrains.annotations.NotNull;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
 import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
 
-public class ChunkArea {
-    public final int index;
-    private final byte[] inFrustum = new byte[64];
+public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuffers drawBuffers, EnumMap<TerrainRenderType, StaticQueue<DrawBuffers.DrawParameters>> sectionQueues) {
 
-    final Vector3i position;
 
-    DrawBuffers drawBuffers;
-
-    //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
-    final StaticQueue<RenderSection> sectionQueue = new StaticQueue<>(512);
-
-    public ChunkArea(int i, Vector3i origin) {
-        this.index = i;
-        this.position = origin;
-        this.drawBuffers = new DrawBuffers();
+    public ChunkArea(int i, Vector3i origin, int minHeight) {
+        this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight), new EnumMap<>(TerrainRenderType.class));
+        for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
+            sectionQueues.put(renderType, new StaticQueue<>(512));
+        }
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -120,16 +116,18 @@ public class ChunkArea {
         return this.drawBuffers;
     }
 
-    private void allocateDrawBuffers() {
-        this.drawBuffers = new DrawBuffers();
-    }
+//    private void allocateDrawBuffers() {
+//        this.drawBuffers = new DrawBuffers(this.index, this.position);
+//    }
 
-    public void addSection(RenderSection section) {
-        this.sectionQueue.add(section);
+    public void addSections(RenderSection section) {
+        for(var t : section.getCompiledSection().renderTypes) {
+            this.sectionQueues.get(t).add(section.getDrawParameters(t));
+        }
     }
 
     public void resetQueue() {
-        this.sectionQueue.clear();
+        this.sectionQueues.forEach((renderType, drawParameters) -> drawParameters.clear());
     }
 
     public void setPosition(int x, int y, int z) {
