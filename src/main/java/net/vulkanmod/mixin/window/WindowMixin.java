@@ -71,7 +71,7 @@ public abstract class WindowMixin {
     private void vulkanHint(WindowEventHandler windowEventHandler, ScreenManager screenManager, DisplayData displayData, String string, String string2, CallbackInfo ci) {
         GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 //        GLFW.glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-//        GLFW.glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+        GLFW.glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
     }
 
     @Inject(method = "<init>", at = @At(value = "RETURN"))
