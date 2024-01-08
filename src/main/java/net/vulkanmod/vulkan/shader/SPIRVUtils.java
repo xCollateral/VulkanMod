@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.shader;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
@@ -117,6 +119,37 @@ public class SPIRVUtils {
         }
         throw new RuntimeException("unable to read inputStream");
     }
+
+
+
+    public enum SpecConstant
+    {
+        USE_FOG(Boolean.class),
+        ALPHA_CUTOUT(Float.class);
+
+        SpecConstant(Object floatClass) {
+
+        }
+
+        public static SpecConstant getNamed(String name) {
+            return switch (name)
+            {
+                case "USE_FOG" -> USE_FOG;
+                case "ALPHA_CUTOUT" -> ALPHA_CUTOUT;
+                default -> null;
+            };
+        }
+
+        //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
+        public int getValue()
+        {
+            return switch (this){
+                case USE_FOG -> Initializer.CONFIG.renderFog ? 1 : 0;
+                case ALPHA_CUTOUT -> Float.floatToRawIntBits(VRenderSystem.alphaCutout);
+            };
+        }
+    }
+
 
     public enum ShaderKind {
         VERTEX_SHADER(shaderc_glsl_vertex_shader),

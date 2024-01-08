@@ -1,5 +1,5 @@
 #version 450
-
+layout (constant_id = 0) const bool USE_FOG = true;
 vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
     if (vertexDistance <= fogStart) {
         return inColor;
@@ -32,7 +32,7 @@ void main() {
     vec4 color = texture(Sampler0, texCoord0);
     color *= vertexColor * ColorModulator;
     float fragmentDistance = -ProjMat[3].z / ((gl_FragCoord.z) * -2.0 + 1.0 - ProjMat[2].z);
-    fragColor = linear_fog(color, fragmentDistance, FogStart, FogEnd, FogColor);
+    fragColor = USE_FOG ? linear_fog(color, fragmentDistance, FogStart, FogEnd, FogColor) : color;
 }
 
 /*

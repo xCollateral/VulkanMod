@@ -21,6 +21,9 @@ public class Config {
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
+    public boolean animations = true;
+    public boolean renderSky = true;
+
 
     private static Path path;
 
@@ -28,6 +31,8 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
+
+    public boolean renderFog = true;
 
     public static Config load(Path path) {
         Config config;
