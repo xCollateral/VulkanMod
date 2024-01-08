@@ -51,6 +51,8 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import javax.annotation.Nullable;
 import java.util.*;
 
+import static net.vulkanmod.render.vertex.TerrainRenderType.*;
+
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
@@ -532,12 +534,12 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        final String layerName = getLayerName(renderType);
+        final TerrainRenderType terrainRenderType = get(renderType.name);
 
 //        p.pushMilestone("layer " + layerName);
-        if(layerName.equals("solid"))
+        if(terrainRenderType.equals(SOLID))
             p.push("Opaque_terrain_pass");
-        else if(layerName.equals("translucent"))
+        else if(terrainRenderType.equals(TRANSLUCENT))
         {
             p.pop();
             p.push("Translucent_terrain_pass");
@@ -553,17 +555,20 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> {
             return "render_" + renderType;
         });
-        boolean isTranslucent = renderType == RenderType.translucent();
+        boolean isTranslucent = terrainRenderType == TRANSLUCENT;
         boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
+
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+
 
         p.push("draw batches");
 
         final int currentFrame = Renderer.getCurrentFrame();
-        if((Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES).contains(renderType)) {
-            final TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
+
+
             GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
             Renderer.getInstance().bindGraphicsPipeline(terrainShader);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
@@ -583,7 +588,7 @@ public class WorldRenderer {
             }
         }
 
-        if(layerName.equals("cutout") || layerName.equals("tripwire")) {
+        if(indirectDraw && (terrainRenderType.equals(CUTOUT) || terrainRenderType.equals(TRIPWIRE))) {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
@@ -596,39 +601,17 @@ public class WorldRenderer {
 
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
-        switch (layerName) {
-            case "cutout" -> {
+        switch (terrainRenderType) {
+            case CUTOUT -> {
                 p.pop();
 //                p.pop();
 //                p.push("Render_level_2");
                 p.push("entities");
             }
 //            case "translucent" -> p.pop();
-            case "tripwire" -> p.pop();
+            case TRIPWIRE -> p.pop();
         }
 
-    }
-
-    private static String getLayerName(RenderType renderType) {
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
-
-        String layerName;
-        if (solid.equals(renderType)) {
-            layerName = "solid";
-        } else if (cutout.equals(renderType)) {
-            layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
-            layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
-            layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
-            layerName = "translucent";
-        } else layerName = "unk";
-        return layerName;
     }
 
     private void sortTranslucentSections(double camX, double camY, double camZ) {
@@ -654,7 +637,7 @@ public class WorldRenderer {
             while(iterator.hasNext() && j < 15) {
                 RenderSection section = iterator.next();
 
-                section.resortTransparency(TerrainRenderType.TRANSLUCENT, this.taskDispatcher);
+                section.resortTransparency(this.taskDispatcher);
 
                 ++j;
             }

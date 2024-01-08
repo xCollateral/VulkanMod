@@ -105,19 +105,15 @@ public class RenderSection {
         return this.sourceDirs != 0;
     }
 
-    public boolean resortTransparency(TerrainRenderType renderType, TaskDispatcher taskDispatcher) {
-        CompiledSection compiledSection1 = this.getCompiledSection();
+    public void resortTransparency(TaskDispatcher taskDispatcher) {
 
         if (this.compileStatus.sortTask != null) {
             this.compileStatus.sortTask.cancel();
         }
 
-        if (!compiledSection1.renderTypes.contains(renderType)) {
-            return false;
-        } else {
+        if (this.getCompiledSection().renderTypes.contains(TerrainRenderType.TRANSLUCENT)) {
             this.compileStatus.sortTask = new ChunkTask.SortTransparencyTask(this);
             taskDispatcher.schedule(this.compileStatus.sortTask);
-            return true;
         }
     }
 
