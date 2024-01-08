@@ -50,12 +50,13 @@ public abstract class LevelRendererMixin {
     @Shadow private boolean generateClouds;
     @Shadow @Final private EntityRenderDispatcher entityRenderDispatcher;
 
-    @Shadow protected abstract boolean shouldShowEntityOutlines();
+
 
     @Shadow public abstract void needsUpdate();
 
     @Shadow public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
 
+    @Unique
     private WorldRenderer worldRenderer;
 
     @Unique
@@ -80,6 +81,15 @@ public abstract class LevelRendererMixin {
     private void renderBlockEntities(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
         Vec3 pos = camera.getPosition();
         this.worldRenderer.renderBlockEntities(poseStack, pos.x(), pos.y(), pos.z(), this.destructionProgress, f);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public boolean shouldShowEntityOutlines() {
+        return false; //Temp Fix: Disable Glowing due to flickering artifacts with Post effect detection
     }
 
     /**
