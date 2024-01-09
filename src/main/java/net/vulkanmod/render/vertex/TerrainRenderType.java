@@ -8,10 +8,10 @@ import java.util.EnumSet;
 
 public enum TerrainRenderType {
     SOLID(RenderType.solid(), 262144 /*BIG_BUFFER_SIZE*/),
-    CUTOUT_MIPPED(RenderType.cutoutMipped(), 131072 /*SMALL_BUFFER_SIZE*/),
+    CUTOUT_MIPPED(RenderType.cutoutMipped(), 262144 /*MEDIUM_BUFFER_SIZE*/),
     CUTOUT(RenderType.cutout(), 131072 /*SMALL_BUFFER_SIZE*/),
-    TRANSLUCENT(RenderType.translucent(), 262144 /*MEDIUM_BUFFER_SIZE*/),
-    TRIPWIRE(RenderType.tripwire(), 262144 /*MEDIUM_BUFFER_SIZE*/);
+    TRANSLUCENT(RenderType.translucent(), 131072 /*SMALL_BUFFER_SIZE*/),
+    TRIPWIRE(RenderType.tripwire(), 131072 /*SMALL_BUFFER_SIZE*/);
 
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 

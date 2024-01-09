@@ -31,7 +31,7 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
-
+    public boolean perRenderTypeAreaBuffers = false;
     public boolean renderFog = true;
 
     public static Config load(Path path) {

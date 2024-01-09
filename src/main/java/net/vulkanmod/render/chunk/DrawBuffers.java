@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
@@ -17,6 +18,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.LongBuffer;
+import java.util.EnumMap;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -30,6 +32,7 @@ public class DrawBuffers {
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer, indexBuffer;
+    private final EnumMap<TerrainRenderType, AreaBuffer> areaBufferTypes = new EnumMap<>(TerrainRenderType.class);
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
@@ -40,18 +43,19 @@ public class DrawBuffers {
     }
 
     public void allocateBuffers() {
-        this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
+
+        if(!Initializer.CONFIG.perRenderTypeAreaBuffers) vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
         this.allocated = true;
     }
 
-    public void upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters) {
+    public void upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters, TerrainRenderType renderType) {
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = 0;
         drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
         if(!buffer.indexOnly) {
-            this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
+            this.getAreaBufferCheckedAlloc(renderType).upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
 
@@ -63,7 +67,7 @@ public class DrawBuffers {
 
         if(!buffer.autoIndices) {
             if (this.indexBuffer==null)
-                this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 1000000, INDEX_SIZE);
+                this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 786432 /*RenderType.SMALL_BUFFER_SIZE*/, INDEX_SIZE);
             this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
             firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
@@ -81,6 +85,17 @@ public class DrawBuffers {
         buffer.release();
 
 
+    }
+    //Exploit Pass by Reference to allow all keys to be the same AreaBufferObject (if perRenderTypeAreaBuffers is disabled)
+    private AreaBuffer getAreaBufferCheckedAlloc(TerrainRenderType r) {
+        return this.areaBufferTypes.computeIfAbsent(r, t -> Initializer.CONFIG.perRenderTypeAreaBuffers ? new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, r.initialSize, VERTEX_SIZE) : this.vertexBuffer);
+    }
+    private AreaBuffer getAreaBuffer(TerrainRenderType r) {
+        return this.areaBufferTypes.get(r);
+    }
+
+    private boolean hasRenderType(TerrainRenderType r) {
+        return this.areaBufferTypes.containsKey(r);
     }
 
     private int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
@@ -175,7 +190,8 @@ public class DrawBuffers {
         indirectBuffer.recordCopyCmd(byteBuffer);
 
 
-        LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
+
+        LongBuffer pVertexBuffer = stack.longs(getAreaBuffer(terrainRenderType).getId());
         LongBuffer pOffset = stack.longs(0);
         vkCmdBindVertexBuffers(commandBuffer, 0, pVertexBuffer, pOffset);
 
@@ -232,7 +248,7 @@ public class DrawBuffers {
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(getAreaBuffer(terrainRenderType).getId()), stack.npointer(0));
             updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
         }
 
@@ -252,7 +268,11 @@ public class DrawBuffers {
         if(!this.allocated)
             return;
 
-        this.vertexBuffer.freeBuffer();
+        if(this.vertexBuffer==null) {
+            this.areaBufferTypes.values().forEach(AreaBuffer::freeBuffer);
+        }
+        else this.vertexBuffer.freeBuffer();
+        this.areaBufferTypes.clear();
         if(this.indexBuffer!=null) this.indexBuffer.freeBuffer();
 
         this.vertexBuffer = null;
@@ -274,15 +294,15 @@ public class DrawBuffers {
             indexBufferSegment = translucent ? new AreaBuffer.Segment() : null;
         }
 
-        public void reset(ChunkArea chunkArea) {
+        public void reset(ChunkArea chunkArea, TerrainRenderType r) {
             this.indexCount = 0;
             this.firstIndex = 0;
             this.vertexOffset = 0;
 
             int segmentOffset = this.vertexBufferSegment.getOffset();
-            if(chunkArea != null && chunkArea.drawBuffers().isAllocated() && segmentOffset != -1) {
+            if(chunkArea != null && chunkArea.drawBuffers().hasRenderType(r) && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
-                chunkArea.drawBuffers().vertexBuffer.setSegmentFree(this.vertexBufferSegment);
+                chunkArea.drawBuffers().getAreaBuffer(r).setSegmentFree(this.vertexBufferSegment);
             }
         }
     }
