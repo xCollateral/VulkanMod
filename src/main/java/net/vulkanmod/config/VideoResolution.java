@@ -84,7 +84,7 @@ public class VideoResolution {
 
     private static String determineDE() {
         String xdgSessionDesktop = System.getenv("XDG_SESSION_DESKTOP");
-        return xdgSessionDesktop != null ? xdgSessionDesktop : "N/A";
+        return (xdgSessionDesktop != null ? xdgSessionDesktop : "N/A").toLowerCase();
     }
 
 
@@ -119,7 +119,7 @@ public class VideoResolution {
     public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
 
     //Desktop Environment Names: https://wiki.archlinux.org/title/Environment_variables_#Examples
-    public static boolean isGNOME(){return activeDE.contains("GNOME");}
+    public static boolean isGNOME(){return activeDE.contains("gnome") || activeDE.contains("GNOME");}
 
 
 
