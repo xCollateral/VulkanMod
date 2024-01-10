@@ -552,11 +552,10 @@ public class WorldRenderer {
         this.sortTranslucentSections(camX, camY, camZ);
 
         this.minecraft.getProfiler().push("filterempty");
-        this.minecraft.getProfiler().popPush(() -> {
-            return "render_" + renderType;
-        });
-        boolean isTranslucent = terrainRenderType == TRANSLUCENT;
-        boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+        this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
+
+        final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
+        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -580,10 +579,10 @@ public class WorldRenderer {
                 ChunkArea chunkArea = iterator.next();
                 var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
 
-                if(indirectDraw) {
-                    chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
-                } else {
-                    chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
+                if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
+                    chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
+                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType);
+                    else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
                 }
             }
         }
