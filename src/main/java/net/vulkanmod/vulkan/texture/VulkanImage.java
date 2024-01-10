@@ -17,6 +17,7 @@ import java.util.Arrays;
 
 import static net.vulkanmod.vulkan.texture.SamplerManager.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
@@ -256,7 +257,7 @@ public class VulkanImage {
         int sourceStage, srcAccessMask, destinationStage, dstAccessMask = 0;
 
         switch (image.currentLayout) {
-            case VK_IMAGE_LAYOUT_UNDEFINED -> {
+            case VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
                 srcAccessMask = 0;
                 sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             }
@@ -303,6 +304,9 @@ public class VulkanImage {
             case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL -> {
                 dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            }
+            case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> {
+                destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
             }
             default -> throw new RuntimeException("Unexpected value:" + newLayout);
         }
