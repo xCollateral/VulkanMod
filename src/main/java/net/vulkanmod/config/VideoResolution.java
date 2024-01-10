@@ -62,7 +62,7 @@ public class VideoResolution {
         boolean useXwaylandOverride = Initializer.CONFIG.xWayland && isWayLand();
         int overriddenPlat = useXwaylandOverride ? GLFW_PLATFORM_X11 : activePlat;
         GLFW.glfwInitHint(GLFW_PLATFORM, overriddenPlat);
-        LOGGER.info("Selecting Platform: " + getStringFromPlat(overriddenPlat) + (useXwaylandOverride ? "(Xwayland Override)" : null));
+        LOGGER.info("Selecting Platform: " + (useXwaylandOverride ? getStringFromPlat(overriddenPlat) + " (Xwayland Override)" : getStringFromPlat(overriddenPlat) ));
         LOGGER.info("GLFW: "+GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
@@ -119,7 +119,7 @@ public class VideoResolution {
     public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
 
     //Desktop Environment Names: https://wiki.archlinux.org/title/Environment_variables_#Examples
-    public static boolean isGNOME(){return activeDE.equals("GNOME")||activeDE.equals("GNOME_Flashback");}
+    public static boolean isGNOME(){return activeDE.contains("GNOME");}
 
 
 
