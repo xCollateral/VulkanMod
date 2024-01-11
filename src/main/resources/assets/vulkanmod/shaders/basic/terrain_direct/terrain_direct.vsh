@@ -1,5 +1,5 @@
 #version 460
-
+layout (constant_id = 0) const bool USE_FOG = true;
 #include "light.glsl"
 
 layout(binding = 0) uniform UniformBufferObject {
@@ -31,8 +31,7 @@ const float POSITION_INV = 1.0 / 1900.0;
 void main() {
     vec3 pos = (Position * POSITION_INV);
     gl_Position = MVP * vec4(pos + ChunkOffset, 1.0);
-
-    vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset, 1.0)).xyz);
+    vertexDistance = USE_FOG ? length((ModelViewMat * vec4(pos + ChunkOffset, 1.0)).xyz) : 0.0f; //Optimised out by Driver
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);
