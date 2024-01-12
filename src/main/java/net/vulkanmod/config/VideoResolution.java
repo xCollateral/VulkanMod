@@ -119,7 +119,8 @@ public class VideoResolution {
     public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
 
     //Desktop Environment Names: https://wiki.archlinux.org/title/Environment_variables_#Examples
-    public static boolean isGNOME(){return activeDE.contains("gnome") || activeDE.contains("GNOME");}
+    public static boolean isGnome(){return activeDE.contains("gnome");}
+    public static boolean isKWin(){return activeDE.contains("kde");}
 
 
 
