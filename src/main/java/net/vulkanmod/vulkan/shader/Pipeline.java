@@ -554,7 +554,7 @@ public abstract class Pipeline {
 //                String type2 = GsonHelper.getAsString(jsonobject2, "type");
 
 
-                this.specConstants.add(SpecConstant.getNamed(name));
+                this.specConstants.add(SpecConstant.valueOf(name));
             }
 
         }

@@ -131,17 +131,7 @@ public class SPIRVUtils {
         COMPUTE_SIZE_X;
 
         //Ordinals are used to provide the Constant_ID for VkSpecializationMapEntry
-        public static SpecConstant getNamed(String name) {
-            return switch (name)
-            {
-                case "USE_FOG" -> USE_FOG;
-                case "ALPHA_CUTOUT" -> ALPHA_CUTOUT;
-                case "MAX_OFFSET_COUNT" -> MAX_OFFSET_COUNT;
-                case "COMPUTE_SIZE_Y" -> COMPUTE_SIZE_Y;
-                case "COMPUTE_SIZE_X" -> COMPUTE_SIZE_X;
-                default -> null;
-            };
-        }
+
 
         //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
         //As a result to simplify alignment, ints are used for all types, regardless if its a bool, float, int or uint
