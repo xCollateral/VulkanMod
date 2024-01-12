@@ -46,6 +46,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -317,7 +318,7 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
+                renderSection.getChunkArea().addSections(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -357,7 +358,7 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
+                renderSection.getChunkArea().addSections(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -549,31 +550,39 @@ public class WorldRenderer {
         this.sortTranslucentSections(camX, camY, camZ);
 
         this.minecraft.getProfiler().push("filterempty");
-        this.minecraft.getProfiler().popPush(() -> {
-            return "render_" + renderType;
-        });
-        boolean flag = renderType == RenderType.translucent();
-        boolean indirectDraw = Initializer.CONFIG.indirectDraw;
+        this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
+
+        final boolean isTranslucent = renderType == RenderType.translucent();
+        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
-        Renderer renderer = Renderer.getInstance();
-        GraphicsPipeline pipeline = PipelineManager.getTerrainShader(renderType);
-        renderer.bindGraphicsPipeline(pipeline);
-        Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
+        final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+
 
         p.push("draw batches");
 
         int currentFrame = Renderer.getCurrentFrame();
         if((Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES).contains(renderType)) {
-            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
-            while(iterator.hasNext()) {
-                ChunkArea chunkArea = iterator.next();
+            final TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
 
+            GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
+            Renderer.getInstance().bindGraphicsPipeline(terrainShader);
+            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+
+
+            final long layout = terrainShader.getLayout();
+
+            for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
+                ChunkArea chunkArea = iterator.next();
+                var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
+
+                if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
                 if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], chunkArea, renderType, camX, camY, camZ);
+                    chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType, camX, camY, camZ, layout);
                 } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea.sectionQueue, pipeline, renderType, camX, camY, camZ);
+                    chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainShader, terrainRenderType, camX, camY, camZ);
+                }
                 }
             }
         }
@@ -584,11 +593,7 @@ public class WorldRenderer {
         }
         p.pop();
 
-        //Need to reset push constant in case the pipeline will still be used for rendering
-        if(!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            renderer.pushConstants(pipeline);
-        }
+
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();

@@ -1,18 +1,21 @@
 package net.vulkanmod.render.chunk;
 
-import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import org.joml.Matrix4f;
+import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -21,10 +24,21 @@ public class DrawBuffers {
 
     private static final int VERTEX_SIZE = PipelineManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
+    private final int index;
+    private final Vector3i origin;
+    private final int minHeight;
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
     AreaBuffer indexBuffer;
+
+    //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
+    public DrawBuffers(int index, Vector3i origin, int minHeight) {
+
+        this.index = index;
+        this.origin = origin;
+        this.minHeight = minHeight;
+    }
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 3500000, VERTEX_SIZE);
@@ -33,9 +47,10 @@ public class DrawBuffers {
         this.allocated = true;
     }
 
-    public DrawParameters upload(UploadBuffer buffer, DrawParameters drawParameters) {
+    public void upload(int xOffset, int yOffset, int zOffset, UploadBuffer buffer, DrawParameters drawParameters) {
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = 0;
+        drawParameters.baseInstance = encodeSectionOffset(xOffset, yOffset, zOffset);
 
         if(!buffer.indexOnly) {
             this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters.vertexBufferSegment);
@@ -65,15 +80,36 @@ public class DrawBuffers {
 
         buffer.release();
 
-        return drawParameters;
+
     }
 
-    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, ChunkArea chunkArea, RenderType renderType, double camX, double camY, double camZ) {
+    private int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
+        final int xOffset1 = (xOffset & 127);
+        final int zOffset1 = (zOffset & 127);
+        final int yOffset1 = (yOffset-this.minHeight & 127);
+        return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
+    }
+
+    private void updateChunkAreaOrigin(double camX, double camY, double camZ, VkCommandBuffer commandBuffer, long layout, FloatBuffer mPtr) {
+
+            float x = (float)(camX-(this.origin.x));
+            float y = (float)(camY-(this.origin.y));
+            float z = (float)(camZ-(this.origin.z));
+
+            Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer.asFloatBuffer());
+            Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer.asFloatBuffer());
+
+            MVP.translate(-x, -y, -z).get(mPtr);
+            MV.translate(-x, -y, -z).get(16,mPtr);
+
+            vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
+    }
+    public int buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType, double camX, double camY, double camZ, long layout) {
         int stride = 20;
 
         int drawCount = 0;
 
-        StaticQueue<RenderSection> queue = chunkArea.sectionQueue;
+
 
         MemoryStack stack = MemoryStack.stackPush();
         ByteBuffer byteBuffer = stack.calloc(20 * queue.size());
@@ -81,11 +117,9 @@ public class DrawBuffers {
         long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
         long uboPtr = MemoryUtil.memAddress0(uboBuffer);
 
-        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
-        terrainRenderType.setCutoutUniform();
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
-        Pipeline pipeline = PipelineManager.getTerrainIndirectShader(renderType);
+        Pipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         if(isTranslucent) {
@@ -94,8 +128,8 @@ public class DrawBuffers {
 
         var iterator = queue.iterator(isTranslucent);
         while (iterator.hasNext()) {
-            RenderSection section = iterator.next();
-            DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
+
+            DrawParameters drawParameters = iterator.next();
 
             //Debug
 //            BlockPos o = section.origin;
@@ -126,12 +160,12 @@ public class DrawBuffers {
 //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
             MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
 //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
-            MemoryUtil.memPutInt(ptr + 16, 0);
+            MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
 
-            ptr = uboPtr + (drawCount * 16L);
-            MemoryUtil.memPutFloat(ptr, (float)((double) section.xOffset - camX));
-            MemoryUtil.memPutFloat(ptr + 4, (float)((double) section.yOffset - camY));
-            MemoryUtil.memPutFloat(ptr + 8, (float)((double) section.zOffset - camZ));
+//            ptr = uboPtr + (drawCount * 16L);
+//            MemoryUtil.memPutFloat(ptr, (float)((double) section.xOffset - camX));
+//            MemoryUtil.memPutFloat(ptr + 4, (float)((double) section.yOffset - camY));
+//            MemoryUtil.memPutFloat(ptr + 8, (float)((double) section.zOffset - camZ));
 
             drawCount++;
         }
@@ -146,7 +180,7 @@ public class DrawBuffers {
 
         indirectBuffer.recordCopyCmd(byteBuffer);
 
-        pipeline.getManualUBO().setSrc(uboPtr, 16 * drawCount);
+
 
         LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
         LongBuffer pOffset = stack.longs(0);
@@ -154,6 +188,7 @@ public class DrawBuffers {
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
         pipeline.bindDescriptorSets(commandBuffer, Renderer.getCurrentFrame());
+        updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, layout, stack.mallocFloat(32));
         vkCmdDrawIndexedIndirect(commandBuffer, indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);
@@ -200,10 +235,10 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, Pipeline pipeline, RenderType renderType, double camX, double camY, double camZ) {
-        TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
-        terrainRenderType.setCutoutUniform();
-        boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, Pipeline pipeline, TerrainRenderType renderType, double camX, double camY, double camZ) {
+
+
+        boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         try(MemoryStack stack = MemoryStack.stackPush()) {
@@ -211,7 +246,7 @@ public class DrawBuffers {
             long pOffset = stack.npointer(0);
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, (pVertexBuffer), (pOffset));
 
-
+            updateChunkAreaOrigin(camX, camY, camZ, commandBuffer, pipeline.getLayout(), stack.mallocFloat(32));
 
             if(isTranslucent) {
                 vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
@@ -225,8 +260,8 @@ public class DrawBuffers {
 
             var iterator = queue.iterator(isTranslucent);
             while (iterator.hasNext()) {
-                RenderSection section = iterator.next();
-                DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
+                DrawParameters drawParameters = iterator.next();
+
 
                 if(drawParameters.indexCount == 0) {
                     continue;
@@ -237,9 +272,7 @@ public class DrawBuffers {
                 MemoryUtil.memPutInt(ptr + 4, drawParameters.firstIndex);
                 MemoryUtil.memPutInt(ptr + 8, drawParameters.vertexOffset);
 
-                MemoryUtil.memPutFloat(ptr + 12, (float)((double) section.xOffset - camX));
-                MemoryUtil.memPutFloat(ptr + 16, (float)((double) section.yOffset - camY));
-                MemoryUtil.memPutFloat(ptr + 20, (float)((double) section.zOffset - camZ));
+                MemoryUtil.memPutInt(ptr + 12, drawParameters.baseInstance);
 
                 drawCount++;
 
@@ -250,6 +283,7 @@ public class DrawBuffers {
                 int indexCount;
                 int firstIndex;
                 int vertexOffset;
+                int baseInstance;
                 for(int i = 0; i < drawCount; ++i) {
 
                     offset = i * 24 + bufferPtr;
@@ -257,14 +291,15 @@ public class DrawBuffers {
                     indexCount    = MemoryUtil.memGetInt(offset + 0);
                     firstIndex    = MemoryUtil.memGetInt(offset + 4);
                     vertexOffset  = MemoryUtil.memGetInt(offset + 8);
+                    baseInstance  = MemoryUtil.memGetInt(offset + 12);
 
 //                if(indexCount == 0) {
 //                    continue;
 //                }
 
-                    nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, offset + 12);
 
-                    vkCmdDrawIndexed(commandBuffer, indexCount, 1, firstIndex, vertexOffset, 0);
+
+                    vkCmdDrawIndexed(commandBuffer, indexCount, 1, firstIndex, vertexOffset, baseInstance);
                 }
             }
 
@@ -288,17 +323,13 @@ public class DrawBuffers {
     }
 
     public static class DrawParameters {
-        int indexCount;
-        int firstIndex;
-        int vertexOffset;
-        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
-        AreaBuffer.Segment indexBufferSegment;
+        int indexCount, firstIndex, vertexOffset, baseInstance;
+        final AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
+        final AreaBuffer.Segment indexBufferSegment;
         boolean ready = false;
 
         DrawParameters(boolean translucent) {
-            if(translucent) {
-                indexBufferSegment = new AreaBuffer.Segment();
-            }
+            indexBufferSegment = translucent ? new AreaBuffer.Segment() : null;
         }
 
         public void reset(ChunkArea chunkArea) {
@@ -307,9 +338,9 @@ public class DrawBuffers {
             this.vertexOffset = 0;
 
             int segmentOffset = this.vertexBufferSegment.getOffset();
-            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
+            if(chunkArea != null && chunkArea.drawBuffers().isAllocated() && segmentOffset != -1) {
 //                this.chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
-                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
+                chunkArea.drawBuffers().vertexBuffer.setSegmentFree(this.vertexBufferSegment);
             }
         }
     }
