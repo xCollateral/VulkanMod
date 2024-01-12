@@ -18,6 +18,8 @@ public class Config {
     public boolean guiOptimizations = false;
     public int advCulling = 2;
     public boolean indirectDraw = false;
+
+    public boolean perRenderTypeAreaBuffers = false;
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
@@ -28,6 +30,7 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
+
 
     public static Config load(Path path) {
         Config config;

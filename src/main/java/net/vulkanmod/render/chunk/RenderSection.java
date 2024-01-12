@@ -262,9 +262,8 @@ public class RenderSection {
     }
 
     private void resetDrawParameters() {
-        for(DrawBuffers.DrawParameters drawParameters : this.drawParametersArray) {
-            drawParameters.reset(this.chunkArea);
-
+        for(TerrainRenderType r : this.getCompiledSection().renderTypes) {
+            getDrawParameters(r).reset(this.chunkArea, r);
         }
     }
 
