@@ -1,6 +1,6 @@
 #version 460
-
-#define MAX_OFFSET_COUNT 512
+layout (constant_id = 0) const bool USE_FOG = true;
+layout (constant_id = 2) const uint MAX_OFFSET_COUNT = 512;
 
 #include "light.glsl"
 
@@ -35,7 +35,7 @@ void main() {
     vec3 pos = (Position * POSITION_INV);
     gl_Position = MVP * vec4(pos + ChunkOffset[gl_DrawID], 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset[gl_DrawID], 1.0)).xyz);
+    vertexDistance = USE_FOG ? length((ModelViewMat * vec4(pos + ChunkOffset[gl_DrawID], 1.0)).xyz) : 0.0f; //Optimised out by Driver
     vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
     //    normal = MVP * vec4(Normal, 0.0);

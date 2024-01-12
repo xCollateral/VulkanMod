@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.shader;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
@@ -101,7 +103,7 @@ public class SPIRVUtils {
 
         time += (System.nanoTime() - startTime) / 1000000.0f;
 
-        return new SPIRV(result, shaderc_result_get_bytes(result));
+        return new SPIRV(result, shaderc_result_get_length(result));
     }
 
     private static SPIRV readFromStream(InputStream inputStream) {
@@ -111,12 +113,39 @@ public class SPIRVUtils {
             buffer.put(bytes);
             buffer.position(0);
 
-            return new SPIRV(MemoryUtil.memAddress(buffer), buffer);
+            return new SPIRV(MemoryUtil.memAddress(buffer), bytes.length);
         } catch (Exception e) {
             e.printStackTrace();
         }
         throw new RuntimeException("unable to read inputStream");
     }
+
+
+
+    public enum SpecConstant
+    {
+        USE_FOG,
+        ALPHA_CUTOUT,
+        MAX_OFFSET_COUNT,
+        COMPUTE_SIZE_Y,
+        COMPUTE_SIZE_X;
+
+        //Ordinals are used to provide the Constant_ID for VkSpecializationMapEntry
+
+
+        //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
+        //As a result to simplify alignment, ints are used for all types, regardless if its a bool, float, int or uint
+        public int getValue()
+        {
+            return switch (this){
+                case USE_FOG -> Initializer.CONFIG.renderFog ? 1 : 0;
+                case ALPHA_CUTOUT -> Float.floatToRawIntBits(VRenderSystem.alphaCutout);
+                case MAX_OFFSET_COUNT -> 512;
+                case COMPUTE_SIZE_Y, COMPUTE_SIZE_X -> 32;
+            };
+        }
+    }
+
 
     public enum ShaderKind {
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
@@ -173,24 +202,16 @@ public class SPIRVUtils {
         }
     }
 
-    public static final class SPIRV implements NativeResource {
-
-        private final long handle;
-        private ByteBuffer bytecode;
-
-        public SPIRV(long handle, ByteBuffer bytecode) {
-            this.handle = handle;
-            this.bytecode = bytecode;
-        }
+    public record SPIRV (long handle, long size_t)  implements NativeResource {
 
         public ByteBuffer bytecode() {
-            return bytecode;
+            return shaderc_result_get_bytes(handle, size_t);
         }
 
         @Override
         public void free() {
-//            shaderc_result_release(handle);
-            bytecode = null; // Help the GC
+            shaderc_result_release(handle);
+//            size_t = null; // Help the GC
         }
     }
 
