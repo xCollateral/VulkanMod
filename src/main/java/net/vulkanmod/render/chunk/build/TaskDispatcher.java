@@ -6,6 +6,7 @@ import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.ChunkArea;
 import net.vulkanmod.render.chunk.DrawBuffers;
 import net.vulkanmod.render.chunk.RenderSection;
+import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.slf4j.Logger;
 

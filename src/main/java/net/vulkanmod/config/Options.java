@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.DeviceManager;
@@ -140,7 +141,9 @@ public class Options {
                 new RangeOption("Render Distance", 2, 32, 1,
                         (value) -> {
                             minecraftOptions.renderDistance().set(value);
-                            Minecraft.getInstance().levelRenderer.needsUpdate();
+                            LevelRenderer levelRenderer = Minecraft.getInstance().levelRenderer;
+                            levelRenderer.needsUpdate();
+                            levelRenderer.allChanged();
                         },
                         () -> minecraftOptions.renderDistance().get()),
                 new RangeOption("Simulation Distance", 5, 32, 1,

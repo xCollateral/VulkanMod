@@ -4,13 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -22,7 +20,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.util.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -191,34 +188,6 @@ public abstract class LevelRendererMixin {
         return this.worldRenderer.getVisibleSectionsCount();
     }
 
-    @Inject(method = "renderClouds", at = @At("HEAD"))
-    private void pushProfiler2(PoseStack poseStack, Matrix4f matrix4f, float f, double d, double e, double g, CallbackInfo ci) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
-        profiler.push("clouds");
-    }
-
-    @Inject(method = "renderClouds", at = @At("RETURN"))
-    private void popProfiler2(PoseStack poseStack, Matrix4f matrix4f, float f, double d, double e, double g, CallbackInfo ci) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
-        profiler.pop();
-    }
-
-    @Inject(method = "renderLevel", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F)V"
-            , shift = At.Shift.BEFORE))
-    private void pushProfiler3(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
-        profiler.push("particles");
-    }
-
-    @Inject(method = "renderLevel", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F)V"
-            , shift = At.Shift.AFTER))
-    private void popProfiler3(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
-        profiler.pop();
-    }
-
     /**
      * @author
      * @reason
@@ -226,9 +195,9 @@ public abstract class LevelRendererMixin {
     @Overwrite
     private void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource) {
         if(!Initializer.CONFIG.entityCulling) {
-            double h = Mth.lerp((double)g, entity.xOld, entity.getX());
-            double i = Mth.lerp((double)g, entity.yOld, entity.getY());
-            double j = Mth.lerp((double)g, entity.zOld, entity.getZ());
+            double h = Mth.lerp(g, entity.xOld, entity.getX());
+            double i = Mth.lerp(g, entity.yOld, entity.getY());
+            double j = Mth.lerp(g, entity.zOld, entity.getZ());
             float k = Mth.lerp(g, entity.yRotO, entity.getYRot());
             this.entityRenderDispatcher.render(entity, h - d, i - e, j - f, k, g, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, g));
             return;

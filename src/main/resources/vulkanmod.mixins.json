@@ -35,6 +35,7 @@
 
     "profiling.GuiMixin",
     "profiling.KeyboardHandlerM",
+    "profiling.LevelRendererMixin",
 
     "render.BufferUploaderM",
     "render.GameRendererMixin",
@@ -43,6 +44,7 @@
     "render.LevelRendererMixin",
     "render.MinecraftMixin",
     "render.RenderSystemMixin",
+    "render.RenderTypeM",
     "render.ShaderInstanceM",
     "render.entity.EntityRendererM",
     "render.model.ModelPartCubeM",

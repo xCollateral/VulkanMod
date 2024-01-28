@@ -57,6 +57,10 @@ public class ResettableQueue<T> implements Iterable<T> {
         return limit;
     }
 
+    public void rewind() {
+        this.position = 0;
+    }
+
     public void clear() {
         this.position = 0;
         this.limit = 0;

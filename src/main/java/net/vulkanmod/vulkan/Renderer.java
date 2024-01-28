@@ -193,7 +193,6 @@ public class Renderer {
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
 
         p.pop();
-        p.round();
         p.push("Begin_rendering");
 
 //        AreaUploadManager.INSTANCE.updateFrame();
@@ -263,6 +262,7 @@ public class Renderer {
         recordingCmds = false;
 
         p.pop();
+        p.push("Post_rendering");
     }
 
     private void submitFrame() {
@@ -355,6 +355,8 @@ public class Renderer {
 
     public void resetBuffers() {
         Profiler2 p = Profiler2.getMainProfiler();
+        p.pop();
+        p.round();
         p.push("Frame_ops");
 
         drawer.resetBuffers(currentFrame);
