@@ -561,28 +561,25 @@ public class WorldRenderer {
 
         final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
-
-        p.push("draw batches");
+        Renderer renderer = Renderer.getInstance();
+        GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
+        renderer.bindGraphicsPipeline(pipeline);
+        Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
 
         final int currentFrame = Renderer.getCurrentFrame();
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(terrainRenderType)) {
-
-
-            GraphicsPipeline terrainShader = PipelineManager.getTerrainShader(terrainRenderType);
-            Renderer.getInstance().bindGraphicsPipeline(terrainShader);
-            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
-            terrainShader.bindDescriptorSets(commandBuffer, currentFrame);
-
-            final long layout = terrainShader.getLayout();
+            terrainRenderType.setCutoutUniform();
 
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();
                 var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
 
                 if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
+                    renderer.uploadAndBindUBOs(pipeline);
                     chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
                     if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType);
                     else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
+                    
                 }
             }
         }
@@ -591,7 +588,6 @@ public class WorldRenderer {
             indirectBuffers[currentFrame].submitUploads();
 //            uniformBuffers.submitUploads();
         }
-        p.pop();
 
 
 
