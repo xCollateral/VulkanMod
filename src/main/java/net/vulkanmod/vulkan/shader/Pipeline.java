@@ -484,9 +484,9 @@ public abstract class Pipeline {
             this.imageDescriptors = imageDescriptors;
         }
 
-        public void compileShaders2(SPIRV vertShaderSPIRV1, SPIRV fragShaderSPIRV1) {
-            this.vertShaderSPIRV = vertShaderSPIRV1;
-            this.fragShaderSPIRV = fragShaderSPIRV1;
+        public void setSPIRVs(SPIRV vertShaderSPIRV, SPIRV fragShaderSPIRV) {
+            this.vertShaderSPIRV = vertShaderSPIRV;
+            this.fragShaderSPIRV = fragShaderSPIRV;
         }
 
         public void compileShaders() {

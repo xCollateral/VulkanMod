@@ -2,7 +2,6 @@ package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -15,7 +14,7 @@ import java.util.function.Function;
 import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShaderAbsoluteFile;
 
 public abstract class PipelineManager {
-    private static final String resourcePath1 = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
+    private static final String shaderPath = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
     public static VertexFormat TERRAIN_VERTEX_FORMAT;
 
     public static void setTerrainVertexFormat(VertexFormat format) {
@@ -51,10 +50,9 @@ public abstract class PipelineManager {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(vertexFormat, pathB);
         pipelineBuilder.parseBindingsJSON();
 
-
-        SPIRVUtils.SPIRV vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", resourcePath1, pathV), SPIRVUtils.ShaderKind.VERTEX_SHADER);
-        SPIRVUtils.SPIRV fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", resourcePath1, pathF), SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
-        pipelineBuilder.compileShaders2(vertShaderSPIRV, fragShaderSPIRV);
+        SPIRVUtils.SPIRV vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", shaderPath, pathV), SPIRVUtils.ShaderKind.VERTEX_SHADER);
+        SPIRVUtils.SPIRV fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", shaderPath, pathF), SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+        pipelineBuilder.setSPIRVs(vertShaderSPIRV, fragShaderSPIRV);
 
         return pipelineBuilder.createGraphicsPipeline();
     }
