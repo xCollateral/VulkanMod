@@ -320,7 +320,7 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().addSections(renderSection);
+                renderSection.getChunkArea().sectionQueue.add(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -360,7 +360,7 @@ public class WorldRenderer {
 
 
             if(!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().addSections(renderSection);
+                renderSection.getChunkArea().sectionQueue.add(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -572,14 +572,19 @@ public class WorldRenderer {
 
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();
-                var typedSectionQueue = chunkArea.sectionQueues().get(terrainRenderType);
+                var queue = chunkArea.sectionQueue;
+                DrawBuffers drawBuffers = chunkArea.drawBuffers;
 
-                if(typedSectionQueue!=null && typedSectionQueue.size() != 0) {
+                renderer.uploadAndBindUBOs(pipeline);
+                if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {
+
+                    drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
                     renderer.uploadAndBindUBOs(pipeline);
-                    chunkArea.drawBuffers().bindBuffers(terrainRenderType, commandBuffer, camX, camY, camZ, layout);
-                    if (indirectDraw) chunkArea.drawBuffers().buildDrawBatchesIndirect(indirectBuffers[currentFrame], typedSectionQueue, terrainRenderType);
-                    else chunkArea.drawBuffers().buildDrawBatchesDirect(typedSectionQueue, terrainRenderType);
-                    
+
+                    if (indirectDraw)
+                        drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType);
+                    else
+                        drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
                 }
             }
         }
