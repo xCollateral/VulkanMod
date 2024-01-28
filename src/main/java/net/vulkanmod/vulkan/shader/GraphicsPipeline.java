@@ -3,6 +3,8 @@ package net.vulkanmod.vulkan.shader;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
@@ -12,11 +14,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
-import static net.vulkanmod.vulkan.shader.PipelineState.*;
-import static net.vulkanmod.vulkan.shader.PipelineState.DEFAULT_COLORMASK;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
@@ -24,7 +22,8 @@ import static org.lwjgl.vulkan.VK10.vkDestroyPipelineLayout;
 
 public class GraphicsPipeline extends Pipeline {
 
-    private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
+    private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
+
     private final VertexFormat vertexFormat;
 
     private long vertShaderModule = 0;
@@ -43,7 +42,7 @@ public class GraphicsPipeline extends Pipeline {
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
         if(builder.renderPass != null)
-            graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK, builder.renderPass),
+            graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
         createDescriptorSets(Renderer.getFramesNum());
@@ -127,9 +126,9 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc(stack);
             depthStencil.sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
-            depthStencil.depthTestEnable(state.depthState.depthTest);
-            depthStencil.depthWriteEnable(state.depthState.depthMask);
-            depthStencil.depthCompareOp(state.depthState.function);
+            depthStencil.depthTestEnable(PipelineState.DepthState.depthTest(state.depthState_i));
+            depthStencil.depthWriteEnable(PipelineState.DepthState.depthMask(state.depthState_i));
+            depthStencil.depthCompareOp(PipelineState.DepthState.decodeDepthFun(state.depthState_i));
             depthStencil.depthBoundsTestEnable(false);
             depthStencil.minDepthBounds(0.0f); // Optional
             depthStencil.maxDepthBounds(1.0f); // Optional
@@ -138,15 +137,15 @@ public class GraphicsPipeline extends Pipeline {
             // ===> COLOR BLENDING <===
 
             VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.calloc(1, stack);
-            colorBlendAttachment.colorWriteMask(state.colorMask.colorMask);
+            colorBlendAttachment.colorWriteMask(state.colorMask_i);
 
-            if(state.blendState.enabled) {
+            if(PipelineState.BlendState.enable(state.blendState_i)) {
                 colorBlendAttachment.blendEnable(true);
-                colorBlendAttachment.srcColorBlendFactor(state.blendState.srcRgbFactor);
-                colorBlendAttachment.dstColorBlendFactor(state.blendState.dstRgbFactor);
+                colorBlendAttachment.srcColorBlendFactor(PipelineState.BlendState.getSrcRgbFactor(state.blendState_i));
+                colorBlendAttachment.dstColorBlendFactor(PipelineState.BlendState.getDstRgbFactor(state.blendState_i));
                 colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
-                colorBlendAttachment.srcAlphaBlendFactor(state.blendState.srcAlphaFactor);
-                colorBlendAttachment.dstAlphaBlendFactor(state.blendState.dstAlphaFactor);
+                colorBlendAttachment.srcAlphaBlendFactor(PipelineState.BlendState.getSrcAlphaFactor(state.blendState_i));
+                colorBlendAttachment.dstAlphaBlendFactor(PipelineState.BlendState.getDstAlphaFactor(state.blendState_i));
                 colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
             }
             else {
@@ -155,8 +154,8 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.calloc(stack);
             colorBlending.sType(VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
-            colorBlending.logicOpEnable(state.logicOpState.enabled);
-            colorBlending.logicOp(state.logicOpState.getLogicOp());
+            colorBlending.logicOpEnable(PipelineState.LogicOpState.enable(state.logicOp_i));
+            colorBlending.logicOp(PipelineState.LogicOpState.decodeFun(state.logicOp_i));
             colorBlending.pAttachments(colorBlendAttachment);
             colorBlending.blendConstants(stack.floats(0.0f, 0.0f, 0.0f, 0.0f));
 

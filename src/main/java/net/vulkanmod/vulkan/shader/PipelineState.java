@@ -13,66 +13,96 @@ public class PipelineState {
     private static final int DEFAULT_DEPTH_OP = 515;
 //    private static final int DEFAULT_DEPTH_OP = 518;
 
-    public static final BlendState DEFAULT_BLEND_STATE = defaultBlendInfo().createBlendState();
-    public static final DepthState DEFAULT_DEPTH_STATE = defaultDepthState();
-    public static final LogicOpState DEFAULT_LOGICOP_STATE = new LogicOpState(false, 0);
-    public static final ColorMask DEFAULT_COLORMASK = new ColorMask(true, true, true, true);
-
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
-    public static PipelineState.BlendState currentBlendState;
-    public static PipelineState.DepthState currentDepthState = PipelineState.DEFAULT_DEPTH_STATE;
-    public static PipelineState.LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
-    public static PipelineState.ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
+
+    public static final PipelineState DEFAULT = new PipelineState(true, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), null);
+
+    public static PipelineState currentState = DEFAULT;
 
     public static PipelineState getCurrentPipelineState(RenderPass renderPass) {
-        currentBlendState = blendInfo.createBlendState();
-        currentDepthState = VRenderSystem.getDepthState();
-        currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
+        boolean cullState = VRenderSystem.cull;
+        int blendState = getBlendState();
+        int currentColorMask = VRenderSystem.getColorMask();
+        int depthState = getDepthState();
+        int logicOp = getLogicOpState();
 
-        return new PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask, renderPass);
+        if(currentState.checkEquals(cullState, blendState, depthState, logicOp, currentColorMask, renderPass))
+            return currentState;
+        else
+            return currentState = new PipelineState(cullState, blendState, depthState, logicOp, currentColorMask, renderPass);
     }
 
-    final BlendState blendState;
-    final DepthState depthState;
-    final ColorMask colorMask;
-    final LogicOpState logicOpState;
+    public static int getBlendState() {
+        return BlendState.getState(blendInfo);
+    }
+
+    public static int getDepthState() {
+        int depthState = 0;
+
+        depthState |= VRenderSystem.depthTest ? DepthState.DEPTH_TEST_BIT : 0;
+        depthState |= VRenderSystem.depthMask ? DepthState.DEPTH_MASK_BIT : 0;
+
+        depthState |= DepthState.encodeDepthFun(VRenderSystem.depthFun);
+
+        return depthState;
+    }
+
+    public static int getLogicOpState() {
+        int logicOpState = 0;
+
+        logicOpState |= VRenderSystem.logicOp ? LogicOpState.ENABLE_BIT : 0;
+
+        logicOpState |= LogicOpState.encodeLogicOpFun(VRenderSystem.logicOpFun);
+
+        return logicOpState;
+    }
+
     final boolean cullState;
     final RenderPass renderPass;
 
-    public PipelineState(BlendState blendState, DepthState depthState, LogicOpState logicOpState, ColorMask colorMask, RenderPass renderPass) {
-        this.blendState = blendState;
-        this.depthState = depthState;
-        this.logicOpState = logicOpState;
-        this.colorMask = colorMask;
+    int blendState_i;
+    int depthState_i;
+    int colorMask_i;
+    int logicOp_i;
+
+    public PipelineState(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
         this.renderPass = renderPass;
-        this.cullState = VRenderSystem.cull;
+
+        this.cullState = cullState;
+        this.blendState_i = blendState;
+        this.depthState_i = depthState;
+        this.colorMask_i = colorMask;
+        this.logicOp_i = logicOp;
+    }
+
+    private boolean checkEquals(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
+        return (blendState == this.blendState_i) && (depthState == this.depthState_i)
+                && renderPass == this.renderPass && logicOp == this.logicOp_i
+                && (cullState == this.cullState) && colorMask == this.colorMask_i;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
         PipelineState that = (PipelineState) o;
-        return blendState.equals(that.blendState) && depthState.equals(that.depthState)
-                && this.renderPass == that.renderPass
-                && logicOpState.equals(that.logicOpState) && (cullState == that.cullState) && colorMask.equals(that.colorMask);
+        return (blendState_i == that.blendState_i) && (depthState_i == that.depthState_i)
+                && this.renderPass == that.renderPass && logicOp_i == that.logicOp_i
+                && (cullState == that.cullState) && colorMask_i == that.colorMask_i;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState, depthState, logicOpState, cullState, renderPass);
+        return Objects.hash(blendState_i, depthState_i, logicOp_i, cullState, colorMask_i, renderPass);
     }
 
     public static BlendInfo defaultBlendInfo() {
         return new BlendInfo(true, VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
                 VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
     }
-
-    public static DepthState defaultDepthState() {
-        return new DepthState(true, true, DEFAULT_DEPTH_OP);
-    }
-
-    public static ColorMask defaultColorMask() { return new ColorMask(true, true, true, true); }
 
     public static class BlendInfo {
         public boolean enabled;
@@ -125,8 +155,9 @@ public class PipelineState {
             this.blendOp = glToVulkanBlendOp(i);
         }
 
-        public BlendState createBlendState() {
-            return new BlendState(this.enabled, this.srcRgbFactor, this.dstRgbFactor, this.srcAlphaFactor, this.dstAlphaFactor, this.blendOp);
+
+        public int createBlendState() {
+            return BlendState.getState(this);
         }
 
         private static int glToVulkanBlendOp(int value) {
@@ -180,112 +211,128 @@ public class PipelineState {
     }
 
     public static class BlendState {
-        public final boolean enabled;
-        public final int srcRgbFactor;
-        public final int dstRgbFactor;
-        public final int srcAlphaFactor;
-        public final int dstAlphaFactor;
-        public final int blendOp;
+        public static final int SRC_RGB_OFFSET = 0;
+        public static final int DST_RGB_OFFSET = 5;
+        public static final int SRC_A_OFFSET = 10;
+        public static final int DST_A_OFFSET = 15;
+        public static final int FUN_OFFSET = 20;
 
-        protected BlendState(boolean enabled, int srcRgb, int dstRgb, int srcAlpha, int dstAlpha, int blendOp) {
-            this.enabled = enabled;
-            this.srcRgbFactor = srcRgb;
-            this.dstRgbFactor = dstRgb;
-            this.srcAlphaFactor = srcAlpha;
-            this.dstAlphaFactor = dstAlpha;
-            this.blendOp = blendOp;
+        public static final int ENABLE_BIT = 1 << 24;
+
+        public static final int OP_MASK = 0xF;
+        public static final int FACTOR_MASK = 0x1F;
+
+        public static int getState(BlendInfo blendInfo) {
+            int s = 0;
+            s |= blendInfo.enabled ? ENABLE_BIT : 0;
+            s |= encode(blendInfo.srcRgbFactor, SRC_RGB_OFFSET, FACTOR_MASK);
+            s |= encode(blendInfo.dstRgbFactor, DST_RGB_OFFSET, FACTOR_MASK);
+            s |= encode(blendInfo.srcAlphaFactor, SRC_A_OFFSET, FACTOR_MASK);
+            s |= encode(blendInfo.dstAlphaFactor, DST_A_OFFSET, FACTOR_MASK);
+            s |= encode(blendInfo.blendOp, FUN_OFFSET, OP_MASK);
+
+            return s;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            return this.equals((BlendState) o);
+        public static boolean enable(int i) {
+            return (i & ENABLE_BIT) != 0;
         }
 
-        public boolean equals(BlendState blendState) {
-            if(!this.enabled && !blendState.enabled) return true;
-            if(this.enabled != blendState.enabled) return false;
-            return srcRgbFactor == blendState.srcRgbFactor && dstRgbFactor == blendState.dstRgbFactor && srcAlphaFactor == blendState.srcAlphaFactor && dstAlphaFactor == blendState.dstAlphaFactor && blendOp == blendState.blendOp;
+        public static int encode(int i, int offset, int mask) {
+            return (i & mask) << offset;
         }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(srcRgbFactor, dstRgbFactor, srcAlphaFactor, dstAlphaFactor, blendOp);
+        public static int decode(int i, int offset, int bits) {
+            return (i >>> offset) & bits;
         }
+
+        public static int getSrcRgbFactor(int s) {
+            return decode(s, SRC_RGB_OFFSET, FACTOR_MASK);
+        }
+
+        public static int getDstRgbFactor(int s) {
+            return decode(s, DST_RGB_OFFSET, FACTOR_MASK);
+        }
+
+        public static int getSrcAlphaFactor(int s) {
+            return decode(s, SRC_A_OFFSET, FACTOR_MASK);
+        }
+
+        public static int getDstAlphaFactor(int s) {
+            return decode(s, DST_A_OFFSET, FACTOR_MASK);
+        }
+
+        public static int blendOp(int state) {
+            return state >>> FUN_OFFSET;
+        }
+
     }
 
-    public static class LogicOpState {
-        public final boolean enabled;
-        private int logicOp;
+    public abstract static class LogicOpState {
+        public static final int ENABLE_BIT = 1;
 
-        public LogicOpState(boolean enable, int op) {
-            this.enabled = enable;
-            this.logicOp = op;
+        public static final int FUN_OFFSET = 1;
+        public static final int FUN_BITS = 5;
+
+        public static boolean enable(int i) {
+            return (i & ENABLE_BIT) != 0;
         }
 
-        public void setLogicOp(GlStateManager.LogicOp logicOp) {
-            switch (logicOp) {
-                case OR_REVERSE -> setLogicOp(VK_LOGIC_OP_OR_REVERSE);
-            }
+        public static int encodeLogicOpFun(int glFun) {
+            int fun = glToVulkan(glFun);
 
+            return fun << FUN_OFFSET;
         }
 
-        public void setLogicOp(int logicOp) {
-            this.logicOp = logicOp;
+        public static int decodeFun(int state) {
+            return state >>> FUN_OFFSET;
         }
 
-        public int getLogicOp() {
-            return logicOp;
+        public static int glToVulkan(int f) {
+            return switch (f) {
+                case 5387 -> VK_LOGIC_OP_OR_REVERSE;
+                //TODO complete
+
+                default -> VK_LOGIC_OP_AND;
+            };
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            LogicOpState logicOpState = (LogicOpState) o;
-            if(this.enabled != logicOpState.enabled) return false;
-            return logicOp == logicOpState.logicOp;
-        }
-
-        public int hashCode() {
-            return Objects.hash(enabled, logicOp);
-        }
     }
 
-    public static class ColorMask {
-        public final int colorMask;
-
-        public ColorMask(boolean r, boolean g, boolean b, boolean a) {
-            this.colorMask = (r ? VK_COLOR_COMPONENT_R_BIT : 0) | (g ? VK_COLOR_COMPONENT_G_BIT : 0) | (b ? VK_COLOR_COMPONENT_B_BIT : 0) | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
-        }
-
-        public ColorMask(int mask) {
-            this.colorMask = mask;
-        }
+    public static abstract class ColorMask {
 
         public static int getColorMask(boolean r, boolean g, boolean b, boolean a) {
-            return (r ? VK_COLOR_COMPONENT_R_BIT : 0) | (g ? VK_COLOR_COMPONENT_G_BIT : 0) | (b ? VK_COLOR_COMPONENT_B_BIT : 0) | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
+            return (r ? VK_COLOR_COMPONENT_R_BIT : 0)
+                    | (g ? VK_COLOR_COMPONENT_G_BIT : 0)
+                    | (b ? VK_COLOR_COMPONENT_B_BIT : 0)
+                    | (a ? VK_COLOR_COMPONENT_A_BIT : 0);
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ColorMask colorMask = (ColorMask) o;
-            return this.colorMask == colorMask.colorMask;
-        }
     }
 
-    public static class DepthState {
-        public final boolean depthTest;
-        public final boolean depthMask;
-        public final int function;
+    public static abstract class DepthState {
+        public static final int DEPTH_TEST_BIT = 1;
+        public static final int DEPTH_MASK_BIT = 2;
 
-        public DepthState(boolean depthTest, boolean depthMask, int function) {
-            this.depthTest = depthTest;
-            this.depthMask = depthMask;
-            this.function = glToVulkan(function);
+        public static final int DEPTH_FUN_OFFSET = 2;
+        public static final int DEPTH_FUN_BITS = 4;
+
+        public static boolean depthTest(int i) {
+            return (i & DEPTH_TEST_BIT) != 0;
+        }
+
+        public static boolean depthMask(int i) {
+            return (i & DEPTH_MASK_BIT) != 0;
+        }
+
+        public static int encodeDepthFun(int glFun) {
+            int fun = glToVulkan(glFun);
+
+            return fun << DEPTH_FUN_OFFSET;
+        }
+
+        public static int decodeDepthFun(int state) {
+            return state >>> DEPTH_FUN_OFFSET;
         }
 
         private static int glToVulkan(int value) {
@@ -315,17 +362,5 @@ public class PipelineState {
             };
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DepthState that = (DepthState) o;
-            return depthTest == that.depthTest && depthMask == that.depthMask && function == that.function;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(depthTest, depthMask, function);
-        }
     }
 }
