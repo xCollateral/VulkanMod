@@ -91,7 +91,7 @@ public class GlTexture {
 
     public static void texParameteri(int target, int pName, int param) {
         if(target != GL11.GL_TEXTURE_2D)
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
 
         switch (pName) {
             case GL30.GL_TEXTURE_MAX_LEVEL -> boundTexture.setMaxLevel(param);
@@ -109,7 +109,10 @@ public class GlTexture {
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
-        if(boundTexture == null || target == GL11.GL_TEXTURE_2D)
+        if(target != GL11.GL_TEXTURE_2D)
+            throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
+
+        if(boundTexture == null)
             return -1;
 
         return switch (pName) {
@@ -123,7 +126,7 @@ public class GlTexture {
 
     public static void generateMipmap(int target) {
         if(target != GL11.GL_TEXTURE_2D)
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
 
         boundTexture.generateMipmaps();
     }
