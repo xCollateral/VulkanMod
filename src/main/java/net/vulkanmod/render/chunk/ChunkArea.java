@@ -19,10 +19,10 @@ public class ChunkArea {
     //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
     final StaticQueue<RenderSection> sectionQueue = new StaticQueue<>(512);
 
-    public ChunkArea(int i, Vector3i origin) {
+    public ChunkArea(int i, Vector3i origin, int minHeight) {
         this.index = i;
         this.position = origin;
-        this.drawBuffers = new DrawBuffers();
+        this.drawBuffers = new DrawBuffers(i, origin, minHeight);
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -120,13 +120,9 @@ public class ChunkArea {
         return this.drawBuffers;
     }
 
-    private void allocateDrawBuffers() {
-        this.drawBuffers = new DrawBuffers();
-    }
-
-    public void addSection(RenderSection section) {
-        this.sectionQueue.add(section);
-    }
+//    private void allocateDrawBuffers() {
+//        this.drawBuffers.allocateBuffers();
+//    }
 
     public void resetQueue() {
         this.sectionQueue.clear();
