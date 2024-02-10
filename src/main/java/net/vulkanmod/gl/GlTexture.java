@@ -109,7 +109,7 @@ public class GlTexture {
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
-        if(boundTexture == null || target == GL11.GL_TEXTURE_2D)
+        if(boundTexture == null || target != GL11.GL_TEXTURE_2D)
             return -1;
 
         return switch (pName) {

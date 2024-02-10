@@ -78,7 +78,7 @@ public class GlRenderbuffer {
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
-        if(bound == null || target == GL11.GL_TEXTURE_2D)
+        if(bound == null || target != GL11.GL_TEXTURE_2D)
             return -1;
 
         return switch (pName) {
