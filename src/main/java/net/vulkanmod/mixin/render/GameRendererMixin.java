@@ -99,6 +99,8 @@ public abstract class GameRendererMixin {
 
     @Shadow public abstract float getRenderDistance();
 
+    @Shadow private static @Nullable ShaderInstance rendertypeBreezeWindShader;
+
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
         RenderSystem.assertOnRenderThread();
@@ -294,6 +296,9 @@ public abstract class GameRendererMixin {
             }));
             list1.add(Pair.of(positionColor, (shaderInstance) -> {
                 rendertypeGuiGhostRecipeOverlayShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_breeze_wind", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+                rendertypeBreezeWindShader = shaderInstance;
             }));
         } catch (IOException ioexception) {
             list1.forEach((pair) -> {
