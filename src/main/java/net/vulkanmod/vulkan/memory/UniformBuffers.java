@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 
 import java.nio.ByteBuffer;

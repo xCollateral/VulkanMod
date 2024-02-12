@@ -13,6 +13,7 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.passes.LegacyMainPass;
 import net.vulkanmod.vulkan.passes.MainPass;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
@@ -32,6 +33,8 @@ import java.util.Set;
 import static com.mojang.blaze3d.platform.GlConst.GL_COLOR_BUFFER_BIT;
 import static com.mojang.blaze3d.platform.GlConst.GL_DEPTH_BUFFER_BIT;
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -85,6 +88,7 @@ public class Renderer {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
+        addOnResizeCallback(Queue::trimCmdPools);
     }
 
     private void init() {
