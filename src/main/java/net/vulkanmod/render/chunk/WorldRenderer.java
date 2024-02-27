@@ -35,7 +35,7 @@ import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.Util;
-import net.vulkanmod.render.profiling.BuildTimeBench;
+import net.vulkanmod.render.profiling.BuildTimeProfiler;
 import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -144,7 +144,7 @@ public class WorldRenderer {
     }
 
     private void benchCallback() {
-        BuildTimeBench.runBench(this.needsUpdate, this.taskDispatcher);
+        BuildTimeProfiler.runBench(this.needsUpdate || !this.taskDispatcher.isIdle());
     }
 
     public void setupRenderer(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {

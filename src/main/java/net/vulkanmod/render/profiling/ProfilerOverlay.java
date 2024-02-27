@@ -121,7 +121,7 @@ public class ProfilerOverlay {
         //Section build stats
         list.add("");
         list.add("");
-        list.add(String.format("Build time: %.0fms", BuildTimeBench.getBenchTime()));
+        list.add(String.format("Build time: %.0fms", BuildTimeProfiler.getDeltaTime()));
 
         if(ChunkTask.BENCH)
             list.add(buildStats);
