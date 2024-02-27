@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.util.Mth;
+import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.util.CircularIntList;
 import net.vulkanmod.render.chunk.util.Util;
 import org.joml.Vector3i;
@@ -192,6 +193,30 @@ public class ChunkAreaManager {
         for(ChunkArea chunkArea : this.chunkAreasArr) {
             chunkArea.releaseBuffers();
         }
+    }
+
+    public String[] getStats() {
+        int vbSize = 0, ibSize = 0;
+        int frag = 0;
+        for(ChunkArea chunkArea : this.chunkAreasArr) {
+            DrawBuffers drawBuffers = chunkArea.drawBuffers;
+            if(drawBuffers.isAllocated()) {
+                vbSize += drawBuffers.getVertexBuffer().getSize() >> 10;
+                ibSize += drawBuffers.getIndexBuffer().getSize() >> 10;
+
+                frag += drawBuffers.getVertexBuffer().fragmentation() >> 10;
+                frag += drawBuffers.getIndexBuffer().fragmentation() >> 10;
+            }
+        }
+
+        vbSize /= 1024;
+        ibSize /= 1024;
+        frag /= 1024;
+
+        return new String[] {
+                String.format("VB size: %dMB IB size: %dMB", vbSize, ibSize),
+                String.format("Frag: %dMB", frag)
+        };
     }
 
 }

@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.*;
 import net.vulkanmod.render.chunk.build.task.BuildTask;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
@@ -38,10 +39,6 @@ public class RenderSection {
 
     int xOffset, yOffset, zOffset;
 
-//    private final DrawBuffers.DrawParameters[] drawParametersArray =
-//            Arrays.stream(TerrainRenderType.VALUES)
-//                    .map(terrainRenderType -> new DrawBuffers.DrawParameters(terrainRenderType == TerrainRenderType.TRANSLUCENT))
-//                    .toArray(DrawBuffers.DrawParameters[]::new);
     private final DrawBuffers.DrawParameters[] drawParametersArray;
 
     //Graph-info
@@ -59,7 +56,7 @@ public class RenderSection {
 
         this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
         for(int i = 0; i < this.drawParametersArray.length; ++i) {
-            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.VALUES[i] == TerrainRenderType.TRANSLUCENT);
+            this.drawParametersArray[i] = new DrawBuffers.DrawParameters();
         }
     }
 

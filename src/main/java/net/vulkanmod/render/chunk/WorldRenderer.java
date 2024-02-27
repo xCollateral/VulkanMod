@@ -29,6 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.*;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
@@ -418,19 +419,17 @@ public class WorldRenderer {
         return true;
     }
 
-    public void compileSections(Camera camera) {
-//        this.minecraft.getProfiler().push("populate_chunks_to_compile");
-//        this.minecraft.getProfiler().popPush("upload");
+    public void uploadSections() {
+        this.minecraft.getProfiler().push("upload");
 
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Uploads");
 
-        if(this.taskDispatcher.uploadAllPendingUploads())
+        if(this.taskDispatcher.updateSections())
             this.needsUpdate = true;
         profiler.pop();
 
-//        this.minecraft.getProfiler().popPush("schedule_async_compile");
-//        this.minecraft.getProfiler().pop();
+        this.minecraft.getProfiler().pop();
     }
 
     public boolean isSectionCompiled(BlockPos blockPos) {

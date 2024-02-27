@@ -1,10 +1,10 @@
 package net.vulkanmod.render.chunk.build;
 
 import com.google.common.collect.Queues;
-import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.ChunkArea;
-import net.vulkanmod.render.chunk.DrawBuffers;
 import net.vulkanmod.render.chunk.RenderSection;
+import net.vulkanmod.render.chunk.buffer.UploadManager;
+import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
@@ -135,7 +135,7 @@ public class TaskDispatcher {
 
     }
 
-    public boolean uploadAllPendingUploads() {
+    public boolean updateSections() {
 
         Runnable runnable;
         boolean flag = false;
@@ -144,7 +144,7 @@ public class TaskDispatcher {
             runnable.run();
         }
 
-        AreaUploadManager.INSTANCE.submitUploads();
+        UploadManager.INSTANCE.submitUploads();
 
         return flag;
     }

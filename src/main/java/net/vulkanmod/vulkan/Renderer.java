@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.mixin.window.WindowAccessor;
-import net.vulkanmod.render.chunk.AreaUploadManager;
+import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
@@ -96,12 +96,10 @@ public class Renderer {
 
         Uniforms.setupDefaultUniforms();
         PipelineManager.init();
-        AreaUploadManager.createInstance();
+        UploadManager.createInstance();
 
         allocateCommandBuffers();
         createSyncObjects();
-
-        AreaUploadManager.INSTANCE.init();
     }
 
     private void allocateCommandBuffers() {
@@ -361,7 +359,7 @@ public class Renderer {
 
         drawer.resetBuffers(currentFrame);
 
-        AreaUploadManager.INSTANCE.updateFrame();
+        UploadManager.INSTANCE.waitUploads();
         Vulkan.getStagingBuffer().reset();
     }
 
@@ -410,7 +408,7 @@ public class Renderer {
         imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {
-            AreaUploadManager.INSTANCE.waitAllUploads();
+            UploadManager.INSTANCE.waitUploads();
 
             framesNum = newFramesNum;
             MemoryManager.createInstance(newFramesNum);
