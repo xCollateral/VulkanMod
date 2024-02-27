@@ -8,6 +8,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.util.SortUtil;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -609,8 +610,8 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			MemoryUtil.memPutShort(ptr + 2, sY);
 			MemoryUtil.memPutShort(ptr + 4, sZ);
 
-			int temp = VertexUtil.packColor(red, green, blue, alpha);
-			MemoryUtil.memPutInt(ptr + 8, temp);
+			final int color = ColorUtil.RGBA.pack(red, green, blue, alpha);
+			MemoryUtil.memPutInt(ptr + 8, color);
 
 			MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
 			MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));

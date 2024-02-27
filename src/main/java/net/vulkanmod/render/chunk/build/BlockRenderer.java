@@ -30,6 +30,7 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -166,9 +167,9 @@ public class BlockRenderer {
         float r, g, b;
         if (bakedQuad.isTinted()) {
             int o = blockColors.getColor(blockState, blockAndTintGetter, blockPos, bakedQuad.getTintIndex());
-            r = VertexUtil.unpackColor(o, 16);
-            g = VertexUtil.unpackColor(o, 8);
-            b = VertexUtil.unpackColor(o, 0);
+            r = ColorUtil.ARGB.unpackR(o);
+            g = ColorUtil.ARGB.unpackG(o);
+            b = ColorUtil.ARGB.unpackB(o);
         } else {
             r = 1.0F;
             g = 1.0F;
@@ -194,9 +195,9 @@ public class BlockRenderer {
             float y = Float.intBitsToFloat(js[i + 1]);
             float z = Float.intBitsToFloat(js[i + 2]);
 
-            quadR = VertexUtil.unpackColorR(js[i + 3]);
-            quadG = VertexUtil.unpackColorG(js[i + 3]);
-            quadB = VertexUtil.unpackColorB(js[i + 3]);
+            quadR = ColorUtil.RGBA.unpackR(js[i + 3]);
+            quadG = ColorUtil.RGBA.unpackR(js[i + 3]);
+            quadB = ColorUtil.RGBA.unpackR(js[i + 3]);
             r = quadR * brightness[k] * red;
             g = quadG * brightness[k] * green;
             b = quadB * brightness[k] * blue;

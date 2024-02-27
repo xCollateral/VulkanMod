@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.core.Vec3i;
 import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -41,9 +42,9 @@ public interface VertexConsumerM {
             float z = Float.intBitsToFloat(js[i + 2]);
 
             if (useQuadColorData) {
-                quadR = VertexUtil.unpackColorR(js[i + 3]); // equivalent to / 255.0f
-                quadG = VertexUtil.unpackColorG(js[i + 3]);
-                quadB = VertexUtil.unpackColorB(js[i + 3]);
+                quadR = ColorUtil.RGBA.unpackR(js[i + 3]);
+                quadG = ColorUtil.RGBA.unpackG(js[i + 3]);
+                quadB = ColorUtil.RGBA.unpackB(js[i + 3]);
                 r = quadR * brightness[k] * red;
                 g = quadG * brightness[k] * green;
                 b = quadB * brightness[k] * blue;

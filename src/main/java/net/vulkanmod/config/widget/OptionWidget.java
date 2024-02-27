@@ -74,7 +74,7 @@ public abstract class OptionWidget
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
 
-        int color = this.controlHovered ? ColorUtil.packColorIntRGBA(0.0f, 0.0f, 0.0f, 0.45f) : ColorUtil.packColorIntRGBA(0.0f, 0.0f, 0.0f, 0.3f);
+        int color = this.controlHovered ? ColorUtil.ARGB.pack(0.0f, 0.0f, 0.0f, 0.45f) : ColorUtil.ARGB.pack(0.0f, 0.0f, 0.0f, 0.3f);
 
         if(this.hovered)
             guiGraphics.fill(this.x - 2, this.y - 2, this.x + this.width + 2, this.y + this.height + 2, 0x28000000);
