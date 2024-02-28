@@ -47,7 +47,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	private boolean indexOnly;
 
 	protected long bufferPtr;
-//    private long ptr;
+	private long currVertexPtr;
 
 	protected VertexBuilder vertexBuilder;
 
@@ -338,10 +338,8 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 	}
 
-	public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
-//		this.defaultVertex(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
-//		this.compressedVertex(x, y, z, red, green, blue, alpha, u, v, light);
-		this.vertexBuilder.vertex(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
+	public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal) {
+		this.vertexBuilder.vertex(x, y, z, red, green, blue, alpha, u, v, light, packedNormal);
 	}
 
 	public void setBlockAttributes(BlockState blockState) {}
@@ -353,11 +351,6 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 	@Override
 	public VertexConsumer color(int i, int j, int k, int l) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public VertexConsumer uv(float f, float g) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -386,12 +379,47 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		throw new UnsupportedOperationException();
 	}
 
+	public void beginVertex() {
+		this.currVertexPtr = this.bufferPtr + this.nextElementByte;
+	}
+
+	public void endCurrentVertex() {
+		this.vertexBuilder.pushOffset();
+		endVertex();
+	}
+
+	public void position(float x, float y, float z) {
+		this.vertexBuilder.position(x, y, z);
+	}
+
+	public VertexConsumer color(int color) {
+		this.vertexBuilder.color(color);
+		return this;
+	}
+
+	public VertexConsumer uv(float u, float v) {
+		this.vertexBuilder.uv(u, v);
+		return this;
+	}
+
+	public void light(int light) {
+		this.vertexBuilder.light(light);
+	}
+
+	public void normal(int normal) {
+		this.vertexBuilder.normal(normal);
+	}
+
 	public void putByte(int index, byte value) {
 		MemoryUtil.memPutByte(this.bufferPtr + this.nextElementByte + index, value);
 	}
 
 	public void putShort(int index, short value) {
 		MemoryUtil.memPutShort(this.bufferPtr + this.nextElementByte + index, value);
+	}
+
+	public void putInt(int index, int value) {
+		MemoryUtil.memPutInt(this.bufferPtr + this.nextElementByte + index, value);
 	}
 
 	public void putFloat(int index, float value) {
@@ -554,57 +582,89 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	}
 
 	public interface VertexBuilder {
-		void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ);
+		void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal);
+
+		void position(float x, float y, float z);
+
+		void color(int color);
+
+		void uv(float u, float v);
+
+		void light(int light);
+
+		void normal(int normal);
+
+		void pushOffset();
 	}
 
 	class DefaultVertexBuilder implements VertexBuilder {
 
-		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
+		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal) {
 			putFloat(0, x);
 			putFloat(4, y);
 			putFloat(8, z);
+
 			putByte(12, (byte)((int)(red * 255.0F)));
 			putByte(13, (byte)((int)(green * 255.0F)));
 			putByte(14, (byte)((int)(blue * 255.0F)));
 			putByte(15, (byte)((int)(alpha * 255.0F)));
+
 			putFloat(16, u);
 			putFloat(20, v);
-			byte i;
-			i = 24;
 
-			putShort(i, (short)(light & '\uffff'));
-			putShort(i + 2, (short)(light >> 16 & '\uffff'));
-			putByte(i + 4, BufferVertexConsumer.normalIntValue(normalX));
-			putByte(i + 5, BufferVertexConsumer.normalIntValue(normalY));
-			putByte(i + 6, BufferVertexConsumer.normalIntValue(normalZ));
-			nextElementByte += i + 8;
+			putShort(24, (short)(light & '\uffff'));
+			putShort(26, (short)(light >> 16 & '\uffff'));
+
+			putInt(28, packedNormal);
+
+			nextElementByte += 32;
 			endVertex();
+		}
+
+		@Override
+		public void position(float x, float y, float z) {
+			putFloat(0, x);
+			putFloat(4, y);
+			putFloat(8, z);
+		}
+
+		@Override
+		public void color(int color) {
+			MemoryUtil.memPutInt(currVertexPtr + 12, color);
+		}
+
+		@Override
+		public void uv(float u, float v) {
+			MemoryUtil.memPutFloat(currVertexPtr + 16, u);
+			MemoryUtil.memPutFloat(currVertexPtr + 20, v);
+		}
+
+		@Override
+		public void light(int light) {
+			MemoryUtil.memPutInt(currVertexPtr + 24, light);
+		}
+
+		@Override
+		public void normal(int normal) {
+			MemoryUtil.memPutInt(currVertexPtr + 28, normal);
+		}
+
+		@Override
+		public void pushOffset() {
+			nextElementByte += 32;
 		}
 	}
 
 	class CompressedVertexBuilder implements VertexBuilder {
 
-		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
+		private static final int VERTEX_SIZE = 20;
+
+		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal) {
 			long ptr = bufferPtr + nextElementByte;
 
-			short sX = (short) (x * POS_CONV + 0.1f);
-			short sY = (short) (y * POS_CONV + 0.1f);
-			short sZ = (short) (z * POS_CONV + 0.1f);
-
-			//		short sX = (short) (x * 1.0001f * POS_CONV + 0.1f);
-			//		short sY = (short) (y * 1.0001f * POS_CONV + 0.1f);
-			//		short sZ = (short) (z * 1.0001f * POS_CONV + 0.1f);
-			//		short sX = (short) (x * 0.99999999f * POS_CONV);
-			//		short sY = (short) (y * 0.99999999f * POS_CONV);
-			//		short sZ = (short) (z * 0.99999999f * POS_CONV);
-
-			//Debug
-			//		short x1 = (short) Math.round((x) * POS_CONV);
-			//		float y1 = (short) Math.round((y) * POS_CONV);
-			//		float z1 = (short) Math.round((z) * POS_CONV);
-			//
-			//		if(x1 != sX || y1 != sY || z1 != sZ)
-			//			System.nanoTime();
+			final short sX = (short) (x * POS_CONV);
+			final short sY = (short) (y * POS_CONV);
+			final short sZ = (short) (z * POS_CONV);
 
 			MemoryUtil.memPutShort(ptr + 0, sX);
 			MemoryUtil.memPutShort(ptr + 2, sY);
@@ -618,8 +678,43 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 			MemoryUtil.memPutInt(ptr + 16, light);
 
-			nextElementByte += 20;
+			nextElementByte += VERTEX_SIZE;
 			endVertex();
+		}
+
+		@Override
+		public void position(float x, float y, float z) {
+			final short sX = (short) (x * POS_CONV);
+			final short sY = (short) (y * POS_CONV);
+			final short sZ = (short) (z * POS_CONV);
+
+			MemoryUtil.memPutShort(currVertexPtr + 0, sX);
+			MemoryUtil.memPutShort(currVertexPtr + 2, sY);
+			MemoryUtil.memPutShort(currVertexPtr + 4, sZ);
+		}
+
+		@Override
+		public void color(int color) {
+			MemoryUtil.memPutInt(currVertexPtr + 8, color);
+		}
+
+		@Override
+		public void uv(float u, float v) {
+			MemoryUtil.memPutShort(currVertexPtr + 12, (short) (u * UV_CONV));
+			MemoryUtil.memPutShort(currVertexPtr + 14, (short) (v * UV_CONV));
+		}
+
+		@Override
+		public void light(int light) {
+			MemoryUtil.memPutInt(currVertexPtr + 16, light);
+		}
+
+		@Override
+		public void normal(int normal) {}
+
+		@Override
+		public void pushOffset() {
+			nextElementByte += VERTEX_SIZE;
 		}
 	}
 }

@@ -102,7 +102,7 @@ public class WorldRenderer {
         ChunkTask.setTaskDispatcher(this.taskDispatcher);
         allocateIndirectBuffers();
 
-        BlockRenderer.setBlockColors(BlockColors.createDefault());
+        BlockRenderer.setBlockColors(this.minecraft.getBlockColors());
 
         Renderer.getInstance().addOnResizeCallback(() -> {
             if(this.indirectBuffers.length != Renderer.getFramesNum())
@@ -205,7 +205,7 @@ public class WorldRenderer {
         if (!isCapturedFrustum) {
 
             //Debug
-            this.needsUpdate = true;
+//            this.needsUpdate = true;
 //            this.needsUpdate = false;
 
             if (this.needsUpdate) {
@@ -609,7 +609,7 @@ public class WorldRenderer {
         MultiBufferSource bufferSource = this.renderBuffers.bufferSource();
 
         for(RenderSection renderSection : this.chunkQueue) {
-            List<BlockEntity> list = renderSection.getCompiledSection().getRenderableBlockEntities();
+            List<BlockEntity> list = renderSection.getCompiledSection().getBlockEntities();
             if (!list.isEmpty()) {
                 for(BlockEntity blockEntity : list) {
                     BlockPos blockPos = blockEntity.getBlockPos();

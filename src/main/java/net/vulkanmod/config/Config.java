@@ -15,6 +15,7 @@ public class Config {
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;
+
     public boolean guiOptimizations = false;
     public int advCulling = 2;
     public boolean indirectDraw = false;
@@ -23,6 +24,8 @@ public class Config {
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
+
+    public int ambientOcclusion = 1;
 
     private static Path path;
 

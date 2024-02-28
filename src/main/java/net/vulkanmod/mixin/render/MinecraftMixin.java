@@ -41,6 +41,11 @@ public class MinecraftMixin {
         }
     }
 
+    @Inject(method = "runTick", at = @At(value = "HEAD"))
+    private void resetBuffers(boolean bl, CallbackInfo ci) {
+        Renderer.getInstance().preInitFrame();
+    }
+
     //Main target (framebuffer) ops
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void beginRender(int i, boolean bl) {
@@ -87,11 +92,6 @@ public class MinecraftMixin {
     private void redirectResourceTick(boolean bl, CallbackInfo ci, long l, Runnable runnable, int i, int j) {
         int n = Math.min(10, i) - 1;
         SpriteUtil.setDoUpload(j == n);
-    }
-
-    @Inject(method = "runTick", at = @At(value = "HEAD"))
-    private void resetBuffers(boolean bl, CallbackInfo ci) {
-        Renderer.getInstance().resetBuffers();
     }
 
     @Inject(method = "close", at = @At(value = "HEAD"))

@@ -100,11 +100,6 @@ public abstract class LevelRendererMixin {
 //        this.worldRenderer.uploadSections();
     }
 
-    @Inject(method = "renderLevel", at = @At("RETURN"))
-    private void uploadSections(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-        this.worldRenderer.uploadSections();
-    }
-
     /**
      * @author
      * @reason

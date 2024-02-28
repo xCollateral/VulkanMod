@@ -24,6 +24,11 @@ public class ChunkStatusMap {
         map.defaultReturnValue((byte) 0);
     }
 
+    public void updateDistance(int renderDistance) {
+        int diameter = renderDistance * 2 + 1;
+        this.map.ensureCapacity(diameter * diameter);
+    }
+
     public void setChunkStatus(int x, int z, byte flag) {
         long l = ChunkPos.asLong(x, z);
 

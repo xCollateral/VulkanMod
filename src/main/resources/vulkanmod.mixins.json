@@ -57,7 +57,6 @@
     "render.vertex.BufferBuilderM",
     "render.vertex.FaceBakeryM",
     "render.vertex.IndexTypeMixin",
-    "render.vertex.LiquidBlockRendererM",
     "render.vertex.VertexBufferM",
     "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
@@ -93,7 +92,12 @@
     "texture.mip.MipmapGeneratorM",
 
     "compatibility.PostChainM",
-    "compatibility.PostPassM"
+    "compatibility.PostPassM",
+
+    "render.block.BakedQuadM",
+
+    "voxel.VoxelShapeMixin",
+    "voxel.ShapesMixin"
   ],
   "injectors": {
     "defaultRequire": 1

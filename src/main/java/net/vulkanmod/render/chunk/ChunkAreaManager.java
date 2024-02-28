@@ -196,26 +196,51 @@ public class ChunkAreaManager {
     }
 
     public String[] getStats() {
-        int vbSize = 0, ibSize = 0;
-        int frag = 0;
-        for(ChunkArea chunkArea : this.chunkAreasArr) {
-            DrawBuffers drawBuffers = chunkArea.drawBuffers;
-            if(drawBuffers.isAllocated()) {
-                vbSize += drawBuffers.getVertexBuffer().getSize() >> 10;
-                ibSize += drawBuffers.getIndexBuffer().getSize() >> 10;
+        long vbSize = 0, ibSize = 0, frag = 0;
+        long vbUsed = 0, ibUsed = 0;
+        int count = 0;
 
-                frag += drawBuffers.getVertexBuffer().fragmentation() >> 10;
-                frag += drawBuffers.getIndexBuffer().fragmentation() >> 10;
+        for (ChunkArea chunkArea : this.chunkAreasArr) {
+            DrawBuffers drawBuffers = chunkArea.drawBuffers;
+            if (drawBuffers.isAllocated()) {
+
+                var vertexBuffer = drawBuffers.getVertexBuffer();
+                if (vertexBuffer != null) {
+                    vbSize += vertexBuffer.getSize();
+                    vbUsed += vertexBuffer.getUsed();
+                    frag += vertexBuffer.fragmentation();
+                }
+                else {
+                    var vertexBuffers = drawBuffers.getVertexBuffers();
+
+                    for (var buffer : vertexBuffers.values()) {
+                        vbSize += buffer.getSize();
+                        vbUsed += buffer.getUsed();
+                        frag += buffer.fragmentation();
+                    }
+                }
+
+                var indexBuffer = drawBuffers.getIndexBuffer();
+                if (indexBuffer != null) {
+                    ibSize += indexBuffer.getSize();
+                    ibUsed += indexBuffer.getUsed();
+                    frag += indexBuffer.fragmentation();
+                }
+
+                count++;
             }
         }
 
-        vbSize /= 1024;
-        ibSize /= 1024;
-        frag /= 1024;
+        vbSize /= 1024 * 1024;
+        vbUsed /= 1024 * 1024;
+        ibSize /= 1024 * 1024;
+        ibUsed /= 1024 * 1024;
+        frag /= 1024 * 1024;
 
         return new String[] {
-                String.format("VB size: %dMB IB size: %dMB", vbSize, ibSize),
-                String.format("Frag: %dMB", frag)
+                String.format("Vertex Buffers: %d/%d MB", vbUsed, vbSize),
+                String.format("Index Buffers: %d/%d MB", ibUsed, ibSize),
+                String.format("Allocations: %d Frag: %d MB", count, frag)
         };
     }
 

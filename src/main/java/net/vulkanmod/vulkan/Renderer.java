@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.mixin.window.WindowAccessor;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -193,15 +194,8 @@ public class Renderer {
         p.pop();
         p.push("Begin_rendering");
 
-//        AreaUploadManager.INSTANCE.updateFrame();
-
         MemoryManager.getInstance().initFrame(currentFrame);
         drawer.setCurrentFrame(currentFrame);
-
-        //Moved before texture updates
-//        this.vertexBuffers[currentFrame].reset();
-//        this.uniformBuffers.reset();
-//        Vulkan.getStagingBuffer(currentFrame).reset();
 
         resetDescriptors();
 
@@ -351,7 +345,7 @@ public class Renderer {
         this.boundFramebuffer = framebuffer;
     }
 
-    public void resetBuffers() {
+    public void preInitFrame() {
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.round();
@@ -359,8 +353,11 @@ public class Renderer {
 
         drawer.resetBuffers(currentFrame);
 
-        UploadManager.INSTANCE.waitUploads();
         Vulkan.getStagingBuffer().reset();
+
+        WorldRenderer.getInstance().uploadSections();
+        UploadManager.INSTANCE.submitUploads();
+        UploadManager.INSTANCE.waitUploads();
     }
 
     public void addUsedPipeline(Pipeline pipeline) {
@@ -408,6 +405,7 @@ public class Renderer {
         imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {
+            UploadManager.INSTANCE.submitUploads();
             UploadManager.INSTANCE.waitUploads();
 
             framesNum = newFramesNum;

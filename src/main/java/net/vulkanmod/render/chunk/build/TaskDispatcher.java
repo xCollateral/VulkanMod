@@ -6,6 +6,7 @@ import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
+import net.vulkanmod.render.chunk.build.task.CompileResult;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -16,9 +17,7 @@ import java.util.EnumMap;
 import java.util.Queue;
 
 public class TaskDispatcher {
-    private int highPriorityQuota = 2;
-
-    private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
+    private final Queue<CompileResult> compileResults = Queues.newLinkedBlockingDeque();
     public final ThreadBuilderPack fixedBuffers;
 
     private volatile boolean stopThreads;
@@ -41,8 +40,7 @@ public class TaskDispatcher {
 
     public void createThreads(int n) {
         if(!this.stopThreads) {
-            Arrays.stream(resources).forEach(BuilderResources::resetCounters);
-            return;
+            this.stopThreads();
         }
 
         this.stopThreads = false;
@@ -86,7 +84,7 @@ public class TaskDispatcher {
             if(task == null)
                 continue;
 
-            task.doTask(builderResources);
+            task.runTask(builderResources);
         }
     }
 
@@ -136,58 +134,46 @@ public class TaskDispatcher {
     }
 
     public boolean updateSections() {
-
-        Runnable runnable;
+        CompileResult result;
         boolean flag = false;
-        while((runnable = this.toUpload.poll()) != null) {
+        while((result = this.compileResults.poll()) != null) {
             flag = true;
-            runnable.run();
+            doSectionUpdate(result);
         }
-
-        UploadManager.INSTANCE.submitUploads();
 
         return flag;
     }
 
-    public void scheduleSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
-        this.toUpload.add(
-                () -> this.doSectionUpdate(section, uploadBuffers)
-        );
+    public void scheduleSectionUpdate(CompileResult compileResult) {
+        this.compileResults.add(compileResult);
     }
 
-    private void doSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
+    private void doSectionUpdate(CompileResult compileResult) {
+        RenderSection section = compileResult.renderSection;
         ChunkArea renderArea = section.getChunkArea();
         DrawBuffers drawBuffers = renderArea.getDrawBuffers();
 
-        for(TerrainRenderType renderType : uploadBuffers.keySet()) {
-            UploadBuffer uploadBuffer = uploadBuffers.get(renderType);
+        if(compileResult.fullUpdate) {
+            var renderLayers = compileResult.renderedLayers;
+            for(TerrainRenderType renderType : TerrainRenderType.VALUES) {
+                UploadBuffer uploadBuffer = renderLayers.get(renderType);
 
-            if(uploadBuffer != null) {
-                drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType);
-            } else {
-                section.getDrawParameters(renderType).reset(renderArea, renderType);
+                if(uploadBuffer != null) {
+                    drawBuffers.upload(section, uploadBuffer, renderType);
+                } else {
+                    section.getDrawParameters(renderType).reset(renderArea, renderType);
+                }
             }
+
+            compileResult.updateSection();
+        }
+        else {
+            UploadBuffer uploadBuffer = compileResult.renderedLayers.get(TerrainRenderType.TRANSLUCENT);
+            drawBuffers.upload(section, uploadBuffer, TerrainRenderType.TRANSLUCENT);
         }
     }
 
-    public void scheduleUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
-        this.toUpload.add(
-                () -> this.doUploadChunkLayer(section, renderType, uploadBuffer)
-        );
-    }
-
-    private void doUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
-        ChunkArea renderArea = section.getChunkArea();
-        DrawBuffers drawBuffers = renderArea.getDrawBuffers();
-
-        drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType);
-    }
-
-    public int getIdleThreadsCount() {
-        return this.idleThreads;
-    }
-
-    public boolean isIdle() { return this.idleThreads == this.threads.length && this.toUpload.isEmpty(); }
+    public boolean isIdle() { return this.idleThreads == this.threads.length && this.compileResults.isEmpty(); }
 
     public void clearBatchQueue() {
         while(!this.highPriorityTasks.isEmpty()) {
@@ -203,8 +189,6 @@ public class TaskDispatcher {
                 chunkTask.cancel();
             }
         }
-
-//        this.toBatchCount = 0;
     }
 
     public String getStats() {

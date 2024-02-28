@@ -5,7 +5,6 @@ import net.vulkanmod.render.chunk.build.RenderRegion;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ChunkTask {
@@ -18,16 +17,16 @@ public abstract class ChunkTask {
     }
 
     protected AtomicBoolean cancelled = new AtomicBoolean(false);
-    protected final RenderSection renderSection;
+    protected final RenderSection section;
     public boolean highPriority = false;
 
     ChunkTask(RenderSection renderSection) {
-        this.renderSection = renderSection;
+        this.section = renderSection;
     }
 
     public abstract String name();
 
-    public abstract CompletableFuture<Result> doTask(BuilderResources builderResources);
+    public abstract Result runTask(BuilderResources builderResources);
 
     public void cancel() {
         this.cancelled.set(true);

@@ -1,15 +1,8 @@
 package net.vulkanmod.render.chunk.build;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import java.util.Iterator;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.CrashReport;
-import net.minecraft.CrashReportCategory;
-import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
@@ -29,25 +22,38 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.vulkanmod.vulkan.util.VUtil;
+import net.vulkanmod.render.chunk.build.light.LightPipeline;
+import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
+import net.vulkanmod.render.chunk.build.thread.BuilderResources;
+import net.vulkanmod.render.chunk.util.Util;
+import net.vulkanmod.render.model.quad.ModelQuad;
+import net.vulkanmod.render.model.quad.ModelQuadFlags;
+import net.vulkanmod.render.model.quad.QuadUtils;
+import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Vector3f;
 
-@Environment(EnvType.CLIENT)
 public class LiquidRenderer {
     private static final float MAX_FLUID_HEIGHT = 0.8888889F;
     private final TextureAtlasSprite[] lavaIcons = new TextureAtlasSprite[2];
     private final TextureAtlasSprite[] waterIcons = new TextureAtlasSprite[2];
     private TextureAtlasSprite waterOverlay;
 
-    public void renderLiquid(BlockPos blockPos, BlockAndTintGetter blockAndTintGetter, VertexConsumer vertexConsumer, BlockState blockState, FluidState fluidState) {
-        try {
-            tessellate(blockAndTintGetter, blockPos, vertexConsumer, blockState, fluidState);
-        } catch (Throwable var9) {
-            CrashReport crashReport = CrashReport.forThrowable(var9, "Tesselating liquid in world");
-            CrashReportCategory crashReportCategory = crashReport.addCategory("Block being tesselated");
-            CrashReportCategory.populateBlockDetails(crashReportCategory, blockAndTintGetter, blockPos, (BlockState)null);
-            throw new ReportedException(crashReport);
-        }
+    private final BlockPos.MutableBlockPos mBlockPos = new BlockPos.MutableBlockPos();
+
+    private final ModelQuad modelQuad = new ModelQuad();
+
+    BuilderResources resources;
+
+    private final int[] quadColors = new int[4];
+
+    public void setResources(BuilderResources resources) {
+        this.resources = resources;
+    }
+
+    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
+        tessellate(blockState, fluidState, blockPos, vertexConsumer);
     }
 
     public void setupSprites() {
@@ -58,306 +64,309 @@ public class LiquidRenderer {
         this.waterOverlay = ModelBakery.WATER_OVERLAY.sprite();
     }
 
-    private static boolean isNeighborSameFluid(FluidState fluidState, FluidState fluidState2) {
-        return fluidState2.getType().isSame(fluidState.getType());
-    }
+    private boolean isFaceOccludedByState(BlockGetter blockGetter, float h, Direction direction, BlockPos blockPos, BlockState blockState) {
+        mBlockPos.set(blockPos).offset(Direction.DOWN.getNormal());
 
-    private static boolean isFaceOccludedByState(BlockGetter blockGetter, Direction direction, float f, BlockPos blockPos, BlockState blockState) {
         if (blockState.canOcclude()) {
-            VoxelShape voxelShape = Shapes.box(0.0, 0.0, 0.0, 1.0, f, 1.0);
-            VoxelShape voxelShape2 = blockState.getOcclusionShape(blockGetter, blockPos);
-            return Shapes.blockOccudes(voxelShape, voxelShape2, direction);
+            VoxelShape occlusionShape = blockState.getOcclusionShape(blockGetter, mBlockPos);
+
+            if(occlusionShape == Shapes.block()) {
+                return direction != Direction.UP;
+            } else if (occlusionShape.isEmpty()) {
+                return false;
+            }
+
+            VoxelShape voxelShape = Shapes.box(0.0, 0.0, 0.0, 1.0, h, 1.0);
+            return Shapes.blockOccudes(voxelShape, occlusionShape, direction);
         } else {
             return false;
         }
     }
 
-    private static boolean isFaceOccludedByNeighbor(BlockGetter blockGetter, BlockPos blockPos, Direction direction, float f, BlockState blockState) {
-        return isFaceOccludedByState(blockGetter, direction, f, blockPos.relative(direction), blockState);
+    public static boolean shouldRenderFace(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos, FluidState fluidState, BlockState blockState, Direction direction, BlockState adjBlockState) {
+
+        if(adjBlockState.getFluidState().getType().isSame(fluidState.getType()))
+            return false;
+
+        //self-occlusion by waterlogging
+        if (blockState.canOcclude()) {
+
+            return !blockState.isFaceSturdy(blockAndTintGetter, blockPos, direction);
+        }
+
+        return true;
     }
 
-    private static boolean isFaceOccludedBySelf(BlockGetter blockGetter, BlockPos blockPos, BlockState blockState, Direction direction) {
-        return isFaceOccludedByState(blockGetter, direction.getOpposite(), 1.0F, blockPos, blockState);
+    public BlockState getAdjBlockState(BlockAndTintGetter blockAndTintGetter, int x, int y, int z, Direction dir) {
+        mBlockPos.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
+        return blockAndTintGetter.getBlockState(mBlockPos);
     }
 
-    public static boolean shouldRenderFace(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos, FluidState fluidState, BlockState blockState, Direction direction, FluidState fluidState2) {
-        return !isFaceOccludedBySelf(blockAndTintGetter, blockPos, blockState, direction) && !isNeighborSameFluid(fluidState, fluidState2);
-    }
+    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
+        BlockAndTintGetter region = this.resources.region;
 
-    public void tessellate(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos, VertexConsumer vertexConsumer, BlockState blockState, FluidState fluidState) {
         boolean bl = fluidState.is(FluidTags.LAVA);
-        TextureAtlasSprite[] textureAtlasSprites = bl ? this.lavaIcons : this.waterIcons;
-        int i = bl ? 16777215 : BiomeColors.getAverageWaterColor(blockAndTintGetter, blockPos);
-        float f = (float)(i >> 16 & 255) / 255.0F;
-        float g = (float)(i >> 8 & 255) / 255.0F;
-        float h = (float)(i & 255) / 255.0F;
+        TextureAtlasSprite[] sprites = bl ? this.lavaIcons : this.waterIcons;
+        int color = bl ? 16777215 : BiomeColors.getAverageWaterColor(region, blockPos);
+        float r = ColorUtil.ARGB.unpackR(color);
+        float g = ColorUtil.ARGB.unpackG(color);
+        float b = ColorUtil.ARGB.unpackB(color);
 
-        BlockState blockState2 = blockAndTintGetter.getBlockState(blockPos.relative(Direction.DOWN));
-        FluidState fluidState2 = blockState2.getFluidState();
-        BlockState blockState3 = blockAndTintGetter.getBlockState(blockPos.relative(Direction.UP));
-        FluidState fluidState3 = blockState3.getFluidState();
-        BlockState blockState4 = blockAndTintGetter.getBlockState(blockPos.relative(Direction.NORTH));
-        FluidState fluidState4 = blockState4.getFluidState();
-        BlockState blockState5 = blockAndTintGetter.getBlockState(blockPos.relative(Direction.SOUTH));
-        FluidState fluidState5 = blockState5.getFluidState();
-        BlockState blockState6 = blockAndTintGetter.getBlockState(blockPos.relative(Direction.WEST));
-        FluidState fluidState6 = blockState6.getFluidState();
-        BlockState blockState7 = blockAndTintGetter.getBlockState(blockPos.relative(Direction.EAST));
-        FluidState fluidState7 = blockState7.getFluidState();
+        final int posX = blockPos.getX();
+        final int posY = blockPos.getY();
+        final int posZ = blockPos.getZ();
 
-        boolean bl2 = !isNeighborSameFluid(fluidState, fluidState3);
-        boolean renderDownFace = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.DOWN, fluidState2) && !isFaceOccludedByNeighbor(blockAndTintGetter, blockPos, Direction.DOWN, MAX_FLUID_HEIGHT, blockState2);
-        boolean bl4 = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.NORTH, fluidState4);
-        boolean bl5 = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.SOUTH, fluidState5);
-        boolean bl6 = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.WEST, fluidState6);
-        boolean bl7 = shouldRenderFace(blockAndTintGetter, blockPos, fluidState, blockState, Direction.EAST, fluidState7);
+        boolean useAO = blockState.getLightEmission() == 0 && Minecraft.useAmbientOcclusion();
+        LightPipeline lightPipeline = useAO ? this.resources.smoothLightPipeline : this.resources.flatLightPipeline;
 
-        if (bl2 || renderDownFace || bl7 || bl6 || bl4 || bl5)
-        {
-            float j = blockAndTintGetter.getShade(Direction.DOWN, true);
-            float k = blockAndTintGetter.getShade(Direction.UP, true);
-            float l = blockAndTintGetter.getShade(Direction.NORTH, true);
-            float m = blockAndTintGetter.getShade(Direction.WEST, true);
-            Fluid fluid = fluidState.getType();
-            float n = this.getHeight(blockAndTintGetter, fluid, blockPos, blockState, fluidState);
-            float o;
-            float p;
-            float q;
-            float r;
-            if (n >= 1.0F) {
-                o = 1.0F;
-                p = 1.0F;
-                q = 1.0F;
-                r = 1.0F;
+        BlockState downState = getAdjBlockState(region, posX, posY, posZ, Direction.DOWN);
+        BlockState upState = getAdjBlockState(region, posX, posY, posZ, Direction.UP);
+        BlockState northState = getAdjBlockState(region, posX, posY, posZ, Direction.NORTH);
+        BlockState southState = getAdjBlockState(region, posX, posY, posZ, Direction.SOUTH);
+        BlockState westState = getAdjBlockState(region, posX, posY, posZ, Direction.WEST);
+        BlockState eastState = getAdjBlockState(region, posX, posY, posZ, Direction.EAST);
+
+//        boolean rUf = !isNeighborSameFluid(fluidState, upFluid);
+        boolean rUf = shouldRenderFace(region, blockPos, fluidState, blockState, Direction.UP, upState);
+        boolean rDf = shouldRenderFace(region, blockPos, fluidState, blockState, Direction.DOWN, downState)
+                && !isFaceOccludedByState(region, MAX_FLUID_HEIGHT, Direction.DOWN, blockPos, downState);
+        boolean rNf = shouldRenderFace(region, blockPos, fluidState, blockState, Direction.NORTH, northState);
+        boolean rSf = shouldRenderFace(region, blockPos, fluidState, blockState, Direction.SOUTH, southState);
+        boolean rWf = shouldRenderFace(region, blockPos, fluidState, blockState, Direction.WEST, westState);
+        boolean rEf = shouldRenderFace(region, blockPos, fluidState, blockState, Direction.EAST, eastState);
+
+        if (!(rUf || rDf || rEf || rWf || rNf || rSf))
+            return;
+
+        float brightnessUp = region.getShade(Direction.UP, true);
+
+        Fluid fluid = fluidState.getType();
+        float height = this.getHeight(region, fluid, blockPos, blockState);
+        float neHeight;
+        float nwHeight;
+        float seHeight;
+        float swHeight;
+        if (height >= 1.0F) {
+            neHeight = 1.0F;
+            nwHeight = 1.0F;
+            seHeight = 1.0F;
+            swHeight = 1.0F;
+        } else {
+            float s = this.getHeight(region, fluid, mBlockPos.set(blockPos).offset(Direction.NORTH.getNormal()), northState);
+            float t = this.getHeight(region, fluid, mBlockPos.set(blockPos).offset(Direction.SOUTH.getNormal()), southState);
+            float u = this.getHeight(region, fluid, mBlockPos.set(blockPos).offset(Direction.EAST.getNormal()), eastState);
+            float v = this.getHeight(region, fluid, mBlockPos.set(blockPos).offset(Direction.WEST.getNormal()), westState);
+            neHeight = this.calculateAverageHeight(region, fluid, height, s, u, mBlockPos.set(blockPos).offset(Direction.NORTH.getNormal()).offset(Direction.EAST.getNormal()));
+            nwHeight = this.calculateAverageHeight(region, fluid, height, s, v, mBlockPos.set(blockPos).offset(Direction.NORTH.getNormal()).offset(Direction.WEST.getNormal()));
+            seHeight = this.calculateAverageHeight(region, fluid, height, t, u, mBlockPos.set(blockPos).offset(Direction.SOUTH.getNormal()).offset(Direction.EAST.getNormal()));
+            swHeight = this.calculateAverageHeight(region, fluid, height, t, v, mBlockPos.set(blockPos).offset(Direction.SOUTH.getNormal()).offset(Direction.WEST.getNormal()));
+        }
+
+        float x0 = (posX & 15);
+        float y0 = (posY & 15);
+        float z0 = (posZ & 15);
+//            float x = 0.001F;
+        float y = rDf ? 0.001F : 0.0F;
+
+        modelQuad.setFlags(0);
+
+        if (rUf && !isFaceOccludedByState(region, Math.min(Math.min(nwHeight, swHeight), Math.min(seHeight, neHeight)), Direction.UP, blockPos, upState)) {
+            float u0, u1, u2, u3;
+            float v0, v1, v2, v3;
+
+            nwHeight -= 0.001F;
+            swHeight -= 0.001F;
+            seHeight -= 0.001F;
+            neHeight -= 0.001F;
+            Vec3 vec3 = fluidState.getFlow(region, blockPos);
+            TextureAtlasSprite sprite;
+
+            if (vec3.x == 0.0 && vec3.z == 0.0) {
+                sprite = sprites[0];
+                u0 = sprite.getU(0.0F);
+                v0 = sprite.getV(0.0F);
+                u1 = u0;
+                v1 = sprite.getV(1.0F);
+                u2 = sprite.getU(1.0F);
+                v2 = v1;
+                u3 = u2;
+                v3 = v0;
             } else {
-                float s = this.getHeight(blockAndTintGetter, fluid, blockPos.north(), blockState4, fluidState4);
-                float t = this.getHeight(blockAndTintGetter, fluid, blockPos.south(), blockState5, fluidState5);
-                float u = this.getHeight(blockAndTintGetter, fluid, blockPos.east(), blockState7, fluidState7);
-                float v = this.getHeight(blockAndTintGetter, fluid, blockPos.west(), blockState6, fluidState6);
-                o = this.calculateAverageHeight(blockAndTintGetter, fluid, n, s, u, blockPos.relative(Direction.NORTH).relative(Direction.EAST));
-                p = this.calculateAverageHeight(blockAndTintGetter, fluid, n, s, v, blockPos.relative(Direction.NORTH).relative(Direction.WEST));
-                q = this.calculateAverageHeight(blockAndTintGetter, fluid, n, t, u, blockPos.relative(Direction.SOUTH).relative(Direction.EAST));
-                r = this.calculateAverageHeight(blockAndTintGetter, fluid, n, t, v, blockPos.relative(Direction.SOUTH).relative(Direction.WEST));
+                sprite = sprites[1];
+                float ah = (float) Mth.atan2(vec3.z, vec3.x) - 1.5707964F;
+                float ai = Mth.sin(ah) * 0.25F;
+                float aj = Mth.cos(ah) * 0.25F;
+
+                u0 = sprite.getU(0.5F + (-aj - ai));
+                v0 = sprite.getV(0.5F - aj + ai);
+                u1 = sprite.getU(0.5F - aj + ai);
+                v1 = sprite.getV(0.5F + aj + ai);
+                u2 = sprite.getU(0.5F + aj + ai);
+                v2 = sprite.getV(0.5F + (aj - ai));
+                u3 = sprite.getU(0.5F + (aj - ai));
+                v3 = sprite.getV(0.5F + (-aj - ai));
             }
 
-            double x0 = (blockPos.getX() & 15);
-            double y0 = (blockPos.getY() & 15);
-            double z0 = (blockPos.getZ() & 15);
-            float x = 0.001F;
-            float y = renderDownFace ? 0.001F : 0.0F;
-            float z;
-            float ab;
-            float ad;
-            float af;
-            float aa;
-            float ac;
-            float ae;
-            float ag;
+            float uA = (u0 + u1 + u2 + u3) / 4.0F;
+            float vA = (v0 + v1 + v2 + v3) / 4.0F;
+            float ai = sprites[0].uvShrinkRatio();
+            u0 = Mth.lerp(ai, u0, uA);
+            u1 = Mth.lerp(ai, u1, uA);
+            u2 = Mth.lerp(ai, u2, uA);
+            u3 = Mth.lerp(ai, u3, uA);
+            v0 = Mth.lerp(ai, v0, vA);
+            v1 = Mth.lerp(ai, v1, vA);
+            v2 = Mth.lerp(ai, v2, vA);
+            v3 = Mth.lerp(ai, v3, vA);
 
-            if (bl2 && !isFaceOccludedByNeighbor(blockAndTintGetter, blockPos, Direction.UP, Math.min(Math.min(p, r), Math.min(q, o)), blockState3)) {
-                p -= 0.001F;
-                r -= 0.001F;
-                q -= 0.001F;
-                o -= 0.001F;
-                Vec3 vec3 = fluidState.getFlow(blockAndTintGetter, blockPos);
-                TextureAtlasSprite textureAtlasSprite;
-                float ah;
-                float ai;
-                float ak;
-                if (vec3.x == 0.0 && vec3.z == 0.0) {
-                    textureAtlasSprite = textureAtlasSprites[0];
-                    z = textureAtlasSprite.getU(0.0F);
-                    aa = textureAtlasSprite.getV(0.0F);
-                    ab = z;
-                    ac = textureAtlasSprite.getV(1.0F);
-                    ad = textureAtlasSprite.getU(1.0F);
-                    ae = ac;
-                    af = ad;
-                    ag = aa;
-                } else {
-                    textureAtlasSprite = textureAtlasSprites[1];
-                    ah = (float)Mth.atan2(vec3.z, vec3.x) - 1.5707964F;
-                    ai = Mth.sin(ah) * 0.25F;
-                    float aj = Mth.cos(ah) * 0.25F;
-                    ak = 0.5F;
-                    z = textureAtlasSprite.getU(0.5F + (-aj - ai));
-                    aa = textureAtlasSprite.getV(0.5F + -aj + ai);
-                    ab = textureAtlasSprite.getU(0.5F + -aj + ai);
-                    ac = textureAtlasSprite.getV(0.5F + aj + ai);
-                    ad = textureAtlasSprite.getU(0.5F + aj + ai);
-                    ae = textureAtlasSprite.getV(0.5F + (aj - ai));
-                    af = textureAtlasSprite.getU(0.5F + (aj - ai));
-                    ag = textureAtlasSprite.getV(0.5F + (-aj - ai));
-                }
+            float brightness = brightnessUp;
 
-                float al = (z + ab + ad + af) / 4.0F;
-                ah = (aa + ac + ae + ag) / 4.0F;
-                ai = textureAtlasSprites[0].uvShrinkRatio();
-                z = Mth.lerp(ai, z, al);
-                ab = Mth.lerp(ai, ab, al);
-                ad = Mth.lerp(ai, ad, al);
-                af = Mth.lerp(ai, af, al);
-                aa = Mth.lerp(ai, aa, ah);
-                ac = Mth.lerp(ai, ac, ah);
-                ae = Mth.lerp(ai, ae, ah);
-                ag = Mth.lerp(ai, ag, ah);
-                int am = this.getLightColor(blockAndTintGetter, blockPos);
-                ak = k * f;
-                float g1 = k * g;
-                float b1 = k * h;
+            setVertex(modelQuad, 0, 0.0f, nwHeight, 0.0f, u0, v0);
+            setVertex(modelQuad, 1, 0.0f, swHeight, 1.0f, u1, v1);
+            setVertex(modelQuad, 2, 1.0f, seHeight, 1.0f, u2, v2);
+            setVertex(modelQuad, 3, 1.0f, neHeight, 0.0f, u3, v3);
 
-                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am);
-                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am);
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am);
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am);
-                if (fluidState.shouldRenderBackwardUpFace(blockAndTintGetter, blockPos.above())) {
-                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am);
-                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am);
-                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am);
-                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am);
-                }
+            updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.UP);
+            updateColor(r, g, b, brightness);
 
-//                Vector3f normal = new Vector3f(0.0f, r - p, 1.0f).cross(1.0f, q - p, 1.0f);
-//                normal.normalize();
-//
-//                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am, normal.x(), normal.y(), normal.z());
-//                if (fluidState.shouldRenderBackwardUpFace(blockAndTintGetter, blockPos.above())) {
-//                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)p, z0 + 0.0, ak, g1, b1, z, aa, am, normal.x(), normal.y(), normal.z());
-//                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)o, z0 + 0.0, ak, g1, b1, af, ag, am, normal.x(), normal.y(), normal.z());
-//                    this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)q, z0 + 1.0, ak, g1, b1, ad, ae, am, normal.x(), normal.y(), normal.z());
-//                    this.vertex(vertexConsumer, x0 + 0.0, y0 + (double)r, z0 + 1.0, ak, g1, b1, ab, ac, am, normal.x(), normal.y(), normal.z());
-//                }
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+
+            if (fluidState.shouldRenderBackwardUpFace(region, blockPos.above())) {
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
             }
 
-            if (renderDownFace) {
-                z = textureAtlasSprites[0].getU0();
-                ab = textureAtlasSprites[0].getU1();
-                ad = textureAtlasSprites[0].getV0();
-                af = textureAtlasSprites[0].getV1();
-                int ap = this.getLightColor(blockAndTintGetter, blockPos.below());
-                ac = j * f;
-                ae = j * g;
-                ag = j * h;
+        }
 
-                this.vertex(vertexConsumer, x0, y0 + (double)y, z0 + 1.0, ac, ae, ag, z, af, ap);
-                this.vertex(vertexConsumer, x0, y0 + (double)y, z0, ac, ae, ag, z, ad, ap);
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0, ac, ae, ag, ab, ad, ap);
-                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0 + 1.0, ac, ae, ag, ab, af, ap);
+        if (rDf) {
+            float u0, u1, v0, v1;
 
-//                Vector3f normal = new Vector3f(0.0f, 0.0f, -1.0f).cross(1.0f, 0.0f, -1.0f);
-//                normal.normalize();
-//
-//                this.vertex(vertexConsumer, x0, y0 + (double)y, z0 + 1.0, ac, ae, ag, z, af, ap, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, x0, y0 + (double)y, z0, ac, ae, ag, z, ad, ap, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0, ac, ae, ag, ab, ad, ap, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, x0 + 1.0, y0 + (double)y, z0 + 1.0, ac, ae, ag, ab, af, ap,normal.x(), normal.y(), normal.z());
-            }
+            u0 = sprites[0].getU0();
+            u1 = sprites[0].getU1();
+            v0 = sprites[0].getV0();
+            v1 = sprites[0].getV1();
 
-            int aq = this.getLightColor(blockAndTintGetter, blockPos);
-            Iterator<Direction> var76 = Direction.Plane.HORIZONTAL.iterator();
+            float brightness = region.getShade(Direction.DOWN, true);
 
-            while(true) {
-                Direction direction;
-                double ar;
-                double at;
-                double as;
-                double au;
-                boolean bl8;
-                do {
-                    do {
-                        if (!var76.hasNext()) {
-                            return;
-                        }
+            setVertex(modelQuad, 0, 0.0f, y, 1.0f, u0, v1);
+            setVertex(modelQuad, 1, 0.0f, y, 0.0f, u0, v0);
+            setVertex(modelQuad, 2, 1.0f, y, 0.0f, u1, v0);
+            setVertex(modelQuad, 3, 1.0f, y, 1.0f, u1, v1);
 
-                        direction = var76.next();
-                        switch (direction) {
-                            case NORTH -> {
-                                af = p;
-                                aa = o;
-                                ar = x0;
-                                as = x0 + 1.0;
-                                at = z0 + 0.0010000000474974513;
-                                au = z0 + 0.0010000000474974513;
-                                bl8 = bl4;
-                            }
-                            case SOUTH -> {
-                                af = q;
-                                aa = r;
-                                ar = x0 + 1.0;
-                                as = x0;
-                                at = z0 + 1.0 - 0.0010000000474974513;
-                                au = z0 + 1.0 - 0.0010000000474974513;
-                                bl8 = bl5;
-                            }
-                            case WEST -> {
-                                af = r;
-                                aa = p;
-                                ar = x0 + 0.0010000000474974513;
-                                as = x0 + 0.0010000000474974513;
-                                at = z0 + 1.0;
-                                au = z0;
-                                bl8 = bl6;
-                            }
-                            default -> {
-                                af = o;
-                                aa = q;
-                                ar = x0 + 1.0 - 0.0010000000474974513;
-                                as = x0 + 1.0 - 0.0010000000474974513;
-                                at = z0;
-                                au = z0 + 1.0;
-                                bl8 = bl7;
-                            }
-                        }
-                    } while(!bl8);
-                } while(isFaceOccludedByNeighbor(blockAndTintGetter, blockPos, direction, Math.max(af, aa), blockAndTintGetter.getBlockState(blockPos.relative(direction))));
+            updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.DOWN);
+            updateColor(r, g, b, brightness);
 
-                BlockPos blockPos2 = blockPos.relative(direction);
-                TextureAtlasSprite textureAtlasSprite2 = textureAtlasSprites[1];
-                if (!bl) {
-                    Block block = blockAndTintGetter.getBlockState(blockPos2).getBlock();
-                    if (block instanceof HalfTransparentBlock || block instanceof LeavesBlock) {
-                        textureAtlasSprite2 = this.waterOverlay;
-                    }
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+
+        }
+
+        modelQuad.setFlags(ModelQuadFlags.IS_PARALLEL | ModelQuadFlags.IS_ALIGNED);
+
+        for(Direction direction : Util.XZ_DIRECTIONS) {
+            float h1;
+            float h2;
+
+            float x1;
+            float z1;
+            float x2;
+            float z2;
+
+            final float E = 0.001f;
+            final float E2 = 0.999f;
+
+            BlockState adjState;
+            switch (direction) {
+                case NORTH -> {
+                    if(!rNf)
+                        continue;
+
+                    h1 = nwHeight;
+                    h2 = neHeight;
+                    x1 = 0.0f;
+                    x2 = 1.0f;
+                    z1 = E;
+                    z2 = E;
+
+                    adjState = northState;
+                }
+                case SOUTH -> {
+                    if(!rSf)
+                        continue;
+
+                    h1 = seHeight;
+                    h2 = swHeight;
+                    x1 = 1.0f;
+                    x2 = 0.0f;
+                    z1 = E2;
+                    z2 = E2;
+
+                    adjState = southState;
+                }
+                case WEST -> {
+                    if(!rWf)
+                        continue;
+
+                    h1 = swHeight;
+                    h2 = nwHeight;
+                    x1 = E;
+                    x2 = E;
+                    z1 = 1.0f;
+                    z2 = 0.0f;
+
+                    adjState = westState;
+                }
+                case EAST -> {
+                    if(!rEf)
+                        continue;
+
+                    h1 = neHeight;
+                    h2 = seHeight;
+                    x1 = E2;
+                    x2 = E2;
+                    z1 = 0.0f;
+                    z2 = 1.0f;
+
+                    adjState = eastState;
                 }
 
-                float av = textureAtlasSprite2.getU(0.0F);
-                float aw = textureAtlasSprite2.getU(0.5F);
-                float ax = textureAtlasSprite2.getV((1.0F - af) * 0.5F);
-                float ay = textureAtlasSprite2.getV((1.0F - aa) * 0.5F);
-                float az = textureAtlasSprite2.getV(0.5F);
-                float ba = direction.getAxis() == Direction.Axis.Z ? l : m;
-                float bb = k * ba * f;
-                float bc = k * ba * g;
-                float bd = k * ba * h;
-
-                this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
-                this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
-                this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
-                this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
-                if (textureAtlasSprite2 != this.waterOverlay) {
-                    this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
-                    this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
-                    this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
-                    this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
+                default -> {
+                    continue;
                 }
-
-//                Vector3f normal = new Vector3f((float) (as - ar), (aa - af), (float) (au - at)).cross((float) (as - ar), (y - af), (float) (au - at));
-//                normal.normalize();
-//
-//                this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq, normal.x(), normal.y(), normal.z());
-//                this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq, normal.x(), normal.y(), normal.z());
-//                if (textureAtlasSprite2 != this.waterOverlay) {
-//                    this.vertex(vertexConsumer, ar, y0 + (double)y, at, bb, bc, bd, av, az, aq);
-//                    this.vertex(vertexConsumer, as, y0 + (double)y, au, bb, bc, bd, aw, az, aq);
-//                    this.vertex(vertexConsumer, as, y0 + (double)aa, au, bb, bc, bd, aw, ay, aq);
-//                    this.vertex(vertexConsumer, ar, y0 + (double)af, at, bb, bc, bd, av, ax, aq);
-//                }
             }
+
+            if(isFaceOccludedByState(region, Math.max(h1, h2), direction, blockPos, adjState))
+                continue;
+
+            BlockPos blockPos2 = blockPos.relative(direction);
+            TextureAtlasSprite sprite2 = sprites[1];
+            if (!bl) {
+                Block block = region.getBlockState(blockPos2).getBlock();
+                if (block instanceof HalfTransparentBlock || block instanceof LeavesBlock) {
+                    sprite2 = this.waterOverlay;
+                }
+            }
+
+            float u0 = sprite2.getU(0.0F);
+            float u1 = sprite2.getU(0.5F);
+            float v0 = sprite2.getV((1.0F - h1) * 0.5F);
+            float v1 = sprite2.getV((1.0F - h2) * 0.5F);
+            float v2 = sprite2.getV(0.5F);
+
+            float brightness = region.getShade(direction, true);
+
+            setVertex(modelQuad, 0, x2, h2, z2, u1, v1);
+            setVertex(modelQuad, 1, x2, y, z2, u1, v2);
+            setVertex(modelQuad, 2, x1, y, z1, u0, v2);
+            setVertex(modelQuad, 3, x1, h1, z1, u0, v0);
+
+            updateQuad(this.modelQuad, blockPos, lightPipeline, direction);
+            updateColor(r, g, b, brightness);
+
+            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+
+            if (sprite2 != this.waterOverlay) {
+                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
+            }
+
         }
     }
 
@@ -395,30 +404,87 @@ public class LiquidRenderer {
 
     private float getHeight(BlockAndTintGetter blockAndTintGetter, Fluid fluid, BlockPos blockPos) {
         BlockState blockState = blockAndTintGetter.getBlockState(blockPos);
-        return this.getHeight(blockAndTintGetter, fluid, blockPos, blockState, blockState.getFluidState());
+        return this.getHeight(blockAndTintGetter, fluid, blockPos, blockState);
     }
 
-    private float getHeight(BlockAndTintGetter blockAndTintGetter, Fluid fluid, BlockPos blockPos, BlockState blockState, FluidState fluidState) {
-        if (fluid.isSame(fluidState.getType())) {
-            BlockState blockState2 = blockAndTintGetter.getBlockState(blockPos.above());
-            return fluid.isSame(blockState2.getFluidState().getType()) ? 1.0F : fluidState.getOwnHeight();
+    private float getHeight(BlockAndTintGetter blockAndTintGetter, Fluid fluid, BlockPos blockPos, BlockState adjBlockState) {
+        FluidState adjFluidState = adjBlockState.getFluidState();
+        if (fluid.isSame(adjFluidState.getType())) {
+            BlockState blockState2 = blockAndTintGetter.getBlockState(blockPos.offset(Direction.UP.getNormal()));
+            return fluid.isSame(blockState2.getFluidState().getType()) ? 1.0F : adjFluidState.getOwnHeight();
         } else {
-            return !blockState.isSolid() ? 0.0F : -1.0F;
+            return !adjBlockState.isSolid() ? 0.0F : -1.0f;
         }
     }
 
-    private void vertex(VertexConsumer vertexConsumer, double x, double y, double z, float r, float g, float b, float u, float v, int l) {
-//        vertexConsumer.vertex(x, y, z).color(r, g, b, 1.0F).uv(u, v).uv2(l).normal(0.0F, 1.0F, 0.0F).endVertex();
-        vertexConsumer.vertex((float) x, (float) y, (float) z, r, g, b, 1.0f, u, v, 0, l, 0.0F, 1.0F, 0.0F);
+    private void vertex(VertexConsumer vertexConsumer, float x, float y, float z, float r, float g, float b, float u, float v, int light) {
+//        vertexConsumer.vertex(x, y, z).color(r, g, b, 1.0F).uv(u, v).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
+        vertexConsumer.vertex(x, y, z, r, g, b, 1.0f, u, v, 0, light, 0.0F, 1.0F, 0.0F);
     }
 
-    private void vertex(VertexConsumer vertexConsumer, double x, double y, double z, float r, float g, float b, float u, float v, int l, float normalX, float normalY, float normalZ) {
+    private void vertex(VertexConsumer vertexConsumer, float x, float y, float z, float r, float g, float b, float u, float v, int l, float normalX, float normalY, float normalZ) {
 //        vertexConsumer.vertex(x, y, z).color(r, g, b, 1.0F).uv(u, v).uv2(l).normal(0.0F, 1.0F, 0.0F).endVertex();
-        vertexConsumer.vertex((float) x, (float) y, (float) z, r, g, b, 1.0f, u, v, 0, l, normalX, normalY, normalZ);
+        vertexConsumer.vertex(x, y, z, r, g, b, 1.0f, u, v, 0, l, normalX, normalY, normalZ);
     }
 
-    private void putQuad() {
+    private int calculateNormal(ModelQuad quad) {
+        //TODO
+        Vector3f normal = new Vector3f(quad.getX(1), quad.getY(1), quad.getZ(1))
+                .cross(quad.getX(3), quad.getY(3), quad.getZ(3));
+        normal.normalize();
 
+        return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
+    }
+
+    private void putQuad(ModelQuad quad, TerrainBufferBuilder vertexBuilder, float xOffset, float yOffset, float zOffset, boolean flip) {
+        QuadLightData quadLightData = resources.quadLightData;
+
+        // Rotate triangles if needed to fix AO anisotropy
+        int k = QuadUtils.getIterationStartIdx(quadLightData.br);
+
+        int i = 0;
+        for (int j = 0; j < 4; j++) {
+            i = k;
+
+            vertexBuilder.beginVertex();
+            vertexBuilder.position(xOffset + quad.getX(i), yOffset + quad.getY(i), zOffset + quad.getZ(i));
+            vertexBuilder.color(quadColors[i]);
+            vertexBuilder.uv(quad.getU(i), quad.getV(i));
+            vertexBuilder.light(quadLightData.lm[i]);
+            vertexBuilder.endCurrentVertex();
+
+            k += (flip ? -1 : +1);
+            k &= 0b11;
+        }
+
+    }
+
+    private void setVertex(ModelQuad quad, int i, float x, float y, float z, float u, float v) {
+        quad.setX(i, x);
+        quad.setY(i, y);
+        quad.setZ(i, z);
+        quad.setU(i, u);
+        quad.setV(i, v);
+    }
+
+    private void updateQuad(ModelQuad quad, BlockPos blockPos,
+                            LightPipeline lightPipeline, Direction dir) {
+
+        lightPipeline.calculate(quad, blockPos, resources.quadLightData, null, dir, false);
+
+    }
+
+    private void updateColor(float r, float g, float b, float brightness) {
+        QuadLightData quadLightData = resources.quadLightData;
+
+        for (int i = 0; i < 4; i++) {
+            float br = quadLightData.br[i] * brightness;
+            float r1 = r * br;
+            float g1 = g * br;
+            float b1 = b * br;
+
+            this.quadColors[i] = ColorUtil.RGBA.pack(r1, g1, b1, 1.0f);
+        }
     }
 
     private int getLightColor(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos) {

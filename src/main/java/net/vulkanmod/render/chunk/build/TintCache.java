@@ -84,8 +84,8 @@ public class TintCache {
         mixedBiomes |= biome != level.getBiome(blockPos.set(minX, absY, maxZ)).value();
         mixedBiomes |= biome != level.getBiome(blockPos.set(maxX, absY, maxZ)).value();
 
-        //Most sections are completely contained inside a single biome
-        //hence there's no need to do expensive biome calculations
+        // Most sections are completely contained inside a single biome
+        // hence there's no need to do expensive biome calculations
         if(!mixedBiomes) {
             for (int absX = minX; absX < maxX ; absX++) {
                 for (int absZ = minZ; absZ < maxZ ; absZ++) {

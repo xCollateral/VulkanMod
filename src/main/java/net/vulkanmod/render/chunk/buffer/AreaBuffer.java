@@ -56,9 +56,11 @@ public class AreaBuffer {
     }
 
     public Segment upload(ByteBuffer byteBuffer, int oldOffset, DrawBuffers.DrawParameters drawParameters) {
-        //free old segment
+        // Free old segment
         if(oldOffset != -1) {
-            this.setSegmentFree(oldOffset);
+            // Need to delay segment freeing since it might be still used by prev frames in flight
+//            this.setSegmentFree(oldOffset);
+            MemoryManager.getInstance().addToFreeSegment(this, oldOffset);
         }
 
         int size = byteBuffer.remaining();
@@ -84,9 +86,9 @@ public class AreaBuffer {
         }
 
         segment.free = false;
-        usedSegments.put(segment.offset, segment);
+        this.usedSegments.put(segment.offset, segment);
 
-        parametersMap.put(segment, drawParameters);
+        this.parametersMap.put(segment, drawParameters);
 
         Buffer dst = this.buffer;
         UploadManager.INSTANCE.recordUpload(dst.getId(), segment.offset, size, byteBuffer);
@@ -136,6 +138,7 @@ public class AreaBuffer {
 
         UploadManager.INSTANCE.copyBuffer(this.buffer, dst);
 
+        // TODO
 //        defrag(dst);
 
         if(DEBUG)

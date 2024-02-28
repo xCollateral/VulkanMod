@@ -101,15 +101,19 @@ public class RenderSection {
         return this.sourceDirs != 0;
     }
 
-    public void resortTransparency(TaskDispatcher taskDispatcher) {
+    public boolean resortTransparency(TaskDispatcher taskDispatcher) {
+        CompiledSection compiledSection = this.getCompiledSection();
 
         if (this.compileStatus.sortTask != null) {
             this.compileStatus.sortTask.cancel();
         }
 
-        if (this.getCompiledSection().renderTypes.contains(TerrainRenderType.TRANSLUCENT)) {
+        if (!compiledSection.hasTransparencyState()) {
+            return false;
+        } else {
             this.compileStatus.sortTask = new SortTransparencyTask(this);
             taskDispatcher.schedule(this.compileStatus.sortTask);
+            return true;
         }
     }
 
@@ -274,8 +278,8 @@ public class RenderSection {
     }
 
     private void resetDrawParameters() {
-        for(TerrainRenderType r : this.getCompiledSection().renderTypes) {
-            getDrawParameters(r).reset(this.chunkArea, r);
+        for(TerrainRenderType r : TerrainRenderType.VALUES) {
+            this.getDrawParameters(r).reset(this.chunkArea, r);
         }
     }
 

@@ -29,15 +29,14 @@ public class UploadManager {
     LongOpenHashSet dstBuffers = new LongOpenHashSet();
 
     public void submitUploads() {
-        if(this.commandBuffer == null)
+        if (this.commandBuffer == null)
             return;
 
         queue.submitCommands(this.commandBuffer);
     }
 
     public void recordUpload(long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
-
-        if(this.commandBuffer == null)
+        if (this.commandBuffer == null)
             this.commandBuffer = queue.beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
@@ -45,7 +44,7 @@ public class UploadManager {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
 
-        if(!dstBuffers.add(bufferId)) {
+        if (!this.dstBuffers.add(bufferId)) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
                 barrier.sType$Default();
@@ -60,7 +59,7 @@ public class UploadManager {
                         null);
             }
 
-            dstBuffers.clear();
+            this.dstBuffers.clear();
         }
 
         TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
@@ -71,8 +70,7 @@ public class UploadManager {
     }
 
     public void copyBuffer(Buffer src, int srcOffset, Buffer dst, int dstOffset, int size) {
-
-        if(this.commandBuffer == null)
+        if (this.commandBuffer == null)
             this.commandBuffer = queue.beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
@@ -91,20 +89,19 @@ public class UploadManager {
                     null);
         }
 
-        dstBuffers.clear();
+        this.dstBuffers.clear();
+        this.dstBuffers.add(dst.getId());
 
         TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }
 
     public void waitUploads() {
-        if(this.commandBuffer == null)
+        if (this.commandBuffer == null)
             return;
 
-        Synchronization.INSTANCE.addFence(this.commandBuffer.getFence());
+        Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
 
-        this.commandBuffer.reset();
         this.commandBuffer = null;
-
         this.dstBuffers.clear();
     }
 

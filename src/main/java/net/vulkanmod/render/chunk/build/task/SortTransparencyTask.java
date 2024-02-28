@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk.build.task;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.RenderSection;
@@ -11,8 +10,6 @@ import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
-
-import java.util.concurrent.CompletableFuture;
 
 public class SortTransparencyTask extends ChunkTask {
 
@@ -24,11 +21,11 @@ public class SortTransparencyTask extends ChunkTask {
         return "rend_chk_sort";
     }
 
-    public CompletableFuture<Result> doTask(BuilderResources context) {
+    public Result runTask(BuilderResources context) {
         ThreadBuilderPack builderPack = context.builderPack;
 
         if (this.cancelled.get()) {
-            return CompletableFuture.completedFuture(Result.CANCELLED);
+            return Result.CANCELLED;
         }
 
         Vec3 vec3 = WorldRenderer.getCameraPos();
@@ -36,23 +33,25 @@ public class SortTransparencyTask extends ChunkTask {
         float y = (float)vec3.y;
         float z = (float)vec3.z;
 
-        CompiledSection compiledSection = renderSection.getCompiledSection();
+        CompiledSection compiledSection = this.section.getCompiledSection();
         TerrainBufferBuilder.SortState transparencyState = compiledSection.transparencyState;
         TerrainBufferBuilder bufferBuilder = builderPack.builder(TerrainRenderType.TRANSLUCENT);
         bufferBuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
         bufferBuilder.restoreSortState(transparencyState);
 
-        bufferBuilder.setQuadSortOrigin(x - (float) this.renderSection.xOffset(), y - (float) renderSection.yOffset(), z - (float) renderSection.zOffset());
+        bufferBuilder.setQuadSortOrigin(x - (float) this.section.xOffset(), y - (float) this.section.yOffset(), z - (float) this.section.zOffset());
         compiledSection.transparencyState = bufferBuilder.getSortState();
         TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilder.end();
 
+        CompileResult compileResult = new CompileResult(this.section, false);
+        UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
+        compileResult.renderedLayers.put(TerrainRenderType.TRANSLUCENT, uploadBuffer);
+        renderedBuffer.release();
+
         if (this.cancelled.get()) {
-            return CompletableFuture.completedFuture(Result.CANCELLED);
-        } else {
-            UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-            taskDispatcher.scheduleUploadChunkLayer(renderSection, TerrainRenderType.get(RenderType.translucent()), uploadBuffer);
-            renderedBuffer.release();
-            return CompletableFuture.completedFuture(Result.SUCCESSFUL);
+            return Result.CANCELLED;
         }
+        taskDispatcher.scheduleSectionUpdate(compileResult);
+        return Result.SUCCESSFUL;
     }
 }
