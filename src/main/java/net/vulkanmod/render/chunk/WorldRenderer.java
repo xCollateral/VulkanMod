@@ -154,6 +154,9 @@ public class WorldRenderer {
         benchCallback();
 
         this.cameraPos = camera.getPosition();
+        if (this.minecraft.options.getEffectiveRenderDistance() != this.renderDistance) {
+            this.allChanged();
+        }
 
         this.level.getProfiler().push("camera");
         float cameraX = (float)cameraPos.x();
@@ -179,7 +182,7 @@ public class WorldRenderer {
         profiler.pop();
 
         double entityDistanceScaling = this.minecraft.options.entityDistanceScaling().get();
-        Entity.setViewScale(Mth.clamp((double)this.minecraft.options.getEffectiveRenderDistance() / 8.0D, 1.0D, 2.5D) * entityDistanceScaling);
+        Entity.setViewScale(Mth.clamp((double)this.renderDistance / 8.0D, 1.0D, 2.5D) * entityDistanceScaling);
 
 //        this.chunkRenderDispatcher.setCamera(cameraPos);
         this.level.getProfiler().popPush("cull");

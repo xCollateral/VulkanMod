@@ -141,9 +141,6 @@ public class Options {
                 new RangeOption("Render Distance", 2, 32, 1,
                         (value) -> {
                             minecraftOptions.renderDistance().set(value);
-                            LevelRenderer levelRenderer = Minecraft.getInstance().levelRenderer;
-                            levelRenderer.needsUpdate();
-                            levelRenderer.allChanged();
                         },
                         () -> minecraftOptions.renderDistance().get()),
                 new RangeOption("Simulation Distance", 5, 32, 1,
