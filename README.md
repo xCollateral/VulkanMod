@@ -22,7 +22,8 @@ Demostration Video:
 
 [![CurseForge](https://cf.way2muchnoise.eu/full_635429_downloads.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
 
-![Static Badge](https://img.shields.io/badge/:badgeContent?style=social&logo=modrinth&logoColor=%231bd96a&color=%231bd96a&link=https%3A%2F%2Fmodrinth.com%2Fmod%2Fvulkanmod)
+![Modrinth Downloads](https://img.shields.io/modrinth/dt/JYQhtZtO?style=flat-square&label=Modrinth%20Download)
+
 
 
 - Fabric mod loader is needed.
