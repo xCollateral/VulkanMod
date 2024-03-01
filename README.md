@@ -33,12 +33,11 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 >- [x] GUI optimizations
 >- [x] Multiple chunk culling algorithms
 >- [x] Reduced CPU overhead
->- [x] Reduced GPU overhead
+>- [x] Improved GPU performance
 >- [x] Indirect Draw mode (reduces Vram usage - optional)
 >- [x] Chunk rendering optimizations
 
 ### New content:
->- [x] Linux support
 >- [x] Native Wayland support
 >- [x] GPU selector
 >- [x] Windowed fullscreen mode
