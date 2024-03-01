@@ -2,11 +2,28 @@
 
 This is a fabric mod that introduces a brand new **Vulkan** based voxel rendering engine to **Minecraft java** in order to both replace the default OpenGL renderer and bring performance improvements.
 
+### Why ?
+- The Vulkanmod allows for deep optimizations into the rendering process and calculations. <br>
+- With a default configuration, it performs better than Vanilla Minecraft.  <br>
+- It also brings a future-proof codebase for Minecraft java. <br>
+- The Vulkan API, in opposition to OpenGL, allows for better usage of newer hardware and is at a lower level. <br>
+
 ### Demostration Video:
 
 [![Demostration Video](http://img.youtube.com/vi/sbr7UxcAmOE/0.jpg)](https://youtu.be/sbr7UxcAmOE)
 
+## Installation
 
+### Download Links:
+
+- [![CurseForge](https://cf.way2muchnoise.eu/full_635429_downloads.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
+
+- [![Modrinth Downloads](https://img.shields.io/modrinth/dt/JYQhtZtO?logo=modrinth&label=Modrinth%20Downloads)](https://modrinth.com/mod/vulkanmod/versions)
+
+- [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total?style=flat-square&logo=github&label=Github%20Downloads)](https://github.com/xCollateral/VulkanMod/releases)
+
+
+## Useful links
 <table>
     <tr>
       <th> Discord server</th>
@@ -46,16 +63,6 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 >- [ ] Shader support
 >- [ ] Removed Herobrine
 
-## Installation
-
-### Download Links:
-
-- [![CurseForge](https://cf.way2muchnoise.eu/full_635429_downloads.svg?badge_style=flat)](https://www.curseforge.com/minecraft/mc-mods/vulkanmod)
-
-- [![Modrinth Downloads](https://img.shields.io/modrinth/dt/JYQhtZtO?logo=modrinth&label=Modrinth%20Downloads)](https://modrinth.com/mod/vulkanmod/versions)
-
-- [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total?style=flat-square&logo=github&label=Github%20Downloads)](https://github.com/xCollateral/VulkanMod/releases)
-
 
 ### Install guide:
 >1) Install the [fabric modloader](https://fabricmc.net).
@@ -65,4 +72,5 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 
 ## Notes
 - This mod is still in developpment, please report issues in the [issue tab](https://github.com/xCollateral/VulkanMod/issues) with logs attached !
+- This mode isn't just "minecraft on vulkan" (e.g: [zink](https://docs.mesa3d.org/drivers/zink.html) ), it is a full rewrite of the minecraft renderer.
 
