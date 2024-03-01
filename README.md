@@ -13,7 +13,7 @@ Demostration Video:
       <th> Ko-Fi donations</th>
     </tr>
   <tr>
-    <td> <img alt="Discord" src="https://img.shields.io/discord/963180553547419670?style=flat-square&logo=discord&logoColor=%23FFFFFF&label=Vulkanmod%20official%20discord%20server&labelColor=%235865F2&color=%235865F2">
+    <td> <img alt="Discord" src="https://img.shields.io/discord/963180553547419670?style=flat-square&logo=discord&logoColor=%23FFFFFF&label=Vulkanmod%20official%20discord%20server&labelColor=%235865F2&color=%235865F2" href="https://discord.gg/FVXg7AYR2Q">
  </td>
     <td> <img alt="Static Badge" src="https://img.shields.io/badge/KoFi-%23ff5e5b?logo=ko-fi&logoColor=%23FFFFFF&link=https%3A%2F%2Fko-fi.com%2FV7V7CHHJV"> </td>
   </tr>
