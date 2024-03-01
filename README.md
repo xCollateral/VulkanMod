@@ -22,6 +22,10 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 
 - [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/xCollateral/VulkanMod/total?style=flat-square&logo=github&label=Github%20Downloads)](https://github.com/xCollateral/VulkanMod/releases)
 
+### Install guide:
+>1) Install the [fabric modloader](https://fabricmc.net).
+>1) Download and put the `Vulkanmod.jar` file into `.minecraft/mods`
+>1) Enjoy !
 
 ## Useful links
 <table>
@@ -62,12 +66,6 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 >- [x] Risizable render frame queue
 >- [ ] Shader support
 >- [ ] Removed Herobrine
-
-
-### Install guide:
->1) Install the [fabric modloader](https://fabricmc.net).
->1) Download and put the `Vulkanmod.jar` file into `.minecraft/mods`
->1) Enjoy !
 
 
 ## Notes
