@@ -12,6 +12,10 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 
 [![Demostration Video](http://img.youtube.com/vi/sbr7UxcAmOE/0.jpg)](https://youtu.be/sbr7UxcAmOE)
 
+## FAQ
+
+- Remember to check the [FAQ](./faq.md) we wrote before asking for support!
+
 ## Installation
 
 ### Download Links:
