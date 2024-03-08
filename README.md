@@ -1,4 +1,4 @@
-# ![vkmod_smol](https://github.com/SpidFightFR/VulkanMod/assets/60798703/b3d31560-3563-4ddc-a9ea-d1fbf12b5b5e) VulkanMod
+# ![vkmod_smol](./src/main/resources/assets/vulkanmod/vlogo_smol.png) VulkanMod
 
 This is a fabric mod that introduces a brand new **Vulkan** based voxel rendering engine to **Minecraft java** in order to both replace the default OpenGL renderer and bring performance improvements.
 
