@@ -2,7 +2,7 @@
 
 This is a fabric mod that introduces a brand new **Vulkan** based voxel rendering engine to **Minecraft java** in order to both replace the default OpenGL renderer and bring performance improvements.
 
-### Why ?
+### Why?
 - The Vulkanmod allows for deep optimizations into the rendering process and calculations. <br>
 - With a default configuration, it performs better than Vanilla Minecraft.  <br>
 - It also brings a future-proof codebase for Minecraft java. <br>
@@ -69,6 +69,6 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 
 
 ## Notes
-- This mod is still in developpment, please report issues in the [issue tab](https://github.com/xCollateral/VulkanMod/issues) with logs attached !
+- This mod is still in developpment, please report issues in the [issue tab](https://github.com/xCollateral/VulkanMod/issues) with logs attached!
 - This mode isn't just "minecraft on vulkan" (e.g: [zink](https://docs.mesa3d.org/drivers/zink.html) ), it is a full rewrite of the minecraft renderer.
 
