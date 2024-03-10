@@ -1,4 +1,4 @@
-# <img src="./src/main/resources/assets/vulkanmod/Vlogo.png" width="30" height="30"/> VulkanMod
+# <a href="https://github.com/xCollateral/VulkanMod"> <img src="./src/main/resources/assets/vulkanmod/Vlogo.png" width="30" height="30"/> </a> VulkanMod
 
 This is a fabric mod that introduces a brand new **Vulkan** based voxel rendering engine to **Minecraft java** in order to both replace the default OpenGL renderer and bring performance improvements.
 
