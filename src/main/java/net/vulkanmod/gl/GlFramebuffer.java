@@ -7,6 +7,7 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.vulkan.VK10;
 
 import static org.lwjgl.vulkan.VK11.*;
 
@@ -149,10 +150,10 @@ public class GlFramebuffer {
 
         switch (attachment) {
             case(GL30.GL_COLOR_ATTACHMENT0) ->
-                    this.setColorAttachment(glTexture);
+                    this.setColorAttachment(glTexture, Renderer.effectActive);
 
             case(GL30.GL_DEPTH_ATTACHMENT) ->
-                    this.setDepthAttachment(glTexture);
+                    this.setDepthAttachment(glTexture, Renderer.effectActive);
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }
@@ -169,38 +170,38 @@ public class GlFramebuffer {
 
         switch (attachment) {
             case(GL30.GL_COLOR_ATTACHMENT0) ->
-                    this.setColorAttachment(renderbuffer);
+                    this.setColorAttachment(renderbuffer, Renderer.effectActive);
 
             case(GL30.GL_DEPTH_ATTACHMENT) ->
-                    this.setDepthAttachment(renderbuffer);
+                    this.setDepthAttachment(renderbuffer, Renderer.effectActive);
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }
     }
 
-    void setColorAttachment(GlTexture texture) {
+    void setColorAttachment(GlTexture texture, boolean effectActive) {
         this.colorAttachment = texture.vulkanImage;
-        createAndBind();
+        createAndBind(effectActive);
     }
 
-    void setDepthAttachment(GlTexture texture) {
+    void setDepthAttachment(GlTexture texture, boolean effectActive) {
         //TODO check if texture is in depth format
         this.depthAttachment = texture.vulkanImage;
-        createAndBind();
+        createAndBind(effectActive);
     }
 
-    void setColorAttachment(GlRenderbuffer texture) {
+    void setColorAttachment(GlRenderbuffer texture, boolean effectActive) {
         this.colorAttachment = texture.vulkanImage;
-        createAndBind();
+        createAndBind(effectActive);
     }
 
-    void setDepthAttachment(GlRenderbuffer texture) {
+    void setDepthAttachment(GlRenderbuffer texture, boolean effectActive) {
         //TODO check if texture is in depth format
         this.depthAttachment = texture.vulkanImage;
-        createAndBind();
+        createAndBind(effectActive);
     }
 
-    void createAndBind() {
+    void createAndBind(boolean effectActive) {
         //Cannot create without color attachment
         if(this.colorAttachment == null)
             return;
@@ -218,11 +219,11 @@ public class GlFramebuffer {
         RenderPass.Builder builder = RenderPass.builder(this.framebuffer);
 
         builder.getColorAttachmentInfo()
-                .setLoadOp(VK_ATTACHMENT_LOAD_OP_LOAD)
+                .setLoadOp(effectActive ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE)
                 .setFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         if(hasDepthImage)
-            builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_LOAD_OP_LOAD);
+            builder.getDepthAttachmentInfo().setOps(effectActive ? VK_ATTACHMENT_LOAD_OP_LOAD : VK10.VK_ATTACHMENT_LOAD_OP_DONT_CARE, effectActive ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE);
 
         this.renderPass = builder.build();
 

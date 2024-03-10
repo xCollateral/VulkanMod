@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
@@ -39,7 +40,6 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
-    public static boolean recomp;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -47,7 +47,7 @@ public class Renderer {
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering, useMode = false;
 
-    private static boolean effectActive,renderPassUpdate,hasCalled = false;
+    public static boolean effectActive,renderPassUpdate,hasCalled = false;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -181,9 +181,24 @@ public class Renderer {
 //        }
         if(renderPassUpdate)
         {
+//            LegacyMainPass.PASS.mainTargetBindWrite(effectActive);
+//
+//            if(!effectActive)
+//            {
+//                LegacyMainPass.PASS.mainTargetUnbindWrite();
+//            }
+
+            updateRenderPassState();
+
+            //Minecraft.getInstance().gameRenderer.resize(getSwapChain().getWidth(), getSwapChain().getHeight());
+
             useMode=effectActive;
             Initializer.LOGGER.error("Using RenderPass: "+ (useMode ? "Post Effect" : "Default"));
             renderPassUpdate = false;
+
+
+//                GlFramebuffer.framebufferTexture2D(0, GL30.GL_COLOR_ATTACHMENT0, GL30.GL_TEXTURE_2D, 1, 0);
+//                GlFramebuffer.framebufferTexture2D(0, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_TEXTURE_2D, 1, 0);
         }
 
 
@@ -264,6 +279,19 @@ public class Renderer {
         }
 
         p.pop();
+    }
+
+    private static void updateRenderPassState() {
+        RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+        int i = getSwapChain().getWidth();
+        int j = getSwapChain().getHeight();
+
+        if (renderTarget.frameBufferId >= 0) {
+            renderTarget.destroyBuffers();
+        }
+
+        renderTarget.createBuffers(i, j, false);
+        GlFramebuffer.bindFramebuffer(36160, 0);
     }
 
     public void endFrame() {
