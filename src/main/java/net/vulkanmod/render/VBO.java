@@ -11,7 +11,6 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
@@ -113,8 +112,10 @@ public class VBO {
             VRenderSystem.applyMVP(MV, P);
 
             Renderer renderer = Renderer.getInstance();
-            renderer.bindGraphicsPipeline(pipeline);
-            renderer.uploadAndBindUBOs(pipeline);
+            boolean shouldUpdate = (renderer.bindGraphicsPipeline(pipeline));
+            {
+                renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
+            }
 
             if(indexBuffer != null)
                 Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);

@@ -31,7 +31,7 @@ public class BufferUploaderM {
         BufferBuilder.DrawState parameters = buffer.drawState();
 
         Renderer renderer = Renderer.getInstance();
-
+        //TODO: maybe manage suballocs per pipeline + skip uploads if size+contents is the exact same
         if(parameters.vertexCount() <= 0)
             return;
 
@@ -41,8 +41,10 @@ public class BufferUploaderM {
         shaderInstance.apply();
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
-        renderer.bindGraphicsPipeline(pipeline);
-        renderer.uploadAndBindUBOs(pipeline);
+        boolean x = renderer.bindGraphicsPipeline(pipeline);
+        {
+            renderer.uploadAndBindUBOs(pipeline, x);
+        }
         Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
     }
 

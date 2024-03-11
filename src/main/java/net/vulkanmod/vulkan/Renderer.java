@@ -44,6 +44,7 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+    private long boundPipeline;
     public static void initRenderer() {
         INSTANCE = new Renderer();
         INSTANCE.init();
@@ -240,7 +241,7 @@ public class Renderer {
             if (err != VK_SUCCESS) {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
-
+            boundPipeline=0;
             mainPass.begin(commandBuffer, stack);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
@@ -463,7 +464,7 @@ public class Renderer {
         this.onResizeCallbacks.add(runnable);
     }
 
-    public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
+    public boolean bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         //Debug
@@ -471,14 +472,25 @@ public class Renderer {
             mainPass.mainTargetBindWrite();
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
+        final long handle = pipeline.getHandle(currentState);
+        if(boundPipeline==handle) {
+            return false;
+        }
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
+        boundPipeline=handle;
+//        if(usedPipelines.contains(pipeline))
+//        {
+////            Initializer.LOGGER.warn("Double Bind: "+pipeline.name);
+//            return true;
+//        }
 
         addUsedPipeline(pipeline);
+        return true;
     }
 
-    public void uploadAndBindUBOs(Pipeline pipeline) {
+    public void uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame, shouldUpdate);
     }
 
     public void pushConstants(Pipeline pipeline) {

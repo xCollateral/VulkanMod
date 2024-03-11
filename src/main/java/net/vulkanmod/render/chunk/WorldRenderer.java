@@ -541,10 +541,10 @@ public class WorldRenderer {
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if(allowedRenderTypes.contains(terrainRenderType)) {
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
-            renderer.bindGraphicsPipeline(pipeline);
+            boolean shouldUpdate = renderer.bindGraphicsPipeline(pipeline);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
-            renderer.uploadAndBindUBOs(pipeline);
+            renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
             for(Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(isTranslucent); iterator.hasNext();) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
