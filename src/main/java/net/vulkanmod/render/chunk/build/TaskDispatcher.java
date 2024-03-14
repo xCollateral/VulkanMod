@@ -144,18 +144,9 @@ public class TaskDispatcher {
     }
 
     private void doSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
-        ChunkArea renderArea = section.getChunkArea();
-        DrawBuffers drawBuffers = renderArea.getDrawBuffers();
+        DrawBuffers drawBuffers = section.getChunkArea().getDrawBuffers();
 
-        for(TerrainRenderType renderType : uploadBuffers.keySet()) {
-            UploadBuffer uploadBuffer = uploadBuffers.get(renderType);
-
-            if(uploadBuffer != null) {
-                drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType);
-            } else {
-                section.getDrawParameters(renderType).reset(renderArea, renderType);
-            }
-        }
+        uploadBuffers.forEach((key, value) -> drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), value, section.getDrawParameters(key), key));
     }
 
     public void scheduleUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
@@ -165,8 +156,7 @@ public class TaskDispatcher {
     }
 
     private void doUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
-        ChunkArea renderArea = section.getChunkArea();
-        DrawBuffers drawBuffers = renderArea.getDrawBuffers();
+        DrawBuffers drawBuffers = section.getChunkArea().getDrawBuffers();
 
         drawBuffers.upload(section.xOffset(), section.yOffset(), section.zOffset(), uploadBuffer, section.getDrawParameters(renderType), renderType);
     }

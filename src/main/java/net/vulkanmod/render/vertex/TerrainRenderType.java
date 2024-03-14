@@ -26,10 +26,6 @@ public enum TerrainRenderType {
         this.initialSize = initialSize;
     }
 
-    public void setCutoutUniform() {
-        VRenderSystem.alphaCutout = this.alphaCutout;
-    }
-
     public static TerrainRenderType get(RenderType renderType) {
         return ((ExtendedRenderType)renderType).getTerrainRenderType();
     }
