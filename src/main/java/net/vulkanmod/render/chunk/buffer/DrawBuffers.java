@@ -131,7 +131,7 @@ public class DrawBuffers {
 
                 long ptr = bufferPtr + (drawCount * 20L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, 1);
+                MemoryUtil.memPutInt(ptr + 4, drawParameters.instanceCount);
                 MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex);
                 MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
                 MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
@@ -162,7 +162,7 @@ public class DrawBuffers {
                 continue;
 
             final int firstIndex = drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex;
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, drawParameters.instanceCount, firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
         }
     }
 
@@ -213,15 +213,9 @@ public class DrawBuffers {
     public AreaBuffer getIndexBuffer() {
         return indexBuffer;
     }
-
+  //instanceCount was added to encourage memcpy optimisations _(CPU doesn't need to insert a 1, which generates better ASM + helps JIT)_
     public static class DrawParameters {
-        int indexCount = 0;
-        int firstIndex = -1;
-        int vertexOffset = -1;
-        int baseInstance;
-
-        public DrawParameters() {}
-
+        int indexCount = 0, instanceCount = 1, firstIndex = -1, vertexOffset = -1, baseInstance;
         public void reset(ChunkArea chunkArea, TerrainRenderType r) {
             int segmentOffset = vertexOffset * VERTEX_SIZE;
             if (chunkArea != null && chunkArea.getDrawBuffers().hasRenderType(r) && segmentOffset != -1) {
