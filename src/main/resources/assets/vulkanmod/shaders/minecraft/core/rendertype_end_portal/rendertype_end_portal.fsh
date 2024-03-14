@@ -15,7 +15,7 @@ layout(binding = 1) uniform UniformBufferObject {
 };
 
 layout(binding = 2) uniform sampler2D Sampler0;
-layout(binding = 3) uniform sampler2D Sampler1;
+layout(binding = 3) uniform sampler2D SamplerProj;
 
 const vec3[] COLORS = vec3[](
     vec3(0.022087, 0.098399, 0.110818),
@@ -63,7 +63,7 @@ layout(location = 0) out vec4 fragColor;
 void main() {
     vec3 color = textureProj(Sampler0, texProj0).rgb * COLORS[0];
     for (int i = 0; i < EndPortalLayers; i++) {
-        color += textureProj(Sampler1, texProj0 * end_portal_layer(float(i + 1))).rgb * COLORS[i];
+        color += textureProj(SamplerProj, texProj0 * end_portal_layer(float(i + 1))).rgb * COLORS[i];
     }
     fragColor = vec4(color, 1.0);
 }

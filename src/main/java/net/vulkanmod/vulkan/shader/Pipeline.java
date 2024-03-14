@@ -89,7 +89,9 @@ public abstract class Pipeline {
             int bindingsSize = this.buffers.size() + imageDescriptors.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
+
             IntBuffer bindingFlags = stack.callocInt(bindingsSize);
+
 
             int i = 0;
             for(UBO ubo : this.buffers) {
@@ -102,6 +104,7 @@ public abstract class Pipeline {
 
                 bindingFlags.put(0); //Don't need VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT: as all Uniform Buffers will be valid
 
+
                 i++;
             }
 
@@ -112,7 +115,9 @@ public abstract class Pipeline {
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
                 samplerLayoutBinding.pImmutableSamplers(null);
                 samplerLayoutBinding.stageFlags(imageDescriptor.getStages());
+
                 bindingFlags.put(VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK12.VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+
                 i++;
             }
 
@@ -646,7 +651,7 @@ public abstract class Pipeline {
             return switch (s) {
                 case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
                 case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+                case "all" -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
                 case "compute" -> VK_SHADER_STAGE_COMPUTE_BIT;
 
                 default -> throw new RuntimeException("cannot identify type..");
