@@ -137,7 +137,7 @@ public class DrawBuffers {
 
                 long ptr = bufferPtr + (drawCount * 20L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, 1);
+                MemoryUtil.memPutInt(ptr + 4, drawParameters.instanceCount);
                 MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
                 MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
                 MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
@@ -166,7 +166,7 @@ public class DrawBuffers {
             final RenderSection section = iterator.next();
             final DrawParameters drawParameters = section.getDrawParameters(renderType);
 
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, drawParameters.instanceCount, drawParameters.firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
 
         }
     }
@@ -206,9 +206,9 @@ public class DrawBuffers {
     public boolean isAllocated() {
         return allocated;
     }
-
+    //instanceCount was added to encourage memcpy optimisations _(CPU doesn't need to insert a 1, which generates better ASM + helps JIT)_
     public static class DrawParameters {
-        int indexCount, firstIndex, vertexOffset, baseInstance;
+        int indexCount, instanceCount = 1, firstIndex, vertexOffset, baseInstance;
         final AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
         final AreaBuffer.Segment indexBufferSegment;
         boolean ready = false;
