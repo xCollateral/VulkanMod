@@ -15,7 +15,7 @@ import net.vulkanmod.render.chunk.build.task.CompiledSection;
 import net.vulkanmod.render.chunk.build.task.SortTransparencyTask;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
