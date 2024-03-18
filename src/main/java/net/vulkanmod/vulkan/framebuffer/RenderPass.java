@@ -290,7 +290,7 @@ public class RenderPass {
     }
 
     public static Builder builder(Framebuffer framebuffer) {
-        return  new Builder(framebuffer);
+        return new Builder(framebuffer);
     }
 
     public static class Builder {

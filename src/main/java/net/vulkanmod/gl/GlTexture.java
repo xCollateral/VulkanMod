@@ -22,6 +22,11 @@ public class GlTexture {
     private static GlTexture boundTexture;
     private static int activeTexture = 0;
 
+    public static void bindIdToImage(int id, VulkanImage vulkanImage) {
+        GlTexture texture = map.get(id);
+        texture.vulkanImage = vulkanImage;
+    }
+
     public static int genTextureId() {
         int id = ID_COUNTER;
         map.put(id, new GlTexture(id));

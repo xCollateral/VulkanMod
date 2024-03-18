@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.buffer.UploadManager;
@@ -12,8 +13,8 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.passes.LegacyMainPass;
-import net.vulkanmod.vulkan.passes.MainPass;
+import net.vulkanmod.vulkan.pass.DefaultMainPass;
+import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
@@ -77,8 +78,7 @@ public class Renderer {
     private VkCommandBuffer currentCmdBuffer;
     private boolean recordingCmds = false;
 
-//    MainPass mainPass = DefaultMainPass.PASS;
-    MainPass mainPass = LegacyMainPass.PASS;
+    MainPass mainPass = DefaultMainPass.create();
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
 
@@ -323,6 +323,8 @@ public class Renderer {
 
         this.boundRenderPass = null;
         this.boundFramebuffer = null;
+
+        GlFramebuffer.resetBoundFramebuffer();
     }
 
     public boolean beginRendering(RenderPass renderPass, Framebuffer framebuffer) {
@@ -339,10 +341,6 @@ public class Renderer {
             this.boundFramebuffer = framebuffer;
         }
         return true;
-    }
-
-    public void setBoundFramebuffer(Framebuffer framebuffer) {
-        this.boundFramebuffer = framebuffer;
     }
 
     public void preInitFrame() {
@@ -392,11 +390,12 @@ public class Renderer {
     }
 
     private void recreateSwapChain() {
+        Synchronization.INSTANCE.waitFences();
         Vulkan.waitIdle();
 
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
-        Vulkan.recreateSwapChain();
+        Vulkan.getSwapChain().recreate();
 
         //Semaphores need to be recreated in order to make them unsignaled
         destroySyncObjects();
@@ -441,6 +440,10 @@ public class Renderer {
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
+    }
+
+    public void setBoundFramebuffer(Framebuffer framebuffer) {
+        this.boundFramebuffer = framebuffer;
     }
 
     public void setBoundRenderPass(RenderPass boundRenderPass) {
