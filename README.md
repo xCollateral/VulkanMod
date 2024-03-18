@@ -13,8 +13,7 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 [![Demostration Video](http://img.youtube.com/vi/sbr7UxcAmOE/0.jpg)](https://youtu.be/sbr7UxcAmOE)
 
 ## FAQ
-<!-- REMEMBER TO CHANGE THE LINK ONCE THE PR IS READY !!!! -->
-- Remember to check the [Wiki](https://github.com/SpidFightFR/VulkanMod/wiki) we wrote before asking for support!
+- Remember to check the [Wiki](https://github.com/xCollateral/VulkanMod/wiki) we wrote before asking for support!
 
 ## Installation
 
