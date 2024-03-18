@@ -540,6 +540,9 @@ public class WorldRenderer {
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if(allowedRenderTypes.contains(terrainRenderType)) {
+
+            VRenderSystem.depthMask(!isTranslucent); //Disable Depth writes if Translucent
+
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             boolean shouldUpdate = renderer.bindGraphicsPipeline(pipeline);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
