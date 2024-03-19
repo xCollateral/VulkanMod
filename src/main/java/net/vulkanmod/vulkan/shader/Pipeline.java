@@ -116,7 +116,7 @@ public abstract class Pipeline {
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
             if(vkCreateDescriptorSetLayout(DeviceManager.device, layoutInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create descriptor set layout");
+                throw new RuntimeException("Failed to create descriptor set layout"+this.name);
             }
 
             this.descriptorSetLayout = pDescriptorSetLayout.get(0);
@@ -598,9 +598,10 @@ public abstract class Pipeline {
         private void parseSamplerNode(JsonElement jsonelement) {
             JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "Sampler");
             String name = GsonHelper.getAsString(jsonobject, "name");
+            int binding = GsonHelper.getAsInt(jsonobject, "binding");
 
             int imageIdx = VTextureSelector.getTextureIdx(name);
-            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "sampler2D", name, imageIdx));
+            this.imageDescriptors.add(new ImageDescriptor(binding, "sampler2D", name, imageIdx));
             this.nextBinding++;
         }
 

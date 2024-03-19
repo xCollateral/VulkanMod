@@ -2,9 +2,6 @@
 
 #include "light.glsl"
 
-layout(binding = 0) uniform UniformBufferObject {
-    vec3 dummy;
-};
 
 layout(push_constant) uniform pushConstant {
     mat4 MVP;

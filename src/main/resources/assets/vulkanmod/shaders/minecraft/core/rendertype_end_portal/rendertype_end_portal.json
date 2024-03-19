@@ -8,8 +8,8 @@
     "fragment": "rendertype_end_portal",
     "attributes": [],
     "samplers": [
-        { "name": "Sampler0" },
-        { "name": "SamplerProj" }
+        { "name": "Sampler0", "binding": 2 },
+        { "name": "SamplerProj", "binding": 3 }
     ],
     "uniforms": [
         { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
