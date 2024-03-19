@@ -12,8 +12,7 @@ layout(binding = 0) uniform UniformBufferObject {
 layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out vec4 vertexColor;
-layout(location = 1) out vec2 texCoord0;
-layout(location = 2) out float vertexDistance;
+layout(location = 1) out float vertexDistance;
 
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);

@@ -14,7 +14,7 @@ layout (location = 0) out float vertexDistance;
 layout (location = 1) out vec4 vertexColor;
 layout (location = 2) out vec2 texCoord0;
 //layout(location = 3) out vec4 normal;
-
+//TODO: Fix vertex alignment + stride on Specific AMD GPUS w. f16Vec3
 //Compressed Vertex
 layout (location = 0) in ivec4 Position;
 layout (location = 1) in vec4 Color;

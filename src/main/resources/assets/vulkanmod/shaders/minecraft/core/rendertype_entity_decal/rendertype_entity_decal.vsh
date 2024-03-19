@@ -22,8 +22,7 @@ layout(binding = 4) uniform sampler2D Sampler2;
 layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec4 overlayColor;
 layout(location = 2) out vec2 texCoord0;
-layout(location = 3) out vec3 normal;
-layout(location = 4) out float vertexDistance;
+layout(location = 3) out float vertexDistance;
 
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
@@ -32,7 +31,7 @@ void main() {
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * texelFetch(Sampler2, UV2 / 16, 0);
     overlayColor = texelFetch(Sampler1, UV1, 0);
     texCoord0 = UV0;
-    normal = (MVP * vec4(Normal, 0.0)).xyz;
+    //normal = (MVP * vec4(Normal, 0.0)).xyz;
 }
 
 /*
