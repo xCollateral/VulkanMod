@@ -10,20 +10,18 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 }
 
 layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
     vec4 FogColor;
     float FogStart;
     float FogEnd;
 };
 
 layout(location = 0) in vec4 vertexColor;
-layout(location = 1) in vec2 texCoord0;
-layout(location = 2) in float vertexDistance;
+layout(location = 1) in float vertexDistance;
 
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = vertexColor * ColorModulator;
+    vec4 color = vertexColor;
     if (color.a < 0.1) {
         discard;
     }

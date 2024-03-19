@@ -6,7 +6,9 @@
     },
     "vertex": "rendertype_end_portal",
     "fragment": "rendertype_end_portal",
-    "attributes": [],
+    "attributes": [
+        "Position"
+    ],
     "samplers": [
         { "name": "Sampler0", "binding": 2 },
         { "name": "SamplerProj", "binding": 3 }

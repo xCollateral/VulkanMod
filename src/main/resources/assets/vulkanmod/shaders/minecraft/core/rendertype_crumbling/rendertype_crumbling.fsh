@@ -8,8 +8,6 @@ layout(binding = 1) uniform UBO{
 
 layout(location = 0) in vec4 vertexColor;
 layout(location = 1) in vec2 texCoord0;
-layout(location = 2) in vec2 texCoord2;
-layout(location = 3) in vec3 normal;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -18,7 +16,7 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = color * ColorModulator;
+    fragColor = color;
 }
 
 /*
