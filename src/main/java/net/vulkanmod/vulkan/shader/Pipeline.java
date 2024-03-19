@@ -625,9 +625,10 @@ public abstract class Pipeline {
         private void parseSamplerNode(JsonElement jsonelement) {
             JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "Sampler");
             String name = GsonHelper.getAsString(jsonobject, "name");
+            int binding = GsonHelper.getAsInt(jsonobject, "binding");
 
             int imageIdx = VTextureSelector.getTextureIdx(name);
-            this.imageDescriptors.add(new ImageDescriptor(this.nextBinding, "sampler2D", name, imageIdx));
+            this.imageDescriptors.add(new ImageDescriptor(binding, "sampler2D", name, imageIdx));
             this.nextBinding++;
         }
 

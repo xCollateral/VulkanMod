@@ -61,6 +61,15 @@ public abstract class VTextureSelector {
             default -> throw new IllegalStateException("Unknown sampler name: " + name);
         };
     }
+    public static int getTextureBinding(String name) {
+        return switch (name) {
+            case "DiffuseSampler" -> 0;
+            case "Sampler0" -> 2;
+            case "Sampler2", "SamplerProj" -> 3;
+            case "Sampler1" -> 4;
+            default -> throw new IllegalStateException("Unknown sampler name: " + name);
+        };
+    }
 
     public static VulkanImage getImage(int i) {
         return boundTextures[i];
