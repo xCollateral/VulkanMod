@@ -186,7 +186,7 @@ public class Renderer {
         }
 
 
-        if(skipRendering)
+        if(skipRendering || recordingCmds)
             return;
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
@@ -242,7 +242,7 @@ public class Renderer {
     }
 
     public void endFrame() {
-        if(skipRendering)
+        if(skipRendering || !recordingCmds)
             return;
 
         Profiler2 p = Profiler2.getMainProfiler();
