@@ -31,9 +31,9 @@ public class SwapChain extends Framebuffer {
     private static final int DEFAULT_IMAGE_COUNT = 3;
 
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on most Wayland installations currently)
+    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on some Wayland installations currently)
     //Try to use Mailbox if possible (in case FreeSync/G-Sync needs it)
-    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR);
+    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 
     private RenderPass renderPass;
     private long[] framebuffers;
@@ -354,21 +354,37 @@ public class SwapChain extends Framebuffer {
     }
 
     private int getPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : Initializer.CONFIG.uncappedMode;
 
-        //fifo mode is the only mode that has to be supported
-        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR)
-            return VK_PRESENT_MODE_FIFO_KHR;
+        //Some Drivers change the supported modes in FullScreen: can't assume any consistency
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
+                Initializer.LOGGER.info("Using DisplayMode: "+getDisplayModeString(requestedMode));
                 return requestedMode;
             }
         }
+        //update mode in case of platform change
+        //i.e. current uncappedMode conflicts with platform's currently supported mode(s)
+        int fallbackMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : (Initializer.CONFIG.uncappedMode=defUncappedMode);
 
-        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
-        return VK_PRESENT_MODE_FIFO_KHR;
+        //Vsync is applied if both Mailbox+Immediate are not available
+        //This is not a bug and follows the spec, as some platforms only support Vsync
+        //i.e. the spec only Mandates/guarantees FIFO support: everything else + all other modes are optional
 
+        Initializer.LOGGER.warn("Requested mode not supported: using fallback "+ getDisplayModeString(fallbackMode));
+        return fallbackMode;
+
+    }
+
+    private String getDisplayModeString(int requestedMode) {
+        return switch(requestedMode)
+        {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "Immediate";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "Mailbox (FastSync)";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "FIFO Relaxed (Adaptive VSync)";
+            default -> "FIFO (VSync)";
+        };
     }
 
     private static VkExtent2D getExtent(VkSurfaceCapabilitiesKHR capabilities) {
@@ -394,6 +410,31 @@ public class SwapChain extends Framebuffer {
         return actualExtent;
     }
 
+    public static Integer[] checkPresentModes(int... requestedModes) {
+
+        try(MemoryStack stack = stackPush())
+        {
+
+            var a = DeviceManager.querySurfaceProperties(device.getPhysicalDevice(), stack).presentModes;
+            int dModeMask=0;
+            for(int dMode : requestedModes) {
+                for (int i = 0; i < a.capacity(); i++) {
+                    if (a.get(i) == dMode) {
+                        dModeMask|=(1<<dMode);
+                    }
+                }
+            }
+            Integer[] supportedModes = new Integer[Integer.bitCount(dModeMask)];
+            int i=0;
+            for (int mode = 0; mode < 4; mode++) {
+                if ((dModeMask & (1 << mode)) != 0) {
+                    supportedModes[i++] = mode;
+                }
+            }
+
+            return supportedModes; //If None of the request modes exist/are supported by Driver
+        }
+    }
     private static int checkPresentMode(int... requestedModes) {
         try(MemoryStack stack = MemoryStack.stackPush())
         {

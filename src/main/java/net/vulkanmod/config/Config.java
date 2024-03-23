@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.lwjgl.vulkan.KHRSurface;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,6 +15,7 @@ public class Config {
 
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
+    public int uncappedMode = VideoResolution.isWayLand() ? KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR : KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR;
     public boolean xWayland = false;
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
@@ -24,7 +26,6 @@ public class Config {
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
-
     private static Path path;
 
     private static final Gson GSON = new GsonBuilder()
