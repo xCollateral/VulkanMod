@@ -13,28 +13,37 @@ group = project.maven_group
 project.ext.lwjglVersion = "3.3.2"
 project.ext.jomlVersion = "1.10.4"
 project.ext.winNatives = "natives-windows"
+project.ext.winArm64Natives = "natives-windows-arm64"
 project.ext.linuxNatives = "natives-linux"
+project.ext.linuxArm64Natives = "natives-linux-arm64"
+project.ext.linuxArm32Natives = "natives-linux-arm32"
 project.ext.macosNatives = "natives-macos"
-project.ext.macosArmNatives = "natives-macos-arm64"
+project.ext.macosArm64Natives = "natives-macos-arm64"
 
 dependencies {
 	include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
 
 	include(implementation("org.lwjgl:lwjgl-vma:$lwjglVersion"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$winArm64Natives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxArm64Natives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxArm32Natives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosArmNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosArm64Natives"))
 
 	include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
 	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winArm64Natives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxArm64Natives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxArm32Natives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosArmNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosArm64Natives"))
 
 	//MoltenVK
 	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArmNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArm64Natives"))
 }
 
 repositories {
