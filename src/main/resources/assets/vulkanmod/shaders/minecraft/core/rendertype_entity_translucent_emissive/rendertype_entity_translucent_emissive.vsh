@@ -12,8 +12,11 @@ layout(location = 5) in vec3 Normal;
 layout(binding = 0) uniform UniformBufferObject {
     mat4 MVP;
     mat4 ModelViewMat;
-    vec3 Light0_Direction;
-    vec3 Light1_Direction;
+};
+
+layout(push_constant) uniform pushConstant {
+   vec3 Light0_Direction;
+   vec3 Light1_Direction;
 };
 
 layout(binding = 3) uniform sampler2D Sampler1;

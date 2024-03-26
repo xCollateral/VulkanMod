@@ -497,13 +497,13 @@ public class Renderer {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         PushConstants pushConstants = pipeline.getPushConstants();
+        if(pushConstants!=null) {
+            try (MemoryStack stack = stackPush()) {
+                long ptr =  stack.nmalloc(pushConstants.getSize());
+                pushConstants.update(ptr);
 
-        try (MemoryStack stack = stackPush()) {
-            ByteBuffer buffer = stack.malloc(pushConstants.getSize());
-            long ptr = MemoryUtil.memAddress0(buffer);
-            pushConstants.update(ptr);
-
-            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
+                nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
+            }
         }
 
     }
