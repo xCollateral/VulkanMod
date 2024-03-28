@@ -1,5 +1,6 @@
 package net.vulkanmod.mixin.compatibility;
 
+import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -50,6 +51,9 @@ public class PostPassM {
 
         Objects.requireNonNull(this.inTarget);
         this.effect.setSampler("DiffuseSampler", this.inTarget::getColorTextureId);
+
+        if(this.inTarget instanceof MainTarget)
+            this.inTarget.bindRead();
 
         for(int i = 0; i < this.auxAssets.size(); ++i) {
             this.effect.setSampler(this.auxNames.get(i), this.auxAssets.get(i));

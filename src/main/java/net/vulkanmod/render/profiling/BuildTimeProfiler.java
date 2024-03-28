@@ -1,22 +1,21 @@
 package net.vulkanmod.render.profiling;
 
 import net.minecraft.client.Minecraft;
-import net.vulkanmod.render.chunk.build.TaskDispatcher;
 
-public abstract class BuildTimeBench {
+public abstract class BuildTimeProfiler {
 
     private static boolean bench = false;
     private static long startTime;
-    private static float benchTime;
+    private static float deltaTime;
 
-    public static void runBench(boolean building, TaskDispatcher taskDispatcher) {
+    public static void runBench(boolean building) {
         if(bench) {
             if (startTime == 0) {
                 startTime = System.nanoTime();
             }
 
-            if(!building && taskDispatcher.isIdle()) {
-                benchTime = (System.nanoTime() - startTime) * 0.000001f;
+            if(!building) {
+                deltaTime = (System.nanoTime() - startTime) * 0.000001f;
                 bench = false;
                 startTime = 0;
             }
@@ -28,7 +27,7 @@ public abstract class BuildTimeBench {
         Minecraft.getInstance().levelRenderer.allChanged();
     }
 
-    public static float getBenchTime() {
-        return benchTime;
+    public static float getDeltaTime() {
+        return deltaTime;
     }
 }

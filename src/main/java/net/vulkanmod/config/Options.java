@@ -5,6 +5,7 @@ import net.minecraft.client.*;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.build.light.LightMode;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 
@@ -71,9 +72,27 @@ public class Options {
                         },
                         value -> minecraftOptions.gamma().set(value * 0.01),
                         () -> (int) (minecraftOptions.gamma().get() * 100.0)),
-                new SwitchOption("Smooth Lighting",
-                        value -> minecraftOptions.ambientOcclusion().set(value),
-                        () -> minecraftOptions.ambientOcclusion().get()),
+                new CyclingOption<>("Smooth Lighting",
+                        new Integer[]{LightMode.FLAT, LightMode.SMOOTH, LightMode.SUB_BLOCK},
+                        value -> switch (value) {
+                            case LightMode.FLAT -> Component.literal("Off");
+                            case LightMode.SMOOTH -> Component.literal("On");
+                            case LightMode.SUB_BLOCK -> Component.literal("On (Sub-block)");
+                            default -> Component.literal("Unk");
+                        },
+                        (value) -> {
+                            if(value > LightMode.FLAT)
+                                minecraftOptions.ambientOcclusion().set(true);
+                            else
+                                minecraftOptions.ambientOcclusion().set(false);
+
+                            Initializer.CONFIG.ambientOcclusion = value;
+
+                            Minecraft.getInstance().levelRenderer.allChanged();
+                        },
+                        () -> Initializer.CONFIG.ambientOcclusion)
+                        .setTooltip(Component.nullToEmpty("""
+                        On (Sub-block): Enables smooth lighting for non full block (experimental).""")),
                 new SwitchOption("View Bobbing",
                         (value) -> minecraftOptions.bobView().set(value),
                         () -> minecraftOptions.bobView().get()),
@@ -141,9 +160,6 @@ public class Options {
                 new RangeOption("Render Distance", 2, 32, 1,
                         (value) -> {
                             minecraftOptions.renderDistance().set(value);
-                            LevelRenderer levelRenderer = Minecraft.getInstance().levelRenderer;
-                            levelRenderer.needsUpdate();
-                            levelRenderer.allChanged();
                         },
                         () -> minecraftOptions.renderDistance().get()),
                 new RangeOption("Simulation Distance", 5, 32, 1,

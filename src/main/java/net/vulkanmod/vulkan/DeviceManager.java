@@ -128,7 +128,8 @@ public abstract class DeviceManager {
             else if(!otherDevices.isEmpty())
                 currentDevice = otherDevices.get(0);
             else {
-//                    Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION, instance));
+                //TODO debug string
+//                Initializer.LOGGER.error(DeviceInfo.debugString(ppPhysicalDevices, Vulkan.REQUIRED_EXTENSION, instance));
                 throw new RuntimeException("Failed to find a suitable GPU");
             }
         }
@@ -178,22 +179,25 @@ public abstract class DeviceManager {
 
             createInfo.pEnabledFeatures(deviceFeatures.features());
 
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
-
             createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
 
-            //Vulkan 1.3 dynamic rendering
-//            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
-//            deviceVulkan13Features.sType$Default();
-//            if(!deviceInfo.availableFeatures13.dynamicRendering())
-//                throw new RuntimeException("Device does not support dynamic rendering feature.");
+            if(Vulkan.DYNAMIC_RENDERING) {
+                VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
+                dynamicRenderingFeaturesKHR.sType$Default();
+                dynamicRenderingFeaturesKHR.dynamicRendering(true);
+
+                deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+
+//                //Vulkan 1.3 dynamic rendering
+//                VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
+//                deviceVulkan13Features.sType$Default();
+//                if(!deviceInfo.availableFeatures13.dynamicRendering())
+//                    throw new RuntimeException("Device does not support dynamic rendering feature.");
 //
-//            deviceVulkan13Features.dynamicRendering(true);
-//            createInfo.pNext(deviceVulkan13Features);
-//            deviceVulkan13Features.pNext(deviceVulkan11Features.address());
+//                deviceVulkan13Features.dynamicRendering(true);
+//                createInfo.pNext(deviceVulkan13Features);
+//                deviceVulkan13Features.pNext(deviceVulkan11Features.address());
+            }
 
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
 
@@ -205,22 +209,12 @@ public abstract class DeviceManager {
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
 
-            if(vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create logical device");
+            int res;
+            if((res = vkCreateDevice(physicalDevice, createInfo, null, pDevice)) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create logical device " + res);
             }
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
-
-//            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
-//
-//            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
-//            graphicsQueue = new VkQueue(pQueue.get(0), device);
-//
-//            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
-//            presentQueue = new VkQueue(pQueue.get(0), device);
-//
-//            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
-//            transferQueue = new VkQueue(pQueue.get(0), device);
 
             graphicsQueue = new GraphicsQueue(stack, indices.graphicsFamily);
             transferQueue = new TransferQueue(stack, indices.transferFamily);

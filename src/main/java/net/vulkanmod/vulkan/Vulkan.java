@@ -174,10 +174,6 @@ public class Vulkan {
         swapChain = new SwapChain();
     }
 
-    public static void recreateSwapChain() {
-        swapChain.recreateSwapChain();
-    }
-
     public static void waitIdle() {
         vkDeviceWaitIdle(DeviceManager.device);
     }
@@ -454,13 +450,6 @@ public class Vulkan {
     public static long getSurface() { return surface; }
 
     public static SwapChain getSwapChain() { return swapChain; }
-
-    public static VkExtent2D getSwapchainExtent()
-    {
-        return swapChain.getExtent();
-    }
-
-    public static List<VulkanImage> getSwapChainImages() { return swapChain.getImages(); }
 
     public static long getCommandPool()
     {

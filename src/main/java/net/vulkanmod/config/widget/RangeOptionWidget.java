@@ -38,7 +38,7 @@ public class RangeOptionWidget extends OptionWidget {
 //        this.drawTexture(matrices, this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y, 0, 46 + i, 4, 20);
 //        this.drawTexture(matrices, this.controlX + (int)(this.value * (this.controlWidth - 8)) + 4, this.y, 196, 46 + i, 4, 20);
 
-        int color = this.controlHovered ? ColorUtil.packColorIntRGBA(1.0f, 1.0f, 1.0f, 1.0f) : ColorUtil.packColorIntRGBA(1.0f, 1.0f, 1.0f, 0.8f);
+        int color = this.controlHovered ? ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 1.0f) : ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.8f);
 
         guiGraphics.fill(this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y + 20, this.controlX + (int)(this.value * (this.controlWidth - 8)) + 8, this.y, color);
     }

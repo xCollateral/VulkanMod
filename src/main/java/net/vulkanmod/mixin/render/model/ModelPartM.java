@@ -7,6 +7,7 @@ import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.interfaces.ModelPartCubeMixed;
 import net.vulkanmod.render.model.CubeModel;
 import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -34,7 +35,7 @@ public class ModelPartM {
         Matrix3f matrix3f = pose.normal();
         ExtendedVertexBuilder vertexBuilder = (ExtendedVertexBuilder)vertexConsumer;
 
-        int packedColor = VertexUtil.packColor(r, g, b, a);
+        int packedColor = ColorUtil.ARGB.pack(r, g, b, a);
 
         for (ModelPart.Cube cube : this.cubes) {
             ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);

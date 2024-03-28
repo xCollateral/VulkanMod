@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.*;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
@@ -172,7 +173,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
             MemoryUtil.memPutFloat(ptr + 4, y);
             MemoryUtil.memPutFloat(ptr + 8, z);
 
-            int temp = VertexUtil.packColor(red, green, blue, alpha);
+            int temp = ColorUtil.RGBA.pack(red, green, blue, alpha);
             MemoryUtil.memPutInt(ptr + 12, temp);
 
             MemoryUtil.memPutFloat(ptr + 16, u);

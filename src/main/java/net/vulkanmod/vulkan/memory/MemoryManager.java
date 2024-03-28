@@ -2,9 +2,10 @@ package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import jdk.jfr.StackTrace;
+import net.vulkanmod.render.chunk.buffer.AreaBuffer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.Pair;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -24,12 +25,11 @@ public class MemoryManager {
     private static final boolean DEBUG = false;
 
     private static MemoryManager INSTANCE;
+    private static final long ALLOCATOR = Vulkan.getAllocator();
 
     private static final Long2ReferenceOpenHashMap<Buffer> buffers = new Long2ReferenceOpenHashMap<>();
     private static final Long2ReferenceOpenHashMap<VulkanImage> images = new Long2ReferenceOpenHashMap<>();
 
-    private static final VkDevice device = Vulkan.getDevice();
-    private static final long allocator = Vulkan.getAllocator();
     static int Frames;
 
     private static long deviceMemory = 0;
@@ -41,6 +41,7 @@ public class MemoryManager {
     private ObjectArrayList<VulkanImage>[] freeableImages = new ObjectArrayList[Frames];
 
     private ObjectArrayList<Runnable>[] frameOps = new ObjectArrayList[Frames];
+    private ObjectArrayList<Pair<AreaBuffer, Integer>>[] segmentsToFree = new ObjectArrayList[Frames];
 
     //debug
     private ObjectArrayList<StackTraceElement[]>[] stackTraces;
@@ -55,22 +56,19 @@ public class MemoryManager {
         INSTANCE = new MemoryManager();
     }
 
-    public static int getFrames() {
-        return Frames;
-    }
-
     MemoryManager() {
         for(int i = 0; i < Frames; ++i) {
-            freeableBuffers[i] = new ObjectArrayList<>();
-            freeableImages[i] = new ObjectArrayList<>();
+            this.freeableBuffers[i] = new ObjectArrayList<>();
+            this.freeableImages[i] = new ObjectArrayList<>();
 
-            frameOps[i] = new ObjectArrayList<>();
+            this.frameOps[i] = new ObjectArrayList<>();
+            this.segmentsToFree[i] = new ObjectArrayList<>();
         }
 
         if(DEBUG) {
-            stackTraces = new ObjectArrayList[Frames];
+            this.stackTraces = new ObjectArrayList[Frames];
             for(int i = 0; i < Frames; ++i) {
-                stackTraces[i] = new ObjectArrayList<>();
+                this.stackTraces[i] = new ObjectArrayList<>();
             }
         }
     }
@@ -79,6 +77,7 @@ public class MemoryManager {
         this.setCurrentFrame(frame);
         this.freeBuffers(frame);
         this.doFrameOps(frame);
+        this.freeSegments(frame);
     }
 
     public void setCurrentFrame(int frame) {
@@ -110,7 +109,7 @@ public class MemoryManager {
             //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
             allocationInfo.requiredFlags(properties);
 
-            int result = vmaCreateBuffer(allocator, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
+            int result = vmaCreateBuffer(ALLOCATOR, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
             if(result != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create buffer:" + result);
             }
@@ -167,7 +166,7 @@ public class MemoryManager {
             //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
             allocationInfo.requiredFlags(memProperties);
 
-            vmaCreateImage(allocator, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
+            vmaCreateImage(ALLOCATOR, imageInfo, allocationInfo, pTextureImage, pTextureImageMemory, null);
 
         }
     }
@@ -177,33 +176,31 @@ public class MemoryManager {
     }
 
     public static void MapAndCopy(long allocation, Consumer<PointerBuffer> consumer){
-
         try(MemoryStack stack = stackPush()) {
             PointerBuffer data = stack.mallocPointer(1);
 
-            vmaMapMemory(allocator, allocation, data);
+            vmaMapMemory(ALLOCATOR, allocation, data);
             consumer.accept(data);
-            vmaUnmapMemory(allocator, allocation);
+            vmaUnmapMemory(ALLOCATOR, allocation);
         }
-
     }
 
     public PointerBuffer Map(long allocation) {
         PointerBuffer data = MemoryUtil.memAllocPointer(1);
 
-        vmaMapMemory(allocator, allocation, data);
+        vmaMapMemory(ALLOCATOR, allocation, data);
 
         return data;
     }
 
     public static void freeBuffer(long buffer, long allocation) {
-        vmaDestroyBuffer(allocator, buffer, allocation);
+        vmaDestroyBuffer(ALLOCATOR, buffer, allocation);
 
         buffers.remove(buffer);
     }
 
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
-        vmaDestroyBuffer(allocator, bufferInfo.id(), bufferInfo.allocation());
+        vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
 
         if(bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
             deviceMemory -= bufferInfo.bufferSize();
@@ -215,7 +212,7 @@ public class MemoryManager {
     }
 
     public static void freeImage(long image, long allocation) {
-        vmaDestroyImage(allocator, image, allocation);
+        vmaDestroyImage(ALLOCATOR, image, allocation);
 
         images.remove(image);
     }
@@ -240,7 +237,6 @@ public class MemoryManager {
     }
 
     public void doFrameOps(int frame) {
-
         for(Runnable runnable : this.frameOps[frame]) {
             runnable.run();
         }
@@ -249,7 +245,6 @@ public class MemoryManager {
     }
 
     private void freeBuffers(int frame) {
-
         List<Buffer.BufferInfo> bufferList = freeableBuffers[frame];
         for(Buffer.BufferInfo bufferInfo : bufferList) {
 
@@ -278,21 +273,19 @@ public class MemoryManager {
         if(buffers.get(bufferInfo.id()) == null){
             throw new RuntimeException("trying to free not present buffer");
         }
-
     }
 
-    public static int findMemoryType(int typeFilter, int properties) {
-
-        VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.mallocStack();
-        vkGetPhysicalDeviceMemoryProperties(Vulkan.getDevice().getPhysicalDevice(), memProperties);
-
-        for(int i = 0;i < memProperties.memoryTypeCount();i++) {
-            if((typeFilter & (1 << i)) != 0 && (memProperties.memoryTypes(i).propertyFlags() & properties) == properties) {
-                return i;
-            }
+    private void freeSegments(int frame) {
+        var list = this.segmentsToFree[frame];
+        for(var pair : list) {
+            pair.first.setSegmentFree(pair.second);
         }
 
-        throw new RuntimeException("Failed to find suitable memory type");
+        list.clear();
+    }
+
+    public void addToFreeSegment(AreaBuffer areaBuffer, int offset) {
+        this.segmentsToFree[this.currentFrame].add(new Pair<>(areaBuffer, offset));
     }
 
     public int getNativeMemoryMB() { return (int) (nativeMemory / 1048576L); }

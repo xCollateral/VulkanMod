@@ -16,6 +16,17 @@ public class GlFramebuffer {
     private static int boundId = 0;
     private static GlFramebuffer boundFramebuffer;
 
+    public static void resetBoundFramebuffer() {
+        boundFramebuffer = null;
+        boundId = 0;
+    }
+
+    static void beginRendering(GlFramebuffer framebuffer) {
+        Renderer.getInstance().beginRendering(framebuffer.renderPass, framebuffer.framebuffer);
+
+        boundId = framebuffer.id;
+    }
+
     public static int genFramebufferId() {
         int id = ID_COUNTER;
         map.put(id, new GlFramebuffer(id));
@@ -52,10 +63,7 @@ public class GlFramebuffer {
             throw new NullPointerException("bound framebuffer is null");
 
         if(boundFramebuffer.framebuffer != null) {
-            if(boundFramebuffer.beginRendering())
-                boundId = id;
-            else
-                boundId = -1;
+            beginRendering(boundFramebuffer);
         }
     }
 
@@ -226,7 +234,7 @@ public class GlFramebuffer {
 
         this.renderPass = builder.build();
 
-        this.beginRendering();
+        GlFramebuffer.beginRendering(this);
     }
 
     public Framebuffer getFramebuffer() {

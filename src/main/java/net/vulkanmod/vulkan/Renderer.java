@@ -4,15 +4,17 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.mixin.window.WindowAccessor;
-import net.vulkanmod.render.chunk.AreaUploadManager;
+import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.chunk.buffer.UploadManager;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.passes.LegacyMainPass;
-import net.vulkanmod.vulkan.passes.MainPass;
+import net.vulkanmod.vulkan.pass.DefaultMainPass;
+import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
@@ -77,8 +79,7 @@ public class Renderer {
     private VkCommandBuffer currentCmdBuffer;
     private boolean recordingCmds = false;
 
-//    MainPass mainPass = DefaultMainPass.PASS;
-    MainPass mainPass = LegacyMainPass.PASS;
+    MainPass mainPass = DefaultMainPass.create();
 
     private final List<Runnable> onResizeCallbacks = new ObjectArrayList<>();
 
@@ -97,12 +98,10 @@ public class Renderer {
 
         Uniforms.setupDefaultUniforms();
         PipelineManager.init();
-        AreaUploadManager.createInstance();
+        UploadManager.createInstance();
 
         allocateCommandBuffers();
         createSyncObjects();
-
-        AreaUploadManager.INSTANCE.init();
     }
 
     private void allocateCommandBuffers() {
@@ -188,7 +187,7 @@ public class Renderer {
         }
 
 
-        if(skipRendering)
+        if(skipRendering || recordingCmds)
             return;
 
         vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
@@ -196,15 +195,8 @@ public class Renderer {
         p.pop();
         p.push("Begin_rendering");
 
-//        AreaUploadManager.INSTANCE.updateFrame();
-
         MemoryManager.getInstance().initFrame(currentFrame);
         drawer.setCurrentFrame(currentFrame);
-
-        //Moved before texture updates
-//        this.vertexBuffers[currentFrame].reset();
-//        this.uniformBuffers.reset();
-//        Vulkan.getStagingBuffer(currentFrame).reset();
 
         resetDescriptors();
 
@@ -251,7 +243,7 @@ public class Renderer {
     }
 
     public void endFrame() {
-        if(skipRendering)
+        if(skipRendering || !recordingCmds)
             return;
 
         Profiler2 p = Profiler2.getMainProfiler();
@@ -332,6 +324,8 @@ public class Renderer {
 
         this.boundRenderPass = null;
         this.boundFramebuffer = null;
+
+        GlFramebuffer.resetBoundFramebuffer();
     }
 
     public boolean beginRendering(RenderPass renderPass, Framebuffer framebuffer) {
@@ -350,11 +344,7 @@ public class Renderer {
         return true;
     }
 
-    public void setBoundFramebuffer(Framebuffer framebuffer) {
-        this.boundFramebuffer = framebuffer;
-    }
-
-    public void resetBuffers() {
+    public void preInitFrame() {
         Profiler2 p = Profiler2.getMainProfiler();
         p.pop();
         p.round();
@@ -362,8 +352,11 @@ public class Renderer {
 
         drawer.resetBuffers(currentFrame);
 
-        AreaUploadManager.INSTANCE.updateFrame();
         Vulkan.getStagingBuffer().reset();
+
+        WorldRenderer.getInstance().uploadSections();
+        UploadManager.INSTANCE.submitUploads();
+        UploadManager.INSTANCE.waitUploads();
     }
 
     public void addUsedPipeline(Pipeline pipeline) {
@@ -398,11 +391,12 @@ public class Renderer {
     }
 
     private void recreateSwapChain() {
+        Synchronization.INSTANCE.waitFences();
         Vulkan.waitIdle();
 
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
-        Vulkan.recreateSwapChain();
+        Vulkan.getSwapChain().recreate();
 
         //Semaphores need to be recreated in order to make them unsignaled
         destroySyncObjects();
@@ -411,7 +405,8 @@ public class Renderer {
         imagesNum = getSwapChain().getImagesNum();
 
         if(framesNum != newFramesNum) {
-            AreaUploadManager.INSTANCE.waitAllUploads();
+            UploadManager.INSTANCE.submitUploads();
+            UploadManager.INSTANCE.waitUploads();
 
             framesNum = newFramesNum;
             MemoryManager.createInstance(newFramesNum);
@@ -448,6 +443,10 @@ public class Renderer {
         }
     }
 
+    public void setBoundFramebuffer(Framebuffer framebuffer) {
+        this.boundFramebuffer = framebuffer;
+    }
+
     public void setBoundRenderPass(RenderPass boundRenderPass) {
         this.boundRenderPass = boundRenderPass;
     }
@@ -466,10 +465,6 @@ public class Renderer {
 
     public boolean bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-
-        //Debug
-        if(boundRenderPass == null)
-            mainPass.mainTargetBindWrite();
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         final long handle = pipeline.getHandle(currentState);

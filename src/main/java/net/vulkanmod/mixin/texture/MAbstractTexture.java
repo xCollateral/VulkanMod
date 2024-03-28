@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.texture;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
@@ -77,7 +78,11 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
         if(vulkanImage != null)
             return vulkanImage;
         else {
-            return GlTexture.getTexture(this.id).getVulkanImage();
+            final GlTexture glTexture = GlTexture.getTexture(this.id);
+            if(glTexture != null)
+                return glTexture.getVulkanImage();
+            else
+                return ((VAbstractTextureI)MissingTextureAtlasSprite.getTexture()).getVulkanImage();
         }
     }
 
