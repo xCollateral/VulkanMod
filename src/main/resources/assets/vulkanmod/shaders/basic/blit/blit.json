@@ -1,5 +1,5 @@
 {
     "samplers": [
-        { "name": "Sampler0" }
+        { "name": "DiffuseSampler", "binding": 0 }
     ]
 }

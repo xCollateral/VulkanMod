@@ -127,12 +127,13 @@ public class DrawBuffers {
                 final RenderSection section = iterator.next();
                 final DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
-            long ptr = bufferPtr + (drawCount * 20L);
-            MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-            MemoryUtil.memPutInt(ptr + 4, 1);
-            MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex);
-            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
-            MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
+
+                long ptr = bufferPtr + (drawCount * 20L);
+                MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
+                MemoryUtil.memPutInt(ptr + 4, 1);
+                MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex);
+                MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
+                MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
 
                 drawCount++;
             }
@@ -209,12 +210,9 @@ public class DrawBuffers {
     public AreaBuffer getIndexBuffer() {
         return indexBuffer;
     }
-
+  //instanceCount was added to encourage memcpy optimisations _(CPU doesn't need to insert a 1, which generates better ASM + helps JIT)_
     public static class DrawParameters {
-        int indexCount = 0;
-        int firstIndex = -1;
-        int vertexOffset = -1;
-        int baseInstance;
+        int indexCount = 0, instanceCount = 1, firstIndex = -1, vertexOffset = -1, baseInstance;
 
         public DrawParameters() {}
 
