@@ -1,7 +1,6 @@
 package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.TimerQuery;
 import net.minecraft.Util;
@@ -13,6 +12,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -39,6 +39,11 @@ public class MinecraftMixin {
             Initializer.LOGGER.error("Fabulous graphics mode not supported, forcing Fancy");
             graphicsModeOption.set(GraphicsStatus.FANCY);
         }
+    }
+
+    @Inject(method = "runTick", at = @At(value = "HEAD"))
+    private void resetBuffers(boolean bl, CallbackInfo ci) {
+        Renderer.getInstance().preInitFrame();
     }
 
     //Main target (framebuffer) ops
@@ -89,11 +94,6 @@ public class MinecraftMixin {
         SpriteUtil.setDoUpload(j == n);
     }
 
-    @Inject(method = "runTick", at = @At(value = "HEAD"))
-    private void resetBuffers(boolean bl, CallbackInfo ci) {
-        Renderer.getInstance().resetBuffers();
-    }
-
     @Inject(method = "close", at = @At(value = "HEAD"))
     public void close(CallbackInfo ci) {
         Vulkan.waitIdle();
@@ -115,5 +115,9 @@ public class MinecraftMixin {
     public void onResolutionChanged(CallbackInfo ci) {
         Renderer.scheduleSwapChainUpdate();
     }
+
+    //Fixes crash when minimizing window before setScreen is called
+    @Redirect(method = "setScreen", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;noRender:Z", opcode = Opcodes.PUTFIELD))
+    private void keepVar(Minecraft instance, boolean value) { }
 
 }

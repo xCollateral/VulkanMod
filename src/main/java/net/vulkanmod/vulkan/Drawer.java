@@ -1,7 +1,6 @@
 package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;

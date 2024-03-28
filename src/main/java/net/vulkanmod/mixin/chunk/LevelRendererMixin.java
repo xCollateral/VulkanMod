@@ -97,7 +97,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void compileSections(Camera camera) {
-        this.worldRenderer.compileSections();
+//        this.worldRenderer.uploadSections();
     }
 
     /**

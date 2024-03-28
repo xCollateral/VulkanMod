@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 public class ColorUtil {
+    private static final float COLOR_INV = 1.0f / 255.0f;
 
     static ColorConsumer colorConsumer = new DefaultColorConsumer();
 
@@ -11,11 +12,53 @@ public class ColorUtil {
         colorConsumer = b ? new GammaColorConsumer() : new DefaultColorConsumer();
     }
 
-    public static int packColorIntRGBA(float r, float g, float b, float a) {
-//        int color = ((int)(r * 255.0f) & 0xFF) << 24 | ((int)(g * 255.0f) & 0xFF) << 16 | ((int)(b * 255.0f) & 0xFF) << 8 | ((int)(a * 255.0f) & 0xFF);
-        int color = ((int)(a * 255.0f) & 0xFF) << 24 | ((int)(b * 255.0f) & 0xFF) << 16 | ((int)(g * 255.0f) & 0xFF) << 8 | ((int)(r * 255.0f) & 0xFF);
+    public static int floatToInt(float f) {
+        return (int)(f * 255.0f) & 0xFF;
+    }
 
-        return color;
+    public static float unpackColor(int c, int s) {
+        return ((c >> s) & 0xFF) * COLOR_INV;
+    }
+
+    public static class ARGB {
+        public static int pack(float r, float g, float b, float a) {
+            int color = floatToInt(a) << 24 | floatToInt(r) << 16 | floatToInt(g) << 8 | floatToInt(b);
+
+            return color;
+        }
+
+        public static float unpackR(int color) {
+            return unpackColor(color, 16);
+        }
+
+        public static float unpackG(int color) {
+            return unpackColor(color, 8);
+        }
+
+        public static float unpackB(int color) {
+            return unpackColor(color, 0);
+        }
+    }
+
+    public static class RGBA {
+        public static int pack(float r, float g, float b, float a) {
+//            int color = floatToInt(r) << 24 | floatToInt(g) << 16 | floatToInt(b) << 8 | floatToInt(a);
+            int color = floatToInt(a) << 24 | floatToInt(b) << 16 | floatToInt(g) << 8 | floatToInt(r);
+
+            return color;
+        }
+
+        public static float unpackR(int color) {
+            return unpackColor(color, 24);
+        }
+
+        public static float unpackG(int color) {
+            return unpackColor(color, 16);
+        }
+
+        public static float unpackB(int color) {
+            return unpackColor(color, 8);
+        }
     }
 
     public static int BGRAtoRGBA(int v) {
