@@ -178,6 +178,7 @@ public class Options {
                         value -> Component.nullToEmpty(value.toString()),
                         value -> {
                             minecraftOptions.mipmapLevels().set(value);
+                            Minecraft.getInstance().updateMaxMipLevel(value);
                             Minecraft.getInstance().delayTextureReload();
                         },
                         () -> minecraftOptions.mipmapLevels().get())
