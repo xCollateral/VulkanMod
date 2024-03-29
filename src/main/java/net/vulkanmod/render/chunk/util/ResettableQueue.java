@@ -19,7 +19,7 @@ public class ResettableQueue<T> implements Iterable<T> {
     public ResettableQueue(int initialCapacity) {
         this.capacity = initialCapacity;
 
-        this.queue = (T[])(new Object[capacity]);
+        this.queue = (T[]) (new Object[capacity]);
     }
 
     public boolean hasNext() {
@@ -34,13 +34,13 @@ public class ResettableQueue<T> implements Iterable<T> {
     }
 
     public void add(T t) {
-        if(t == null)
-            return;
+        this.queue[limit++] = t;
+    }
 
-        if(limit == capacity) resize();
-        this.queue[limit] = t;
-
-        this.limit++;
+    public void ensureCapacity(int n) {
+        while (limit + n > capacity) {
+            resize();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -48,7 +48,7 @@ public class ResettableQueue<T> implements Iterable<T> {
         this.capacity *= 2;
 
         T[] oldQueue = this.queue;
-        this.queue = (T[])(new Object[capacity]);
+        this.queue = (T[]) (new Object[capacity]);
 
         System.arraycopy(oldQueue, 0, this.queue, 0, oldQueue.length);
     }
@@ -59,6 +59,10 @@ public class ResettableQueue<T> implements Iterable<T> {
 
     public void rewind() {
         this.position = 0;
+    }
+
+    public T get(int i) {
+        return this.queue[i];
     }
 
     public void clear() {
@@ -105,7 +109,7 @@ public class ResettableQueue<T> implements Iterable<T> {
 
     @Override
     public void forEach(Consumer<? super T> action) {
-        for(int i = 0; i < this.limit; ++i) {
+        for (int i = 0; i < this.limit; ++i) {
             action.accept(this.queue[i]);
         }
 

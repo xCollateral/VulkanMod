@@ -35,24 +35,41 @@ import java.util.SortedSet;
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
 
-    @Shadow @Final private RenderBuffers renderBuffers;
+    @Shadow
+    @Final
+    private RenderBuffers renderBuffers;
 
-    @Shadow @Final private Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress;
-    @Shadow private @Nullable ClientLevel level;
+    @Shadow
+    @Final
+    private Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress;
+    @Shadow
+    private @Nullable ClientLevel level;
 
-    @Shadow public abstract void graphicsChanged();
+    @Shadow
+    public abstract void graphicsChanged();
 
-    @Shadow private int lastViewDistance;
-    @Shadow @Final private Minecraft minecraft;
-    @Shadow @Final private Set<BlockEntity> globalBlockEntities;
-    @Shadow private boolean generateClouds;
-    @Shadow @Final private EntityRenderDispatcher entityRenderDispatcher;
+    @Shadow
+    private int lastViewDistance;
+    @Shadow
+    @Final
+    private Minecraft minecraft;
+    @Shadow
+    @Final
+    private Set<BlockEntity> globalBlockEntities;
+    @Shadow
+    private boolean generateClouds;
+    @Shadow
+    @Final
+    private EntityRenderDispatcher entityRenderDispatcher;
 
-    @Shadow protected abstract boolean shouldShowEntityOutlines();
+    @Shadow
+    protected abstract boolean shouldShowEntityOutlines();
 
-    @Shadow public abstract void needsUpdate();
+    @Shadow
+    public abstract void needsUpdate();
 
-    @Shadow public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
+    @Shadow
+    public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
 
     private WorldRenderer worldRenderer;
 
@@ -146,7 +163,7 @@ public abstract class LevelRendererMixin {
 //         }
 //
 //         this.chunkRenderDispatcher.blockUntilClear();
-            synchronized(this.globalBlockEntities) {
+            synchronized (this.globalBlockEntities) {
                 this.globalBlockEntities.clear();
             }
 
@@ -177,7 +194,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     public boolean hasRenderedAllSections() {
-        return this.worldRenderer.needsUpdate();
+        return this.worldRenderer.graphNeedsUpdate();
     }
 
     /**
@@ -195,7 +212,7 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource) {
-        if(!Initializer.CONFIG.entityCulling) {
+        if (!Initializer.CONFIG.entityCulling) {
             double h = Mth.lerp(g, entity.xOld, entity.getX());
             double i = Mth.lerp(g, entity.yOld, entity.getY());
             double j = Mth.lerp(g, entity.zOld, entity.getZ());
@@ -207,7 +224,7 @@ public abstract class LevelRendererMixin {
         var entityClass = entity.getClass();
         var list = this.entitiesMap.get(entityClass);
 
-        if(list == null) {
+        if (list == null) {
             list = new ObjectArrayList<>();
             this.entitiesMap.put(entityClass, list);
         }
@@ -221,13 +238,13 @@ public abstract class LevelRendererMixin {
             shift = At.Shift.AFTER, ordinal = 0)
     )
     private void renderEntities(PoseStack poseStack, float partialTicks, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
-        if(!Initializer.CONFIG.entityCulling)
+        if (!Initializer.CONFIG.entityCulling)
             return;
 
         Vec3 cameraPos = WorldRenderer.getCameraPos();
 
-        for(var list : this.entitiesMap.values()) {
-            for(var pair : list) {
+        for (var list : this.entitiesMap.values()) {
+            for (var pair : list) {
                 Entity entity = pair.first;
                 MultiBufferSource multiBufferSource = pair.second;
 
@@ -240,9 +257,8 @@ public abstract class LevelRendererMixin {
         }
     }
 
-    @Redirect(method = "renderWorldBorder", at=@At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getDepthFar()F"))
-    private float getRenderDistanceZFar(GameRenderer instance)
-    {
+    @Redirect(method = "renderWorldBorder", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getDepthFar()F"))
+    private float getRenderDistanceZFar(GameRenderer instance) {
         return instance.getRenderDistance() * 4F;
     }
 

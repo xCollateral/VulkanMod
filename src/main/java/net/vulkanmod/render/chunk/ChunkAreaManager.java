@@ -10,8 +10,12 @@ public class ChunkAreaManager {
     static final int WIDTH = 8;
     static final int HEIGHT = 8;
 
-    static final int BASE_SH_XZ = Util.flooredLog(WIDTH);
-    static final int BASE_SH_Y = Util.flooredLog(HEIGHT);
+    static final int AREA_SH_XZ = Util.flooredLog(WIDTH);
+    static final int AREA_SH_Y = Util.flooredLog(HEIGHT);
+
+    static final int SEC_SH = 4;
+    static final int BLOCK_TO_AREA_SH_XZ = AREA_SH_XZ + SEC_SH;
+    static final int BLOCK_TO_AREA_SH_Y = AREA_SH_Y + SEC_SH;
 
     public final int size;
     final int sectionGridWidth;
@@ -27,13 +31,13 @@ public class ChunkAreaManager {
         this.minHeight = minHeight;
         this.sectionGridWidth = width;
 
-        int t = (width >> BASE_SH_XZ) + 2;
+        int t = (width >> AREA_SH_XZ) + 2;
 
         int relativeHeight = height - (minHeight >> 4);
-        this.ySize = (relativeHeight & 0x5) == 0 ? (relativeHeight >> BASE_SH_Y) : (relativeHeight >> BASE_SH_Y) + 1;
+        this.ySize = (relativeHeight & 0x5) == 0 ? (relativeHeight >> AREA_SH_Y) : (relativeHeight >> AREA_SH_Y) + 1;
 
         //check if width is even
-        if((t & 1) == 0)
+        if ((t & 1) == 0)
             t++;
         this.xzSize = t;
         //TODO make even size work
@@ -41,11 +45,11 @@ public class ChunkAreaManager {
         this.size = xzSize * ySize * xzSize;
         this.chunkAreasArr = new ChunkArea[size];
 
-        for(int j = 0; j < this.xzSize; ++j) {
-            for(int k = 0; k < this.ySize; ++k) {
-                for(int l = 0; l < this.xzSize; ++l) {
+        for (int j = 0; j < this.xzSize; ++j) {
+            for (int k = 0; k < this.ySize; ++k) {
+                for (int l = 0; l < this.xzSize; ++l) {
                     int i1 = this.getAreaIndex(j, k, l);
-                    Vector3i vector3i = new Vector3i(j << BASE_SH_XZ + 4, k << BASE_SH_Y + 4, l << BASE_SH_XZ + 4);
+                    Vector3i vector3i = new Vector3i(j << BLOCK_TO_AREA_SH_XZ, k << BLOCK_TO_AREA_SH_Y, l << BLOCK_TO_AREA_SH_XZ);
                     this.chunkAreasArr[i1] = new ChunkArea(i1, vector3i, minHeight);
                 }
             }
@@ -55,10 +59,9 @@ public class ChunkAreaManager {
         this.prevZ = Integer.MIN_VALUE;
     }
 
-    public void repositionAreas(int x, int z) {
-        int s = BASE_SH_XZ + 4;
-        int xS = x >> s;
-        int zS = z >> s;
+    public void repositionAreas(int secX, int secZ) {
+        int xS = secX >> AREA_SH_XZ;
+        int zS = secZ >> AREA_SH_XZ;
 
         int deltaX = Mth.clamp(xS - this.prevX, -this.xzSize, this.xzSize);
         int deltaZ = Mth.clamp(zS - this.prevZ, -this.xzSize, this.xzSize);
@@ -77,26 +80,26 @@ public class ChunkAreaManager {
         int xRangeEnd;
         int xComplStart;
         int xComplEnd;
-        if(deltaX >= 0) {
+        if (deltaX >= 0) {
             xRangeStart = this.xzSize - deltaX;
             xRangeEnd = this.xzSize - 1;
             xComplStart = 0;
             xComplEnd = xRangeStart - 1;
         } else {
             xRangeStart = 0;
-            xRangeEnd = - deltaX - 1;
+            xRangeEnd = -deltaX - 1;
             xComplStart = xRangeEnd;
             xComplEnd = this.xzSize - 1;
         }
 
         int zRangeStart;
         int zRangeEnd;
-        if(deltaZ >= 0) {
+        if (deltaZ >= 0) {
             zRangeStart = this.xzSize - deltaZ;
             zRangeEnd = this.xzSize - 1;
         } else {
             zRangeStart = 0;
-            zRangeEnd = - deltaZ - 1;
+            zRangeEnd = -deltaZ - 1;
         }
 
         CircularIntList.RangeIterator xRangeIterator = xList.rangeIterator(xRangeStart, xRangeEnd);
@@ -104,19 +107,19 @@ public class ChunkAreaManager {
         CircularIntList.RangeIterator zRangeIterator = zList.rangeIterator(zRangeStart, zRangeEnd);
 
         xAbsChunkIndex = xS - this.xzSize / 2 + xRangeStart;
-        for(int xRelativeIndex; xRangeIterator.hasNext(); xAbsChunkIndex++) {
+        for (int xRelativeIndex; xRangeIterator.hasNext(); xAbsChunkIndex++) {
             xRelativeIndex = xRangeIterator.next();
-            int x1 = (xAbsChunkIndex << s);
+            int x1 = (xAbsChunkIndex << (AREA_SH_XZ + SEC_SH));
 
             zIterator.restart();
             zAbsChunkIndex = zS - (this.xzSize >> 1);
 
-            for(int zRelativeIndex; zIterator.hasNext(); zAbsChunkIndex++) {
+            for (int zRelativeIndex; zIterator.hasNext(); zAbsChunkIndex++) {
                 zRelativeIndex = zIterator.next();
-                int z1 = (zAbsChunkIndex << s);
+                int z1 = (zAbsChunkIndex << (AREA_SH_XZ + SEC_SH));
 
                 for (int yRel = 0; yRel < this.ySize; ++yRel) {
-                    int y1 = this.minHeight + (yRel << s);
+                    int y1 = this.minHeight + (yRel << (AREA_SH_Y + SEC_SH));
                     ChunkArea chunkArea = this.chunkAreasArr[this.getAreaIndex(xRelativeIndex, yRel, zRelativeIndex)];
 
                     chunkArea.setPosition(x1, y1, z1);
@@ -127,19 +130,19 @@ public class ChunkAreaManager {
         }
 
         xAbsChunkIndex = xS - this.xzSize / 2 + xComplStart;
-        for(int xRelativeIndex; xComplIterator.hasNext(); xAbsChunkIndex++) {
+        for (int xRelativeIndex; xComplIterator.hasNext(); xAbsChunkIndex++) {
             xRelativeIndex = xComplIterator.next();
-            int x1 = (xAbsChunkIndex << s);
+            int x1 = (xAbsChunkIndex << (AREA_SH_XZ + SEC_SH));
 
             zRangeIterator.restart();
             zAbsChunkIndex = zS - (this.xzSize >> 1) + zRangeStart;
 
-            for(int zRelativeIndex; zRangeIterator.hasNext(); zAbsChunkIndex++) {
+            for (int zRelativeIndex; zRangeIterator.hasNext(); zAbsChunkIndex++) {
                 zRelativeIndex = zRangeIterator.next();
-                int z1 = (zAbsChunkIndex << s);
+                int z1 = (zAbsChunkIndex << (AREA_SH_XZ + SEC_SH));
 
-                for(int yRel = 0; yRel < this.ySize; ++yRel) {
-                    int y1 = this.minHeight + (yRel << s);
+                for (int yRel = 0; yRel < this.ySize; ++yRel) {
+                    int y1 = this.minHeight + (yRel << (AREA_SH_Y + SEC_SH));
                     ChunkArea chunkArea = this.chunkAreasArr[this.getAreaIndex(xRelativeIndex, yRel, zRelativeIndex)];
 
                     chunkArea.setPosition(x1, y1, z1);
@@ -156,9 +159,9 @@ public class ChunkAreaManager {
     public ChunkArea getChunkArea(RenderSection section, int x, int y, int z) {
         ChunkArea chunkArea;
 
-        int shX = BASE_SH_XZ + 4;
-        int shY = BASE_SH_Y + 4;
-        int shZ = BASE_SH_XZ + 4;
+        int shX = AREA_SH_XZ + 4;
+        int shY = AREA_SH_Y + 4;
+        int shZ = AREA_SH_XZ + 4;
 
         int AreaX = x >> shX;
         int AreaY = (y - this.minHeight) >> shY;
@@ -174,13 +177,13 @@ public class ChunkAreaManager {
 
     public void updateFrustumVisibility(VFrustum frustum) {
 
-        for(ChunkArea chunkArea : this.chunkAreasArr) {
+        for (ChunkArea chunkArea : this.chunkAreasArr) {
             chunkArea.updateFrustum(frustum);
         }
     }
 
     public void resetQueues() {
-        for(ChunkArea chunkArea : this.chunkAreasArr) {
+        for (ChunkArea chunkArea : this.chunkAreasArr) {
             chunkArea.resetQueue();
         }
     }
@@ -190,7 +193,7 @@ public class ChunkAreaManager {
     }
 
     public void releaseAllBuffers() {
-        for(ChunkArea chunkArea : this.chunkAreasArr) {
+        for (ChunkArea chunkArea : this.chunkAreasArr) {
             chunkArea.releaseBuffers();
         }
     }
@@ -237,7 +240,7 @@ public class ChunkAreaManager {
         ibUsed /= 1024 * 1024;
         frag /= 1024 * 1024;
 
-        return new String[] {
+        return new String[]{
                 String.format("Vertex Buffers: %d/%d MB", vbUsed, vbSize),
                 String.format("Index Buffers: %d/%d MB", ibUsed, ibSize),
                 String.format("Allocations: %d Frag: %d MB", count, frag)

@@ -19,7 +19,7 @@ public class StaticQueue<T> implements Iterable<T> {
     public StaticQueue(int initialCapacity) {
         this.capacity = initialCapacity;
 
-        this.queue = (T[])(new Object[capacity]);
+        this.queue = (T[]) (new Object[capacity]);
     }
 
     public boolean hasNext() {
@@ -34,17 +34,11 @@ public class StaticQueue<T> implements Iterable<T> {
     }
 
     public void add(T t) {
-        if(t == null)
-            return;
-
-        if(limit == capacity) throw new RuntimeException("Exceeded size: "+this.capacity);
-        this.queue[limit] = t;
-
-        this.limit++;
+        this.queue[this.limit++] = t;
     }
 
     public int size() {
-        return limit;
+        return this.limit;
     }
 
     public void clear() {
@@ -91,7 +85,7 @@ public class StaticQueue<T> implements Iterable<T> {
 
     @Override
     public void forEach(Consumer<? super T> action) {
-        for(int i = 0; i < this.limit; ++i) {
+        for (int i = 0; i < this.limit; ++i) {
             action.accept(this.queue[i]);
         }
 
