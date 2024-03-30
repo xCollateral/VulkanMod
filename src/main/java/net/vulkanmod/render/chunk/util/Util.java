@@ -51,10 +51,4 @@ public class Util {
         int r = i % alignment;
         return r != 0 ? i + alignment - r : i;
     }
-
-    public static ByteBuffer createCopy(ByteBuffer src) {
-        ByteBuffer ret = MemoryUtil.memAlloc(src.remaining());
-        MemoryUtil.memCopy(src, ret);
-        return ret;
-    }
 }

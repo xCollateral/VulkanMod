@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk.build;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -11,7 +10,6 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HalfTransparentBlock;
@@ -70,7 +68,7 @@ public class LiquidRenderer {
         if (blockState.canOcclude()) {
             VoxelShape occlusionShape = blockState.getOcclusionShape(blockGetter, mBlockPos);
 
-            if(occlusionShape == Shapes.block()) {
+            if (occlusionShape == Shapes.block()) {
                 return direction != Direction.UP;
             } else if (occlusionShape.isEmpty()) {
                 return false;
@@ -85,12 +83,11 @@ public class LiquidRenderer {
 
     public static boolean shouldRenderFace(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos, FluidState fluidState, BlockState blockState, Direction direction, BlockState adjBlockState) {
 
-        if(adjBlockState.getFluidState().getType().isSame(fluidState.getType()))
+        if (adjBlockState.getFluidState().getType().isSame(fluidState.getType()))
             return false;
 
-        //self-occlusion by waterlogging
+        // self-occlusion by waterlogging
         if (blockState.canOcclude()) {
-
             return !blockState.isFaceSturdy(blockAndTintGetter, blockPos, direction);
         }
 
@@ -261,7 +258,7 @@ public class LiquidRenderer {
 
         modelQuad.setFlags(ModelQuadFlags.IS_PARALLEL | ModelQuadFlags.IS_ALIGNED);
 
-        for(Direction direction : Util.XZ_DIRECTIONS) {
+        for (Direction direction : Util.XZ_DIRECTIONS) {
             float h1;
             float h2;
 
@@ -276,7 +273,7 @@ public class LiquidRenderer {
             BlockState adjState;
             switch (direction) {
                 case NORTH -> {
-                    if(!rNf)
+                    if (!rNf)
                         continue;
 
                     h1 = nwHeight;
@@ -289,7 +286,7 @@ public class LiquidRenderer {
                     adjState = northState;
                 }
                 case SOUTH -> {
-                    if(!rSf)
+                    if (!rSf)
                         continue;
 
                     h1 = seHeight;
@@ -302,7 +299,7 @@ public class LiquidRenderer {
                     adjState = southState;
                 }
                 case WEST -> {
-                    if(!rWf)
+                    if (!rWf)
                         continue;
 
                     h1 = swHeight;
@@ -315,7 +312,7 @@ public class LiquidRenderer {
                     adjState = westState;
                 }
                 case EAST -> {
-                    if(!rEf)
+                    if (!rEf)
                         continue;
 
                     h1 = neHeight;
@@ -333,7 +330,7 @@ public class LiquidRenderer {
                 }
             }
 
-            if(isFaceOccludedByState(region, Math.max(h1, h2), direction, blockPos, adjState))
+            if (isFaceOccludedByState(region, Math.max(h1, h2), direction, blockPos, adjState))
                 continue;
 
             BlockPos blockPos2 = blockPos.relative(direction);
@@ -417,18 +414,8 @@ public class LiquidRenderer {
         }
     }
 
-    private void vertex(VertexConsumer vertexConsumer, float x, float y, float z, float r, float g, float b, float u, float v, int light) {
-//        vertexConsumer.vertex(x, y, z).color(r, g, b, 1.0F).uv(u, v).uv2(light).normal(0.0F, 1.0F, 0.0F).endVertex();
-        vertexConsumer.vertex(x, y, z, r, g, b, 1.0f, u, v, 0, light, 0.0F, 1.0F, 0.0F);
-    }
-
-    private void vertex(VertexConsumer vertexConsumer, float x, float y, float z, float r, float g, float b, float u, float v, int l, float normalX, float normalY, float normalZ) {
-//        vertexConsumer.vertex(x, y, z).color(r, g, b, 1.0F).uv(u, v).uv2(l).normal(0.0F, 1.0F, 0.0F).endVertex();
-        vertexConsumer.vertex(x, y, z, r, g, b, 1.0f, u, v, 0, l, normalX, normalY, normalZ);
-    }
-
     private int calculateNormal(ModelQuad quad) {
-        //TODO
+        // TODO
         Vector3f normal = new Vector3f(quad.getX(1), quad.getY(1), quad.getZ(1))
                 .cross(quad.getX(3), quad.getY(3), quad.getZ(3));
         normal.normalize();
@@ -436,22 +423,23 @@ public class LiquidRenderer {
         return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
     }
 
-    private void putQuad(ModelQuad quad, TerrainBufferBuilder vertexBuilder, float xOffset, float yOffset, float zOffset, boolean flip) {
+    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip) {
         QuadLightData quadLightData = resources.quadLightData;
 
         // Rotate triangles if needed to fix AO anisotropy
         int k = QuadUtils.getIterationStartIdx(quadLightData.br);
 
-        int i = 0;
+        bufferBuilder.ensureCapacity();
+
+        int i;
         for (int j = 0; j < 4; j++) {
             i = k;
 
-            vertexBuilder.beginVertex();
-            vertexBuilder.position(xOffset + quad.getX(i), yOffset + quad.getY(i), zOffset + quad.getZ(i));
-            vertexBuilder.color(quadColors[i]);
-            vertexBuilder.uv(quad.getU(i), quad.getV(i));
-            vertexBuilder.light(quadLightData.lm[i]);
-            vertexBuilder.endCurrentVertex();
+            final float x = xOffset + quad.getX(i);
+            final float y = yOffset + quad.getY(i);
+            final float z = zOffset + quad.getZ(i);
+
+            bufferBuilder.vertex(x, y, z, this.quadColors[i], quad.getU(i), quad.getV(i), quadLightData.lm[i], 0);
 
             k += (flip ? -1 : +1);
             k &= 0b11;
@@ -484,32 +472,6 @@ public class LiquidRenderer {
             float b1 = b * br;
 
             this.quadColors[i] = ColorUtil.RGBA.pack(r1, g1, b1, 1.0f);
-        }
-    }
-
-    private int getLightColor(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos) {
-        BlockPos above = blockPos.above();
-        int i = getLightColor(blockAndTintGetter, blockAndTintGetter.getBlockState(blockPos), blockPos);
-        int j = getLightColor(blockAndTintGetter, blockAndTintGetter.getBlockState(above), above);
-        int k = i & 255;
-        int l = j & 255;
-        int m = i >> 16 & 255;
-        int n = j >> 16 & 255;
-        return (Math.max(k, l)) | (Math.max(m, n)) << 16;
-    }
-
-    public static int getLightColor(BlockAndTintGetter blockAndTintGetter, BlockState blockState, BlockPos blockPos) {
-        if (blockState.emissiveRendering(blockAndTintGetter, blockPos)) {
-            return 15728880;
-        } else {
-            int i = blockAndTintGetter.getBrightness(LightLayer.SKY, blockPos);
-            int j = blockAndTintGetter.getBrightness(LightLayer.BLOCK, blockPos);
-            int k = blockState.getLightEmission();
-            if (j < k) {
-                j = k;
-            }
-
-            return i << 20 | j << 4;
         }
     }
 }
