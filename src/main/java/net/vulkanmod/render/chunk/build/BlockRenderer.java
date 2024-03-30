@@ -3,7 +3,6 @@ package net.vulkanmod.render.chunk.build;
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
@@ -12,9 +11,6 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.SupportType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
@@ -52,11 +48,12 @@ public class BlockRenderer {
     }
 
     final Object2ByteLinkedOpenHashMap<Block.BlockStatePairKey> occlusionCache = new Object2ByteLinkedOpenHashMap<>(2048, 0.25F) {
-        protected void rehash(int i) {}
+        protected void rehash(int i) {
+        }
     };
 
     public BlockRenderer() {
-        occlusionCache.defaultReturnValue((byte)127);
+        occlusionCache.defaultReturnValue((byte) 127);
     }
 
     public static void setBlockColors(BlockColors blockColors) {
@@ -107,7 +104,7 @@ public class BlockRenderer {
     private void renderModelFace(TerrainBufferBuilder bufferBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace) {
         QuadLightData quadLightData = resources.quadLightData;
 
-        for(int i = 0; i < quads.size(); ++i) {
+        for (int i = 0; i < quads.size(); ++i) {
             BakedQuad bakedQuad = quads.get(i);
             QuadView quadView = (QuadView) bakedQuad;
             lightPipeline.calculate(quadView, blockPos, quadLightData, cullFace, bakedQuad.getDirection(), bakedQuad.isShade());
@@ -141,30 +138,32 @@ public class BlockRenderer {
         // Rotate triangles if needed to fix AO anisotropy
         int idx = QuadUtils.getIterationStartIdx(brightnessArr, lights);
 
+        bufferBuilder.ensureCapacity();
+
         for (byte i = 0; i < 4; ++i) {
-            float r, g, b;
+            final float x = pos.x() + quad.getX(idx);
+            final float y = pos.y() + quad.getY(idx);
+            final float z = pos.z() + quad.getZ(idx);
 
-            float quadR, quadG, quadB;
+            final float r, g, b;
+            final float quadR, quadG, quadB;
 
-            float x = quad.getX(idx);
-            float y = quad.getY(idx);
-            float z = quad.getZ(idx);
-
-            final int color = quad.getColor(idx);
-            quadR = ColorUtil.RGBA.unpackR(color);
-            quadG = ColorUtil.RGBA.unpackG(color);
-            quadB = ColorUtil.RGBA.unpackB(color);
+            final int quadColor = quad.getColor(idx);
+            quadR = ColorUtil.RGBA.unpackR(quadColor);
+            quadG = ColorUtil.RGBA.unpackG(quadColor);
+            quadB = ColorUtil.RGBA.unpackB(quadColor);
 
             final float brightness = brightnessArr[idx];
             r = quadR * brightness * red;
             g = quadG * brightness * green;
             b = quadB * brightness * blue;
 
+            final int color = ColorUtil.RGBA.pack(r, g, b, 1.0f);
             final int light = lights[idx];
             final float u = quad.getU(idx);
             final float v = quad.getV(idx);
 
-            bufferBuilder.vertex(x + pos.x(), y + pos.y(), z + pos.z(), r, g, b, 1.0f, u, v, light, packedNormal);
+            bufferBuilder.vertex(x, y, z, color, u, v, light, packedNormal);
 
             idx = (idx + 1) & 0b11;
         }
@@ -182,12 +181,12 @@ public class BlockRenderer {
         if (adjBlockState.canOcclude()) {
             VoxelShape shape = blockState.getFaceOcclusionShape(blockGetter, blockPos, direction);
 
-            if(shape.isEmpty())
+            if (shape.isEmpty())
                 return true;
 
             VoxelShape adjShape = adjBlockState.getFaceOcclusionShape(blockGetter, adjPos, direction.getOpposite());
 
-            if(adjShape.isEmpty())
+            if (adjShape.isEmpty())
                 return true;
 
             if (shape == Shapes.block() && adjShape == Shapes.block()) {
@@ -206,7 +205,7 @@ public class BlockRenderer {
                     occlusionCache.removeLastByte();
                 }
 
-                occlusionCache.putAndMoveToFirst(blockStatePairKey, (byte)(bl ? 1 : 0));
+                occlusionCache.putAndMoveToFirst(blockStatePairKey, (byte) (bl ? 1 : 0));
                 return bl;
             }
         }

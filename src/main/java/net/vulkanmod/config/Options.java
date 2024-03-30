@@ -2,7 +2,6 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightMode;
@@ -18,7 +17,7 @@ public class Options {
     public static boolean fullscreenDirty = false;
 
     public static Option<?>[] getVideoOpts() {
-        return new Option[] {
+        return new Option[]{
                 new CyclingOption<>("Resolution",
                         VideoResolution.getVideoResolutions(),
                         resolution -> Component.literal(resolution.toString()),
@@ -65,10 +64,10 @@ public class Options {
                         () -> minecraftOptions.guiScale().get()),
                 new RangeOption("Brightness", 0, 100, 1,
                         value -> {
-                          if(value == 0) return Component.translatable("options.gamma.min").getString();
-                          else if(value == 50) return Component.translatable("options.gamma.default").getString();
-                          else if(value == 100) return Component.translatable("options.gamma.max").getString();
-                          return value.toString();
+                            if (value == 0) return Component.translatable("options.gamma.min").getString();
+                            else if (value == 50) return Component.translatable("options.gamma.default").getString();
+                            else if (value == 100) return Component.translatable("options.gamma.max").getString();
+                            return value.toString();
                         },
                         value -> minecraftOptions.gamma().set(value * 0.01),
                         () -> (int) (minecraftOptions.gamma().get() * 100.0)),
@@ -81,7 +80,7 @@ public class Options {
                             default -> Component.literal("Unk");
                         },
                         (value) -> {
-                            if(value > LightMode.FLAT)
+                            if (value > LightMode.FLAT)
                                 minecraftOptions.ambientOcclusion().set(true);
                             else
                                 minecraftOptions.ambientOcclusion().set(false);
@@ -106,17 +105,17 @@ public class Options {
                         () -> minecraftOptions.showAutosaveIndicator().get()),
                 new RangeOption("Distortion Effects", 0, 100, 1,
                         value -> minecraftOptions.screenEffectScale().set(value * 0.01),
-                        () -> (int)(minecraftOptions.screenEffectScale().get() * 100.0f))
+                        () -> (int) (minecraftOptions.screenEffectScale().get() * 100.0f))
                         .setTooltip(Component.translatable("options.screenEffectScale.tooltip")),
                 new RangeOption("FOV Effects", 0, 100, 1,
                         value -> minecraftOptions.fovEffectScale().set(value * 0.01),
-                        () -> (int)(minecraftOptions.fovEffectScale().get() * 100.0f))
+                        () -> (int) (minecraftOptions.fovEffectScale().get() * 100.0f))
                         .setTooltip(Component.translatable("options.fovEffectScale.tooltip"))
         };
     }
 
     public static Option<?>[] getGraphicsOpts() {
-        return new Option[] {
+        return new Option[]{
                 new CyclingOption<>("Graphics",
                         new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                         graphicsMode -> Component.translatable(graphicsMode.getKey()),
@@ -144,8 +143,8 @@ public class Options {
                         It changes distant grass aspect and may cause unexpected texture behaviour""")),
                 new RangeOption("Biome Blend Radius", 0, 7, 1,
                         value -> {
-                    int v = value * 2 + 1;
-                    return v + " x " + v;
+                            int v = value * 2 + 1;
+                            return v + " x " + v;
                         },
                         (value) -> {
                             minecraftOptions.biomeBlendRadius().set(value);
@@ -178,6 +177,7 @@ public class Options {
                         value -> Component.nullToEmpty(value.toString()),
                         value -> {
                             minecraftOptions.mipmapLevels().set(value);
+                            Minecraft.getInstance().updateMaxMipLevel(value);
                             Minecraft.getInstance().delayTextureReload();
                         },
                         () -> minecraftOptions.mipmapLevels().get())
@@ -185,7 +185,7 @@ public class Options {
     }
 
     public static Option<?>[] getOtherOpts() {
-        return new Option[] {
+        return new Option[]{
                 new RangeOption("Render queue size", 2,
                         5, 1,
                         value -> {
@@ -203,12 +203,12 @@ public class Options {
                         Might break mod compatibility
                         Restart is needed to take effect""")),
                 new CyclingOption<>("Advanced Chunk Culling",
-                        new Integer[]{1, 2, 3, 10},
+                        new Integer[]{2, 3, 4, 10},
                         value -> {
                             String t = switch (value) {
-                                case 1 -> "Aggressive";
-                                case 2 -> "Normal";
-                                case 3 -> "Conservative";
+                                case 2 -> "Aggressive";
+                                case 3 -> "Normal";
+                                case 4 -> "Conservative";
                                 case 10 -> "Off";
                                 default -> "Unk";
                             };
@@ -245,7 +245,7 @@ public class Options {
                         value -> {
                             String t;
 
-                            if(value == -1)
+                            if (value == -1)
                                 t = "Auto";
                             else
                                 t = DeviceManager.suitableDevices.get(value).deviceName;
@@ -255,14 +255,14 @@ public class Options {
                         value -> config.device = value,
                         () -> config.device)
                         .setTooltip(Component.nullToEmpty(
-                                String.format("Current device: %s", DeviceManager.deviceInfo.deviceName)))
+                        String.format("Current device: %s", DeviceManager.deviceInfo.deviceName)))
         };
 
     }
 
     public static void applyOptions(Config config, Option<?>[][] optionPages) {
-        for(Option<?>[] options : optionPages) {
-            for(Option<?> option : options) {
+        for (Option<?>[] options : optionPages) {
+            for (Option<?> option : options) {
                 option.apply();
             }
         }

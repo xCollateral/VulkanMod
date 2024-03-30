@@ -37,14 +37,13 @@ public class DrawBuffers {
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
     public DrawBuffers(int index, Vector3i origin, int minHeight) {
-
         this.index = index;
         this.origin = origin;
         this.minHeight = minHeight;
     }
 
     public void allocateBuffers() {
-        if(!Initializer.CONFIG.perRenderTypeAreaBuffers)
+        if (!Initializer.CONFIG.perRenderTypeAreaBuffers)
             vertexBuffer = new AreaBuffer(AreaBuffer.Usage.VERTEX, 2097152 /*RenderType.BIG_BUFFER_SIZE>>1*/, VERTEX_SIZE);
 
         this.allocated = true;
@@ -55,14 +54,14 @@ public class DrawBuffers {
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = -1;
 
-        if(!buffer.indexOnly) {
+        if (!buffer.indexOnly) {
             AreaBuffer.Segment segment = this.getAreaBufferOrAlloc(renderType).upload(buffer.getVertexBuffer(), vertexOffset, drawParameters);
             vertexOffset = segment.offset / VERTEX_SIZE;
 
             drawParameters.baseInstance = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());
         }
 
-        if(!buffer.autoIndices) {
+        if (!buffer.autoIndices) {
             if (this.indexBuffer == null)
                 this.indexBuffer = new AreaBuffer(AreaBuffer.Usage.INDEX, 786432 /*RenderType.SMALL_BUFFER_SIZE*/, INDEX_SIZE);
 
@@ -94,22 +93,22 @@ public class DrawBuffers {
     private int encodeSectionOffset(int xOffset, int yOffset, int zOffset) {
         final int xOffset1 = (xOffset & 127);
         final int zOffset1 = (zOffset & 127);
-        final int yOffset1 = (yOffset-this.minHeight & 127);
+        final int yOffset1 = (yOffset - this.minHeight & 127);
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
     private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, FloatBuffer mPtr) {
-            float x = (float)(camX - (this.origin.x));
-            float y = (float)(camY - (this.origin.y));
-            float z = (float)(camZ - (this.origin.z));
+        float x = (float) (camX - (this.origin.x));
+        float y = (float) (camY - (this.origin.y));
+        float z = (float) (camZ - (this.origin.z));
 
-            Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer.asFloatBuffer());
-            Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer.asFloatBuffer());
+        Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer.asFloatBuffer());
+        Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer.asFloatBuffer());
 
-            MVP.translate(-x, -y, -z).get(mPtr);
-            MV.translate(-x, -y, -z).get(16,mPtr);
+        MVP.translate(-x, -y, -z).get(mPtr);
+        MV.translate(-x, -y, -z).get(16, mPtr);
 
-            vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
+        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
     }
 
     public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
@@ -127,6 +126,8 @@ public class DrawBuffers {
                 final RenderSection section = iterator.next();
                 final DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
+                if (drawParameters.indexCount <= 0)
+                    continue;
 
                 long ptr = bufferPtr + (drawCount * 20L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
@@ -157,6 +158,9 @@ public class DrawBuffers {
             final RenderSection section = iterator.next();
             final DrawParameters drawParameters = section.getDrawParameters(renderType);
 
+            if (drawParameters.indexCount <= 0)
+                continue;
+
             final int firstIndex = drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex;
             vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
         }
@@ -164,30 +168,29 @@ public class DrawBuffers {
 
     public void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             var vertexBuffer = getAreaBuffer(terrainRenderType);
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
             updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack.mallocFloat(32));
         }
 
-        if(terrainRenderType == TerrainRenderType.TRANSLUCENT) {
+        if (terrainRenderType == TerrainRenderType.TRANSLUCENT) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 
     }
 
     public void releaseBuffers() {
-        if(!this.allocated)
+        if (!this.allocated)
             return;
 
-        if(this.vertexBuffer == null) {
+        if (this.vertexBuffer == null) {
             this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
-        }
-        else
+        } else
             this.vertexBuffer.freeBuffer();
 
         this.vertexBuffers.clear();
-        if(this.indexBuffer != null)
+        if (this.indexBuffer != null)
             this.indexBuffer.freeBuffer();
 
         this.vertexBuffer = null;
@@ -218,7 +221,7 @@ public class DrawBuffers {
 
         public void reset(ChunkArea chunkArea, TerrainRenderType r) {
             int segmentOffset = vertexOffset * VERTEX_SIZE;
-            if(chunkArea != null && chunkArea.getDrawBuffers().hasRenderType(r) && segmentOffset != -1) {
+            if (chunkArea != null && chunkArea.getDrawBuffers().hasRenderType(r) && segmentOffset != -1) {
                 chunkArea.getDrawBuffers().getAreaBuffer(r).setSegmentFree(segmentOffset);
             }
 

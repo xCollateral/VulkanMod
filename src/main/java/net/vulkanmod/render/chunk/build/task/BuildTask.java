@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk.build.task;
 
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -12,18 +11,18 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.render.chunk.build.*;
-import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
+import net.vulkanmod.render.chunk.build.BlockRenderer;
+import net.vulkanmod.render.chunk.build.LiquidRenderer;
+import net.vulkanmod.render.chunk.build.RenderRegion;
+import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
+import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
-
-import java.util.Set;
 
 public class BuildTask extends ChunkTask {
     @Nullable
@@ -47,9 +46,9 @@ public class BuildTask extends ChunkTask {
         }
 
         Vec3 vec3 = WorldRenderer.getCameraPos();
-        float x = (float)vec3.x;
-        float y = (float)vec3.y;
-        float z = (float)vec3.z;
+        float x = (float) vec3.x;
+        float y = (float) vec3.y;
+        float z = (float) vec3.z;
         CompileResult compileResult = this.compile(x, y, z, builderResources);
 
         CompiledSection compiledSection = new CompiledSection();
@@ -66,7 +65,7 @@ public class BuildTask extends ChunkTask {
         taskDispatcher.scheduleSectionUpdate(compileResult);
 
         float buildTime = (System.nanoTime() - startTime) * 0.000001f;
-        if(BENCH) {
+        if (BENCH) {
             builderResources.updateBuildStats((int) buildTime);
         }
 
@@ -79,7 +78,7 @@ public class BuildTask extends ChunkTask {
         BlockPos startBlockPos = new BlockPos(section.xOffset(), section.yOffset(), section.zOffset()).immutable();
         VisGraph visGraph = new VisGraph();
 
-        if(this.region == null) {
+        if (this.region == null) {
             compileResult.visibilitySet = visGraph.resolve();
             return compileResult;
         }
@@ -100,9 +99,9 @@ public class BuildTask extends ChunkTask {
 
         BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
 
-        for(int y = 0; y < 16; ++y) {
-            for(int z = 0; z < 16; ++z) {
-                for(int x = 0; x < 16; ++x) {
+        for (int y = 0; y < 16; ++y) {
+            for (int z = 0; z < 16; ++z) {
+                for (int x = 0; x < 16; ++x) {
                     blockPos.set(section.xOffset() + x, section.yOffset() + y, section.zOffset() + z);
 
                     BlockState blockState = this.region.getBlockState(blockPos);
@@ -144,12 +143,12 @@ public class BuildTask extends ChunkTask {
 
         TerrainBufferBuilder translucentBufferBuilder = bufferBuilders.builder(TerrainRenderType.TRANSLUCENT);
         if (!translucentBufferBuilder.isCurrentBatchEmpty()) {
-            translucentBufferBuilder.setQuadSortOrigin(camX - (float)startBlockPos.getX(), camY - (float)startBlockPos.getY(), camZ - (float)startBlockPos.getZ());
+            translucentBufferBuilder.setQuadSortOrigin(camX - (float) startBlockPos.getX(), camY - (float) startBlockPos.getY(), camZ - (float) startBlockPos.getZ());
             compileResult.transparencyState = translucentBufferBuilder.getSortState();
         }
 
-        for(TerrainRenderType renderType : TerrainRenderType.VALUES) {
-            TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilders.builder(renderType).endOrDiscardIfEmpty();
+        for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
+            TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilders.builder(renderType).end();
             if (renderedBuffer != null) {
                 UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
                 compileResult.renderedLayers.put(renderType, uploadBuffer);
@@ -165,20 +164,8 @@ public class BuildTask extends ChunkTask {
     private void setupBufferBuilders(ThreadBuilderPack builderPack) {
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
             TerrainBufferBuilder bufferBuilder = builderPack.builder(renderType);
-            bufferBuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
+            bufferBuilder.begin();
         }
-    }
-
-    private TerrainBufferBuilder setupBufferBuilder(ThreadBuilderPack bufferBuilders, Set<TerrainRenderType> set, TerrainRenderType renderType) {
-        //Force compact RenderType
-        renderType = compactRenderTypes(renderType);
-
-        TerrainBufferBuilder bufferBuilder = bufferBuilders.builder(renderType);
-        if (set.add(renderType)) {
-            bufferBuilder.begin(VertexFormat.Mode.QUADS, PipelineManager.TERRAIN_VERTEX_FORMAT);
-        }
-
-        return bufferBuilder;
     }
 
     private TerrainBufferBuilder getBufferBuilder(ThreadBuilderPack bufferBuilders, TerrainRenderType renderType) {
@@ -187,14 +174,12 @@ public class BuildTask extends ChunkTask {
     }
 
     private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
-
-        if(Initializer.CONFIG.uniqueOpaqueLayer) {
+        if (Initializer.CONFIG.uniqueOpaqueLayer) {
             renderType = switch (renderType) {
                 case SOLID, CUTOUT, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
                 case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
             };
-        }
-        else {
+        } else {
             renderType = switch (renderType) {
                 case SOLID, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
                 case CUTOUT -> TerrainRenderType.CUTOUT;

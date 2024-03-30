@@ -1,720 +1,464 @@
 package net.vulkanmod.render.vertex;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.platform.MemoryTracker;
-import com.mojang.blaze3d.vertex.*;
-import com.mojang.logging.LogUtils;
-import net.minecraft.util.Mth;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.world.level.block.state.BlockState;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
+import net.vulkanmod.render.chunk.util.BufferUtil;
 import net.vulkanmod.render.util.SortUtil;
-import net.vulkanmod.vulkan.util.ColorUtil;
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
-import org.slf4j.Logger;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-import java.util.function.IntConsumer;
-
-public class TerrainBufferBuilder implements VertexConsumer {
-	protected static final float POS_CONV = 1900.0f;
-	protected static final float UV_CONV = 65536.0f;
-
-	private static final int GROWTH_SIZE = 2097152;
-	private static final Logger LOGGER = LogUtils.getLogger();
-
-	private ByteBuffer buffer;
-	private int renderedBufferCount;
-	private int renderedBufferPointer;
-	protected int nextElementByte;
-	private int vertices;
-	@Nullable
-	private VertexFormatElement currentElement;
-	private int elementIndex;
-	private VertexFormat format;
-	private VertexFormat.Mode mode;
-	private boolean fastFormat;
-	private boolean fullFormat;
-	private boolean building;
-	@Nullable
-	private Vector3f[] sortingPoints;
-	private float sortX = Float.NaN;
-	private float sortY = Float.NaN;
-	private float sortZ = Float.NaN;
-	private boolean indexOnly;
-
-	protected long bufferPtr;
-	private long currVertexPtr;
-
-	protected VertexBuilder vertexBuilder;
-
-	public TerrainBufferBuilder(int i) {
-		this.buffer = MemoryTracker.create(i * 6);
-		this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
-
-		this.vertexBuilder = PipelineManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN ? new CompressedVertexBuilder() : new DefaultVertexBuilder();
-	}
-
-	private void ensureVertexCapacity() {
-		this.ensureCapacity(this.format.getVertexSize());
-	}
-
-	private void ensureCapacity(int i) {
-		if (this.nextElementByte + i > this.buffer.capacity()) {
-			int j = this.buffer.capacity();
-			int k = j + roundUp(i);
-			LOGGER.debug((String)"Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", (Object)j, (Object)k);
-			ByteBuffer byteBuffer = MemoryTracker.resize(this.buffer, k);
-			byteBuffer.rewind();
-			this.buffer = byteBuffer;
-			this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
-		}
-	}
-
-	private static int roundUp(int i) {
-		int j = GROWTH_SIZE;
-		if (i == 0) {
-			return j;
-		} else {
-			if (i < 0) {
-				j *= -1;
-			}
-
-			int k = i % j;
-			return k == 0 ? i : i + j - k;
-		}
-	}
-
-	public void setQuadSortOrigin(float f, float g, float h) {
-		if (this.mode == VertexFormat.Mode.QUADS) {
-			if (this.sortX != f || this.sortY != g || this.sortZ != h) {
-				this.sortX = f;
-				this.sortY = g;
-				this.sortZ = h;
-				if (this.sortingPoints == null) {
-					this.sortingPoints = this.makeQuadSortingPoints();
-				}
-			}
-
-		}
-	}
-
-	public SortState getSortState() {
-		return new SortState(this.mode, this.vertices, this.sortingPoints, this.sortX, this.sortY, this.sortZ);
-	}
-
-	public void restoreSortState(SortState sortState) {
-		this.buffer.rewind();
-		this.mode = sortState.mode;
-		this.vertices = sortState.vertices;
-		this.nextElementByte = this.renderedBufferPointer;
-		this.sortingPoints = sortState.sortingPoints;
-		this.sortX = sortState.sortX;
-		this.sortY = sortState.sortY;
-		this.sortZ = sortState.sortZ;
-		this.indexOnly = true;
-	}
-
-	public void begin(VertexFormat.Mode mode, VertexFormat vertexFormat) {
-		if (this.building) {
-			throw new IllegalStateException("Already building!");
-		} else {
-			this.building = true;
-			this.mode = mode;
-			this.switchFormat(vertexFormat);
-			this.currentElement = (VertexFormatElement)vertexFormat.getElements().get(0);
-			this.elementIndex = 0;
-			this.buffer.rewind();
-		}
-	}
-
-	private void switchFormat(VertexFormat vertexFormat) {
-		if (this.format != vertexFormat) {
-			this.format = vertexFormat;
-			boolean bl = vertexFormat == DefaultVertexFormat.NEW_ENTITY;
-			boolean bl2 = vertexFormat == DefaultVertexFormat.BLOCK;
-			this.fastFormat = bl || bl2;
-			this.fullFormat = bl;
-		}
-	}
-
-	private IntConsumer intConsumer(int i, VertexFormat.IndexType indexType) {
-		MutableInt mutableInt = new MutableInt(i);
-		IntConsumer var10000;
-		switch (indexType) {
-			case SHORT:
-				var10000 = (ix) -> {
-					this.buffer.putShort(mutableInt.getAndAdd(2), (short)ix);
-				};
-				break;
-			case INT:
-				var10000 = (ix) -> {
-					this.buffer.putInt(mutableInt.getAndAdd(4), ix);
-				};
-				break;
-			default:
-				throw new IncompatibleClassChangeError();
-		}
-
-		return var10000;
-	}
-
-	private Vector3f[] makeQuadSortingPoints() {
-		FloatBuffer floatBuffer = this.buffer.asFloatBuffer();
-		int i = this.renderedBufferPointer / 4;
-		int j = this.format.getIntegerSize();
-		int stride = j * this.mode.primitiveStride;
-		int pointsNum = this.vertices / this.mode.primitiveStride;
-		Vector3f[] vector3fs = new Vector3f[pointsNum];
-
-		if (this.format == CustomVertexFormat.COMPRESSED_TERRAIN) {
-			stride = this.format.getVertexSize() * this.mode.primitiveStride;
-			j = this.format.getVertexSize();
-			float invConv = 1.0f / POS_CONV;
-			for(int m = 0; m < pointsNum; ++m) {
-				long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
-
-				short x1 = MemoryUtil.memGetShort(ptr + 0);
-				short y1 = MemoryUtil.memGetShort(ptr + 2);
-				short z1 = MemoryUtil.memGetShort(ptr + 4);
-//				short x2 = MemoryUtil.memGetShort(ptr + j * 2 + 0);
-//				short y2 = MemoryUtil.memGetShort(ptr + j * 2 + 2);
-//				short z2 = MemoryUtil.memGetShort(ptr + j * 2 + 4);
-				//Am I wrong?
-				short x2 = MemoryUtil.memGetShort(ptr + j * 3 + 0);
-				short y2 = MemoryUtil.memGetShort(ptr + j * 3 + 2);
-				short z2 = MemoryUtil.memGetShort(ptr + j * 3 + 4);
-
-				float q = ((x1 * invConv) + (x2 * invConv)) * 0.5f;
-				float r = ((y1 * invConv) + (y2 * invConv)) * 0.5f;
-				float s = ((z1 * invConv) + (z2 * invConv)) * 0.5f;
-				vector3fs[m] = new Vector3f(q, r, s);
-			}
-		} else {
-			stride = this.format.getVertexSize() * this.mode.primitiveStride;
-			j = this.format.getVertexSize();
-			for(int m = 0; m < pointsNum; ++m) {
-				long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
-
-				float x1 = MemoryUtil.memGetFloat(ptr + 0);
-				float y1 = MemoryUtil.memGetFloat(ptr + 4);
-				float z1 = MemoryUtil.memGetFloat(ptr + 8);
-				float x2 = MemoryUtil.memGetFloat(ptr + j * 2 + 0);
-				float y2 = MemoryUtil.memGetFloat(ptr + j * 2 + 4);
-				float z2 = MemoryUtil.memGetFloat(ptr + j * 2 + 8);
-
-				float q = (x1 + x2) * 0.5f;
-				float r = (y1 + y2) * 0.5f;
-				float s = (z1 + z2) * 0.5f;
-				vector3fs[m] = new Vector3f(q, r, s);
-			}
-		}
-
-		return vector3fs;
-	}
-
-	private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
-		float[] distances = new float[this.sortingPoints.length];
-		int[] is = new int[this.sortingPoints.length];
-
-		for(int i = 0; i < this.sortingPoints.length; is[i] = i++) {
-			float f = this.sortingPoints[i].x() - this.sortX;
-			float g = this.sortingPoints[i].y() - this.sortY;
-			float h = this.sortingPoints[i].z() - this.sortZ;
-			distances[i] = f * f + g * g + h * h;
-		}
-
-		SortUtil.mergeSort(is, distances);
-		IntConsumer intConsumer = this.intConsumer(this.nextElementByte, indexType);
-
-		for(int i = 0; i < is.length; ++i) {
-			int j = is[i];
-			intConsumer.accept(j * this.mode.primitiveStride + 0);
-			intConsumer.accept(j * this.mode.primitiveStride + 1);
-			intConsumer.accept(j * this.mode.primitiveStride + 2);
-			intConsumer.accept(j * this.mode.primitiveStride + 2);
-			intConsumer.accept(j * this.mode.primitiveStride + 3);
-			intConsumer.accept(j * this.mode.primitiveStride + 0);
-		}
-	}
-
-	public boolean isCurrentBatchEmpty() {
-		return this.vertices == 0;
-	}
-
-	@Nullable
-	public RenderedBuffer endOrDiscardIfEmpty() {
-		this.ensureDrawing();
-		if (this.isCurrentBatchEmpty()) {
-			this.reset();
-			return null;
-		} else {
-			RenderedBuffer renderedBuffer = this.storeRenderedBuffer();
-			this.reset();
-			return renderedBuffer;
-		}
-	}
-
-	public RenderedBuffer end() {
-		this.ensureDrawing();
-		RenderedBuffer renderedBuffer = this.storeRenderedBuffer();
-		this.reset();
-		return renderedBuffer;
-	}
-
-	private void ensureDrawing() {
-		if (!this.building) {
-			throw new IllegalStateException("Not building!");
-		}
-	}
-
-	private RenderedBuffer storeRenderedBuffer() {
-		int indexCount = this.mode.indexCount(this.vertices);
-		int vertexBufferSize = !this.indexOnly ? this.vertices * this.format.getVertexSize() : 0;
-		VertexFormat.IndexType indexType = VertexFormat.IndexType.least(indexCount);
-		boolean bl;
-		int size;
-		int indexBufferSize;
-		if (this.sortingPoints != null) {
-			indexBufferSize = Mth.roundToward(indexCount * indexType.bytes, 4);
-			this.ensureCapacity(indexBufferSize);
-			this.putSortedQuadIndices(indexType);
-			bl = false;
-			this.nextElementByte += indexBufferSize;
-			size = vertexBufferSize + indexBufferSize;
-		} else {
-			bl = true;
-			size = vertexBufferSize;
-		}
-
-		int ptr = this.renderedBufferPointer;
-		this.renderedBufferPointer += size;
-		++this.renderedBufferCount;
-		DrawState drawState = new DrawState(this.format, this.vertices, indexCount, this.mode, indexType, this.indexOnly, bl);
-		return new RenderedBuffer(ptr, drawState);
-	}
-
-	public void reset() {
-		this.building = false;
-		this.vertices = 0;
-		this.currentElement = null;
-		this.elementIndex = 0;
-		this.sortingPoints = null;
-		this.sortX = Float.NaN;
-		this.sortY = Float.NaN;
-		this.sortZ = Float.NaN;
-		this.indexOnly = false;
-	}
-
-	public void endVertex() {
-		if (this.elementIndex != 0) {
-			throw new IllegalStateException("Not filled all elements of the vertex");
-		} else {
-			++this.vertices;
-			this.ensureVertexCapacity();
-			if (this.mode == VertexFormat.Mode.LINES || this.mode == VertexFormat.Mode.LINE_STRIP) {
-				int i = this.format.getVertexSize();
-				this.buffer.put(this.nextElementByte, this.buffer, this.nextElementByte - i, i);
-				this.nextElementByte += i;
-				++this.vertices;
-				this.ensureVertexCapacity();
-			}
-
-		}
-	}
-
-	public void nextElement() {
-		ImmutableList<VertexFormatElement> immutableList = this.format.getElements();
-		this.elementIndex = (this.elementIndex + 1) % immutableList.size();
-		this.nextElementByte += this.currentElement.getByteSize();
-		VertexFormatElement vertexFormatElement = immutableList.get(this.elementIndex);
-		this.currentElement = vertexFormatElement;
-		if (vertexFormatElement.getUsage() == VertexFormatElement.Usage.PADDING) {
-			this.nextElement();
-		}
-
-	}
-
-	public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal) {
-		this.vertexBuilder.vertex(x, y, z, red, green, blue, alpha, u, v, light, packedNormal);
-	}
-
-	public void setBlockAttributes(BlockState blockState) {}
-
-	@Override
-	public VertexConsumer vertex(double d, double e, double f) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public VertexConsumer color(int i, int j, int k, int l) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public VertexConsumer overlayCoords(int i, int j) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public VertexConsumer uv2(int i, int j) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public VertexConsumer normal(float f, float g, float h) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void defaultColor(int i, int j, int k, int l) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void unsetDefaultColor() {
-		throw new UnsupportedOperationException();
-	}
-
-	public void beginVertex() {
-		this.currVertexPtr = this.bufferPtr + this.nextElementByte;
-	}
-
-	public void endCurrentVertex() {
-		this.vertexBuilder.pushOffset();
-		endVertex();
-	}
-
-	public void position(float x, float y, float z) {
-		this.vertexBuilder.position(x, y, z);
-	}
-
-	public VertexConsumer color(int color) {
-		this.vertexBuilder.color(color);
-		return this;
-	}
-
-	public VertexConsumer uv(float u, float v) {
-		this.vertexBuilder.uv(u, v);
-		return this;
-	}
-
-	public void light(int light) {
-		this.vertexBuilder.light(light);
-	}
-
-	public void normal(int normal) {
-		this.vertexBuilder.normal(normal);
-	}
-
-	public void putByte(int index, byte value) {
-		MemoryUtil.memPutByte(this.bufferPtr + this.nextElementByte + index, value);
-	}
-
-	public void putShort(int index, short value) {
-		MemoryUtil.memPutShort(this.bufferPtr + this.nextElementByte + index, value);
-	}
-
-	public void putInt(int index, int value) {
-		MemoryUtil.memPutInt(this.bufferPtr + this.nextElementByte + index, value);
-	}
-
-	public void putFloat(int index, float value) {
-		MemoryUtil.memPutFloat(this.bufferPtr + this.nextElementByte + index, value);
-	}
-
-	void releaseRenderedBuffer() {
-		if (this.renderedBufferCount > 0 && --this.renderedBufferCount == 0) {
-			this.clear();
-		}
-
-	}
-
-	public void clear() {
-		if (this.renderedBufferCount > 0) {
-			LOGGER.warn("Clearing BufferBuilder with unused batches");
-		}
-
-		this.discard();
-	}
-
-	public void discard() {
-		this.renderedBufferCount = 0;
-		this.renderedBufferPointer = 0;
-		this.nextElementByte = 0;
-	}
-
-	public VertexFormatElement currentElement() {
-		if (this.currentElement == null) {
-			throw new IllegalStateException("BufferBuilder not started");
-		} else {
-			return this.currentElement;
-		}
-	}
-
-	public boolean building() {
-		return this.building;
-	}
-
-	ByteBuffer bufferSlice(int i, int j) {
-		return MemoryUtil.memSlice(this.buffer, i, j - i);
-	}
-
-	public static class SortState {
-		final VertexFormat.Mode mode;
-		final int vertices;
-		@Nullable
-		final Vector3f[] sortingPoints;
-		final float sortX;
-		final float sortY;
-		final float sortZ;
-
-		SortState(VertexFormat.Mode mode, int i, @Nullable Vector3f[] vector3fs, float f, float g, float h) {
-			this.mode = mode;
-			this.vertices = i;
-			this.sortingPoints = vector3fs;
-			this.sortX = f;
-			this.sortY = g;
-			this.sortZ = h;
-		}
-	}
-
-	public class RenderedBuffer {
-		private final int pointer;
-		private final DrawState drawState;
-		private boolean released;
-
-		RenderedBuffer(int pointer, DrawState drawState) {
-			this.pointer = pointer;
-			this.drawState = drawState;
-		}
-
-		public ByteBuffer vertexBuffer() {
-			int i = this.pointer + this.drawState.vertexBufferStart();
-			int j = this.pointer + this.drawState.vertexBufferEnd();
-			return TerrainBufferBuilder.this.bufferSlice(i, j);
-		}
-
-		public ByteBuffer indexBuffer() {
-			int i = this.pointer + this.drawState.indexBufferStart();
-			int j = this.pointer + this.drawState.indexBufferEnd();
-			return TerrainBufferBuilder.this.bufferSlice(i, j);
-		}
-
-		public DrawState drawState() {
-			return this.drawState;
-		}
-
-		public boolean isEmpty() {
-			return this.drawState.vertexCount == 0;
-		}
-
-		public void release() {
-			if (this.released) {
-				throw new IllegalStateException("Buffer has already been released!");
-			} else {
-				TerrainBufferBuilder.this.releaseRenderedBuffer();
-				this.released = true;
-			}
-		}
-	}
-
-	public record DrawState(VertexFormat format, int vertexCount, int indexCount, VertexFormat.Mode mode, VertexFormat.IndexType indexType, boolean indexOnly, boolean sequentialIndex) {
-
-		public int vertexBufferSize() {
-			return this.vertexCount * this.format.getVertexSize();
-		}
-
-		public int vertexBufferStart() {
-			return 0;
-		}
-
-		public int vertexBufferEnd() {
-			return this.vertexBufferSize();
-		}
-
-		public int indexBufferStart() {
-			return this.indexOnly ? 0 : this.vertexBufferEnd();
-		}
-
-		public int indexBufferEnd() {
-			return this.indexBufferStart() + this.indexBufferSize();
-		}
-
-		private int indexBufferSize() {
-			return this.sequentialIndex ? 0 : this.indexCount * this.indexType.bytes;
-		}
-
-		public int bufferSize() {
-			return this.indexBufferEnd();
-		}
-
-		public VertexFormat format() {
-			return this.format;
-		}
-
-		public int vertexCount() {
-			return this.vertexCount;
-		}
-
-		public int indexCount() {
-			return this.indexCount;
-		}
-
-		public VertexFormat.Mode mode() {
-			return this.mode;
-		}
-
-		public VertexFormat.IndexType indexType() {
-			return this.indexType;
-		}
-
-		public boolean indexOnly() {
-			return this.indexOnly;
-		}
-
-		public boolean sequentialIndex() {
-			return this.sequentialIndex;
-		}
-	}
-
-	public interface VertexBuilder {
-		void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal);
-
-		void position(float x, float y, float z);
-
-		void color(int color);
-
-		void uv(float u, float v);
-
-		void light(int light);
-
-		void normal(int normal);
-
-		void pushOffset();
-	}
-
-	class DefaultVertexBuilder implements VertexBuilder {
-
-		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal) {
-			putFloat(0, x);
-			putFloat(4, y);
-			putFloat(8, z);
-
-			putByte(12, (byte)((int)(red * 255.0F)));
-			putByte(13, (byte)((int)(green * 255.0F)));
-			putByte(14, (byte)((int)(blue * 255.0F)));
-			putByte(15, (byte)((int)(alpha * 255.0F)));
-
-			putFloat(16, u);
-			putFloat(20, v);
-
-			putShort(24, (short)(light & '\uffff'));
-			putShort(26, (short)(light >> 16 & '\uffff'));
-
-			putInt(28, packedNormal);
-
-			nextElementByte += 32;
-			endVertex();
-		}
-
-		@Override
-		public void position(float x, float y, float z) {
-			putFloat(0, x);
-			putFloat(4, y);
-			putFloat(8, z);
-		}
-
-		@Override
-		public void color(int color) {
-			MemoryUtil.memPutInt(currVertexPtr + 12, color);
-		}
-
-		@Override
-		public void uv(float u, float v) {
-			MemoryUtil.memPutFloat(currVertexPtr + 16, u);
-			MemoryUtil.memPutFloat(currVertexPtr + 20, v);
-		}
-
-		@Override
-		public void light(int light) {
-			MemoryUtil.memPutInt(currVertexPtr + 24, light);
-		}
-
-		@Override
-		public void normal(int normal) {
-			MemoryUtil.memPutInt(currVertexPtr + 28, normal);
-		}
-
-		@Override
-		public void pushOffset() {
-			nextElementByte += 32;
-		}
-	}
-
-	class CompressedVertexBuilder implements VertexBuilder {
-
-		private static final int VERTEX_SIZE = 20;
-
-		public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light, int packedNormal) {
-			long ptr = bufferPtr + nextElementByte;
-
-			final short sX = (short) (x * POS_CONV);
-			final short sY = (short) (y * POS_CONV);
-			final short sZ = (short) (z * POS_CONV);
-
-			MemoryUtil.memPutShort(ptr + 0, sX);
-			MemoryUtil.memPutShort(ptr + 2, sY);
-			MemoryUtil.memPutShort(ptr + 4, sZ);
-
-			final int color = ColorUtil.RGBA.pack(red, green, blue, alpha);
-			MemoryUtil.memPutInt(ptr + 8, color);
-
-			MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
-			MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));
-
-			MemoryUtil.memPutInt(ptr + 16, light);
-
-			nextElementByte += VERTEX_SIZE;
-			endVertex();
-		}
-
-		@Override
-		public void position(float x, float y, float z) {
-			final short sX = (short) (x * POS_CONV);
-			final short sY = (short) (y * POS_CONV);
-			final short sZ = (short) (z * POS_CONV);
-
-			MemoryUtil.memPutShort(currVertexPtr + 0, sX);
-			MemoryUtil.memPutShort(currVertexPtr + 2, sY);
-			MemoryUtil.memPutShort(currVertexPtr + 4, sZ);
-		}
-
-		@Override
-		public void color(int color) {
-			MemoryUtil.memPutInt(currVertexPtr + 8, color);
-		}
-
-		@Override
-		public void uv(float u, float v) {
-			MemoryUtil.memPutShort(currVertexPtr + 12, (short) (u * UV_CONV));
-			MemoryUtil.memPutShort(currVertexPtr + 14, (short) (v * UV_CONV));
-		}
-
-		@Override
-		public void light(int light) {
-			MemoryUtil.memPutInt(currVertexPtr + 16, light);
-		}
-
-		@Override
-		public void normal(int normal) {}
-
-		@Override
-		public void pushOffset() {
-			nextElementByte += VERTEX_SIZE;
-		}
-	}
+
+public class TerrainBufferBuilder {
+    protected static final float POS_CONV = 1024.0f;
+    protected static final float UV_CONV = 65536.0f;
+
+    private static final Logger LOGGER = Initializer.LOGGER;
+
+    private ByteBuffer buffer;
+    protected long bufferPtr;
+    protected int nextElementByte;
+    private int vertices;
+
+    private int renderedBufferCount;
+    private int renderedBufferPointer;
+
+    private final VertexFormat format;
+
+    private boolean building;
+
+    private Vector3f[] sortingPoints;
+    private float sortX = Float.NaN;
+    private float sortY = Float.NaN;
+    private float sortZ = Float.NaN;
+    private boolean indexOnly;
+
+    protected VertexBuilder vertexBuilder;
+
+    public TerrainBufferBuilder(int size) {
+        this.buffer = MemoryTracker.create(size * 6);
+        this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
+
+        this.format = PipelineManager.TERRAIN_VERTEX_FORMAT;
+        this.vertexBuilder = PipelineManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN ? new CompressedVertexBuilder() : new DefaultVertexBuilder();
+    }
+
+    public void ensureCapacity() {
+        this.ensureCapacity(this.format.getVertexSize() * 4);
+    }
+
+    private void ensureCapacity(int size) {
+        if (this.nextElementByte + size > this.buffer.capacity()) {
+            int capacity = this.buffer.capacity();
+            int newSize = (capacity + size) * 2;
+            LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", capacity, newSize);
+            this.resize(newSize);
+        }
+    }
+
+    private void resize(int newSize) {
+        ByteBuffer byteBuffer = MemoryTracker.resize(this.buffer, newSize);
+        byteBuffer.rewind();
+        this.buffer = byteBuffer;
+        this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
+    }
+
+    public void setQuadSortOrigin(float f, float g, float h) {
+        if (this.sortX != f || this.sortY != g || this.sortZ != h) {
+            this.sortX = f;
+            this.sortY = g;
+            this.sortZ = h;
+            if (this.sortingPoints == null) {
+                this.sortingPoints = this.makeQuadSortingPoints();
+            }
+        }
+    }
+
+    public SortState getSortState() {
+        return new SortState(VertexFormat.Mode.QUADS, this.vertices, this.sortingPoints, this.sortX, this.sortY, this.sortZ);
+    }
+
+    public void restoreSortState(SortState sortState) {
+        this.buffer.rewind();
+        this.vertices = sortState.vertices;
+        this.nextElementByte = this.renderedBufferPointer;
+        this.sortingPoints = sortState.sortingPoints;
+        this.sortX = sortState.sortX;
+        this.sortY = sortState.sortY;
+        this.sortZ = sortState.sortZ;
+        this.indexOnly = true;
+    }
+
+    public void begin() {
+        if (this.building) {
+            throw new IllegalStateException("Already building!");
+        } else {
+            this.building = true;
+            this.buffer.rewind();
+        }
+    }
+
+    private Vector3f[] makeQuadSortingPoints() {
+        int pointsNum = this.vertices / 4;
+        Vector3f[] sortingPoints = new Vector3f[pointsNum];
+
+        int stride = this.format.getVertexSize() * 4;
+        int vertexSize = this.format.getVertexSize();
+        int offset = vertexSize * 2;
+
+        if (this.format == CustomVertexFormat.COMPRESSED_TERRAIN) {
+            final float invConv = 1.0f / POS_CONV;
+
+            for (int m = 0; m < pointsNum; ++m) {
+                long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
+
+                short x0 = MemoryUtil.memGetShort(ptr + 0);
+                short y0 = MemoryUtil.memGetShort(ptr + 2);
+                short z0 = MemoryUtil.memGetShort(ptr + 4);
+                short x2 = MemoryUtil.memGetShort(ptr + offset + 0);
+                short y2 = MemoryUtil.memGetShort(ptr + offset + 2);
+                short z2 = MemoryUtil.memGetShort(ptr + offset + 4);
+
+                float xa = (x0 + x2) * invConv * 0.5f;
+                float ya = (y0 + y2) * invConv * 0.5f;
+                float za = (z0 + z2) * invConv * 0.5f;
+                sortingPoints[m] = new Vector3f(xa, ya, za);
+            }
+        } else {
+            for (int m = 0; m < pointsNum; ++m) {
+                long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
+
+                float x0 = MemoryUtil.memGetFloat(ptr + 0);
+                float y0 = MemoryUtil.memGetFloat(ptr + 4);
+                float z0 = MemoryUtil.memGetFloat(ptr + 8);
+                float x2 = MemoryUtil.memGetFloat(ptr + offset + 0);
+                float y2 = MemoryUtil.memGetFloat(ptr + offset + 4);
+                float z2 = MemoryUtil.memGetFloat(ptr + offset + 8);
+
+                float q = (x0 + x2) * 0.5f;
+                float r = (y0 + y2) * 0.5f;
+                float s = (z0 + z2) * 0.5f;
+                sortingPoints[m] = new Vector3f(q, r, s);
+            }
+        }
+
+        return sortingPoints;
+    }
+
+    private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
+        float[] distances = new float[this.sortingPoints.length];
+        int[] sortingPoints = new int[this.sortingPoints.length];
+
+        for (int i = 0; i < this.sortingPoints.length; sortingPoints[i] = i++) {
+            float dx = this.sortingPoints[i].x() - this.sortX;
+            float dy = this.sortingPoints[i].y() - this.sortY;
+            float dz = this.sortingPoints[i].z() - this.sortZ;
+            distances[i] = dx * dx + dy * dy + dz * dz;
+        }
+
+        SortUtil.mergeSort(sortingPoints, distances);
+
+        long ptr = this.bufferPtr + this.nextElementByte;
+
+        final int size = getIndexSize(indexType);
+        final int stride = 4; // 4 vertices in a quad
+        for (int i = 0; i < sortingPoints.length; ++i) {
+            int quadIndex = sortingPoints[i];
+
+            MemoryUtil.memPutInt(ptr + (size * 0L), quadIndex * stride + 0);
+            MemoryUtil.memPutInt(ptr + (size * 1L), quadIndex * stride + 1);
+            MemoryUtil.memPutInt(ptr + (size * 2L), quadIndex * stride + 2);
+            MemoryUtil.memPutInt(ptr + (size * 3L), quadIndex * stride + 2);
+            MemoryUtil.memPutInt(ptr + (size * 4L), quadIndex * stride + 3);
+            MemoryUtil.memPutInt(ptr + (size * 5L), quadIndex * stride + 0);
+
+            ptr += size * 6L;
+        }
+    }
+
+    private static int getIndexSize(VertexFormat.IndexType indexType) {
+        return switch (indexType) {
+            case SHORT -> 2;
+            case INT -> 4;
+        };
+    }
+
+    public boolean isCurrentBatchEmpty() {
+        return this.vertices == 0;
+    }
+
+    @Nullable
+    public RenderedBuffer end() {
+        this.ensureDrawing();
+        if (this.isCurrentBatchEmpty()) {
+            this.reset();
+            return null;
+        } else {
+            RenderedBuffer renderedBuffer = this.storeRenderedBuffer();
+            this.reset();
+            return renderedBuffer;
+        }
+    }
+
+    private void ensureDrawing() {
+        if (!this.building) {
+            throw new IllegalStateException("Not building!");
+        }
+    }
+
+    private RenderedBuffer storeRenderedBuffer() {
+        int indexCount = this.vertices / 4 * 6;
+        int vertexBufferSize = !this.indexOnly ? this.vertices * this.format.getVertexSize() : 0;
+        VertexFormat.IndexType indexType = VertexFormat.IndexType.least(indexCount);
+        boolean sequentialIndexing;
+        int size;
+
+        if (this.sortingPoints != null) {
+            int indexBufferSize = indexCount * indexType.bytes;
+            this.ensureCapacity(indexBufferSize);
+            this.putSortedQuadIndices(indexType);
+            sequentialIndexing = false;
+            this.nextElementByte += indexBufferSize;
+            size = vertexBufferSize + indexBufferSize;
+        } else {
+            sequentialIndexing = true;
+            size = vertexBufferSize;
+        }
+
+        int ptr = this.renderedBufferPointer;
+        this.renderedBufferPointer += size;
+        ++this.renderedBufferCount;
+
+        DrawState drawState = new DrawState(this.format.getVertexSize(), this.vertices, indexCount, indexType, this.indexOnly, sequentialIndexing);
+        return new RenderedBuffer(ptr, drawState);
+    }
+
+    public void reset() {
+        this.building = false;
+        this.vertices = 0;
+
+        this.sortingPoints = null;
+        this.sortX = Float.NaN;
+        this.sortY = Float.NaN;
+        this.sortZ = Float.NaN;
+        this.indexOnly = false;
+    }
+
+    void releaseRenderedBuffer() {
+        if (this.renderedBufferCount > 0 && --this.renderedBufferCount == 0) {
+            this.clear();
+        }
+
+    }
+
+    public void clear() {
+        if (this.renderedBufferCount > 0) {
+            LOGGER.warn("Clearing BufferBuilder with unused batches");
+        }
+
+        this.discard();
+    }
+
+    public void discard() {
+        this.renderedBufferCount = 0;
+        this.renderedBufferPointer = 0;
+        this.nextElementByte = 0;
+    }
+
+    public boolean building() {
+        return this.building;
+    }
+
+    public void endVertex() {
+        this.nextElementByte += this.vertexBuilder.getStride();
+        ++this.vertices;
+    }
+
+    public void vertex(float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
+        final long ptr = this.bufferPtr + this.nextElementByte;
+        this.vertexBuilder.vertex(ptr, x, y, z, color, u, v, light, packedNormal);
+        this.endVertex();
+    }
+
+    public void setBlockAttributes(BlockState blockState) {
+    }
+
+    public long getPtr() {
+        return this.bufferPtr + this.nextElementByte;
+    }
+
+    public static class SortState {
+        final VertexFormat.Mode mode;
+        final int vertices;
+        @Nullable
+        final Vector3f[] sortingPoints;
+        final float sortX;
+        final float sortY;
+        final float sortZ;
+
+        SortState(VertexFormat.Mode mode, int i, @Nullable Vector3f[] vector3fs, float f, float g, float h) {
+            this.mode = mode;
+            this.vertices = i;
+            this.sortingPoints = vector3fs;
+            this.sortX = f;
+            this.sortY = g;
+            this.sortZ = h;
+        }
+    }
+
+    public class RenderedBuffer {
+        private final int pointer;
+        private final DrawState drawState;
+        private boolean released;
+
+        RenderedBuffer(int pointer, DrawState drawState) {
+            this.pointer = pointer;
+            this.drawState = drawState;
+        }
+
+        public ByteBuffer vertexBuffer() {
+            int start = this.pointer + this.drawState.vertexBufferStart();
+            int end = this.pointer + this.drawState.vertexBufferEnd();
+            return BufferUtil.bufferSlice(TerrainBufferBuilder.this.buffer, start, end);
+        }
+
+        public ByteBuffer indexBuffer() {
+            int start = this.pointer + this.drawState.indexBufferStart();
+            int end = this.pointer + this.drawState.indexBufferEnd();
+            return BufferUtil.bufferSlice(TerrainBufferBuilder.this.buffer, start, end);
+        }
+
+        public DrawState drawState() {
+            return this.drawState;
+        }
+
+        public boolean isEmpty() {
+            return this.drawState.vertexCount == 0;
+        }
+
+        public void release() {
+            if (this.released) {
+                throw new IllegalStateException("Buffer has already been released!");
+            } else {
+                TerrainBufferBuilder.this.releaseRenderedBuffer();
+                this.released = true;
+            }
+        }
+    }
+
+    public record DrawState(int vertexSize, int vertexCount, int indexCount, VertexFormat.IndexType indexType,
+                            boolean indexOnly, boolean sequentialIndex) {
+
+        public int vertexBufferSize() {
+            return this.vertexCount * this.vertexSize;
+        }
+
+        public int vertexBufferStart() {
+            return 0;
+        }
+
+        public int vertexBufferEnd() {
+            return this.vertexBufferSize();
+        }
+
+        public int indexBufferStart() {
+            return this.indexOnly ? 0 : this.vertexBufferEnd();
+        }
+
+        public int indexBufferEnd() {
+            return this.indexBufferStart() + this.indexBufferSize();
+        }
+
+        private int indexBufferSize() {
+            return this.sequentialIndex ? 0 : this.indexCount * this.indexType.bytes;
+        }
+
+        public int bufferSize() {
+            return this.indexBufferEnd();
+        }
+
+        public int vertexCount() {
+            return this.vertexCount;
+        }
+
+        public int indexCount() {
+            return this.indexCount;
+        }
+
+        public VertexFormat.IndexType indexType() {
+            return this.indexType;
+        }
+
+        public boolean indexOnly() {
+            return this.indexOnly;
+        }
+
+        public boolean sequentialIndex() {
+            return this.sequentialIndex;
+        }
+    }
+
+    public interface VertexBuilder {
+        void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal);
+
+        int getStride();
+    }
+
+    static class DefaultVertexBuilder implements VertexBuilder {
+        private static final int VERTEX_SIZE = 32;
+
+        public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
+            MemoryUtil.memPutFloat(ptr + 0, x);
+            MemoryUtil.memPutFloat(ptr + 4, y);
+            MemoryUtil.memPutFloat(ptr + 8, z);
+
+            MemoryUtil.memPutInt(ptr + 12, color);
+
+            MemoryUtil.memPutFloat(ptr + 16, u);
+            MemoryUtil.memPutFloat(ptr + 20, v);
+
+            MemoryUtil.memPutShort(ptr + 24, (short) (light & '\uffff'));
+            MemoryUtil.memPutShort(ptr + 26, (short) (light >> 16 & '\uffff'));
+
+            MemoryUtil.memPutInt(ptr + 28, packedNormal);
+        }
+
+        @Override
+        public int getStride() {
+            return VERTEX_SIZE;
+        }
+    }
+
+    static class CompressedVertexBuilder implements VertexBuilder {
+        private static final int VERTEX_SIZE = 20;
+
+        public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
+            final short sX = (short) (x * POS_CONV);
+            final short sY = (short) (y * POS_CONV);
+            final short sZ = (short) (z * POS_CONV);
+
+            MemoryUtil.memPutShort(ptr + 0, sX);
+            MemoryUtil.memPutShort(ptr + 2, sY);
+            MemoryUtil.memPutShort(ptr + 4, sZ);
+
+            final short l = (short) (((light >>> 8) & 0xFF00) | (light & 0xFF));
+            MemoryUtil.memPutShort(ptr + 6, l);
+
+            MemoryUtil.memPutInt(ptr + 8, color);
+
+            MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
+            MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));
+
+        }
+
+        @Override
+        public int getStride() {
+            return VERTEX_SIZE;
+        }
+    }
 }
