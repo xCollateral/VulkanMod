@@ -159,6 +159,8 @@ public abstract class GameRendererMixin {
             }));
             //TODO: HACK: Use rendertype_entity_translucent_cull instead of rendertype_entity_cutout_no_cull
             // (Is potentially more performant)
+            //rendertype_entity_cutout_no_cull: Allows Read Hurt animatio overlay
+            final ShaderInstance rendertypeEntityFullAnim = new ShaderInstance(provider, "rendertype_entity_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY);
             final ShaderInstance rendertypeEntityDef = new ShaderInstance(provider, "rendertype_entity_translucent_cull", DefaultVertexFormat.NEW_ENTITY);
             final ShaderInstance rendertypeEntityEarlyZ = new ShaderInstance(provider, "rendertype_entity_no_outline", DefaultVertexFormat.NEW_ENTITY);
 
@@ -175,7 +177,7 @@ public abstract class GameRendererMixin {
                 rendertypeEntityCutoutShader = shaderInstance;
             }));
 
-            list1.add(Pair.of(rendertypeEntityDef, (shaderInstance) -> {
+            list1.add(Pair.of(rendertypeEntityFullAnim, (shaderInstance) -> {
                 rendertypeEntityCutoutNoCullShader = shaderInstance;
             }));
 //            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_cutout_no_cull_z_offset", DefaultVertexFormat.POSITION_COLOR_TEX_OVERLAY_LIGHTMAP), (p_172654_) -> {
