@@ -51,8 +51,9 @@ public class RenderSection {
     //Graph-info
     public byte mainDir;
     public byte directions;
-    public byte directionChanges;
     public byte sourceDirs;
+    public byte steps;
+    public byte directionChanges;
 
     public RenderSection(int index, int x, int y, int z) {
         this.xOffset = x;

@@ -128,6 +128,7 @@ public class SectionGraph {
         renderSection.setLastFrame(frame);
         renderSection.visibility |= initVisibility();
         renderSection.directionChanges = 0;
+        renderSection.steps = 0;
     }
 
     // Init special value used by first graph node
@@ -156,7 +157,7 @@ public class SectionGraph {
     }
 
     private void updateRenderChunks() {
-        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
+        int maxDirectionsChanges = Initializer.CONFIG.advCulling - 1;
 
         while (this.sectionQueue.hasNext()) {
             RenderSection renderSection = this.sectionQueue.poll();
@@ -268,7 +269,9 @@ public class SectionGraph {
             relativeSection.mainDir = direction;
             relativeSection.sourceDirs = (byte) (1 << direction);
 
-            relativeSection.directionChanges = 127;
+            final byte steps = (byte) (renderSection.steps + 1);
+            relativeSection.directionChanges = (byte) (steps < 10 ? 0 : 127);
+            relativeSection.steps = steps;
 
             relativeSection.directions = (byte) (renderSection.directions & ~(1 << opposite));
             this.sectionQueue.add(relativeSection);
