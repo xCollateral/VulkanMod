@@ -19,6 +19,8 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
+import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
+
 public abstract class VRenderSystem {
     private static long window;
 
@@ -29,13 +31,14 @@ public abstract class VRenderSystem {
     public static int colorMask = PipelineState.ColorMask.getColorMask(true, true, true, true);
 
     public static boolean cull = true;
-
+    private static boolean canApplyClear = false;
     public static boolean logicOp = false;
     public static int logicOpFun = 0;
 
     public static final float clearDepth = 1.0f;
-    public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
+    private static final float[] checkedClearColor = new float[4];
 
+    public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4); //Avoid the driver caching dirty memory as a clear Color
     public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
     public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
     public static MappedBuffer TextureMatrix = new MappedBuffer(16 * 4);
@@ -148,12 +151,25 @@ public abstract class VRenderSystem {
         return shaderFogColor;
     }
 
-    public static void clearColor(float f1, float f2, float f3, float f4) {
-        ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
+    public static void clearColor(float f0, float f1, float f2, float f3) {
+        //set to true if different color
+        if(!(canApplyClear = checkClearColor(f0, f1, f2, f3))) return;
+        ColorUtil.setRGBA_Buffer(clearColor, f0, f1, f2, f3);
+        checkedClearColor[0]=f0;
+        checkedClearColor[1]=f1;
+        checkedClearColor[2]=f2;
+        checkedClearColor[3]=f3;
+    }
+
+    private static boolean checkClearColor(float f0, float f1, float f2, float f3) {
+        return checkedClearColor[0] !=f0 | checkedClearColor[1] !=f1 | checkedClearColor[2] !=f2 | checkedClearColor[3] != f3;
     }
 
     public static void clear(int v) {
-        Renderer.clearAttachments(v);
+        //Skip reapplying the same color over and over per clear
+        //Depth clears are much much faster than color clears
+        Renderer.clearAttachments(canApplyClear ? v : GL_DEPTH_BUFFER_BIT); //Depth Only Clears needed to fix Chat + Command Elements
+        canApplyClear=false;
     }
 
     // Pipeline state
