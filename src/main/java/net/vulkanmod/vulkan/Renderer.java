@@ -201,7 +201,7 @@ public class Renderer {
         resetDescriptors();
 
         currentCmdBuffer = commandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
+
         recordingCmds = true;
 
         try(MemoryStack stack = stackPush()) {
@@ -277,12 +277,12 @@ public class Renderer {
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, inFlightFences.get(currentFrame));
 
             Synchronization.INSTANCE.waitFences();
 
             if((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
+                vkResetFences(device, inFlightFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
@@ -395,7 +395,7 @@ public class Renderer {
         Synchronization.INSTANCE.waitFences();
         Vulkan.waitIdle();
 
-        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
+        vkResetCommandPool(Vulkan.getDevice(), Vulkan.getCommandPool(), 0);
 
         Vulkan.getSwapChain().recreate();
 
