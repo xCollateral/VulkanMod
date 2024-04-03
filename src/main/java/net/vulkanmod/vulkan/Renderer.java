@@ -21,7 +21,6 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -483,9 +482,9 @@ public class Renderer {
         return true;
     }
 
-    public void uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
+    public void uploadAndBindUBOs(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame, shouldUpdate);
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
     }
 
     public void pushConstants(Pipeline pipeline) {

@@ -47,7 +47,7 @@ public class DrawUtil {
 
     public static void drawFramebuffer(GraphicsPipeline pipeline, VulkanImage attachment) {
 
-       boolean shouldUpdate = Renderer.getInstance().bindGraphicsPipeline(pipeline);
+        Renderer.getInstance().bindGraphicsPipeline(pipeline);
 
         VTextureSelector.bindTexture(attachment);
 
@@ -59,7 +59,7 @@ public class DrawUtil {
         RenderSystem.applyModelViewMatrix();
         posestack.popPose();
 
-        Renderer.getInstance().uploadAndBindUBOs(pipeline, shouldUpdate);
+        Renderer.getInstance().uploadAndBindUBOs(pipeline);
 
         blitQuad(0.0D, 0.0D, 1.0D, 1.0D);
     }

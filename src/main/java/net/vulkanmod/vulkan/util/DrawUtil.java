@@ -25,8 +25,8 @@ public class DrawUtil {
         RenderSystem.disableCull();
 
         Renderer renderer = Renderer.getInstance();
-        boolean shouldUpdate = renderer.bindGraphicsPipeline(blitPipeline);
-        renderer.uploadAndBindUBOs(blitPipeline, shouldUpdate);
+        renderer.bindGraphicsPipeline(blitPipeline);
+        renderer.uploadAndBindUBOs(blitPipeline);
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
         VK11.vkCmdDraw(commandBuffer, 3, 1, 0, 0);
@@ -63,8 +63,8 @@ public class DrawUtil {
         Renderer renderer = Renderer.getInstance();
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
-        boolean shouldUpdate = renderer.bindGraphicsPipeline(pipeline);
-        renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
+        renderer.bindGraphicsPipeline(pipeline);
+        renderer.uploadAndBindUBOs(pipeline);
         Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
     }
 }

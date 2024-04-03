@@ -187,13 +187,13 @@ public abstract class Pipeline {
         return imageDescriptors;
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame, boolean shouldUpdate) {
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
         UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, shouldUpdate);
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame, boolean shouldUpdate) {
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, shouldUpdate);
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame) {
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
     static long createShaderModule(ByteBuffer spirvCode) {
@@ -238,10 +238,10 @@ public abstract class Pipeline {
             }
         }
 
-        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean pipelineUpdate) {
+        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint) {
             try(MemoryStack stack = stackPush()) {
 
-                if(pipelineUpdate) this.updateUniforms(uniformBuffers);
+                this.updateUniforms(uniformBuffers);
 
                 final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
@@ -249,9 +249,9 @@ public abstract class Pipeline {
                     this.updateDescriptorSet(stack, uniformBuffers);
                 }
 
-                if (textureUpdate || pipelineUpdate)
-                    vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-                        0, stack.longs(currentSet), dynamicOffsets);
+
+                vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
+                    0, stack.longs(currentSet), dynamicOffsets);
 
             }
         }

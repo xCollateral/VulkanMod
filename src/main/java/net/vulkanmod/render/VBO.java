@@ -115,7 +115,7 @@ public class VBO {
             boolean shouldUpdate = (renderer.bindGraphicsPipeline(pipeline));
             {
                 if(shouldUpdate) renderer.pushConstants(pipeline);
-                renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
+                renderer.uploadAndBindUBOs(pipeline);
             }
 
             if(indexBuffer != null)

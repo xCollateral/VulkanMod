@@ -180,9 +180,8 @@ public class EffectInstanceM {
         this.blend.apply();
 
         Renderer renderer = Renderer.getInstance();
-        boolean shouldUpdate = false;
         if (this.pipeline != lastPipeline) {
-            shouldUpdate = renderer.bindGraphicsPipeline(pipeline);
+            renderer.bindGraphicsPipeline(pipeline);
             lastPipeline = this.pipeline;
         }
 
@@ -203,7 +202,7 @@ public class EffectInstanceM {
             uniform.upload();
         }
 
-        renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
+        renderer.uploadAndBindUBOs(pipeline);
 
     }
 

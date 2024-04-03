@@ -320,10 +320,10 @@ public class WorldRenderer {
             VRenderSystem.depthMask(!isTranslucent); //Disable Depth writes if Translucent
 
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
-            boolean shouldUpdate = renderer.bindGraphicsPipeline(pipeline);
+            renderer.bindGraphicsPipeline(pipeline);
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
-            renderer.uploadAndBindUBOs(pipeline, shouldUpdate);
+            renderer.uploadAndBindUBOs(pipeline);
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
