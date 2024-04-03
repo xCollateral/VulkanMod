@@ -29,10 +29,6 @@
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
 
-    "gui.ChatComponentM",
-    "gui.DebugHudM",
-    "gui.GuiM",
-
     "matrix.Matrix4fM",
 
     "profiling.GuiMixin",

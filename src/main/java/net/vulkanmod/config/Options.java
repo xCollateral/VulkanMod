@@ -195,13 +195,6 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Higher values might help stabilize frametime
                         but will increase input lag""")),
-                new SwitchOption("Gui Optimizations",
-                        value -> config.guiOptimizations = value,
-                        () -> config.guiOptimizations)
-                        .setTooltip(Component.nullToEmpty("""
-                        Enable Gui optimizations (Stats bar, Chat, Debug Hud)
-                        Might break mod compatibility
-                        Restart is needed to take effect""")),
                 new CyclingOption<>("Advanced Chunk Culling",
                         new Integer[]{1, 2, 3, 10},
                         value -> {
