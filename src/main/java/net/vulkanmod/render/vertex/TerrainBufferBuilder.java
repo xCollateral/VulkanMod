@@ -15,9 +15,6 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 
 public class TerrainBufferBuilder {
-    protected static final float POS_CONV = 1024.0f;
-    protected static final float UV_CONV = 65536.0f;
-
     private static final Logger LOGGER = Initializer.LOGGER;
 
     private ByteBuffer buffer;
@@ -112,7 +109,7 @@ public class TerrainBufferBuilder {
         int offset = vertexSize * 2;
 
         if (this.format == CustomVertexFormat.COMPRESSED_TERRAIN) {
-            final float invConv = 1.0f / POS_CONV;
+            final float invConv = 1.0f / CompressedVertexBuilder.POS_CONV_MUL;
 
             for (int m = 0; m < pointsNum; ++m) {
                 long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
@@ -437,10 +434,15 @@ public class TerrainBufferBuilder {
     static class CompressedVertexBuilder implements VertexBuilder {
         private static final int VERTEX_SIZE = 20;
 
+        public static final float POS_CONV_MUL = 1024.0f;
+        public static final float POS_OFFSET = 1.0f - (0.00006f * POS_CONV_MUL);
+
+        public static final float UV_CONV_MUL = 32768.0f;
+
         public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
-            final short sX = (short) (x * POS_CONV);
-            final short sY = (short) (y * POS_CONV);
-            final short sZ = (short) (z * POS_CONV);
+            final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET);
+            final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET);
+            final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET);
 
             MemoryUtil.memPutShort(ptr + 0, sX);
             MemoryUtil.memPutShort(ptr + 2, sY);
@@ -451,9 +453,8 @@ public class TerrainBufferBuilder {
 
             MemoryUtil.memPutInt(ptr + 8, color);
 
-            MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV));
-            MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV));
-
+            MemoryUtil.memPutShort(ptr + 12, (short) (u * UV_CONV_MUL));
+            MemoryUtil.memPutShort(ptr + 14, (short) (v * UV_CONV_MUL));
         }
 
         @Override
