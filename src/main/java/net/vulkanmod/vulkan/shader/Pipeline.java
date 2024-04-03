@@ -240,16 +240,23 @@ public abstract class Pipeline {
             try(MemoryStack stack = stackPush()) {
 
                 this.updateUniforms(uniformBuffers);
-                this.updateDescriptorSet(stack, uniformBuffers);
+
+                final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
+
+                if(textureUpdate) {
+                    this.updateDescriptorSet(stack, uniformBuffers);
+                }
+
 
                 vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-                        0, stack.longs(currentSet), dynamicOffsets);
+                    0, stack.longs(currentSet), dynamicOffsets);
+
             }
         }
 
         private void updateUniforms(UniformBuffers uniformBuffers) {
             int currentOffset = uniformBuffers.getUsedBytes();
-
+            //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
             int i = 0;
             for(UBO ubo : buffers) {
 //                ubo.update();
@@ -272,27 +279,6 @@ public abstract class Pipeline {
 
         private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
 
-            boolean changed = false;
-            for(int j = 0; j < imageDescriptors.size(); ++j) {
-                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
-                VulkanImage image = imageDescriptor.getImage();
-                long view = imageDescriptor.getImageView(image);
-                long sampler = image.getSampler();
-
-                if(imageDescriptor.isReadOnlyLayout)
-                    image.readOnlyLayout();
-
-                if(!this.boundTextures[j].isCurrentState(view, sampler)) {
-                    changed = true;
-                    break;
-                }
-            }
-
-            if(!changed && this.currentIdx != -1 &&
-                this.uniformBufferId == uniformBuffers.getId(frame)) {
-                this.currentSet = this.sets.get(this.currentIdx);
-                return;
-            }
 
             this.uniformBufferId = uniformBuffers.getId(frame);
             this.currentIdx++;
@@ -368,6 +354,31 @@ public abstract class Pipeline {
             }
 
             vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+        }
+
+        private boolean transitionSamplers(UniformBuffers uniformBuffers) {
+            boolean changed = false;
+            for(int j = 0; j < imageDescriptors.size(); ++j) {
+                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
+                VulkanImage image = imageDescriptor.getImage();
+                long view = imageDescriptor.getImageView(image);
+                long sampler = image.getSampler();
+
+                if(imageDescriptor.isReadOnlyLayout)
+                    image.readOnlyLayout();
+
+                if(!this.boundTextures[j].isCurrentState(view, sampler)) {
+                    changed = true;
+                    break;
+                }
+            }
+
+            if(!changed && this.currentIdx != -1 &&
+                this.uniformBufferId == uniformBuffers.getId(frame)) {
+                this.currentSet = this.sets.get(this.currentIdx);
+                return false;
+            }
+            return true;
         }
 
         private void createDescriptorSets(MemoryStack stack) {
