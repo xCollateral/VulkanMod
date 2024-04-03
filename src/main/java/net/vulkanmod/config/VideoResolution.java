@@ -63,6 +63,7 @@ public class VideoResolution {
         int overriddenPlat = useXwaylandOverride ? GLFW_PLATFORM_X11 : activePlat;
         GLFW.glfwInitHint(GLFW_PLATFORM, overriddenPlat);
         LOGGER.info("Selecting Platform: " + (useXwaylandOverride ? getStringFromPlat(overriddenPlat) + " (Xwayland Override)" : getStringFromPlat(overriddenPlat) ));
+        if(SystemUtils.IS_OS_LINUX) LOGGER.info("Desktop Environment: "+activeDE);
         LOGGER.info("GLFW: "+GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
@@ -84,7 +85,10 @@ public class VideoResolution {
 
     private static String determineDE() {
         String xdgSessionDesktop = System.getenv("XDG_SESSION_DESKTOP");
-        return (xdgSessionDesktop != null ? xdgSessionDesktop : "N/A").toLowerCase();
+        String xdgCurrentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
+        if (xdgSessionDesktop != null) return xdgSessionDesktop.toLowerCase();
+        if (xdgCurrentDesktop != null) return xdgCurrentDesktop.toLowerCase();
+        return "N/A";
     }
 
 
@@ -92,7 +96,7 @@ public class VideoResolution {
         //Switch statement would be ideal, but couldn't find a good way of implementing it, so fell back to basic if statements/branches
         if(SystemUtils.IS_OS_WINDOWS) return GLFW_PLATFORM_WIN32;
         if(SystemUtils.IS_OS_MAC_OSX) return GLFW_PLATFORM_COCOA;
-        if(SystemUtils.IS_OS_LINUX) return determineDisplayServer(); //Linux Or Android
+        if(SystemUtils.IS_OS_LINUX) return determineDisplayServer(); //Linux Or Android or Unix based like FreeBSD
 
         return GLFW_ANY_PLATFORM; //Unknown platform
     }
@@ -118,9 +122,10 @@ public class VideoResolution {
     public static boolean isMacOS() { return activePlat == GLFW_PLATFORM_COCOA; }
     public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
 
-    //Desktop Environment Names: https://wiki.archlinux.org/title/Environment_variables_#Examples
+    //Desktop Environment Names: https://wiki.archlinux.org/title/Xdg-utils#Usage
     public static boolean isGnome() { return activeDE.contains("gnome"); }
-
+    public static boolean isWeston() { return activeDE.contains("weston"); }
+    public static boolean isGeneric() { return activeDE.contains("generic"); }
 
 
     public static VideoResolution[] getVideoResolutions() {
