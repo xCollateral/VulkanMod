@@ -287,7 +287,7 @@ public class Renderer {
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, inFlightFences.get(currentFrame));
 
             Synchronization.INSTANCE.waitFences();
 
