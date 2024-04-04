@@ -97,18 +97,18 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
-    private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, FloatBuffer mPtr) {
-        float x = (float) (camX - (this.origin.x));
-        float y = (float) (camY - (this.origin.y));
-        float z = (float) (camZ - (this.origin.z));
+    private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, MemoryStack stack) {
+        float xOffset = (float) (camX - (this.origin.x));
+        float yOffset = (float) (camY - (this.origin.y));
+        float zOffset = (float) (camZ - (this.origin.z));
 
-        Matrix4f MVP = new Matrix4f().set(VRenderSystem.MVP.buffer.asFloatBuffer());
-        Matrix4f MV = new Matrix4f().set(VRenderSystem.modelViewMatrix.buffer.asFloatBuffer());
+        ByteBuffer byteBuffer = stack.malloc(12);
 
-        MVP.translate(-x, -y, -z).get(mPtr);
-        MV.translate(-x, -y, -z).get(16, mPtr);
+        byteBuffer.putFloat(0, -xOffset);
+        byteBuffer.putFloat(4, -yOffset);
+        byteBuffer.putFloat(8, -zOffset);
 
-        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, mPtr);
+        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
 
     public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
@@ -171,7 +171,7 @@ public class DrawBuffers {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var vertexBuffer = getAreaBuffer(terrainRenderType);
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
-            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack.mallocFloat(32));
+            updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack);
         }
 
         if (terrainRenderType == TerrainRenderType.TRANSLUCENT) {
