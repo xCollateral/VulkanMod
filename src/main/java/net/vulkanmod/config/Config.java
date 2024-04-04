@@ -21,24 +21,39 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
 
-    public boolean perRenderTypeAreaBuffers = false;
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
 
     public int ambientOcclusion = 1;
 
-    private static Path path;
+    public void write() {
+
+        if(!Files.exists(CONFIG_PATH.getParent())) {
+            try {
+                Files.createDirectories(CONFIG_PATH);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        try {
+            Files.write(CONFIG_PATH, Collections.singleton(GSON.toJson(this)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static Path CONFIG_PATH;
 
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-
     public static Config load(Path path) {
         Config config;
-        Config.path = path;
+        Config.CONFIG_PATH = path;
 
         if (Files.exists(path)) {
             try (FileReader fileReader = new FileReader(path.toFile())) {
@@ -53,22 +68,5 @@ public class Config {
         }
 
         return config;
-    }
-
-    public void write() {
-
-        if(!Files.exists(path.getParent())) {
-            try {
-                Files.createDirectories(path);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        try {
-            Files.write(path, Collections.singleton(GSON.toJson(this)));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
