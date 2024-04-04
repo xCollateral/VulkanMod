@@ -3,26 +3,31 @@ package net.vulkanmod.render.chunk;
 import net.minecraft.core.BlockPos;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.util.StaticQueue;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
 import java.util.Arrays;
+import java.util.EnumMap;
 
 public class ChunkArea {
     public final int index;
     private final byte[] inFrustum = new byte[64];
 
-    final Vector3i position;
+    private final Vector3i position;
 
-    DrawBuffers drawBuffers;
+    final DrawBuffers drawBuffers;
 
     //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
-    public final StaticQueue<RenderSection> sectionQueue = new StaticQueue<>(512);
+    public final EnumMap<TerrainRenderType, StaticQueue<DrawBuffers.DrawParameters>> sectionQueue  = new EnumMap<>(TerrainRenderType.class);
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
         this.index = i;
         this.position = origin;
         this.drawBuffers = new DrawBuffers(i, origin, minHeight);
+        for (TerrainRenderType terrainRenderType : TerrainRenderType.VALUES) {
+            sectionQueue.put(terrainRenderType, new StaticQueue<>(512));
+        }
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -125,7 +130,7 @@ public class ChunkArea {
 //    }
 
     public void resetQueue() {
-        this.sectionQueue.clear();
+        this.sectionQueue.forEach((terrainRenderType, drawParameters) -> drawParameters.clear());
     }
 
     public void setPosition(int x, int y, int z) {
@@ -134,5 +139,10 @@ public class ChunkArea {
 
     public void releaseBuffers() {
         this.drawBuffers.releaseBuffers();
+    }
+
+    public void addDrawCmds(EnumMap<TerrainRenderType, DrawBuffers.DrawParameters> renderSection) {
+
+        renderSection.forEach((key, value) -> this.sectionQueue.get(key).add(value));
     }
 }

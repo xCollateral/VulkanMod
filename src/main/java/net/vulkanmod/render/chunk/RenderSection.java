@@ -19,6 +19,7 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,7 +47,7 @@ public class RenderSection {
 
     public int xOffset, yOffset, zOffset;
 
-    private final DrawBuffers.DrawParameters[] drawParametersArray;
+    private final EnumMap<TerrainRenderType, DrawBuffers.DrawParameters> drawParametersArray;
 
     //Graph-info
     public byte mainDir;
@@ -60,10 +61,8 @@ public class RenderSection {
         this.yOffset = y;
         this.zOffset = z;
 
-        this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
-        for (int i = 0; i < this.drawParametersArray.length; ++i) {
-            this.drawParametersArray[i] = new DrawBuffers.DrawParameters();
-        }
+
+        drawParametersArray = new EnumMap<>(TerrainRenderType.class);
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -299,7 +298,15 @@ public class RenderSection {
     }
 
     public DrawBuffers.DrawParameters getDrawParameters(TerrainRenderType renderType) {
-        return drawParametersArray[renderType.ordinal()];
+        return drawParametersArray.get(renderType);
+    }
+
+    public DrawBuffers.DrawParameters getOrAllocDrawParameters(TerrainRenderType renderType) {
+        return drawParametersArray.computeIfAbsent(renderType, i -> new DrawBuffers.DrawParameters());
+    }
+
+    public EnumMap<TerrainRenderType, DrawBuffers.DrawParameters> getDrawParametersArray() {
+        return drawParametersArray;
     }
 
     public void setChunkArea(ChunkArea chunkArea) {
@@ -379,9 +386,8 @@ public class RenderSection {
     }
 
     private void resetDrawParameters() {
-        for (TerrainRenderType r : TerrainRenderType.VALUES) {
-            this.getDrawParameters(r).reset(this.chunkArea, r);
-        }
+        drawParametersArray.forEach((key, value) -> value.reset(this.chunkArea, key));
+        drawParametersArray.clear();
     }
 
     public void setDirty(boolean playerChanged) {
