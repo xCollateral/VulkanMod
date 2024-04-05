@@ -26,7 +26,6 @@ public class Initializer implements ClientModInitializer {
 
 		LOGGER.info("== VulkanMod ==");
 
-
 		var configPath = FabricLoader.getInstance()
 				.getConfigDir()
 				.resolve("vulkanmod_settings.json");
@@ -38,10 +37,12 @@ public class Initializer implements ClientModInitializer {
 
 	private static Config loadConfig(Path path) {
 		Config config = Config.load(path);
+
 		if(config == null) {
 			config = new Config();
+			config.write();
 		}
-		config.write();
+
 		return config;
 	}
 

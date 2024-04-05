@@ -361,7 +361,6 @@ public class SwapChain extends Framebuffer {
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
-                Initializer.LOGGER.info("Using DisplayMode: " + getDisplayModeString(requestedMode));
                 return requestedMode;
             }
         }

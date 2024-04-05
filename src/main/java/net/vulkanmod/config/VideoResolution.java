@@ -17,7 +17,7 @@ import static org.lwjgl.glfw.GLFW.*;
 public class VideoResolution {
     private static VideoResolution[] videoResolutions;
     private static final int activePlat = getSupportedPlat();
-    private static final String activeDE=determineDE();
+    private static final String activeDE = determineDE();
 
     int width;
     int height;
@@ -59,12 +59,14 @@ public class VideoResolution {
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
+
         boolean useXwaylandOverride = Initializer.CONFIG.xWayland && isWayLand();
         int overriddenPlat = useXwaylandOverride ? GLFW_PLATFORM_X11 : activePlat;
         GLFW.glfwInitHint(GLFW_PLATFORM, overriddenPlat);
         LOGGER.info("Selecting Platform: " + (useXwaylandOverride ? getStringFromPlat(overriddenPlat) + " (Xwayland Override)" : getStringFromPlat(overriddenPlat) ));
-        if(SystemUtils.IS_OS_LINUX) LOGGER.info("Desktop Environment: "+activeDE);
-        LOGGER.info("GLFW: "+GLFW.glfwGetVersionString());
+        if(SystemUtils.IS_OS_LINUX) LOGGER.info("Desktop Environment: " + activeDE);
+
+        LOGGER.info("GLFW: " + GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
