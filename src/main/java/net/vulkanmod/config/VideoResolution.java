@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.Initializer;
 import org.apache.commons.lang3.SystemUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -16,12 +17,13 @@ import static org.lwjgl.glfw.GLFW.*;
 public class VideoResolution {
     private static VideoResolution[] videoResolutions;
     private static final int activePlat = getSupportedPlat();
+    private static final String activeDE = determineDE();
 
     int width;
     int height;
     int refreshRate;
 
-    private List<VideoMode> videoModes;
+    private final List<VideoMode> videoModes;
 
     public VideoResolution(int width, int height) {
         this.width = width;
@@ -57,9 +59,14 @@ public class VideoResolution {
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
-        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
-        LOGGER.info("Selecting Platform: "+getStringFromPlat(activePlat));
-        LOGGER.info("GLFW: "+GLFW.glfwGetVersionString());
+
+        boolean useXwaylandOverride = Initializer.CONFIG.xWayland && isWayLand();
+        int overriddenPlat = useXwaylandOverride ? GLFW_PLATFORM_X11 : activePlat;
+        GLFW.glfwInitHint(GLFW_PLATFORM, overriddenPlat);
+        LOGGER.info("Selecting Platform: " + (useXwaylandOverride ? getStringFromPlat(overriddenPlat) + " (Xwayland Override)" : getStringFromPlat(overriddenPlat) ));
+        if(SystemUtils.IS_OS_LINUX) LOGGER.info("Desktop Environment: " + activeDE);
+
+        LOGGER.info("GLFW: " + GLFW.glfwGetVersionString());
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
@@ -77,11 +84,21 @@ public class VideoResolution {
         };
     }
 
+
+    private static String determineDE() {
+        String xdgSessionDesktop = System.getenv("XDG_SESSION_DESKTOP");
+        String xdgCurrentDesktop = System.getenv("XDG_CURRENT_DESKTOP");
+        if (xdgSessionDesktop != null) return xdgSessionDesktop.toLowerCase();
+        if (xdgCurrentDesktop != null) return xdgCurrentDesktop.toLowerCase();
+        return "N/A";
+    }
+
+
     private static int getSupportedPlat() {
         //Switch statement would be ideal, but couldn't find a good way of implementing it, so fell back to basic if statements/branches
         if(SystemUtils.IS_OS_WINDOWS) return GLFW_PLATFORM_WIN32;
         if(SystemUtils.IS_OS_MAC_OSX) return GLFW_PLATFORM_COCOA;
-        if(SystemUtils.IS_OS_LINUX) return determineDisplayServer(); //Linux Or Android
+        if(SystemUtils.IS_OS_LINUX) return determineDisplayServer(); //Linux Or Android or Unix based like FreeBSD
 
         return GLFW_ANY_PLATFORM; //Unknown platform
     }
@@ -106,6 +123,12 @@ public class VideoResolution {
     public static boolean isWindows() { return activePlat == GLFW_PLATFORM_WIN32; }
     public static boolean isMacOS() { return activePlat == GLFW_PLATFORM_COCOA; }
     public static boolean isAndroid() { return activePlat == GLFW_ANY_PLATFORM; }
+
+    //Desktop Environment Names: https://wiki.archlinux.org/title/Xdg-utils#Usage
+    public static boolean isGnome() { return activeDE.contains("gnome"); }
+    public static boolean isWeston() { return activeDE.contains("weston"); }
+    public static boolean isGeneric() { return activeDE.contains("generic"); }
+
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;

@@ -32,9 +32,8 @@ public class SwapChain extends Framebuffer {
     private static final int DEFAULT_IMAGE_COUNT = 3;
 
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on most Wayland installations currently)
-    //Try to use Mailbox if possible (in case FreeSync/G-Sync needs it)
-    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR);
+    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on some Wayland installations currently)
+    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 
     private final Long2ReferenceOpenHashMap<long[]> FBO_map = new Long2ReferenceOpenHashMap<>();
 
@@ -298,9 +297,18 @@ public class SwapChain extends Framebuffer {
             }
         }
 
-        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
+        Initializer.LOGGER.warn("Requested mode not supported: " + getDisplayModeString(requestedMode) + ": using VSync");
         return VK_PRESENT_MODE_FIFO_KHR;
+    }
 
+    private String getDisplayModeString(int requestedMode) {
+        return switch(requestedMode)
+        {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "Immediate";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "Mailbox (FastSync)";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "FIFO Relaxed (Adaptive VSync)";
+            default -> "FIFO (VSync)";
+        };
     }
 
     private static VkExtent2D getExtent(VkSurfaceCapabilitiesKHR capabilities) {
