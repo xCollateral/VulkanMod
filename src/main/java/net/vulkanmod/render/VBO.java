@@ -50,7 +50,7 @@ public class VBO {
             if(vertexBuffer != null)
                 this.vertexBuffer.freeBuffer();
 
-            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryType.GPU_MEM);
             vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
 
         }
@@ -88,7 +88,7 @@ public class VBO {
         else {
             if(indexBuffer != null)
                 this.indexBuffer.freeBuffer();
-            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryType.GPU_MEM);
 //            this.indexBuffer = new AsyncIndexBuffer(data.remaining());
             indexBuffer.copyBuffer(data);
         }

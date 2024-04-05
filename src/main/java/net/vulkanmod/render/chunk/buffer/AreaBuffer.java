@@ -13,7 +13,7 @@ public class AreaBuffer {
     private static final boolean DEBUG = false;
     private static final Logger LOGGER = Initializer.LOGGER;
 
-    private static final MemoryType MEMORY_TYPE = MemoryTypes.GPU_MEM;
+    private static final MemoryType MEMORY_TYPE = MemoryType.GPU_MEM;
 
     private final int usage;
     private final int elementSize;

@@ -53,7 +53,7 @@ public class Drawer {
         }
         this.vertexBuffers = new VertexBuffer[framesNum];
         for (int i = 0; i < framesNum; ++i) {
-            this.vertexBuffers[i] = new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM);
+            this.vertexBuffers[i] = new VertexBuffer(INITIAL_VB_SIZE, MemoryType.BAR_MEM);
         }
 
         if(this.uniformBuffers != null)

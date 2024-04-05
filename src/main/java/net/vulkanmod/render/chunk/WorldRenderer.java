@@ -39,7 +39,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -105,12 +105,13 @@ public class WorldRenderer {
 
         this.indirectBuffers = new IndirectBuffer[Renderer.getFramesNum()];
 
-        for (int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.HOST_MEM);
-//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryTypes.GPU_MEM);
+
+        for(int i = 0; i < this.indirectBuffers.length; ++i) {
+            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.BAR_MEM);
+//            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.GPU_MEM);
         }
 
-//        uniformBuffers = new UniformBuffers(100000, MemoryTypes.GPU_MEM);
+//        uniformBuffers = new UniformBuffers(100000, MemoryType.GPU_MEM);
     }
 
     public static WorldRenderer init(RenderBuffers renderBuffers) {

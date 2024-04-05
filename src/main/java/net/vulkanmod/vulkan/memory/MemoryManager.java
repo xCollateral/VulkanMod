@@ -31,10 +31,6 @@ public class MemoryManager {
     private static final Long2ReferenceOpenHashMap<VulkanImage> images = new Long2ReferenceOpenHashMap<>();
 
     static int Frames;
-
-    private static long deviceMemory = 0;
-    private static long nativeMemory = 0;
-
     private int currentFrame = 0;
 
     private ObjectArrayList<Buffer.BufferInfo>[] freeableBuffers = new ObjectArrayList[Frames];
@@ -130,12 +126,6 @@ public class MemoryManager {
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));
 
-            if((properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0) {
-                deviceMemory += size;
-            } else {
-                nativeMemory += size;
-            }
-
             buffers.putIfAbsent(buffer.getId(), buffer);
         }
     }
@@ -185,12 +175,9 @@ public class MemoryManager {
         }
     }
 
-    public PointerBuffer Map(long allocation) {
-        PointerBuffer data = MemoryUtil.memAllocPointer(1);
+    public void Map(long allocation, PointerBuffer data) {
 
         vmaMapMemory(ALLOCATOR, allocation, data);
-
-        return data;
     }
 
     public static void freeBuffer(long buffer, long allocation) {
@@ -201,12 +188,6 @@ public class MemoryManager {
 
     private static void freeBuffer(Buffer.BufferInfo bufferInfo) {
         vmaDestroyBuffer(ALLOCATOR, bufferInfo.id(), bufferInfo.allocation());
-
-        if(bufferInfo.type() == MemoryType.Type.DEVICE_LOCAL) {
-            deviceMemory -= bufferInfo.bufferSize();
-        } else {
-            nativeMemory -= bufferInfo.bufferSize();
-        }
 
         buffers.remove(bufferInfo.id());
     }
@@ -287,8 +268,4 @@ public class MemoryManager {
     public void addToFreeSegment(AreaBuffer areaBuffer, int offset) {
         this.segmentsToFree[this.currentFrame].add(new Pair<>(areaBuffer, offset));
     }
-
-    public int getNativeMemoryMB() { return (int) (nativeMemory / 1048576L); }
-
-    public int getDeviceMemoryMB() { return (int) (deviceMemory / 1048576L); }
 }

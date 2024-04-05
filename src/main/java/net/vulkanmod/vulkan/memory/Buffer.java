@@ -1,8 +1,9 @@
 package net.vulkanmod.vulkan.memory;
 
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryUtil;
 
-public abstract class Buffer {
+public class Buffer {
     protected long id;
     protected long allocation;
 
@@ -10,36 +11,36 @@ public abstract class Buffer {
     protected int usedBytes;
     protected int offset;
 
-    protected MemoryType type;
-    protected int usage;
-    protected PointerBuffer data;
+    protected final MemoryType type;
+    protected final int usage;
+    public final PointerBuffer data;
 
     protected Buffer(int usage, MemoryType type) {
         //TODO: check usage
         this.usage = usage;
         this.type = type;
-
+        this.data = type.mappable() ? MemoryUtil.memAllocPointer(1) : null;
     }
 
     protected void createBuffer(int bufferSize) {
         this.type.createBuffer(this, bufferSize);
 
         if(this.type.mappable()) {
-            this.data = MemoryManager.getInstance().Map(this.allocation);
+            MemoryManager.getInstance().Map(this.allocation, this.data);
         }
     }
 
     public void freeBuffer() {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
     }
 
     public void reset() { usedBytes = 0; }
 
     public long getAllocation() { return allocation; }
 
-    public long getUsedBytes() { return usedBytes; }
+    public int getUsedBytes() { return usedBytes; }
 
-    public long getOffset() { return offset; }
+    public int getOffset() { return offset; }
 
     public long getId() { return id; }
 
@@ -51,9 +52,9 @@ public abstract class Buffer {
 
     protected void setAllocation(long allocation) {this.allocation = allocation; }
 
-    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize, this.type.getType()); }
+    public BufferInfo getBufferInfo() { return new BufferInfo(this.id, this.allocation, this.bufferSize); }
 
-    public record BufferInfo(long id, long allocation, long bufferSize, MemoryType.Type type) {
+    public record BufferInfo(long id, long allocation, long bufferSize) {
 
     }
 }
