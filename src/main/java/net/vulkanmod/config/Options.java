@@ -180,7 +180,13 @@ public class Options {
                             Minecraft.getInstance().updateMaxMipLevel(value);
                             Minecraft.getInstance().delayTextureReload();
                         },
-                        () -> minecraftOptions.mipmapLevels().get())
+                        () -> minecraftOptions.mipmapLevels().get()),
+                new SwitchOption("Animations",
+                        (value) -> config.animations = value,
+                        () -> config.animations),
+                new SwitchOption("RenderSky",
+                        (value) -> config.renderSky = value,
+                        () -> config.renderSky)
         };
     }
 
