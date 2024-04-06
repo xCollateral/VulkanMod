@@ -109,6 +109,7 @@ public class SectionGraph {
                 }
             }
 
+            this.sectionQueue.ensureCapacity(list.size());
             for (RenderSection chunkInfo : list) {
                 this.sectionQueue.add(chunkInfo);
             }
