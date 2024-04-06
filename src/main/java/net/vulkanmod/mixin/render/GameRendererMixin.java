@@ -81,6 +81,7 @@ public abstract class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance rendertypeEndGatewayShader;
     @Shadow private @Nullable static ShaderInstance rendertypeLinesShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCrumblingShader;
+    @Shadow private static @Nullable ShaderInstance rendertypeBreezeWindShader;
 
     @Shadow private static @Nullable ShaderInstance rendertypeTextBackgroundShader;
     @Shadow private static @Nullable ShaderInstance rendertypeTextBackgroundSeeThroughShader;
@@ -98,8 +99,6 @@ public abstract class GameRendererMixin {
     @Shadow protected abstract ShaderInstance preloadShader(ResourceProvider resourceProvider, String string, VertexFormat vertexFormat);
 
     @Shadow public abstract float getRenderDistance();
-
-    @Shadow private static @Nullable ShaderInstance rendertypeBreezeWindShader;
 
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
@@ -297,7 +296,7 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(positionColor, (shaderInstance) -> {
                 rendertypeGuiGhostRecipeOverlayShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_breeze_wind", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeBreezeWindShader = shaderInstance;
             }));
         } catch (IOException ioexception) {
