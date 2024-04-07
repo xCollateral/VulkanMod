@@ -412,6 +412,7 @@ public abstract class Pipeline {
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+            poolInfo.flags(VK12.VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT);
             poolInfo.pPoolSizes(poolSizes);
             poolInfo.maxSets(this.poolSize);
 
