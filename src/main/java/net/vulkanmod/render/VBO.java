@@ -74,7 +74,7 @@ public class VBO {
                 case DEBUG_LINES -> {
                     VRenderSystem.polygonMode(0, GL11.GL_LINE);
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
-                    this.indexCount = (vertexCount * 2);
+                    this.indexCount = vertexCount * 3 / 2;
                 }
                 case TRIANGLES -> {
                     VRenderSystem.polygonMode(0, GL11.GL_FILL);

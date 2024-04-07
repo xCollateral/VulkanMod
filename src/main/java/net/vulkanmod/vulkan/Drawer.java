@@ -81,7 +81,7 @@ public class Drawer {
             }
             case DEBUG_LINES -> {
                 autoIndexBuffer = this.quadsIndexBuffer;
-                indexCount = (vertexCount * 2);
+                indexCount = vertexCount * 3 / 2;
             }
             case TRIANGLE_FAN -> {
                 autoIndexBuffer = this.triangleFanIndexBuffer;
@@ -119,7 +119,7 @@ public class Drawer {
         VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
         VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
-        if(indexCount > UINT16_INDEX_MAX) throw new RuntimeException();
+
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
