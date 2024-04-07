@@ -35,7 +35,7 @@ public abstract class VRenderSystem {
 
     public static boolean logicOp = false;
     public static int logicOpFun = 0;
-    public static int polygonMode = VK_POLYGON_MODE_FILL;
+    public static int polygonMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
     public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
@@ -246,9 +246,9 @@ public abstract class VRenderSystem {
     public static void polygonMode(int i, int j) {
         polygonMode=switch (j)
         {
-            case GL11.GL_LINE -> VK_POLYGON_MODE_LINE;
-            case GL11.GL_FILL -> VK_POLYGON_MODE_FILL;
-            case GL11.GL_POINT -> VK_POLYGON_MODE_POINT;
+            case GL11.GL_LINE -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            case GL11.GL_FILL -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            case GL11.GL_POINT -> VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
             default -> throw new RuntimeException();
         };
     }

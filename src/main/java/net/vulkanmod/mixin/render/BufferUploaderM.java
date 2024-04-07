@@ -6,10 +6,15 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+
+import static org.lwjgl.vulkan.VK10.VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+import static org.lwjgl.vulkan.VK10.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
 
 @Mixin(BufferUploader.class)
 public class BufferUploaderM {
@@ -39,6 +44,15 @@ public class BufferUploaderM {
         //Used to update legacy shader uniforms
         //TODO it would be faster to allocate a buffer from stack and set all values
         shaderInstance.apply();
+
+        switch (parameters.mode()) {
+            default -> {
+                VRenderSystem.polygonMode(0, GL11.GL_FILL);
+            }
+            case DEBUG_LINES -> {
+                VRenderSystem.polygonMode(0, GL11.GL_LINE);
+            }
+        }
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
         renderer.bindGraphicsPipeline(pipeline);
