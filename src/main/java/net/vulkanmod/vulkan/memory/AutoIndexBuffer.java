@@ -44,6 +44,7 @@ public class AutoIndexBuffer {
     }
 
     public void checkCapacity(int vertexCount) {
+        if(this.drawType==DrawType.QUADS) return;
         if(vertexCount > this.vertexCount) {
             int newVertexCount = this.vertexCount * 2;
             System.out.println("Reallocating AutoIndexBuffer from " + this.vertexCount + " to " + newVertexCount);

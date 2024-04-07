@@ -5,7 +5,7 @@ import net.vulkanmod.vulkan.shader.layout.Uniform;
 
 import java.util.List;
 
-import static org.lwjgl.vulkan.VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+import static org.lwjgl.vulkan.VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 public class UBO extends AlignedStruct implements Descriptor {
     private final int binding;
@@ -23,7 +23,7 @@ public class UBO extends AlignedStruct implements Descriptor {
 
     @Override
     public int getType() {
-        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     }
 
     public int getStages() {

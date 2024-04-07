@@ -15,7 +15,7 @@ public class PipelineState {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
-    public static final PipelineState DEFAULT = new PipelineState(true, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), null);
+    public static final PipelineState DEFAULT = new PipelineState(true, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), getPolygonMode(), null);
 
     public static PipelineState currentState = DEFAULT;
 
@@ -25,11 +25,12 @@ public class PipelineState {
         int currentColorMask = VRenderSystem.getColorMask();
         int depthState = getDepthState();
         int logicOp = getLogicOpState();
+        int polygonMode = getPolygonMode();
 
-        if(currentState.checkEquals(cullState, blendState, depthState, logicOp, currentColorMask, renderPass))
+        if(currentState.checkEquals(cullState, blendState, depthState, logicOp, currentColorMask, polygonMode, renderPass))
             return currentState;
         else
-            return currentState = new PipelineState(cullState, blendState, depthState, logicOp, currentColorMask, renderPass);
+            return currentState = new PipelineState(cullState, blendState, depthState, logicOp, currentColorMask, polygonMode, renderPass);
     }
 
     public static int getBlendState() {
@@ -57,6 +58,10 @@ public class PipelineState {
         return logicOpState;
     }
 
+    public static int getPolygonMode() {
+        return VRenderSystem.polygonMode;
+    }
+
     final boolean cullState;
     final RenderPass renderPass;
 
@@ -64,8 +69,9 @@ public class PipelineState {
     int depthState_i;
     int colorMask_i;
     int logicOp_i;
+    int polygonMode_i;
 
-    public PipelineState(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
+    public PipelineState(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, int polygonMode, RenderPass renderPass) {
         this.renderPass = renderPass;
 
         this.cullState = cullState;
@@ -73,12 +79,13 @@ public class PipelineState {
         this.depthState_i = depthState;
         this.colorMask_i = colorMask;
         this.logicOp_i = logicOp;
+        this.polygonMode_i = polygonMode;
     }
 
-    private boolean checkEquals(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
+    private boolean checkEquals(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, int polygonMode, RenderPass renderPass) {
         return (blendState == this.blendState_i) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
-                && (cullState == this.cullState) && colorMask == this.colorMask_i;
+                && (cullState == this.cullState) && colorMask == this.colorMask_i && polygonMode == this.polygonMode_i;
     }
 
     @Override
@@ -208,6 +215,11 @@ public class PipelineState {
 //                        ZERO(0);
             };
         }
+    }
+
+    public static class RenderInfo
+    {
+        public int mode = VK_POLYGON_MODE_FILL;
     }
 
     public static class BlendState {

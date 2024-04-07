@@ -104,7 +104,7 @@ public class GraphicsPipeline extends Pipeline {
             rasterizer.sType(VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
             rasterizer.depthClampEnable(false);
             rasterizer.rasterizerDiscardEnable(false);
-            rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
+            rasterizer.polygonMode(state.polygonMode_i);
             rasterizer.lineWidth(1.0f);
 
             if(state.cullState)

@@ -167,6 +167,7 @@ public abstract class DeviceManager {
                     .sType$Default()
                     .descriptorBindingPartiallyBound(true)
                     .descriptorBindingSampledImageUpdateAfterBind(true)
+                    .descriptorBindingUniformBufferUpdateAfterBind(false)
                     .runtimeDescriptorArray(true)
                     .descriptorBindingVariableDescriptorCount(true)
                     .descriptorBindingUpdateUnusedWhilePending(true);

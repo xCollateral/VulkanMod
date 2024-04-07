@@ -14,10 +14,13 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+
+import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class VRenderSystem {
     private static long window;
@@ -32,6 +35,7 @@ public abstract class VRenderSystem {
 
     public static boolean logicOp = false;
     public static int logicOpFun = 0;
+    public static int polygonMode = VK_POLYGON_MODE_FILL;
 
     public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
@@ -239,4 +243,13 @@ public abstract class VRenderSystem {
         Renderer.setDepthBias(0.0F, 0.0F);
     }
 
+    public static void polygonMode(int i, int j) {
+        polygonMode=switch (j)
+        {
+            case GL11.GL_LINE -> VK_POLYGON_MODE_LINE;
+            case GL11.GL_FILL -> VK_POLYGON_MODE_FILL;
+            case GL11.GL_POINT -> VK_POLYGON_MODE_POINT;
+            default -> throw new RuntimeException();
+        };
+    }
 }
