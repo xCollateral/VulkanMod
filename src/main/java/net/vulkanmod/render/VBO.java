@@ -13,7 +13,6 @@ import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 
 import java.nio.ByteBuffer;
 
@@ -63,21 +62,17 @@ public class VBO {
             AutoIndexBuffer autoIndexBuffer;
             switch (this.mode) {
                 case TRIANGLE_FAN -> {
-                    VRenderSystem.polygonMode(0, GL11.GL_FILL);
                     autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
                     this.indexCount = (vertexCount - 2) * 3;
                 }
                 case QUADS -> {
-                    VRenderSystem.polygonMode(0, GL11.GL_FILL);
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
                 }
                 case DEBUG_LINES -> {
-                    VRenderSystem.polygonMode(0, GL11.GL_LINE);
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
                     this.indexCount = (vertexCount * 2);
                 }
                 case TRIANGLES -> {
-                    VRenderSystem.polygonMode(0, GL11.GL_FILL);
                     autoIndexBuffer = null;
                 }
                 default -> throw new IllegalStateException("Unexpected draw mode:" + this.mode);
