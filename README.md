@@ -33,7 +33,7 @@ Demostration Video:
 
 ## Known Issues
 
-- Linux and macOS may not work.
+- MacOS may not work (Linux is now supported).
 
 ## Notes
 This is still a pre-alpha mod. Bugs are to be expected.
