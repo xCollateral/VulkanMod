@@ -75,11 +75,7 @@ public class Drawer {
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
         switch (mode) {
-            case QUADS, LINES -> {
-                autoIndexBuffer = this.quadsIndexBuffer;
-                indexCount = vertexCount * 3 / 2;
-            }
-            case DEBUG_LINES -> {
+            case QUADS, LINES, DEBUG_LINES -> {
                 autoIndexBuffer = this.quadsIndexBuffer;
                 indexCount = vertexCount * 3 / 2;
             }

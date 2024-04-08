@@ -3,12 +3,7 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
@@ -19,8 +14,6 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-
-import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class VRenderSystem {
     private static long window;
@@ -35,7 +28,7 @@ public abstract class VRenderSystem {
 
     public static boolean logicOp = false;
     public static int logicOpFun = 0;
-    public static int polygonMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    public static boolean useLines = false;
 
     public static final float clearDepth = 1.0f;
     public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
@@ -103,8 +96,8 @@ public abstract class VRenderSystem {
     }
 
     public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
+        Matrix4f MV = new Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
+        Matrix4f P = new Matrix4f(projectionMatrix.buffer.asFloatBuffer());
 
         P.mul(MV).get(MVP.buffer);
     }
@@ -244,12 +237,15 @@ public abstract class VRenderSystem {
     }
 
     public static void polygonMode(int i, int j) {
-        polygonMode=switch (j)
+        useLines = j == GL11.GL_LINES;
+        /*switch (j)
         {
-            case GL11.GL_LINE -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-            case GL11.GL_FILL -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            case GL11.GL_POINT -> VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-            default -> throw new RuntimeException();
-        };
+            case GL11.GL_LINES -> true; *//*VK_PRIMITIVE_TOPOLOGY_LINE_LIST*//*
+            case GL11.GL_LINE_STRIP -> true; *//*VK_PRIMITIVE_TOPOLOGY_LINE_STRIP*//*
+            case GL11.GL_TRIANGLES, GL11.GL_QUADS -> false; *//*VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST*//*
+            case GL11.GL_TRIANGLE_STRIP -> false; *//*VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP*//*
+            case GL11.GL_TRIANGLE_FAN -> false; *//*VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN*//*
+            default -> throw new IllegalStateException("Unexpected value: " + j);
+        };*/
     }
 }

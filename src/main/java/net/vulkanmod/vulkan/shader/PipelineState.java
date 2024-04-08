@@ -15,7 +15,7 @@ public class PipelineState {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
-    public static final PipelineState DEFAULT = new PipelineState(true, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), getPolygonMode(), null);
+    public static final PipelineState DEFAULT = new PipelineState(true, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), false, null);
 
     public static PipelineState currentState = DEFAULT;
 
@@ -25,7 +25,7 @@ public class PipelineState {
         int currentColorMask = VRenderSystem.getColorMask();
         int depthState = getDepthState();
         int logicOp = getLogicOpState();
-        int polygonMode = getPolygonMode();
+        boolean polygonMode = VRenderSystem.useLines;
 
         if(currentState.checkEquals(cullState, blendState, depthState, logicOp, currentColorMask, polygonMode, renderPass))
             return currentState;
@@ -58,20 +58,15 @@ public class PipelineState {
         return logicOpState;
     }
 
-    public static int getPolygonMode() {
-        return VRenderSystem.polygonMode;
-    }
-
-    final boolean cullState;
+    final boolean cullState, useLines;
     final RenderPass renderPass;
 
     int blendState_i;
     int depthState_i;
     int colorMask_i;
     int logicOp_i;
-    int polygonMode_i;
 
-    public PipelineState(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, int polygonMode, RenderPass renderPass) {
+    public PipelineState(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, boolean useLines, RenderPass renderPass) {
         this.renderPass = renderPass;
 
         this.cullState = cullState;
@@ -79,13 +74,13 @@ public class PipelineState {
         this.depthState_i = depthState;
         this.colorMask_i = colorMask;
         this.logicOp_i = logicOp;
-        this.polygonMode_i = polygonMode;
+        this.useLines = useLines;
     }
 
-    private boolean checkEquals(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, int polygonMode, RenderPass renderPass) {
-        return (blendState == this.blendState_i) && (depthState == this.depthState_i)
+    private boolean checkEquals(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, boolean useLines, RenderPass renderPass) {
+        return (blendState == this.blendState_i) && (useLines == this.useLines) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
-                && (cullState == this.cullState) && colorMask == this.colorMask_i && polygonMode == this.polygonMode_i;
+                && (cullState == this.cullState) && (colorMask == this.colorMask_i);
     }
 
     @Override

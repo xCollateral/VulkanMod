@@ -319,8 +319,8 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void polygonMode(int i, int j) {
-        assertOnGameThread();
-        VRenderSystem.polygonMode(i, j);
+//        assertOnGameThread();
+//        VRenderSystem.polygonMode(i, j);
     }
 
     /**

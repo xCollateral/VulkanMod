@@ -20,6 +20,7 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
