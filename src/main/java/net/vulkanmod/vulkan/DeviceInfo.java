@@ -33,12 +33,12 @@ public class DeviceInfo {
     public final String vkVersion;
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
-    public final VkPhysicalDeviceVulkan11Features availableFeatures11;
+
 
 //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private boolean drawIndirectSupported;
+    private final boolean drawIndirectSupported, hasBindlessUBOs, hasIndexedDescriptors;
 
     static {
         CentralProcessor centralProcessor = new SystemInfo().getHardware().getProcessor();
@@ -60,10 +60,9 @@ public class DeviceInfo {
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
-
-        this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
-        this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+        VkPhysicalDeviceVulkan11Features availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc().sType$Default();
+        VkPhysicalDeviceDescriptorIndexingFeatures indexedDescriptorFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.malloc().sType$Default();
+        this.availableFeatures.pNext(indexedDescriptorFeatures).pNext(availableFeatures11);
 
         //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
@@ -74,9 +73,11 @@ public class DeviceInfo {
 
         vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
 
-        if(this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-                this.drawIndirectSupported = true;
-
+        this.drawIndirectSupported = this.availableFeatures.features().multiDrawIndirect() && availableFeatures11.shaderDrawParameters();
+        this.hasBindlessUBOs = indexedDescriptorFeatures.descriptorBindingUniformBufferUpdateAfterBind();
+        this.hasIndexedDescriptors = indexedDescriptorFeatures.descriptorBindingPartiallyBound() && indexedDescriptorFeatures.descriptorBindingVariableDescriptorCount() && indexedDescriptorFeatures.runtimeDescriptorArray() && indexedDescriptorFeatures.descriptorBindingUpdateUnusedWhilePending();
+        indexedDescriptorFeatures.free();
+        availableFeatures11.free();
     }
 
     private static String decodeVendor(int i) {
@@ -180,6 +181,14 @@ public class DeviceInfo {
 
     public boolean isDrawIndirectSupported() {
         return drawIndirectSupported;
+    }
+
+    public boolean isHasBindlessUBOs() {
+        return hasBindlessUBOs;
+    }
+
+    public boolean isHasIndexedDescriptors() {
+        return hasIndexedDescriptors;
     }
 
     //Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:

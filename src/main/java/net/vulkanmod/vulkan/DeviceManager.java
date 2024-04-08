@@ -153,30 +153,32 @@ public abstract class DeviceManager {
                 queueCreateInfo.queueFamilyIndex(uniqueQueueFamilies[i]);
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
-            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack).sType$Default();
-            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
+            VkPhysicalDeviceShaderDrawParameterFeatures shaderDrawParameterFeatures = VkPhysicalDeviceShaderDrawParameterFeatures.calloc(stack).sType$Default();
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
             deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
             deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
             deviceFeatures.features().multiDrawIndirect(deviceInfo.isDrawIndirectSupported());
-            deviceVulkan11Features.shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
+            shaderDrawParameterFeatures.shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
 
+            final boolean hasIndexedDescriptors = deviceInfo.isHasIndexedDescriptors();
             VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
                     .sType$Default()
-                    .descriptorBindingPartiallyBound(true)
-                    .descriptorBindingSampledImageUpdateAfterBind(true)
-                    .descriptorBindingUniformBufferUpdateAfterBind(false)
-                    .runtimeDescriptorArray(true)
-                    .descriptorBindingVariableDescriptorCount(true)
-                    .descriptorBindingUpdateUnusedWhilePending(true);
+                    .runtimeDescriptorArray(hasIndexedDescriptors)
+                    .descriptorBindingPartiallyBound(hasIndexedDescriptors)
+
+                    .descriptorBindingSampledImageUpdateAfterBind(hasIndexedDescriptors)
+                    .descriptorBindingUniformBufferUpdateAfterBind(deviceInfo.isHasBindlessUBOs())
+
+                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
+                    .descriptorBindingUpdateUnusedWhilePending(hasIndexedDescriptors);
 
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(descriptorIndexingFeatures).pNext(deviceVulkan11Features);
+            createInfo.pNext(descriptorIndexingFeatures).pNext(shaderDrawParameterFeatures);
             createInfo.pEnabledFeatures(deviceFeatures.features());
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
             createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
