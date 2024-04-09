@@ -4,11 +4,13 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.util.MappedBuffer;
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
 
 import java.util.function.Supplier;
 
 public class Uniforms {
-
+    //TODO: might just use Enum System again w. basic hash matcing +update/rjetcion skips isnetad of hashmap
     public static Object2ReferenceOpenHashMap<String, Supplier<Integer>> vec1i_uniformMap = new Object2ReferenceOpenHashMap<>();
 
     public static Object2ReferenceOpenHashMap<String, Supplier<Float>> vec1f_uniformMap = new Object2ReferenceOpenHashMap<>();

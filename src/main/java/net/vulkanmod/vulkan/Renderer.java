@@ -374,6 +374,7 @@ public class Renderer {
 
         usedPipelines.clear();
         boundPipeline=0;
+        UniformState.resetAll();
     }
 
     void waitForSwapChain()

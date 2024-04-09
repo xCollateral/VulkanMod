@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.shader.PipelineState;
+import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -49,6 +50,12 @@ public abstract class VRenderSystem {
 
     public static float alphaCutout = 0.0f;
 
+    static
+    {
+        //Set shaderColor to White first (Fixes Mojang splash visibility)
+        ColorUtil.setRGBA_Buffer(shaderColor, 1, 1, 1, 1);
+    }
+
     private static final float[] depthBias = new float[2];
 
     public static void initRenderer()
@@ -87,11 +94,19 @@ public abstract class VRenderSystem {
     }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
+        final boolean b = UniformState.ModelViewMat.needsUpdate(mat.hashCode());
+        if (!b) {
+            return;
+        }
         mat.get(modelViewMatrix.buffer.asFloatBuffer());
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
-
+    //TODO: SKip if Hashcode Matches
     public static void applyProjectionMatrix(Matrix4f mat) {
+        final boolean b = UniformState.ModelViewMat.needsUpdate(mat.hashCode());
+        if (!b) {
+            return;
+        }
         mat.get(projectionMatrix.buffer.asFloatBuffer());
     }
 
@@ -132,7 +147,7 @@ public abstract class VRenderSystem {
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
         ColorUtil.setRGBA_Buffer(shaderColor, f1, f2, f3, f4);
     }
-
+    //TOOD: Schedule update when actually unique data has been provided
     public static void setShaderFogColor(float f1, float f2, float f3, float f4) {
         ColorUtil.setRGBA_Buffer(shaderFogColor, f1, f2, f3, f4);
     }

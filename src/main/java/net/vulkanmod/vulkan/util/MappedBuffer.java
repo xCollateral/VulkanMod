@@ -18,7 +18,7 @@ public class MappedBuffer {
     }
 
     public MappedBuffer(int size) {
-        this.buffer = MemoryUtil.memAlloc(size);
+        this.buffer = MemoryUtil.memCalloc(size);
         this.ptr = MemoryUtil.memAddress0(this.buffer);
     }
 

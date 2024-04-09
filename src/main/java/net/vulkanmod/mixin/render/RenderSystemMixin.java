@@ -19,10 +19,7 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 
 import java.util.function.Consumer;
 
@@ -381,12 +378,15 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     private static void _setShaderColor(float r, float g, float b, float a) {
-        shaderColor[0] = r;
-        shaderColor[1] = g;
-        shaderColor[2] = b;
-        shaderColor[3] = a;
+        if(extracted(shaderColor, r, g, b, a))
+        {
+            shaderColor[0] = r;
+            shaderColor[1] = g;
+            shaderColor[2] = b;
+            shaderColor[3] = a;
+            VRenderSystem.setShaderColor(r, g, b, a);
+        }
 
-        VRenderSystem.setShaderColor(r, g, b, a);
     }
 
     /**
@@ -394,12 +394,19 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     private static void _setShaderFogColor(float f, float g, float h, float i) {
-        shaderFogColor[0] = f;
-        shaderFogColor[1] = g;
-        shaderFogColor[2] = h;
-        shaderFogColor[3] = i;
+        if(extracted(shaderFogColor, f, g, h, i))
+        {
+            shaderFogColor[0] = f;
+            shaderFogColor[1] = g;
+            shaderFogColor[2] = h;
+            shaderFogColor[3] = i;
+            VRenderSystem.setShaderFogColor(f, g, h, i);
+        }
+    }
 
-        VRenderSystem.setShaderFogColor(f, g, h, i);
+    @Unique
+    private static boolean extracted(float[] shaderFogColor, float f, float g, float h, float i) {
+       return shaderFogColor[0] != f || shaderFogColor[1] != g || shaderFogColor[2] != h || shaderFogColor[3] != i;
     }
 
     /**
