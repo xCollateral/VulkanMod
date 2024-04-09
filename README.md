@@ -8,7 +8,7 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 - It also brings a future-proof codebase for Minecraft java. <br>
 - The Vulkan API, in opposition to OpenGL, allows for better usage of newer hardware and is at a lower level. <br>
 
-### Demostration Video:
+### Demonstration Video:
 
 [![Demostration Video](http://img.youtube.com/vi/sbr7UxcAmOE/0.jpg)](https://youtu.be/sbr7UxcAmOE)
 
@@ -54,11 +54,10 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 ## Features
 
 ### Optimizations:
->- [x] GUI optimizations
 >- [x] Multiple chunk culling algorithms
 >- [x] Reduced CPU overhead
 >- [x] Improved GPU performance
->- [x] Indirect Draw mode (reduces Vram usage - optional)
+>- [x] Indirect Draw mode (reduces CPU overhead)
 >- [x] Chunk rendering optimizations
 
 ### New content:
@@ -66,7 +65,7 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 >- [x] GPU selector
 >- [x] Windowed fullscreen mode
 >- [x] Revamped graphic settings menu
->- [x] Risizable render frame queue
+>- [x] Resizable render frame queue
 >- [ ] Shader support
 >- [ ] Removed Herobrine
 
