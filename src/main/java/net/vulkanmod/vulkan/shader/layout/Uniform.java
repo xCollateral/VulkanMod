@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.shader.layout;
 
+import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.lwjgl.system.MemoryUtil;
@@ -22,10 +23,7 @@ public class Uniform {
 
     void setSupplier() {
         this.values = switch (info.type) {
-            case "mat4" -> Uniforms.mat4f_uniformMap.get(info.name);
-            case "vec4" -> Uniforms.vec4f_uniformMap.get(info.name);
-            case "vec3" -> Uniforms.vec3f_uniformMap.get(info.name);
-            case "vec2" -> Uniforms.vec2f_uniformMap.get(info.name);
+            case "mat4", "vec3", "vec2", "vec4" -> UniformState.valueOf(info.name)::getMappedBufferPtr;
 
             default -> null;
         };

@@ -269,7 +269,7 @@ public abstract class Pipeline {
 
                 final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
-                if(textureUpdate) this.updateDescriptorSet(stack, uniformBuffers);
+                this.updateDescriptorSet(stack, uniformBuffers);
 
                 vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
                         0, stack.longs(currentSet), null);
@@ -329,7 +329,7 @@ public abstract class Pipeline {
 
                 bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
                 bufferInfos[i].buffer(this.uniformBufferId);
-                bufferInfos[i].offset(0);
+                bufferInfos[i].offset(this.dynamicOffsets.get(i));
                 bufferInfos[i].range(ubo.getSize());
 
                 VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);

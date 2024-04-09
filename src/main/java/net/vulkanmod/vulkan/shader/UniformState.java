@@ -1,5 +1,9 @@
 package net.vulkanmod.vulkan.shader;
 
+import net.vulkanmod.vulkan.util.MappedBuffer;
+
+import java.nio.ByteBuffer;
+
 public enum UniformState {
     ModelViewMat("mat4",4, 16),
     ProjMat("mat4",4, 16),
@@ -31,12 +35,15 @@ public enum UniformState {
     int currentOffset;
 
     long currentHash;
+    private final MappedBuffer mappedBufferPtr;
+
 
     UniformState(String vec3, int align, int size) {
 
         type = vec3;
         this.align = align;
         this.size = size;
+        mappedBufferPtr = new MappedBuffer(size * Float.BYTES);
     }
 
 
@@ -58,4 +65,11 @@ public enum UniformState {
         }
     }
 
+    public ByteBuffer buffer() {
+        return this.mappedBufferPtr.buffer;
+    }
+
+    public MappedBuffer getMappedBufferPtr() {
+        return mappedBufferPtr;
+    }
 }
