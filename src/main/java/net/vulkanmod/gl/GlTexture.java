@@ -33,7 +33,8 @@ public class GlTexture {
         ID_COUNTER++;
         return id;
     }
-
+    //TODO: Remove Bindfull Boilerplate+OpenGl handling and make this a selctor-based system instead
+    // + use GL_TEZXURE_UNIT IDS Directly Maybe a
     public static void bindTexture(int id) {
         boundTextureId = id;
         boundTexture = map.get(id);
@@ -62,7 +63,7 @@ public class GlTexture {
 
         return map.get(id);
     }
-
+    //TODO: Descriptor Indexing
     public static void activeTexture(int i) {
         activeTexture = i - GL30.GL_TEXTURE0;
 

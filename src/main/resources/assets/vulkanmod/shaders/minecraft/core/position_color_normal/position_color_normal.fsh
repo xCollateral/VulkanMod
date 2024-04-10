@@ -14,11 +14,11 @@
 //out vec4 fragColor;
 //
 //void main() {
-//    vec4 color = vertexColor * ColorModulator;
+//    vec4 color = vertexColor;
 //    if (color.a < 0.1) {
 //        discard;
 //    }
-//    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+//    fragColor = color;
 //}
 
 #version 450
@@ -45,5 +45,5 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = color;
 }

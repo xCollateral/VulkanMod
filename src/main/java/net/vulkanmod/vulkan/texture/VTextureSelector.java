@@ -47,7 +47,7 @@ public abstract class VTextureSelector {
 
         texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
     }
-
+    //TODO: Descriptor Indexing
     public static int getTextureIdx(String name) {
         return switch (name) {
             case "Sampler0", "DiffuseSampler" -> 0;

@@ -11,7 +11,6 @@ layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
-   mat4 ModelViewMat;
    vec3 Light0_Direction;
    vec3 Light1_Direction;
 };
@@ -26,7 +25,7 @@ layout(location = 3) out float vertexDistance;
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * texelFetch(Sampler2, UV2 / 16, 0);
     texCoord0 = UV0;
     normal = (MVP * vec4(Normal, 0.0)).xyz;

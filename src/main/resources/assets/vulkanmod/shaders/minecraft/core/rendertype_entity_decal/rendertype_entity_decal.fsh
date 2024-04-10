@@ -11,12 +11,7 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 
 layout(binding = 2) uniform sampler2D Sampler0;
 
-layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
-    vec4 FogColor;
-    float FogStart;
-    float FogEnd;
-};
+
 
 layout(location = 0) in vec4 vertexColor;
 layout(location = 1) in vec4 overlayColor;
@@ -32,8 +27,8 @@ void main() {
         discard;
     }
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
-    color *= vertexColor * ColorModulator;
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    color *= vertexColor;
+    fragColor = color;
 }
 
 /*
@@ -62,7 +57,7 @@ void main() {
         discard;
     }
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
-    color *= vertexColor * ColorModulator;
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    color *= vertexColor;
+    fragColor = color;
 }
 */

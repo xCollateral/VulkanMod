@@ -9,12 +9,7 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
     return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
 }
 
-layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
-    vec4 FogColor;
-    float FogStart;
-    float FogEnd;
-};
+
 
 layout(location = 0) in vec4 vertexColor;
 layout(location = 1) in vec2 texCoord0;
@@ -23,11 +18,11 @@ layout(location = 2) in float vertexDistance;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = vertexColor * ColorModulator;
+    vec4 color = vertexColor;
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = color;
 }
 
 //#version 150
@@ -48,9 +43,9 @@ void main() {
 //out vec4 fragColor;
 //
 //void main() {
-//    vec4 color = vertexColor * ColorModulator;
+//    vec4 color = vertexColor;
 //    if (color.a < 0.1) {
 //        discard;
 //    }
-//    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+//    fragColor = color;
 //}

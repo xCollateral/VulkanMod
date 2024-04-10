@@ -6,7 +6,6 @@ layout(location = 2) in ivec2 UV2;
 
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
-   mat4 ModelViewMat;
    vec4 ColorModulator;
 };
 
@@ -18,8 +17,8 @@ layout(location = 1) out float vertexDistance;
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
-    vertexColor = Color * ColorModulator * texelFetch(Sampler2, UV2 / 16, 0);
+
+    vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
 }
 
 /*
