@@ -3,10 +3,11 @@
 This is a fabric mod that introduces a brand new **Vulkan** based voxel rendering engine to **Minecraft java** in order to both replace the default OpenGL renderer and bring performance improvements.
 
 ### Why?
-- The Vulkanmod allows for deep optimizations into the rendering process and calculations. <br>
-- With a default configuration, it performs better than Vanilla Minecraft.  <br>
-- It also brings a future-proof codebase for Minecraft java. <br>
-- The Vulkan API, in opposition to OpenGL, allows for better usage of newer hardware and is at a lower level. <br>
+- Highly experimental project that overhauls and modernizes the internal renderer for Minecraft. <br>
+- Updates the renderer from OpenGL 3.2 to Vulkan 1.2.  <br>
+- Provides a potential reference for a future-proof Vulkan codebase for Minecraft Java. <br>
+- Utilizes the VulkanAPI to allow for capabilities not always possible with OpenGL. <br>
+- Including reduced CPU Overhead and use of newer, modern hardware capabilities. <br>
 
 ### Demonstration Video:
 
@@ -60,7 +61,7 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
 >- [x] Indirect Draw mode (reduces CPU overhead)
 >- [x] Chunk rendering optimizations
 
-### New content:
+### New changes:
 >- [x] Native Wayland support
 >- [x] GPU selector
 >- [x] Windowed fullscreen mode
