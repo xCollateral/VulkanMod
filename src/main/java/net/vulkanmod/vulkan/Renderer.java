@@ -20,7 +20,6 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -467,13 +466,13 @@ public class Renderer {
         this.onResizeCallbacks.add(runnable);
     }
 
-    public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
+    public boolean bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         final long handle = pipeline.getHandle(currentState);
         if(boundPipeline==handle) {
-            return;
+            return false;
         }
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
         boundPipeline=handle;
@@ -484,11 +483,12 @@ public class Renderer {
 //        }
 
         addUsedPipeline(pipeline);
+        return true;
     }
 
-    public void uploadAndBindUBOs(Pipeline pipeline) {
+    public void uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame, shouldUpdate);
     }
 
     public void pushConstants(Pipeline pipeline) {

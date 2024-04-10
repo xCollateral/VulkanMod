@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.joml.Matrix4f;
@@ -60,7 +59,7 @@ public class DrawUtil {
         RenderSystem.applyModelViewMatrix();
         posestack.popPose();
 
-        Renderer.getInstance().uploadAndBindUBOs(pipeline);
+        Renderer.getInstance().uploadAndBindUBOs(pipeline, true);
 
         blitQuad(0.0D, 0.0D, 1.0D, 1.0D);
     }

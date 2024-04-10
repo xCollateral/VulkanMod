@@ -117,8 +117,8 @@ public class VBO {
             VRenderSystem.polygonMode(0, mode.asGLMode);
 
             Renderer renderer = Renderer.getInstance();
-            renderer.bindGraphicsPipeline(pipeline);
-            renderer.uploadAndBindUBOs(pipeline);
+            boolean b = renderer.bindGraphicsPipeline(pipeline);
+            renderer.uploadAndBindUBOs(pipeline, b);
 
             if(indexBuffer != null)
                 Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);

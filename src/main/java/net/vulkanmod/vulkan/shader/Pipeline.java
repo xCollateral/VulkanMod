@@ -216,13 +216,13 @@ public abstract class Pipeline {
         return imageDescriptors;
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame, boolean shouldUpdate) {
         UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, shouldUpdate);
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame) {
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame, boolean shouldUpdate) {
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS, shouldUpdate);
     }
 
     static long createShaderModule(ByteBuffer spirvCode) {
@@ -267,17 +267,25 @@ public abstract class Pipeline {
             }
         }
 
-        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint) {
+        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint, boolean shouldUpdate) {
             try(MemoryStack stack = stackPush()) {
 
-                this.updateUniforms(uniformBuffers);
 
-                final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
-                this.updateDescriptorSet(stack, uniformBuffers);
+                if(shouldUpdate)
+                {
 
-                vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-                        0, stack.longs(currentSet), null);
+                    final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
+                    if(textureUpdate)
+                    {
+                        this.updateUniforms(uniformBuffers);
+                        this.updateDescriptorSet(stack, uniformBuffers);
+                    }
+                    vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
+                            0, stack.longs(currentSet), null);
+
+                }
+
             }
         }
 
@@ -302,6 +310,7 @@ public abstract class Pipeline {
                 currentOffset = uniformBuffers.getUsedBytes();
                 ++i;
             }
+            uniformBuffers.reset();
         }
 
         private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
@@ -330,13 +339,14 @@ public abstract class Pipeline {
 
             //TODO maybe ubo update is not needed everytime
             int i = 0;
+            int x = 0;
             for(UBO ubo : buffers) {
 
                 bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
                 bufferInfos[i].buffer(this.uniformBufferId);
-                bufferInfos[i].offset(this.dynamicOffsets.get(i));
+                bufferInfos[i].offset(x);
                 bufferInfos[i].range(ubo.getSize());
-
+                x+= UniformBuffers.getAlignedSize(ubo.getSize());
                 VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);
                 uboDescriptorWrite.sType$Default();
                 uboDescriptorWrite.dstBinding(ubo.getBinding());

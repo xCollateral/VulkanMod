@@ -8,13 +8,8 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-
-import static org.lwjgl.vulkan.VK10.VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-import static org.lwjgl.vulkan.VK10.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
 
 @Mixin(BufferUploader.class)
 public class BufferUploaderM {
@@ -50,8 +45,8 @@ public class BufferUploaderM {
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
         VRenderSystem.polygonMode(0, parameters.mode().asGLMode);
-        renderer.bindGraphicsPipeline(pipeline);
-        renderer.uploadAndBindUBOs(pipeline);
+        boolean b = renderer.bindGraphicsPipeline(pipeline);
+        renderer.uploadAndBindUBOs(pipeline, b);
         Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
     }
 

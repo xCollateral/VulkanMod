@@ -38,7 +38,6 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
@@ -203,7 +202,7 @@ public class EffectInstanceM {
             uniform.upload();
         }
 
-        renderer.uploadAndBindUBOs(pipeline);
+        renderer.uploadAndBindUBOs(pipeline, true);
 
     }
 
