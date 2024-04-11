@@ -202,7 +202,7 @@ public class Renderer {
         resetDescriptors();
 
         currentCmdBuffer = commandBuffers.get(currentFrame);
-        vkResetCommandBuffer(currentCmdBuffer, 0);
+//        vkResetCommandBuffer(currentCmdBuffer, 0);
         recordingCmds = true;
 
         try(MemoryStack stack = stackPush()) {
@@ -283,7 +283,6 @@ public class Renderer {
             Synchronization.INSTANCE.waitFences();
 
             if((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 

@@ -63,15 +63,15 @@ public abstract class Pipeline {
     }
 
     public static void recreateDescriptorSets(int frames) {
-        PIPELINES.forEach(pipeline -> {
-            pipeline.destroyDescriptorSets();
-            pipeline.createDescriptorSets(frames);
-        });
+//        PIPELINES.forEach(pipeline -> {
+//            pipeline.destroyDescriptorSets();
+//            pipeline.createDescriptorSets(frames);
+//        });
     }
 
     public final String name;
 
-    protected long descriptorSetLayout;
+    protected static long descriptorSetLayout;
     protected long pipelineLayout;
 
     protected DescriptorSets[] descriptorSets;
@@ -81,6 +81,7 @@ public abstract class Pipeline {
     protected PushConstants pushConstants;
 
     public Pipeline(String name) {
+
         this.name = name;
     }
 
@@ -102,7 +103,7 @@ public abstract class Pipeline {
                 uboLayoutBinding.pImmutableSamplers(null);
                 uboLayoutBinding.stageFlags(ubo.getStages());
 
-                bindingFlags.put(0); //Don't need VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT: as all Uniform Buffers will be valid
+                bindingFlags.put(VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
 
 
                 i++;
@@ -148,7 +149,7 @@ public abstract class Pipeline {
                 throw new RuntimeException("Failed to create descriptor set layout"+this.name);
             }
 
-            this.descriptorSetLayout = pDescriptorSetLayout.get(0);
+            descriptorSetLayout = pDescriptorSetLayout.get(0);
         }
     }
 
@@ -158,7 +159,7 @@ public abstract class Pipeline {
 
             VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-            pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
+            pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout));
 
             if(this.pushConstants != null) {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);

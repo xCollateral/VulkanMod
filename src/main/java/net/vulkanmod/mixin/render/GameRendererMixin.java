@@ -204,7 +204,7 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_shadow", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeEntityShadowShader = shaderInstance;
             }));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_alpha", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            list1.add(Pair.of(positionColor, (shaderInstance) -> {
                 rendertypeEntityAlphaShader = shaderInstance;
             }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_eyes", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {

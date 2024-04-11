@@ -15,8 +15,8 @@ layout(binding = 0) uniform UniformBufferObject {
    vec3 Light1_Direction;
 };
 
-layout(binding = 3) uniform sampler2D Sampler1;
-layout(binding = 4) uniform sampler2D Sampler2;
+//layout(binding = 3) uniform sampler2D Sampler1;
+layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec4 lightMapColor;
@@ -31,7 +31,7 @@ void main() {
 
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
     lightMapColor = texelFetch(Sampler2, UV2 / 16, 0);
-    overlayColor = texelFetch(Sampler1, UV1, 0);
+    ////overlayColor = texelFetch(Sampler1, UV1, 0);
     texCoord0 = UV0;
     normal = (MVP * vec4(Normal, 0.0)).xyz;
 }

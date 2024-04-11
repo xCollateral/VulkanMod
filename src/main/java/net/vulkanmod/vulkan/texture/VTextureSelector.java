@@ -70,7 +70,7 @@ public abstract class VTextureSelector {
             default -> throw new IllegalStateException("Unknown sampler name: " + name);
         };
     }
-
+    //TODO: makes sure Samplers are stored persistently
     public static VulkanImage getImage(int i) {
         return boundTextures[i];
     }

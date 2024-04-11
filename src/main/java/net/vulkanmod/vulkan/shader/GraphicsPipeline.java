@@ -29,6 +29,9 @@ public class GraphicsPipeline extends Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
+
+
+
     GraphicsPipeline(Builder builder) {
         super(builder.shaderPath);
         this.buffers = builder.UBOs;
@@ -37,7 +40,10 @@ public class GraphicsPipeline extends Pipeline {
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
-        createDescriptorSetLayout();
+        if(descriptorSetLayout==0)
+        {
+            createDescriptorSetLayout();
+        }
         createPipelineLayout();
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
@@ -345,7 +351,7 @@ public class GraphicsPipeline extends Pipeline {
         });
         graphicsPipelines.clear();
 
-        vkDestroyDescriptorSetLayout(DeviceManager.device, descriptorSetLayout, null);
+//        vkDestroyDescriptorSetLayout(DeviceManager.device, descriptorSetLayout, null);
         vkDestroyPipelineLayout(DeviceManager.device, pipelineLayout, null);
 
         PIPELINES.remove(this);
