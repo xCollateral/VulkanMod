@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
@@ -32,6 +33,7 @@ public class DescriptorSetArray {
     private final long descriptorSetLayout;
     private final long globalDescriptorPoolArrayPool;
     private final LongBuffer descriptorSets;
+    private final int value = 2;
 
     public void addTexture(int binding, VulkanImage vulkanImage)
     {
@@ -63,7 +65,7 @@ public class DescriptorSetArray {
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
-            bindingFlags.put(VERT_UBO_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+            bindingFlags.put(VERT_UBO_ID, 0);
 
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
@@ -72,7 +74,7 @@ public class DescriptorSetArray {
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            bindingFlags.put(FRAG_UBO_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+            bindingFlags.put(FRAG_UBO_ID, 0);
 
             bindings.get(VERTEX_SAMPLER_ID)
                     .binding(VERTEX_SAMPLER_ID)
@@ -182,7 +184,7 @@ public class DescriptorSetArray {
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
             poolInfo.flags(VK12.VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT);
             poolInfo.pPoolSizes(poolSizes);
-            poolInfo.maxSets(2); //One DSet for each binding
+            poolInfo.maxSets(value); //One DSet for each binding
 
             LongBuffer pDescriptorPool = stack.mallocLong(1);
 
@@ -218,7 +220,7 @@ public class DescriptorSetArray {
 
 
 
-
+//TODO; ASync smaper streaming: use a falback missing texture palcehodler if  mod adds a texture, but it not been updated/regsitered w/the Descriptor array yet
 
     public void updateAndBind(int frame, VkCommandBuffer commandBuffer)
     {
@@ -255,9 +257,10 @@ public class DescriptorSetArray {
                 currentBinding++;
             }
 
-            for(int imageSamplerIdx = 0; imageSamplerIdx < bufferInfos.length; imageSamplerIdx++) {
+            for(int imageSamplerIdx = 0; imageSamplerIdx < imageInfo.length; imageSamplerIdx++) {
                 //Use Global Sampler Table Array
-                VulkanImage image = VTextureSelector.getImage(imageSamplerIdx==0 ? 0 : 1); //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
+                //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
+                VulkanImage image = VTextureSelector.getImage(1); //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
 
 
                 long view = image.getImageView();

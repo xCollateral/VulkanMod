@@ -14,8 +14,7 @@
         "Normal"
     ],
     "samplers": [
-        { "name": "Sampler0", "binding": 2 },
-        { "name": "Sampler2", "binding": 3 }
+        { "name": "Sampler0", "binding": 2 }
     ],
     "uniforms": [
 
@@ -30,5 +29,8 @@
         { "type":  "fragment", "binding": 1, "fields": [
             { "name": "ColorModulator", "type": "float", "count": 4, "values": [ 1.0, 1.0, 1.0, 1.0 ] }
         ] }
+    ],
+    "PushConstants": [
+        { "name": "ChunkOffset", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] }
     ]
 }

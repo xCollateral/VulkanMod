@@ -73,7 +73,7 @@ public abstract class Pipeline {
     public final String name;
 
 //    protected static long descriptorSetLayout;
-    protected long pipelineLayout;
+    protected static long pipelineLayout;
 
     protected DescriptorSets[] descriptorSets;
     protected List<UBO> buffers;
@@ -97,14 +97,14 @@ public abstract class Pipeline {
 
             //TODO; PushConstants temp disabed to work aroudn compatiblity isues with DescriptorSet layouts
 
-           /* if(this.pushConstants != null) {
+            if(this.pushConstants != null) {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);
                 pushConstantRange.size(this.pushConstants.getSize());
                 pushConstantRange.offset(0);
                 pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
-            }*/
+            }
 
             LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
 

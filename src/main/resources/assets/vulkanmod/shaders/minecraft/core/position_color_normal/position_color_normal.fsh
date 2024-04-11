@@ -41,7 +41,7 @@ layout(location = 2) in vec4 normal;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = vertexColor * ColorModulator;
+    vec4 color = vertexColor;
     if (color.a < 0.1) {
         discard;
     }
