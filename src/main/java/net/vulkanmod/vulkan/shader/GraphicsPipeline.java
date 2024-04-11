@@ -35,15 +35,15 @@ public class GraphicsPipeline extends Pipeline {
     GraphicsPipeline(Builder builder) {
         super(builder.shaderPath);
         this.buffers = builder.UBOs;
-        this.manualUBO = builder.manualUBO;
-        this.imageDescriptors = builder.imageDescriptors;
+//        this.manualUBO = builder.manualUBO;
+//        this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
-        if(descriptorSetLayout==0)
-        {
-            createDescriptorSetLayout();
-        }
+//        if(descriptorSetLayout==0)
+//        {
+//            createDescriptorSetLayout();
+//        }
         createPipelineLayout();
         createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
 
@@ -344,7 +344,7 @@ public class GraphicsPipeline extends Pipeline {
         vkDestroyShaderModule(DeviceManager.device, vertShaderModule, null);
         vkDestroyShaderModule(DeviceManager.device, fragShaderModule, null);
 
-        destroyDescriptorSets();
+
 
         graphicsPipelines.forEach((state, pipeline) -> {
             vkDestroyPipeline(DeviceManager.device, pipeline, null);

@@ -71,8 +71,11 @@ public abstract class VTextureSelector {
         };
     }
     //TODO: makes sure Samplers are stored persistently
+    // + Donlt invalide Texture Units/Slots like w/ the OpenGL model
+    // + GL_REXYRE0 is always bound: perhape sfolloin OGP  dkie. too closely...
     public static VulkanImage getImage(int i) {
-        return boundTextures[i];
+        final VulkanImage boundTexture = boundTextures[i];
+        return boundTexture==null ? boundTextures[0] : boundTexture;
     }
 
     public static void setLightTexture(VulkanImage texture) {

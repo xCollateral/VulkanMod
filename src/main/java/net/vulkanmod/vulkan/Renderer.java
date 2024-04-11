@@ -16,6 +16,7 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.shader.*;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -47,6 +48,7 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+    private final DescriptorSetArray descriptorSetArray;
     private long boundPipeline;
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -88,6 +90,9 @@ public class Renderer {
         device = Vulkan.getDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
+
+        descriptorSetArray = new DescriptorSetArray();
+
     }
 
     private void init() {
@@ -201,6 +206,8 @@ public class Renderer {
 
         resetDescriptors();
 
+        //TODO: Move Descriptor binds to outside renderPass: not sure if it enables specific optimisations
+
         currentCmdBuffer = commandBuffers.get(currentFrame);
 //        vkResetCommandBuffer(currentCmdBuffer, 0);
         recordingCmds = true;
@@ -234,6 +241,8 @@ public class Renderer {
             if (err != VK_SUCCESS) {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
+
+            this.descriptorSetArray.updateAndBind(currentFrame, commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 
@@ -672,8 +681,10 @@ public class Renderer {
     public static int getFramesNum() { return INSTANCE.framesNum; }
 
     public static VkCommandBuffer getCommandBuffer() { return INSTANCE.currentCmdBuffer; }
+    public static DescriptorSetArray getDescriptorSetArray() { return INSTANCE.descriptorSetArray; }
 
     public static boolean isRecording() { return INSTANCE.recordingCmds; }
 
     public static void scheduleSwapChainUpdate() { swapChainUpdate = true; }
+
 }

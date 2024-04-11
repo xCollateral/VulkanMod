@@ -172,7 +172,9 @@ public abstract class DeviceManager {
                     .descriptorBindingUniformBufferUpdateAfterBind(deviceInfo.isHasBindlessUBOs())
 
                     .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
-                    .descriptorBindingUpdateUnusedWhilePending(hasIndexedDescriptors);
+                    .descriptorBindingUpdateUnusedWhilePending(hasIndexedDescriptors)
+
+                    .shaderSampledImageArrayNonUniformIndexing(hasIndexedDescriptors);
 
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);

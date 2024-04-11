@@ -20,12 +20,11 @@ public class ImageDescriptor implements Descriptor {
     private int layout;
     private int mipLevel = -1;
 
-    public ImageDescriptor(int binding, String type, String name, int imageIdx) {
-        this(binding, type, name, imageIdx, false);
+    public ImageDescriptor(String type, String name, int imageIdx) {
+        this(type, name, imageIdx, false);
     }
 
-    public ImageDescriptor(int binding, String type, String name, int imageIdx, boolean isStorageImage) {
-        this.binding = binding;
+    public ImageDescriptor(String type, String name, int imageIdx, boolean isStorageImage) {
         this.qualifier = type;
         this.name = name;
         this.isStorageImage = isStorageImage;
@@ -36,7 +35,9 @@ public class ImageDescriptor implements Descriptor {
             case "Sampler1", "Sampler2" -> VK_SHADER_STAGE_VERTEX_BIT;
             default -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         };
+        this.binding = this.stage == VK_SHADER_STAGE_VERTEX_BIT ? DescriptorSetArray.VERTEX_SAMPLER_ID : DescriptorSetArray.FRAG_SAMPLER_ID;
 
+        //TODO: Check if STROAGE and Samplers can Alias in the same BINDING Slot, or if a dedicated Stroage BINDING SLOID ID Is needed
         descriptorType = isStorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         setLayout(isStorageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }

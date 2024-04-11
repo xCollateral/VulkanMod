@@ -7,11 +7,6 @@ layout (binding = 0) uniform UniformBufferObject {
     mat4 MVP;
 };
 
-
-layout (push_constant) uniform pushConstant {
-    vec3 ChunkOffset;
-};
-
 layout (binding = 3) uniform sampler2D Sampler2;
 
 
@@ -32,7 +27,7 @@ const vec3 POSITION_INV = vec3(1.0 / 1024.0);
 
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
-    const vec4 pos = vec4(fma(Position.xyz, vec3(POSITION_INV), ChunkOffset + baseOffset), 1.0);
+    const vec4 pos = vec4(fma(Position.xyz, vec3(POSITION_INV), baseOffset), 1.0);
     gl_Position = MVP * pos;
 
 

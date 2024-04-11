@@ -65,11 +65,11 @@ public abstract class PipelineManager {
         shaderGetter = consumer;
     }
 
-    public static GraphicsPipeline getTerrainDirectShader(RenderType renderType) {
+    public static GraphicsPipeline getTerrainDirectShader() {
         return terrainShader;
     }
 
-    public static GraphicsPipeline getTerrainIndirectShader(RenderType renderType) {
+    public static GraphicsPipeline getTerrainIndirectShader() {
         return terrainShaderEarlyZ;
     }
 
