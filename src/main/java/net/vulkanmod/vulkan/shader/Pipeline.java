@@ -245,7 +245,7 @@ public abstract class Pipeline {
             int currentOffset = uniformBuffers.getUsedBytes();
             //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
             int i = 0;
-            final boolean contains = name.contains("energy");
+            final boolean contains = name.contains("energy")|name.contains("position");
 
             if(contains)
             {
