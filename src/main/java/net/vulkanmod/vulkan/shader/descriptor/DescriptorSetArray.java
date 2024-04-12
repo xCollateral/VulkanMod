@@ -275,7 +275,7 @@ public class DescriptorSetArray {
             for(int imageSamplerIdx = 0; imageSamplerIdx < imageInfo.length; imageSamplerIdx++) {
                 //Use Global Sampler Table Array
                 //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-                VulkanImage image = VTextureSelector.getImage(1); //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
+                VulkanImage image = VTextureSelector.getImage(2); //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
 
 
                 long view = image.getImageView();
