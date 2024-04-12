@@ -9,10 +9,6 @@ mat2 mat2_rotate_z(float radians) {
 
 layout(location = 0) in vec4 texProj0;
 
-layout(binding = 1) uniform UniformBufferObject {
-   float GameTime;
-   int EndPortalLayers;
-};
 
 layout(binding = 2) uniform sampler2D Sampler0;
 layout(binding = 3) uniform sampler2D SamplerProj;
@@ -46,7 +42,7 @@ const mat4 SCALE_TRANSLATE = mat4(
 mat4 end_portal_layer(float layer) {
     mat4 translate = mat4(
         1.0, 0.0, 0.0, 17.0 / layer,
-        0.0, 1.0, 0.0, (2.0 + layer / 1.5) * (GameTime * 1.5),
+        0.0, 1.0, 0.0, (2.0 + layer / 1.5) * (1.5),
         0.0, 0.0, 1.0, 0.0,
         0.0, 0.0, 0.0, 1.0
     );
@@ -62,7 +58,7 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec3 color = textureProj(Sampler0, texProj0).rgb * COLORS[0];
-    for (int i = 0; i < EndPortalLayers; i++) {
+    for (int i = 0; i < 15; i++) {
         color += textureProj(SamplerProj, texProj0 * end_portal_layer(float(i + 1))).rgb * COLORS[i];
     }
     fragColor = vec4(color, 1.0);

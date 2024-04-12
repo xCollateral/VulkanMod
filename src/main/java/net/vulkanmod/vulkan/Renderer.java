@@ -444,6 +444,8 @@ public class Renderer {
 
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
+
+        this.descriptorSetArray.cleanup();
     }
 
     private void destroySyncObjects() {

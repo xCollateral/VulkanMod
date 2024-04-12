@@ -6,7 +6,6 @@ layout(location = 2) in vec2 UV0;
 
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
-   mat4 ProjMat;
 };
 
 layout(location = 0) out vec4 vertexColor;

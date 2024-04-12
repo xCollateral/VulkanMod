@@ -1,11 +1,10 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
-import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
-import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -230,22 +229,31 @@ public class DescriptorSetArray {
             VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[2];
             VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[2];
             int x = 0;
-;
+;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
+            //1 : Light_DIR_ vectors
+            //2: Inv Dir Vectors
+            //3: Global mob Rot + MAt4
 
 
+            // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
+
+            //Fog Parameters = ColorModulator -> PushConstants
+
+            //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
             int currentBinding = 0;
-
+            final long currentSet = descriptorSets.get(frame);
             for (int i = 0; i < bufferInfos.length; i++) {
 
 
 
+                final int alignedSize = UniformBuffers.getAlignedSize(64);
                 bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
                 bufferInfos[i].buffer(uniformBufferId);
                 bufferInfos[i].offset(x);
-                bufferInfos[i].range(256);
-                x += 256; //TODO: TEMP!  //UniformBuffers.getAlignedSize(ubo.getSize());
+                bufferInfos[i].range( x += alignedSize);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
 
 
+                //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
                 VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
                 uboDescriptorWrite.sType$Default();
                 uboDescriptorWrite.dstBinding(currentBinding);
@@ -253,7 +261,7 @@ public class DescriptorSetArray {
                 uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uboDescriptorWrite.descriptorCount(1);
                 uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
-                uboDescriptorWrite.dstSet(this.getDescriptorSet(frame));
+                uboDescriptorWrite.dstSet(currentSet);
                 currentBinding++;
             }
 
@@ -266,8 +274,9 @@ public class DescriptorSetArray {
                 long view = image.getImageView();
                 long sampler = image.getSampler();
 
+                //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
+                // + Might be Possible to specify Static Uniform Offsets per Set
 
-                long currentSet = this.getDescriptorSet(frame);
 
 
                     image.readOnlyLayout();
@@ -295,8 +304,16 @@ public class DescriptorSetArray {
 
 //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineManager.getTerrainDirectShader().getLayout(),
-                    0, stack.longs(descriptorSets.get(frame)), null);
+                    0, stack.longs(currentSet), null);
 
         }
+    }
+
+
+    public void cleanup()
+    {
+        vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
+        vkDestroyDescriptorSetLayout(DEVICE, this.descriptorSetLayout, null);
+        vkDestroyDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, null);
     }
 }
