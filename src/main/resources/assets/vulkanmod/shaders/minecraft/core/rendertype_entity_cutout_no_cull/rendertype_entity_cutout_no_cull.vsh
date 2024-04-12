@@ -11,6 +11,7 @@ layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP;
+   mat4 MVP2;
    vec3 Light0_Direction;
    vec3 Light1_Direction;
 };

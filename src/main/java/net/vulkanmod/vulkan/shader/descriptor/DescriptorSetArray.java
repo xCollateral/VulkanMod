@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
@@ -32,7 +33,7 @@ public class DescriptorSetArray {
     private final long descriptorSetLayout;
     private final long globalDescriptorPoolArrayPool;
     private final LongBuffer descriptorSets;
-    private final int value = 2;
+    private static final int value = 2;
 
     public void addTexture(int binding, VulkanImage vulkanImage)
     {
@@ -134,14 +135,20 @@ public class DescriptorSetArray {
 
     private LongBuffer allocateDescriptorSets(MemoryStack stack) {
 
+        final LongBuffer pSetLayouts = stack.mallocLong(value);
+
+        for(int i = 0 ; i < value; i++)
+        {
+            pSetLayouts.put(i, this.descriptorSetLayout);
+        }
 
 
         VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.calloc(stack);
         allocInfo.sType$Default();
         allocInfo.descriptorPool(this.globalDescriptorPoolArrayPool);
-        allocInfo.pSetLayouts(stack.longs(descriptorSetLayout, descriptorSetLayout));
+        allocInfo.pSetLayouts(pSetLayouts);
 
-        LongBuffer dLongBuffer = MemoryUtil.memAllocLong(2);
+        LongBuffer dLongBuffer = MemoryUtil.memAllocLong(value);
 
         int result = vkAllocateDescriptorSets(DEVICE, allocInfo, dLongBuffer);
         if (result != VK_SUCCESS) {
@@ -315,5 +322,6 @@ public class DescriptorSetArray {
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
         vkDestroyDescriptorSetLayout(DEVICE, this.descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, null);
+        MemoryUtil.memFree(descriptorSets);
     }
 }

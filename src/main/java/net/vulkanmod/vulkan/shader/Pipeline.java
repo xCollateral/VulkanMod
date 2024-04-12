@@ -245,6 +245,20 @@ public abstract class Pipeline {
             int currentOffset = uniformBuffers.getUsedBytes();
             //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
             int i = 0;
+            final boolean contains = name.contains("energy");
+
+            if(contains)
+            {
+                uniformBuffers.reset();
+                return;
+//                uniformBuffers.updateOffset(128);
+            }
+            if(name.contains("terrain"))
+            {
+                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
+                uniformBuffers.updateOffset(64);
+            }
+            {
             for(UBO ubo : buffers) {
 //                ubo.update();
 //                uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
@@ -262,7 +276,8 @@ public abstract class Pipeline {
                 currentOffset = uniformBuffers.getUsedBytes();
                 ++i;
             }
-//            uniformBuffers.reset();
+            }
+
         }
 
         /*private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers, boolean UBOUpdate) {
