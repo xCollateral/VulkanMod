@@ -14,7 +14,7 @@ layout(binding = 0) uniform UniformBufferObject {
 
 
 
-layout(binding = 3) uniform sampler2D Sampler2;
+layout(binding = 2) uniform sampler2D Sampler2;
 
 layout(location = 0) out float vertexDistance;
 layout(location = 1) out vec4 vertexColor;

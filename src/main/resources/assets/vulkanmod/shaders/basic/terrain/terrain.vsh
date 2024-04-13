@@ -12,7 +12,7 @@ layout (push_constant) uniform pushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 3) uniform sampler2D Sampler2;
+layout (binding = 2) uniform sampler2D Sampler2;
 
 
 layout (location = 0) out float vertexDistance;

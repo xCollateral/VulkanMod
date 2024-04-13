@@ -10,7 +10,7 @@ mat2 mat2_rotate_z(float radians) {
 layout(location = 0) in vec4 texProj0;
 
 
-layout(binding = 2) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0;
 layout(binding = 3) uniform sampler2D SamplerProj;
 
 const vec3[] COLORS = vec3[](

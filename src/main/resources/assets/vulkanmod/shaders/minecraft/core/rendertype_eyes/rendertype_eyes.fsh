@@ -19,7 +19,7 @@ float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     return smoothstep(fogEnd, fogStart, vertexDistance);
 }
 
-layout(binding = 2) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0;
 
 
 

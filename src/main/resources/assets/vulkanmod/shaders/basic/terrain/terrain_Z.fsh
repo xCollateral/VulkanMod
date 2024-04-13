@@ -2,7 +2,7 @@
 layout(early_fragment_tests) in;
 #include "light.glsl"
 
-layout(binding = 2) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0;
 
 
 

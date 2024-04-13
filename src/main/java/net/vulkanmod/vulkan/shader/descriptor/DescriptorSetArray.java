@@ -1,6 +1,11 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.resources.model.ModelManager;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
@@ -10,7 +15,6 @@ import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -28,7 +32,7 @@ public class DescriptorSetArray {
     private static final VkDevice DEVICE = Vulkan.getDevice();
     private static final int UNIFORM_POOLS = 1;
     private static final int SAMPLER_MAX_LIMIT = Math.max(DeviceManager.deviceProperties.limits().maxPerStageDescriptorSampledImages(), 32);
-    static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 3, FRAG_SAMPLER_ID = 2;
+    static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
     private static final int bindingsSize = 4;
 //    private Int2ObjectLinkedOpenHashMap<Descriptor> DescriptorTableHeap;
 //    private final Int2LongArrayMap perBindingSlowLayouts = new Int2LongArrayMap(bindingsSize);
@@ -43,6 +47,7 @@ public class DescriptorSetArray {
     private static final int MISSING_TEX_ID = 24;
 
     private final long defFragSampler;
+    private int BlocksID =-1;
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -219,6 +224,12 @@ public class DescriptorSetArray {
 
     public void updateAndBind(int frame, VkCommandBuffer commandBuffer)
     {
+        if(this.BlocksID ==-1)
+        {
+            final ModelManager modelManager = Minecraft.getInstance().getModelManager();
+
+            this.BlocksID = modelManager.getAtlas(InventoryMenu.BLOCK_ATLAS).getId();
+        }
         try(MemoryStack stack = stackPush()) {
             long uniformBufferId = Renderer.getDrawer().getUniformBuffers().getId(frame);
             VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(bindingsSize, stack);
@@ -264,9 +275,14 @@ public class DescriptorSetArray {
             for(int imageSamplerIdx = 0; imageSamplerIdx < imageInfo.length; imageSamplerIdx++) {
                 //Use Global Sampler Table Array
                 //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-                final int missingTexId = imageSamplerIdx == 0 ? 32 : 0;
-                final GlTexture vulkanImage = GlTexture.getTexture(missingTexId);
-                VulkanImage image = vulkanImage!=null && VUtil.checkUsage(vulkanImage.getVulkanImage().getUsage(), VK_IMAGE_USAGE_SAMPLED_BIT) ? vulkanImage.getVulkanImage() : VTextureSelector.getImage(2); //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
+//                final int missingTexId = imageSamplerIdx != 0 ? 32 : 32;
+
+
+                final GlTexture vulkanImage = GlTexture.getTexture(imageSamplerIdx == 0 ? 6 : BlocksID);
+                VulkanImage image = vulkanImage!=null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
+                if (image == null) {
+                    image = VTextureSelector.getImage(2);
+                }
 
 
                 long view = image.getImageView();
@@ -312,6 +328,7 @@ public class DescriptorSetArray {
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
         vkDestroyDescriptorSetLayout(DEVICE, this.descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, null);
+        vkDestroySampler(DEVICE, this.defFragSampler, null);
         MemoryUtil.memFree(descriptorSets);
     }
 }

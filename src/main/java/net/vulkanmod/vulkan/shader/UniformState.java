@@ -49,6 +49,8 @@ public enum UniformState {
 
     public boolean needsUpdate(int srcHash)
     {
+        //TODO: if need uodate then also update uniform offset/index
+        // or perhaps pushing uniforms here instead
         if(currentHash!=srcHash)
         {
             currentHash=srcHash;

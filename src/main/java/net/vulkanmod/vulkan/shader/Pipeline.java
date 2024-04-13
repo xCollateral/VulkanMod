@@ -176,13 +176,10 @@ public abstract class Pipeline {
         protected void updateSets(UniformBuffers uniformBuffers, boolean shouldUpdate) {
 
 
-            if(shouldUpdate) {
+            //                    final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
-//                    final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
-
-                this.updateUniforms(uniformBuffers);
+            this.updateUniforms(uniformBuffers);
 //                    this.updateDescriptorSet(stack, uniformBuffers, !this.bound);
-
 
 
 //                 {
@@ -191,7 +188,6 @@ public abstract class Pipeline {
 //                             0, descriptorSets, null);
 //                     this.bound = true;
 //                 }
-            }
 
 
         }
@@ -213,6 +209,11 @@ public abstract class Pipeline {
             {
                 uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
                 uniformBuffers.updateOffset(64);
+            }
+            if(name.contains("text"))
+            {
+                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
+                uniformBuffers.updateOffset(128);
             }
             {
             for(UBO ubo : buffers) {
