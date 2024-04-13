@@ -31,8 +31,6 @@ public class VulkanImage {
 
     private long[] levelImageViews;
 
-    private long sampler;
-
     public final int format;
     public final int aspect;
     public final int mipLevels;
@@ -56,7 +54,6 @@ public class VulkanImage {
         this.usage = usage;
         this.aspect = getAspect(this.format);
 
-        this.sampler = VUtil.checkUsage(usage, VK_IMAGE_USAGE_SAMPLED_BIT) ? SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) 0) : VK_NULL_HANDLE;
     }
 
     private VulkanImage(Builder builder) {
@@ -75,7 +72,6 @@ public class VulkanImage {
         image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
         image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
         //Skip Samplers if not needed (To help alleiavte mas Smapler alloc limit potwntially e.g.)
-        image.sampler = VUtil.checkUsage(builder.usage, VK_IMAGE_USAGE_SAMPLED_BIT) ? SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags) : VK_NULL_HANDLE;
 
         if(builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
@@ -243,7 +239,6 @@ public class VulkanImage {
     }
 
     public void updateTextureSampler(int maxLod, byte flags) {
-        this.sampler = SamplerManager.getTextureSampler((byte) maxLod, flags);
     }
 
     public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
@@ -395,9 +390,6 @@ public class VulkanImage {
 
     public long[] getLevelImageViews() { return levelImageViews; }
 
-    public long getSampler() {
-        return sampler;
-    }
     public int getUsage() { return usage; }
 
     public static Builder builder(int width, int height) {

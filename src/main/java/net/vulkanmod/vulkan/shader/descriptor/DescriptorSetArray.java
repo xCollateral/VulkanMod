@@ -42,6 +42,7 @@ public class DescriptorSetArray {
 
     private static final int MISSING_TEX_ID = 24;
 
+    private final long defFragSampler;
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -129,6 +130,7 @@ public class DescriptorSetArray {
             this.descriptorSets = allocateDescriptorSets(stack);
 
         }
+        defFragSampler = SamplerManager.getTextureSampler((byte) 1, (byte) 0);
     }
 
 
@@ -281,7 +283,7 @@ public class DescriptorSetArray {
                 imageInfo[imageSamplerIdx] = VkDescriptorImageInfo.calloc(1, stack);
                 imageInfo[imageSamplerIdx].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 imageInfo[imageSamplerIdx].imageView(view);
-                imageInfo[imageSamplerIdx].sampler(image.getSampler());
+                imageInfo[imageSamplerIdx].sampler(defFragSampler);
 
 
                 VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(currentBinding);
