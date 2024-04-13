@@ -17,6 +17,15 @@ public class MLightTexture {
 
     /**
      * @author
+     * @reason
+     */
+    @Overwrite
+    public void turnOffLightLayer() {
+
+    }
+
+    /**
+     * @author
      */
     @Overwrite
     public void turnOnLightLayer() {

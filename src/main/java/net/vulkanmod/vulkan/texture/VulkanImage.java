@@ -21,7 +21,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
-    public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    private static final int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
     private static final VkDevice DEVICE = Vulkan.getDevice();
 
@@ -398,6 +398,7 @@ public class VulkanImage {
     public long getSampler() {
         return sampler;
     }
+    public int getUsage() { return usage; }
 
     public static Builder builder(int width, int height) {
         return new Builder(width, height);

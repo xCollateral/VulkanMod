@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
@@ -9,6 +10,7 @@ import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -38,7 +40,8 @@ public class DescriptorSetArray {
     private final LongBuffer descriptorSets;
     private static final int value = 2;
 
-//    private final long defFragSampler;
+    private static final int MISSING_TEX_ID = 24;
+
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -241,7 +244,7 @@ public class DescriptorSetArray {
                 bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
                 bufferInfos[i].buffer(uniformBufferId);
                 bufferInfos[i].offset(x);
-                bufferInfos[i].range( x += 4096);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+                bufferInfos[i].range( x += 256);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
 
 
                 //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
@@ -259,7 +262,9 @@ public class DescriptorSetArray {
             for(int imageSamplerIdx = 0; imageSamplerIdx < imageInfo.length; imageSamplerIdx++) {
                 //Use Global Sampler Table Array
                 //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-                VulkanImage image = VTextureSelector.getImage(2); //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
+                final int missingTexId = imageSamplerIdx == 0 ? 32 : 0;
+                final GlTexture vulkanImage = GlTexture.getTexture(missingTexId);
+                VulkanImage image = vulkanImage!=null && VUtil.checkUsage(vulkanImage.getVulkanImage().getUsage(), VK_IMAGE_USAGE_SAMPLED_BIT) ? vulkanImage.getVulkanImage() : VTextureSelector.getImage(2); //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
 
 
                 long view = image.getImageView();
@@ -305,7 +310,6 @@ public class DescriptorSetArray {
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
         vkDestroyDescriptorSetLayout(DEVICE, this.descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, null);
-        vkDestroySampler(DEVICE, this.defFragSampler, null);
         MemoryUtil.memFree(descriptorSets);
     }
 }
