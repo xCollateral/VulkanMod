@@ -375,9 +375,7 @@ public class Renderer {
     public void removeUsedPipeline(Pipeline pipeline) { usedPipelines.remove(pipeline); }
 
     private void resetDescriptors() {
-        for(Pipeline pipeline : usedPipelines) {
-            pipeline.resetDescriptorPool(currentFrame);
-        }
+
 
         usedPipelines.clear();
         boundPipeline=0;
@@ -498,7 +496,7 @@ public class Renderer {
 
     public void uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame, shouldUpdate);
+        pipeline.bindDescriptorSets(currentFrame, shouldUpdate);
     }
 
     public void pushConstants(Pipeline pipeline) {

@@ -14,7 +14,8 @@
         "Normal"
     ],
     "samplers": [
-        { "name": "Sampler0", "binding": 2 }
+        { "name": "Sampler0", "binding": 2 },
+        { "name": "Sampler2", "binding": 3 }
     ],
     "uniforms": [
 

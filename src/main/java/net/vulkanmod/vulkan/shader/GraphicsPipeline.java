@@ -18,7 +18,6 @@ import java.nio.LongBuffer;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.vkDestroyPipelineLayout;
 
 public class GraphicsPipeline extends Pipeline {
 
@@ -26,8 +25,7 @@ public class GraphicsPipeline extends Pipeline {
 
     private final VertexFormat vertexFormat;
 
-    private long vertShaderModule = 0;
-    private long fragShaderModule = 0;
+    private final long vertShaderModule, fragShaderModule;
 
 
 
@@ -45,7 +43,8 @@ public class GraphicsPipeline extends Pipeline {
 //            createDescriptorSetLayout();
 //        }
         if(pipelineLayout==0) createPipelineLayout();
-        createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
+        this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
+        this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
 
         if(builder.renderPass != null)
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
@@ -204,11 +203,6 @@ public class GraphicsPipeline extends Pipeline {
 
             return pGraphicsPipeline.get(0);
         }
-    }
-
-    private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {
-        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
-        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
     }
 
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {

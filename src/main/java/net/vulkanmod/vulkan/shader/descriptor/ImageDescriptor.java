@@ -74,9 +74,9 @@ public class ImageDescriptor implements Descriptor {
         return mipLevel;
     }
 
-    public VulkanImage getImage() {
-        return VTextureSelector.getImage(this.imageIdx);
-    }
+//    public VulkanImage getImage() {
+//        return VTextureSelector.getImage(this.imageIdx);
+//    }
 
     public long getImageView(VulkanImage image) {
         long view;

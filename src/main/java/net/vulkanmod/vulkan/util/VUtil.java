@@ -118,4 +118,7 @@ public class VUtil {
         return r == 0 ? x : x + align - r;
     }
 
+    public static boolean checkUsage(int usage, int requestedUsage) {
+        return (usage & requestedUsage)!=0;
+    }
 }

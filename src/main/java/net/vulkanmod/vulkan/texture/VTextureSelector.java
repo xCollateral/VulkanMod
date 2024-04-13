@@ -1,19 +1,24 @@
 package net.vulkanmod.vulkan.texture;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 
 import java.nio.ByteBuffer;
 
 public abstract class VTextureSelector {
-    public static final int SIZE = 8;
+    public static final int SIZE = 8/*128*/;
 
-    private static final VulkanImage[] boundTextures = new VulkanImage[SIZE];
+    private static final VulkanImage[] boundTextures = new VulkanImage[8];
+//    private static final VulkanImage[] loadedTextures = new VulkanImage[SIZE];
 
     private static final int[] levels = new int[SIZE];
 
     private static final VulkanImage whiteTexture = VulkanImage.createWhiteTexture();
 
     private static int activeTexture = 0;
+//    private static int lastTextureId;
+//    private static VulkanImage lastTexture = null;
 
     public static void bindTexture(VulkanImage texture) {
         boundTextures[0] = texture;
@@ -42,12 +47,42 @@ public abstract class VTextureSelector {
     public static void uploadSubTexture(int mipLevel, int width, int height, int xOffset, int yOffset, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         VulkanImage texture = boundTextures[activeTexture];
 
-        if(texture == null)
+        if(texture == null) {
             throw new NullPointerException("Texture is null at index: " + activeTexture);
+        }
+//        if(width+xOffset >= texture.width || height+yOffset >= texture.height)
+//        {
+//            Initializer.LOGGER.error("Bad Copy dims:! "+ width + "->" +height + " + "+texture.width + "->"+texture.height+" Out of bounds!");
+//            Initializer.LOGGER.error("Bad Copy dims:! "+ xOffset + "->" +yOffset);
+//            return;
+//        }
 
         texture.uploadSubTextureAsync(mipLevel, width, height, xOffset, yOffset, unpackSkipRows, unpackSkipPixels, unpackRowLength, buffer);
     }
+
+    //Allow Shaders to obtain a samplerDescriptorArray index w/ the current OpenGL activeTexture offset
+    // i.e. avoids needing to manage OPENGl tetxure Unit binding + Vulkan image Smapelr incicies Abstracions directly
+    public static void registerUniqueBinding(ImageDescriptor imageDescriptor, String targetShaderId, String SamplerIdentifier)
+    {
+        int currentStageIdx = getTextureIdx(SamplerIdentifier);
+//        VulkanImage activeVulkanImage = getLoadedTexture();
+        VulkanImage activeVulkanImage = boundTextures[currentStageIdx];
+
+        final int targetStage = 0;
+//        Renderer.getDescriptorSetArray().addTexture(targetStage, imageDescriptor, activeVulkanImage.getSampler());
+    }
+
+//    private static VulkanImage getLoadedTexture() {
+//        return loadedTextures[lastTextureId];
+//    }
+//
+//    private static VulkanImage getActiveTexture() {
+//        return loadedTextures[activeTexture];
+//    }
+
+
     //TODO: Descriptor Indexing
+    // + might atcually be the solution to the abstraction + registering problem w. OpenGLs tetxure limits
     public static int getTextureIdx(String name) {
         return switch (name) {
             case "Sampler0", "DiffuseSampler" -> 0;
@@ -78,12 +113,31 @@ public abstract class VTextureSelector {
         return boundTexture==null ? boundTextures[0] : boundTexture;
     }
 
+
+    public static void registerTexture(VulkanImage vulkanImage, int bindingID)
+    {
+
+        if(boundTextures[bindingID]!=null) throw new RuntimeException();
+
+
+
+        vulkanImage.readOnlyLayout();
+
+        boundTextures[bindingID]=vulkanImage;
+
+
+
+
+    }
+
+
     public static void setLightTexture(VulkanImage texture) {
         boundTextures[2] = texture;
     }
 
     public static void setOverlayTexture(VulkanImage texture) {
         boundTextures[1] = texture;
+//        loadedTextures[1] = texture;
     }
 
     public static void setActiveTexture(int activeTexture) {
@@ -91,6 +145,7 @@ public abstract class VTextureSelector {
             throw new IllegalStateException(String.format("On Texture binding: index %d out of range [0, 7]", activeTexture));
         }
 
+//        VTextureSelector.id = id;
         VTextureSelector.activeTexture = activeTexture;
     }
 
