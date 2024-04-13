@@ -12,7 +12,7 @@ layout (push_constant) uniform pushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 2) uniform sampler2D Sampler2;
+layout (binding = 2) uniform sampler2D Sampler2[];
 
 
 layout (location = 0) out float vertexDistance;
@@ -37,7 +37,7 @@ void main() {
 
 
 //    vertexColor = Color * sample_lightmap(Sampler2, UV2);
-    vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
+    vertexColor = Color * sample_lightmap2(Sampler2[0], Position.a);
     texCoord0 = UV0 * UV_INV;
 //    normal = MVP * vec4(Normal, 0.0);
 }
