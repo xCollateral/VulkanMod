@@ -91,7 +91,8 @@ public class Options {
                         },
                         () -> Initializer.CONFIG.ambientOcclusion)
                         .setTooltip(Component.nullToEmpty("""
-                        On (Sub-block): Enables smooth lighting for non full block (experimental).""")),
+                        On (Sub-block): Enables smooth lighting for non full block (experimental).
+                        Not working properly when using lithium.""")),
                 new SwitchOption("View Bobbing",
                         (value) -> minecraftOptions.bobView().set(value),
                         () -> minecraftOptions.bobView().get()),
