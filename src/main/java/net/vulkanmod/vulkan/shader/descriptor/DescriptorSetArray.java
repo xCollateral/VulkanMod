@@ -38,7 +38,7 @@ public class DescriptorSetArray {
     private final LongBuffer descriptorSets;
     private static final int value = 2;
 
-    private final long defFragSampler;
+//    private final long defFragSampler;
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -126,7 +126,6 @@ public class DescriptorSetArray {
             this.descriptorSets = allocateDescriptorSets(stack);
 
         }
-        defFragSampler = SamplerManager.getTextureSampler((byte) 1, (byte) 0);
     }
 
 
@@ -277,7 +276,7 @@ public class DescriptorSetArray {
                 imageInfo[imageSamplerIdx] = VkDescriptorImageInfo.calloc(1, stack);
                 imageInfo[imageSamplerIdx].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 imageInfo[imageSamplerIdx].imageView(view);
-                imageInfo[imageSamplerIdx].sampler(defFragSampler);
+                imageInfo[imageSamplerIdx].sampler(image.getSampler());
 
 
                 VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(currentBinding);
