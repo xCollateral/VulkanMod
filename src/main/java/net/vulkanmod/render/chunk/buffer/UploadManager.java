@@ -1,7 +1,9 @@
 package net.vulkanmod.render.chunk.buffer;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
@@ -14,7 +16,6 @@ import org.lwjgl.vulkan.VkMemoryBarrier;
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 public class UploadManager {
     public static UploadManager INSTANCE;

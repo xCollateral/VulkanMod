@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.texture;
 
-import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -12,13 +12,12 @@ import java.nio.LongBuffer;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
 
 public abstract class ImageUtil {
 
     public static void copyBufferToImageCmd(VkCommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
@@ -36,7 +35,7 @@ public abstract class ImageUtil {
     }
 
     public static void downloadTexture(VulkanImage image, long ptr) {
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
             int prevLayout = image.getCurrentLayout();
             CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
             image.transitionImageLayout(stack, commandBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -55,10 +54,10 @@ public abstract class ImageUtil {
             image.transitionImageLayout(stack, commandBuffer.getHandle(), prevLayout);
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
-            vkWaitForFences(DeviceManager.device, fence, true, VUtil.UINT64_MAX);
+            vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
-                    (data) -> VUtil.memcpy(data.getByteBuffer(0, (int)imageSize), ptr)
+                    (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) imageSize), ptr)
             );
 
             MemoryManager.freeBuffer(pStagingBuffer.get(0), pStagingAllocation.get(0));
@@ -66,8 +65,7 @@ public abstract class ImageUtil {
     }
 
     public static void copyImageToBuffer(VkCommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
-
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
             region.bufferOffset(bufferOffset);
@@ -85,7 +83,7 @@ public abstract class ImageUtil {
     }
 
     public static void generateMipmaps(VulkanImage image) {
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
 
@@ -188,7 +186,7 @@ public abstract class ImageUtil {
 
             long fence = DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
 
-            vkWaitForFences(DeviceManager.device, fence, true, VUtil.UINT64_MAX);
+            vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
         }
     }
 }

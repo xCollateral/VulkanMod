@@ -25,7 +25,7 @@ public class CommandPool {
 
     public void createCommandPool(int familyIndex) {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
@@ -34,7 +34,7 @@ public class CommandPool {
 
             LongBuffer pCommandPool = stack.mallocLong(1);
 
-            if (vkCreateCommandPool(Vulkan.getDevice(), poolInfo, null, pCommandPool) != VK_SUCCESS) {
+            if (vkCreateCommandPool(Vulkan.getVkDevice(), poolInfo, null, pCommandPool) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
             }
 
@@ -44,10 +44,10 @@ public class CommandPool {
 
     public CommandBuffer beginCommands() {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
             final int size = 10;
 
-            if(availableCmdBuffers.isEmpty()) {
+            if (availableCmdBuffers.isEmpty()) {
 
                 VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
                 allocInfo.sType$Default();
@@ -56,18 +56,18 @@ public class CommandPool {
                 allocInfo.commandBufferCount(size);
 
                 PointerBuffer pCommandBuffer = stack.mallocPointer(size);
-                vkAllocateCommandBuffers(Vulkan.getDevice(), allocInfo, pCommandBuffer);
+                vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
 
                 VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
                 fenceInfo.sType$Default();
                 fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
-                for(int i = 0; i < size; ++i) {
+                for (int i = 0; i < size; ++i) {
                     LongBuffer pFence = stack.mallocLong(size);
-                    vkCreateFence(Vulkan.getDevice(), fenceInfo, null, pFence);
+                    vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
 
-                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice()), pFence.get(0));
-                    commandBuffer.handle = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice());
+                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice()), pFence.get(0));
+                    commandBuffer.handle = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice());
                     commandBuffers.add(commandBuffer);
                     availableCmdBuffers.add(commandBuffer);
                 }
@@ -90,12 +90,12 @@ public class CommandPool {
 
     public long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
             long fence = commandBuffer.fence;
 
             vkEndCommandBuffer(commandBuffer.handle);
 
-            vkResetFences(Vulkan.getDevice(), commandBuffer.fence);
+            vkResetFences(Vulkan.getVkDevice(), commandBuffer.fence);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -112,11 +112,11 @@ public class CommandPool {
     }
 
     public void cleanUp() {
-        for(CommandBuffer commandBuffer : commandBuffers) {
-            vkDestroyFence(Vulkan.getDevice(), commandBuffer.fence, null);
+        for (CommandBuffer commandBuffer : commandBuffers) {
+            vkDestroyFence(Vulkan.getVkDevice(), commandBuffer.fence, null);
         }
-        vkResetCommandPool(Vulkan.getDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-        vkDestroyCommandPool(Vulkan.getDevice(), id, null);
+        vkResetCommandPool(Vulkan.getVkDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+        vkDestroyCommandPool(Vulkan.getVkDevice(), id, null);
     }
 
     public class CommandBuffer {

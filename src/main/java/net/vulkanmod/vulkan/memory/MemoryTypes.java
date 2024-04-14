@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkMemoryType;
 
@@ -15,34 +15,34 @@ public class MemoryTypes {
 
     public static void createMemoryTypes() {
 
-        for(int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
+        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
 
             //GPU only Memory
-            if(memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+            if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
                 GPU_MEM = new DeviceLocalMemory();
                 //TODO type inside own class
                 GPU_MEM.type = MemoryType.Type.DEVICE_LOCAL;
             }
 
-            if(memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) {
+            if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) {
                 HOST_MEM = new HostLocalCachedMemory();
             }
         }
 
-        if(GPU_MEM != null && HOST_MEM != null) return;
+        if (GPU_MEM != null && HOST_MEM != null) return;
 
         //Could not find 1 or more MemoryTypes, need to use fallback
-        if(HOST_MEM == null) {
+        if (HOST_MEM == null) {
             HOST_MEM = new HostLocalFallbackMemory();
-            if(GPU_MEM != null) return;
+            if (GPU_MEM != null) return;
         }
 
-        for(int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
+        for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
 
             //gpu-cpu shared memory
-            if((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) != 0) {
+            if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) != 0) {
                 GPU_MEM = new HostDeviceSharedMemory();
                 return;
             }
@@ -75,7 +75,7 @@ public class MemoryTypes {
         }
 
         public long copyBuffer(Buffer src, Buffer dst) {
-            if(dst.bufferSize < src.bufferSize) {
+            if (dst.bufferSize < src.bufferSize) {
                 throw new IllegalArgumentException("dst size is less than src size.");
             }
 

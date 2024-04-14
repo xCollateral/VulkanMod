@@ -1,8 +1,9 @@
 package net.vulkanmod.mixin.debug;
 
 import com.mojang.blaze3d.platform.GlUtil;
-import net.vulkanmod.vulkan.DeviceInfo;
+import net.vulkanmod.vulkan.SystemInfo;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.Device;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -14,7 +15,7 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getVendor() {
-        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().vendorIdString : "n/a";
+        return Vulkan.getDevice() != null ? Vulkan.getDevice().vendorIdString : "n/a";
     }
 
     /**
@@ -22,7 +23,7 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getRenderer() {
-        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().deviceName : "n/a";
+        return Vulkan.getDevice() != null ? Vulkan.getDevice().deviceName : "n/a";
     }
 
     /**
@@ -30,7 +31,7 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getOpenGLVersion() {
-        return Vulkan.getDeviceInfo() != null ? Vulkan.getDeviceInfo().driverVersion : "n/a";
+        return Vulkan.getDevice() != null ? Vulkan.getDevice().driverVersion : "n/a";
     }
 
     /**
@@ -38,6 +39,6 @@ public class GlDebugInfoM {
      */
     @Overwrite
     public static String getCpuInfo() {
-        return DeviceInfo.cpuInfo;
+        return SystemInfo.cpuInfo;
     }
 }

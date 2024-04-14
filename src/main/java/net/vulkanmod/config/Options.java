@@ -5,8 +5,8 @@ import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightMode;
-import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.device.DeviceManager;
 
 import java.util.stream.IntStream;
 
@@ -240,7 +240,7 @@ public class Options {
                         value -> config.device = value,
                         () -> config.device)
                         .setTooltip(Component.nullToEmpty(
-                        String.format("Current device: %s", DeviceManager.deviceInfo.deviceName)))
+                        String.format("Current device: %s", DeviceManager.device.deviceName)))
         };
 
     }

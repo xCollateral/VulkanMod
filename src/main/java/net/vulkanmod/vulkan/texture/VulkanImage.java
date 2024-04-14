@@ -1,15 +1,18 @@
 package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import net.vulkanmod.vulkan.*;
-import net.vulkanmod.vulkan.framebuffer.SwapChain;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkImageMemoryBarrier;
+import org.lwjgl.vulkan.VkImageViewCreateInfo;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
@@ -23,7 +26,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class VulkanImage {
     public static int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
-    private static final VkDevice DEVICE = Vulkan.getDevice();
+    private static final VkDevice DEVICE = Vulkan.getVkDevice();
 
     private long id;
     private long allocation;
@@ -77,10 +80,10 @@ public class VulkanImage {
 
         image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
 
-        if(builder.levelViews) {
+        if (builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
 
-            for(int i = 0; i < builder.mipLevels; ++i) {
+            for (int i = 0; i < builder.mipLevels; ++i) {
                 image.levelImageViews[i] = createImageView(image.id, image.format, image.aspect, i, 1);
             }
         }
@@ -100,7 +103,7 @@ public class VulkanImage {
     }
 
     public static VulkanImage createWhiteTexture() {
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
             int i = 0xFFFFFFFF;
             ByteBuffer buffer = stack.malloc(4);
             buffer.putInt(0, i);
@@ -119,7 +122,7 @@ public class VulkanImage {
 
     private void createImage(int mipLevels, int width, int height, int format, int usage) {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             LongBuffer pTextureImage = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(0L);
@@ -140,11 +143,11 @@ public class VulkanImage {
 
     public static int getAspect(int format) {
         return switch (format) {
-            case VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT
-                    -> VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            case VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT ->
+                    VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 
             case VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,
-                    VK_FORMAT_D16_UNORM -> VK_IMAGE_ASPECT_DEPTH_BIT;
+                 VK_FORMAT_D16_UNORM -> VK_IMAGE_ASPECT_DEPTH_BIT;
 
             default -> VK_IMAGE_ASPECT_COLOR_BIT;
         };
@@ -153,8 +156,8 @@ public class VulkanImage {
     public static boolean isDepthFormat(int format) {
         return switch (format) {
             case VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D24_UNORM_S8_UINT,
-                    VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-                    VK_FORMAT_D16_UNORM -> true;
+                 VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+                 VK_FORMAT_D16_UNORM -> true;
             default -> false;
         };
     }
@@ -165,7 +168,7 @@ public class VulkanImage {
 
     public static long createImageView(long image, int format, int aspectFlags, int baseMipLevel, int mipLevels) {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
             viewInfo.sType(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
@@ -180,7 +183,7 @@ public class VulkanImage {
 
             LongBuffer pImageView = stack.mallocLong(1);
 
-            if(vkCreateImageView(DEVICE, viewInfo, null, pImageView) != VK_SUCCESS) {
+            if (vkCreateImageView(DEVICE, viewInfo, null, pImageView) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create texture image view");
             }
 
@@ -192,14 +195,14 @@ public class VulkanImage {
         long imageSize = buffer.limit();
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
             transferDstLayout(stack, commandBuffer.getHandle());
         }
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.align(this.formatSize);
 
-        stagingBuffer.copyBuffer((int)imageSize, buffer);
+        stagingBuffer.copyBuffer((int) imageSize, buffer);
 
         ImageUtil.copyBufferToImageCmd(commandBuffer.getHandle(), stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize), unpackRowLength, height);
@@ -219,7 +222,7 @@ public class VulkanImage {
             return;
 
         CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().getCommandBuffer();
-        try(MemoryStack stack = MemoryStack.stackPush()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             readOnlyLayout(stack, commandBuffer.getHandle());
         }
         DeviceManager.getGraphicsQueue().submitCommands(commandBuffer);
@@ -251,7 +254,7 @@ public class VulkanImage {
     }
 
     public static void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, VulkanImage image, int newLayout) {
-        if(image.currentLayout == newLayout) {
+        if (image.currentLayout == newLayout) {
 //            System.out.println("new layout is equal to current layout");
             return;
         }
@@ -363,16 +366,16 @@ public class VulkanImage {
     }
 
     public void doFree() {
-        if(this.id == 0L)
+        if (this.id == 0L)
             return;
 
         MemoryManager.freeImage(this.id, this.allocation);
 
-        vkDestroyImageView(Vulkan.getDevice(), this.mainImageView, null);
+        vkDestroyImageView(Vulkan.getVkDevice(), this.mainImageView, null);
 
-        if(this.levelImageViews != null)
+        if (this.levelImageViews != null)
             Arrays.stream(this.levelImageViews).forEach(
-                    imageView -> vkDestroyImageView(Vulkan.getDevice(), this.mainImageView, null));
+                    imageView -> vkDestroyImageView(Vulkan.getVkDevice(), this.mainImageView, null));
 
         this.id = 0L;
     }
@@ -385,15 +388,25 @@ public class VulkanImage {
         this.currentLayout = currentLayout;
     }
 
-    public long getId() { return id;}
+    public long getId() {
+        return id;
+    }
 
-    public long getAllocation() { return allocation;}
+    public long getAllocation() {
+        return allocation;
+    }
 
-    public long getImageView() { return mainImageView; }
+    public long getImageView() {
+        return mainImageView;
+    }
 
-    public long getLevelImageView(int i) { return levelImageViews[i]; }
+    public long getLevelImageView(int i) {
+        return levelImageViews[i];
+    }
 
-    public long[] getLevelImageViews() { return levelImageViews; }
+    public long[] getLevelImageViews() {
+        return levelImageViews;
+    }
 
     public long getSampler() {
         return sampler;
@@ -434,7 +447,7 @@ public class VulkanImage {
         public Builder setMipLevels(int n) {
             this.mipLevels = (byte) n;
 
-            if(n > 1)
+            if (n > 1)
                 this.samplerFlags |= USE_MIPMAPS_BIT;
 
             return this;
@@ -487,8 +500,8 @@ public class VulkanImage {
         private static int formatSize(int format) {
             return switch (format) {
                 case VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB,
-                        VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT,
-                        VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R8G8B8A8_SINT-> 4;
+                     VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT,
+                     VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R8G8B8A8_SINT -> 4;
                 case VK_FORMAT_R8_UNORM -> 1;
 
 //                default -> throw new IllegalArgumentException(String.format("Unxepcted format: %s", format));

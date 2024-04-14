@@ -1,6 +1,9 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.*;
+import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.Synchronization;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -37,12 +40,12 @@ public class UniformBuffers {
 
         uniformBuffers = new ArrayList<>(framesSize);
 
-        for(int i = 0; i < framesSize; ++i) {
+        for (int i = 0; i < framesSize; ++i) {
             uniformBuffers.add(new UniformBuffer(this.bufferSize, memoryType));
         }
     }
 
-    public void uploadUBO(ByteBuffer buffer, int offset, int frame)  {
+    public void uploadUBO(ByteBuffer buffer, int offset, int frame) {
         int size = buffer.remaining();
         int alignedSize = align(size, minOffset);
         if (alignedSize > this.bufferSize - this.usedBytes) {
@@ -79,7 +82,7 @@ public class UniformBuffers {
     }
 
     public void submitUploads() {
-        if(commandBuffer == null)
+        if (commandBuffer == null)
             return;
 
         DeviceManager.getTransferQueue().submitCommands(commandBuffer);
@@ -107,7 +110,9 @@ public class UniformBuffers {
         return uniformBuffers.get(i).getId();
     }
 
-    public UniformBuffer getUniformBuffer(int i) { return uniformBuffers.get(i); }
+    public UniformBuffer getUniformBuffer(int i) {
+        return uniformBuffers.get(i);
+    }
 
     public class UniformBuffer extends Buffer {
 
@@ -117,11 +122,10 @@ public class UniformBuffers {
         }
 
         public void uploadUBO(ByteBuffer buffer, int offset) {
-            if(this.type.mappable()) {
+            if (this.type.mappable()) {
                 VUtil.memcpy(buffer, this.data.getByteBuffer(0, bufferSize), offset);
-            }
-            else {
-                if(commandBuffer == null)
+            } else {
+                if (commandBuffer == null)
                     commandBuffer = DeviceManager.getTransferQueue().beginCommands();
 
                 int size = buffer.remaining();
