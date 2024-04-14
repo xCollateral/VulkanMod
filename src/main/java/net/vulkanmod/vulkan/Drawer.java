@@ -32,6 +32,8 @@ public class Drawer {
 
     private int currentFrame;
 
+    private int currentUniformOffset;
+
     public Drawer() {
         //Index buffers
         quadsIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.QUADS);
@@ -41,6 +43,7 @@ public class Drawer {
 
     public void setCurrentFrame(int currentFrame) {
         this.currentFrame = currentFrame;
+        this.currentUniformOffset = 0;
     }
 
     public void createResources(int framesNum) {
@@ -99,6 +102,17 @@ public class Drawer {
         drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
     }
 
+    public void updateUniformOffset() {
+        final int currentUniformOffset1 = (this.uniformBuffers.getUsedBytes() / 64) - 1;
+
+        if(currentUniformOffset1<0) return;
+
+        currentUniformOffset = currentUniformOffset1;
+
+
+        currentUniformOffset &= 127;
+    }
+
     public AutoIndexBuffer getQuadsIndexBuffer() {
         return quadsIndexBuffer;
     }
@@ -117,7 +131,7 @@ public class Drawer {
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
-        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, currentUniformOffset);
     }
 
     public void draw(VertexBuffer vertexBuffer, int vertexCount) {
@@ -127,7 +141,7 @@ public class Drawer {
         VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
-        vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+        vkCmdDraw(commandBuffer, vertexCount, 1, 0, currentUniformOffset);
     }
 
     public void bindAutoIndexBuffer(VkCommandBuffer commandBuffer, int drawMode) {

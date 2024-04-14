@@ -2,9 +2,6 @@
 
 layout(binding = 3) uniform sampler2D Sampler0;
 
-layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
-};
 
 layout(location = 0) in vec2 texCoord0;
 

@@ -67,6 +67,10 @@ public class UniformBuffers {
         usedBytes += alignedSize;
     }
 
+    public void setOffset(int alignedSize) {
+        usedBytes = alignedSize;
+    }
+
     private void resizeBuffer(int newSize) {
 
         for (UniformBuffer uniformBuffer : uniformBuffers) {

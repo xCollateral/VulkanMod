@@ -242,7 +242,7 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            this.descriptorSetArray.updateAndBind(currentFrame, commandBuffer);
+            this.descriptorSetArray.updateAndBind(currentFrame, drawer.getUniformBuffers().getId(currentFrame), commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 

@@ -34,8 +34,9 @@ public enum UniformState {
     public final int size;
     int currentOffset;
 
-    long currentHash;
+    long currentHash, newHash;
     private final MappedBuffer mappedBufferPtr;
+    private boolean needsUpdate;
 
 
     UniformState(String vec3, int align, int size) {
@@ -51,19 +52,31 @@ public enum UniformState {
     {
         //TODO: if need uodate then also update uniform offset/index
         // or perhaps pushing uniforms here instead
-        if(currentHash!=srcHash)
-        {
-            currentHash=srcHash;
-            return true;
-        }
-        return false;
+        this.newHash =srcHash;
+        return this.needsUpdate=currentHash!=srcHash;
+    }
+    public void needsUpdateOverride(boolean shouldOverride)
+    {
+        this.needsUpdate=shouldOverride;
     }
 
+    public boolean requiresUpdate() { return this.needsUpdate; }
+
+    public void resetAndUpdate()
+    {
+        this.currentHash=newHash;
+        this.needsUpdate=false;
+    }
+    public void resetAndUpdateForced()
+    {
+        this.needsUpdate=false;
+    }
 
     public static void resetAll()
     {
         for (UniformState uniformState : UniformState.values()) {
             uniformState.currentHash = 0;
+            uniformState.needsUpdate=false;
         }
     }
 

@@ -1,4 +1,4 @@
-#version 450
+#version 460
 
 #include "light.glsl"
 
@@ -10,9 +10,7 @@ layout(location = 4) in ivec2 UV2;
 layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP;
-   vec3 Light0_Direction;
-   vec3 Light1_Direction;
+   mat4 MVP[64];
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;
@@ -25,15 +23,15 @@ layout(location = 4) out vec3 normal;
 layout(location = 5) out float vertexDistance;
 
 void main() {
-    gl_Position = MVP * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance] * vec4(Position, 1.0);
 
 
-    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
+    vertexColor = Color;//minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
     lightMapColor = texelFetch(Sampler2, UV2 / 16, 0);
 //     //overlayColor = texelFetch(Sampler1, UV1, 0);
 //     overlayColor = vec4(1.0f);
     texCoord0 = UV0;
-    normal = (MVP * vec4(Normal, 0.0)).xyz;
+    //normal = (MVP * vec4(Normal, 0.0)).xyz;
 }
 /*
 #version 150

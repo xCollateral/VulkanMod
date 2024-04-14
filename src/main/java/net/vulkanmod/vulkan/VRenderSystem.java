@@ -103,6 +103,7 @@ public abstract class VRenderSystem {
         Matrix4f P = new Matrix4f(UniformState.ProjMat.buffer().asFloatBuffer());
 
         P.mul(MV).get(MVP.buffer());
+        MVP.needsUpdateOverride(true);
     }
 
     public static void setTextureMatrix(Matrix4f mat) {

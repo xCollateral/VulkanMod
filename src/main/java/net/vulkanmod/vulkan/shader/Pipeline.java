@@ -9,7 +9,6 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
@@ -17,6 +16,7 @@ import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -178,7 +178,7 @@ public abstract class Pipeline {
 
             //                    final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
-            this.updateUniforms(uniformBuffers);
+            this.pushUniforms(uniformBuffers);
 //                    this.updateDescriptorSet(stack, uniformBuffers, !this.bound);
 
 
@@ -193,29 +193,32 @@ public abstract class Pipeline {
         }
 
 
-        private void updateUniforms(UniformBuffers uniformBuffers) {
+        private void pushUniforms(UniformBuffers uniformBuffers) {
             int currentOffset = uniformBuffers.getUsedBytes();
             //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
             int i = 0;
             final boolean contains = name.contains("energy")|name.contains("entity_cutout");
-
-            if(contains)
-            {
-                uniformBuffers.reset();
-//                return;
+//
+//            if(contains)
+//            {
+//                uniformBuffers.reset();
+////                return;
+////                uniformBuffers.updateOffset(128);
+//            }
+//            if(name.contains("terrain"))
+//            {
+//                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
+//                uniformBuffers.updateOffset(64);
+//            }
+//            if(name.contains("text"))
+//            {
+//                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
 //                uniformBuffers.updateOffset(128);
-            }
-            if(name.contains("terrain"))
-            {
-                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
-                uniformBuffers.updateOffset(64);
-            }
-            if(name.contains("text"))
-            {
-                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
-                uniformBuffers.updateOffset(128);
-            }
-            {
+//            }
+
+            //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
+            // + pec0mpued/dyanmic unformoffset table: aouatatically optisme/+remove reducant hashed,+contents, and use Pfsfets w. matching hashed isnetad of using lenear bump alloctaion
+           if(UniformState.MVP.requiresUpdate()) {
             for(UBO ubo : buffers) {
 //                ubo.update();
 //                uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
@@ -223,7 +226,7 @@ public abstract class Pipeline {
 
                 //TODO non mappable memory
 
-                int alignedSize = UniformBuffers.getAlignedSize(ubo.getSize());
+                int alignedSize = VUtil.align(ubo.getSize(), 64);//Only the Uniform descriptor needs to be aligned, not the contents
                 uniformBuffers.checkCapacity(alignedSize);
                 ubo.update(uniformBuffers.getPointer(frame));
 
@@ -232,6 +235,8 @@ public abstract class Pipeline {
 
                 ++i;
             }
+            UniformState.MVP.resetAndUpdateForced();
+            Renderer.getDrawer().updateUniformOffset();
             }
 
         }

@@ -2,18 +2,14 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiSpriteManager;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.model.ModelManager;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
-import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.texture.SamplerManager;
@@ -229,7 +225,7 @@ public class DescriptorSetArray {
 
 //TODO; ASync smaper streaming: use a falback missing texture palcehodler if  mod adds a texture, but it not been updated/regsitered w/the Descriptor array yet
 
-    public void updateAndBind(int frame, VkCommandBuffer commandBuffer)
+    public void updateAndBind(int frame, long uniformId, VkCommandBuffer commandBuffer)
     {
         if(this.BlocksID ==-1 && this.ChestID == -1 && this.BannerID ==-1 && this.MissingTexID == -1)
         {
@@ -242,7 +238,6 @@ public class DescriptorSetArray {
             this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
         }
         try(MemoryStack stack = stackPush()) {
-            long uniformBufferId = Renderer.getDrawer().getUniformBuffers().getId(frame);
             final int NUM_FRAG_TEXTURES = 4;
             final int NUM_VERT_TEXTURES = 1;
             final int NUM_UBOs = 2;
@@ -270,9 +265,9 @@ public class DescriptorSetArray {
 
                 final int alignedSize = UniformBuffers.getAlignedSize(64);
                 bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
-                bufferInfos[i].buffer(uniformBufferId);
+                bufferInfos[i].buffer(uniformId);
                 bufferInfos[i].offset(x);
-                bufferInfos[i].range( x += 256);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+                bufferInfos[i].range( x += 4096);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
 
 
                 //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
