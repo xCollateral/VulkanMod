@@ -55,7 +55,7 @@ public class Options {
                         },
                         () -> minecraftOptions.enableVsync().get()),
                 new CyclingOption<>("Gui Scale",
-                        new Integer[]{0, 1, 2, 3, 4},
+                        getGuiScaleValues(),
                         value -> value == 0 ? Component.literal("Auto") : Component.literal(value.toString()),
                         (value) -> {
                             minecraftOptions.guiScale().set(value);
@@ -253,5 +253,17 @@ public class Options {
         }
 
         config.write();
+    }
+
+    static Integer[] getGuiScaleValues() {
+        int max = window.calculateScale(0, Minecraft.getInstance().isEnforceUnicode());
+
+        Integer[] values = new Integer[max];
+
+        for (int i = 0; i < max; i++) {
+            values[i] = i;
+        }
+
+        return values;
     }
 }
