@@ -81,36 +81,28 @@ public abstract class Matrix4fM {
 
     /**
      * @author
-     * @reason
+     * @reason Fake Hash Function
      */
     @Overwrite(remap = false)
     public int hashCode() {
+        //Fakes generating a hash to reduce CPU overhead: returns a nonsense value to allow diff checking matrices
         final int prime = 31;
         int result = 1;
         int result2 = 1;
         int result3 = 1;
         int result4 = 1;
 
-        result = prime * result + Float.floatToRawIntBits(m00());
-        result = prime * result + Float.floatToRawIntBits(m01());
-        result = prime * result + Float.floatToRawIntBits(m02());
-        result = prime * result + Float.floatToRawIntBits(m03());
+        int resultX = prime * Float.floatToRawIntBits(m30());
+        int resultY = prime * Float.floatToRawIntBits(m31());
+        int resultZ = prime * Float.floatToRawIntBits(m32());
 
-        result2 = prime * result2 + Float.floatToRawIntBits(m10());
-        result2 = prime * result2 + Float.floatToRawIntBits(m11());
-        result2 = prime * result2 + Float.floatToRawIntBits(m12());
-        result2 = prime * result2 + Float.floatToRawIntBits(m13());
+        int resultX1 = prime * Float.floatToRawIntBits(m10());
+        int resultY1 = prime * Float.floatToRawIntBits(m11());
+        int resultZ1 = prime * Float.floatToRawIntBits(m12());
 
-        result3 = prime * result3 + Float.floatToRawIntBits(m20());
-        result3 = prime * result3 + Float.floatToRawIntBits(m21());
-        result3 = prime * result3 + Float.floatToRawIntBits(m22());
-        result3 = prime * result3 + Float.floatToRawIntBits(m23());
 
-        result4 = prime * result4 + Float.floatToRawIntBits(m30());
-        result4 = prime * result4 + Float.floatToRawIntBits(m31());
-        result4 = prime * result4 + Float.floatToRawIntBits(m32());
-        result4 = prime * result4 + Float.floatToRawIntBits(m33());
 
-        return result+result2+result3+result4;
+
+        return (resultX + resultY + resultZ) ^ (resultX1 + resultY1 + resultZ1);
     }
 }
