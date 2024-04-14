@@ -222,6 +222,7 @@ public abstract class Pipeline {
 
 
            if(UniformState.MVP.requiresUpdate()) {
+               UniformState.MVP.storeCurrentOffset(currentOffset);
             for(UBO ubo : buffers) {
 //                ubo.update();
 //                uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);

@@ -11,6 +11,7 @@ layout(location = 5) in vec3 Normal;
 //TODO: Exploit aliasing and overwrite prior content if its not aligned to the current (BaseInstance/PushConstant) sizeof(mat4) offset
 layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP[64];
+   mat4 ModelViewMat;
    vec3 Light0_Direction;
    vec3 Light1_Direction;
 };

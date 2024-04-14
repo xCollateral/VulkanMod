@@ -2,6 +2,8 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.shader.UniformState;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -103,7 +105,11 @@ public class Drawer {
     }
 
     public void updateUniformOffset() {
-        final int currentUniformOffset1 = (this.uniformBuffers.getUsedBytes() / 64) - 1;
+
+
+        //get the basealignment/offsets of the Base/Initial Uniform on the DescriptorSet
+        //TODO: manage alignment w/ varing offsets/uniforms : may use a uniform block system instead, but unconfirmed if overlapping ranges are problematic otoh
+        final int currentUniformOffset1 = (UniformState.MVP.getCurrentOffset()/64);
 
         if(currentUniformOffset1<0) return;
 

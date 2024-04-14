@@ -76,6 +76,7 @@ public enum UniformState {
     {
         for (UniformState uniformState : UniformState.values()) {
             uniformState.currentHash = 0;
+            uniformState.currentOffset = 0;
             uniformState.needsUpdate=false;
         }
     }
@@ -86,5 +87,13 @@ public enum UniformState {
 
     public MappedBuffer getMappedBufferPtr() {
         return mappedBufferPtr;
+    }
+
+    public void storeCurrentOffset(int currentOffset) {
+        this.currentOffset=currentOffset;
+    }
+
+    public int getCurrentOffset() {
+        return currentOffset;
     }
 }
