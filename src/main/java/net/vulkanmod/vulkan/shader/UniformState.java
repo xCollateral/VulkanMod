@@ -1,8 +1,13 @@
 package net.vulkanmod.vulkan.shader;
 
+import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 
 public enum UniformState {
     ModelViewMat("mat4",4, 16),
@@ -34,9 +39,11 @@ public enum UniformState {
     public final int size;
     int currentOffset;
 
-    long currentHash, newHash;
+    int currentHash, newHash;
     private final MappedBuffer mappedBufferPtr;
     private boolean needsUpdate;
+
+    private final Int2IntOpenHashMap hashedUniformOffsetMap;
 
 
     UniformState(String vec3, int align, int size) {
@@ -45,11 +52,14 @@ public enum UniformState {
         this.align = align;
         this.size = size;
         mappedBufferPtr = new MappedBuffer(size * Float.BYTES);
+        hashedUniformOffsetMap = new Int2IntOpenHashMap(16);
     }
 
 
     public boolean needsUpdate(int srcHash)
     {
+        //hash the Uniform contents, then stroe the current offset
+
         //TODO: if need uodate then also update uniform offset/index
         // or perhaps pushing uniforms here instead
         this.newHash =srcHash;
@@ -66,6 +76,10 @@ public enum UniformState {
     {
         this.currentHash=newHash;
         this.needsUpdate=false;
+        if(!hashedUniformOffsetMap.containsKey(currentHash))
+        {
+           hashedUniformOffsetMap.put(currentHash, currentOffset);
+        }
     }
     public void resetAndUpdateForced()
     {
@@ -74,10 +88,11 @@ public enum UniformState {
 
     public static void resetAll()
     {
-        for (UniformState uniformState : UniformState.values()) {
+        for (UniformState uniformState : EnumSet.of(MVP)) {
             uniformState.currentHash = 0;
             uniformState.currentOffset = 0;
             uniformState.needsUpdate=false;
+            uniformState.hashedUniformOffsetMap.clear();
         }
     }
 
@@ -95,5 +110,13 @@ public enum UniformState {
 
     public int getCurrentOffset() {
         return currentOffset;
+    }
+
+    public int getOffsetFromHash() {
+        return this.hashedUniformOffsetMap.get(this.currentHash);
+    }
+
+    public boolean hasUniqueHash() {
+        return this.hashedUniformOffsetMap.containsKey(this.newHash);
     }
 }

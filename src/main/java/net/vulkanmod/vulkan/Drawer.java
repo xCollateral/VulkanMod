@@ -109,7 +109,7 @@ public class Drawer {
 
         //get the basealignment/offsets of the Base/Initial Uniform on the DescriptorSet
         //TODO: manage alignment w/ varing offsets/uniforms : may use a uniform block system instead, but unconfirmed if overlapping ranges are problematic otoh
-        final int currentUniformOffset1 = (UniformState.MVP.getCurrentOffset()/64);
+        final int currentUniformOffset1 = (UniformState.MVP.getOffsetFromHash()/64);
 
         if(currentUniformOffset1<0) return;
 

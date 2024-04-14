@@ -219,9 +219,11 @@ public abstract class Pipeline {
             //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
             // + PreComputed/dynamic uniform offset table: Automatically optimise/+remove redundant hashes+contents, and use Offsets w/ matching hashed instead of using linear bump allocation
             // i..e interleaved Uniforms may also be possible via exploiting aliasing + recyling the overlapping offsets of prior uniforms
+            //
+            // TODO: e.g. fine the hash of the TOPMOSt uniform, them if the hash matches, overwrite the prior data w. the new non-aligned uniforms
 
 
-           if(UniformState.MVP.requiresUpdate()) {
+           if(UniformState.MVP.requiresUpdate()&&!UniformState.MVP.hasUniqueHash()) {
                UniformState.MVP.storeCurrentOffset(currentOffset);
             for(UBO ubo : buffers) {
 //                ubo.update();
@@ -236,10 +238,9 @@ public abstract class Pipeline {
 
                 uniformBuffers.updateOffset(alignedSize);
 
-
                 ++i;
             }
-            UniformState.MVP.resetAndUpdate();
+               UniformState.MVP.resetAndUpdate();
             Renderer.getDrawer().updateUniformOffset();
             }
 

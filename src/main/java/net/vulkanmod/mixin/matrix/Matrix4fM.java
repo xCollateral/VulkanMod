@@ -78,31 +78,4 @@ public abstract class Matrix4fM {
     public Matrix4f setPerspective(float fovy, float aspect, float zNear, float zFar) {
         return new Matrix4f().setPerspective(fovy, aspect, zNear, zFar, true);
     }
-
-    /**
-     * @author
-     * @reason Fake Hash Function
-     */
-    @Overwrite(remap = false)
-    public int hashCode() {
-        //Fakes generating a hash to reduce CPU overhead: returns a nonsense value to allow diff checking matrices
-        final int prime = 31;
-        int result = 1;
-        int result2 = 1;
-        int result3 = 1;
-        int result4 = 1;
-
-        int resultX = prime * Float.floatToRawIntBits(m30());
-        int resultY = prime * Float.floatToRawIntBits(m31());
-        int resultZ = prime * Float.floatToRawIntBits(m32());
-
-        int resultX1 = prime * Float.floatToRawIntBits(m10());
-        int resultY1 = prime * Float.floatToRawIntBits(m11());
-        int resultZ1 = prime * Float.floatToRawIntBits(m12());
-
-
-
-
-        return (resultX + resultY + resultZ) ^ (resultX1 + resultY1 + resultZ1);
-    }
 }
