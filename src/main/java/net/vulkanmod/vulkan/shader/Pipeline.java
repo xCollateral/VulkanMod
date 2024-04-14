@@ -197,7 +197,7 @@ public abstract class Pipeline {
             int currentOffset = uniformBuffers.getUsedBytes();
             //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
             int i = 0;
-            final boolean contains = name.contains("energy")|name.contains("entity_cutout");
+//            final boolean contains = name.contains("energy")|name.contains("entity_cutout");
 //
 //            if(contains)
 //            {
@@ -217,7 +217,10 @@ public abstract class Pipeline {
 //            }
 
             //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
-            // + pec0mpued/dyanmic unformoffset table: aouatatically optisme/+remove reducant hashed,+contents, and use Pfsfets w. matching hashed isnetad of using lenear bump alloctaion
+            // + PreComputed/dynamic uniform offset table: Automatically optimise/+remove redundant hashes+contents, and use Offsets w/ matching hashed instead of using linear bump allocation
+            // i..e interleaved Uniforms may also be possible via exploiting aliasing + recyling the overlapping offsets of prior uniforms
+
+
            if(UniformState.MVP.requiresUpdate()) {
             for(UBO ubo : buffers) {
 //                ubo.update();
@@ -235,7 +238,7 @@ public abstract class Pipeline {
 
                 ++i;
             }
-            UniformState.MVP.resetAndUpdateForced();
+            UniformState.MVP.resetAndUpdate();
             Renderer.getDrawer().updateUniformOffset();
             }
 

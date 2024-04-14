@@ -74,27 +74,17 @@ public abstract class VRenderSystem {
     }
 
     public static void applyMVP(Matrix4f MV, Matrix4f P) {
-        final boolean b = UniformState.ModelViewMat.needsUpdate(MV.hashCode());
-        if (b) MV.get(UniformState.ModelViewMat.buffer().asFloatBuffer());//MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
-        final boolean b1 = UniformState.ModelViewMat.needsUpdate(P.hashCode());
-        if (b1) P.get(UniformState.ProjMat.buffer().asFloatBuffer());
-        if(b|b1) calculateMVP();
+        MV.get(UniformState.ModelViewMat.buffer().asFloatBuffer());//MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
+        P.get(UniformState.ProjMat.buffer().asFloatBuffer());
+        calculateMVP();
     }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
-        final boolean b = UniformState.ModelViewMat.needsUpdate(mat.hashCode());
-        if (!b) {
-            return;
-        }
         mat.get(UniformState.ModelViewMat.buffer().asFloatBuffer());
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
     //TODO: SKip if Hashcode Matches
     public static void applyProjectionMatrix(Matrix4f mat) {
-        final boolean b = UniformState.ModelViewMat.needsUpdate(mat.hashCode());
-        if (!b) {
-            return;
-        }
         mat.get(UniformState.ProjMat.buffer().asFloatBuffer());
     }
 
@@ -102,8 +92,9 @@ public abstract class VRenderSystem {
         Matrix4f MV = new Matrix4f(UniformState.ModelViewMat.buffer().asFloatBuffer());
         Matrix4f P = new Matrix4f(UniformState.ProjMat.buffer().asFloatBuffer());
 
-        P.mul(MV).get(MVP.buffer());
-        MVP.needsUpdateOverride(true);
+        final Matrix4f mul = P.mul(MV);
+        mul.get(MVP.buffer());
+        MVP.needsUpdate(mul.hashCode());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
