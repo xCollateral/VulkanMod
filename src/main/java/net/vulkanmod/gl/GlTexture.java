@@ -60,7 +60,7 @@ public class GlTexture {
     }
 
     public static GlTexture getTexture(int id) {
-        if (id == 0)
+        if (id == 0 || id == -1)
             return null;
 
         return map.get(id);

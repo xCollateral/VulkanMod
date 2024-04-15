@@ -47,6 +47,7 @@ public class DescriptorSetArray {
     private static final int MISSING_TEX_ID = 24;
 
     private final long defFragSampler;
+    private final boolean[] isUpdated = new boolean[]{false, false};
     private int BlocksID =-1;
     private int ChestID = -1;
     private int BannerID = -1;
@@ -229,255 +230,112 @@ public class DescriptorSetArray {
     {
         if(this.BlocksID ==-1 && this.ChestID == -1 && this.BannerID ==-1 && this.MissingTexID == -1)
         {
-            final ModelManager modelManager = Minecraft.getInstance().getModelManager();
             final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
 
-            this.BlocksID = modelManager.getAtlas(InventoryMenu.BLOCK_ATLAS).getId();
-            this.ChestID = modelManager.getAtlas(Sheets.CHEST_SHEET).getId();
-            this.BannerID = modelManager.getAtlas(Sheets.BANNER_SHEET).getId();
+            this.BlocksID = textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId();
+            this.ChestID = textureManager.getTexture(Sheets.CHEST_SHEET).getId();
+            this.BannerID = textureManager.getTexture(Sheets.BANNER_SHEET).getId();
             this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
         }
         try(MemoryStack stack = stackPush()) {
-            final int NUM_FRAG_TEXTURES = 4;
-            final int NUM_VERT_TEXTURES = 1;
-            final int NUM_UBOs = 2;
-            final int capacity = NUM_FRAG_TEXTURES+NUM_VERT_TEXTURES+NUM_UBOs;
-            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
-            VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[2];
-            VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[5];
-            int x = 0;
-;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
-            //1 : Light_DIR_ vectors
-            //2: Inv Dir Vectors
-            //3: Global mob Rot + MAt4
-
-
-            // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
-
-            //Fog Parameters = ColorModulator -> PushConstants
-
-            //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
-            int currentBinding = 0;
             final long currentSet = descriptorSets.get(frame);
-            for (int i = 0; i < bufferInfos.length; i++) {
+           if(!isUpdated[frame]) {
+               boolean invalidImages = false;
+                final int NUM_FRAG_TEXTURES = 4;
+                final int NUM_VERT_TEXTURES = 1;
+                final int NUM_UBOs = 2;
+                final int capacity = NUM_FRAG_TEXTURES + NUM_VERT_TEXTURES + NUM_UBOs;
+                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
+                VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[2];
+                int x = 0;
+                ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
+                //1 : Light_DIR_ vectors
+                //2: Inv Dir Vectors
+                //3: Global mob Rot + MAt4
 
 
+                // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
 
-                final int alignedSize = UniformBuffers.getAlignedSize(64);
-                bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
-                bufferInfos[i].buffer(uniformId);
-                bufferInfos[i].offset(x);
-                bufferInfos[i].range( x += 4096);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+                //Fog Parameters = ColorModulator -> PushConstants
+
+                //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
+                int currentBinding = 0;
+
+                int i = 0;
+                for (; i < bufferInfos.length; i++) {
 
 
-                //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
-                VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
-                uboDescriptorWrite.sType$Default();
-                uboDescriptorWrite.dstBinding(currentBinding);
-                uboDescriptorWrite.dstArrayElement(0);
-                uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uboDescriptorWrite.descriptorCount(1);
-                uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
-                uboDescriptorWrite.dstSet(currentSet);
-                currentBinding++;
-            }
+                    final int alignedSize = UniformBuffers.getAlignedSize(64);
+                    bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
+                    bufferInfos[i].buffer(uniformId);
+                    bufferInfos[i].offset(x);
+                    bufferInfos[i].range(x += 4096);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
 
-            {
-                //Use Global Sampler Table Array
-                //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
+
+                    //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
+                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
+                    uboDescriptorWrite.sType$Default();
+                    uboDescriptorWrite.dstBinding(currentBinding);
+                    uboDescriptorWrite.dstArrayElement(0);
+                    uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+                    uboDescriptorWrite.descriptorCount(1);
+                    uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
+                    uboDescriptorWrite.dstSet(currentSet);
+                    currentBinding++;
+                }
+                int idx = 0;
+                final int[] texArray = new int[]{6, MissingTexID, BlocksID, BannerID, MissingTexID};
+                for (int texId : texArray) {
+                    //Use Global Sampler Table Array
+                    //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
 //                final int missingTexId = imageSamplerIdx != 0 ? 32 : 32;
 
 
-                final GlTexture vulkanImage = GlTexture.getTexture(6);
-                VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
-                if (image == null) {
-                    image = VTextureSelector.getImage(2);
+                    final GlTexture vulkanImage = GlTexture.getTexture(texId);
+                    VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
+                    if (image == null) {
+                        image = VTextureSelector.getImage(2);
+                        if(!invalidImages) invalidImages=true;
+                    }
+
+
+                    long view = image.getImageView();
+
+                    //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
+                    // + Might be Possible to specify Static Uniform Offsets per Set
+
+
+                    image.readOnlyLayout();
+
+
+                    //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
+                    VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack);
+                    imageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                    imageInfo.imageView(view);
+                    imageInfo.sampler(defFragSampler);
+
+                    final int vertexSamplerId = texId == 6 ? VERTEX_SAMPLER_ID : FRAG_SAMPLER_ID;
+
+                    VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
+                    samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+                    samplerDescriptorWrite.dstBinding(vertexSamplerId);
+
+                    samplerDescriptorWrite.dstArrayElement(vertexSamplerId == VERTEX_SAMPLER_ID ? 0 : idx);
+                    samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                    samplerDescriptorWrite.descriptorCount(1);
+                    samplerDescriptorWrite.pImageInfo(imageInfo);
+                    samplerDescriptorWrite.dstSet(currentSet);
+                    i++;
+                    if (vertexSamplerId != VERTEX_SAMPLER_ID) {
+                        idx++;
+                    }
+
                 }
 
 
-                long view = image.getImageView();
-
-                //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
-                // + Might be Possible to specify Static Uniform Offsets per Set
-
-
-                image.readOnlyLayout();
-
-
-                //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
-                imageInfo[0] = VkDescriptorImageInfo.calloc(1, stack);
-                imageInfo[0].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                imageInfo[0].imageView(view);
-                imageInfo[0].sampler(defFragSampler);
-
-
-                VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(2);
-                samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                samplerDescriptorWrite.dstBinding(VERTEX_SAMPLER_ID);
-                samplerDescriptorWrite.dstArrayElement(0);
-                samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                samplerDescriptorWrite.descriptorCount(1);
-                samplerDescriptorWrite.pImageInfo(imageInfo[0]);
-                samplerDescriptorWrite.dstSet(currentSet);
-
+                vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+               isUpdated[frame]=!invalidImages;
             }
-            {
-                //Use Global Sampler Table Array
-                //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-//                final int missingTexId = imageSamplerIdx != 0 ? 32 : 32;
-
-
-                final GlTexture vulkanImage = GlTexture.getTexture(MissingTexID);
-                VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
-                if (image == null) {
-                    image = VTextureSelector.getImage(2);
-                }
-
-
-                long view = image.getImageView();
-
-                //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
-                // + Might be Possible to specify Static Uniform Offsets per Set
-
-
-                image.readOnlyLayout();
-
-
-                //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
-                imageInfo[1] = VkDescriptorImageInfo.calloc(1, stack);
-                imageInfo[1].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                imageInfo[1].imageView(view);
-                imageInfo[1].sampler(defFragSampler);
-
-
-                VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(3);
-                samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                samplerDescriptorWrite.dstBinding(FRAG_SAMPLER_ID);
-                samplerDescriptorWrite.dstArrayElement(0);
-                samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                samplerDescriptorWrite.descriptorCount(1);
-                samplerDescriptorWrite.pImageInfo(imageInfo[1]);
-                samplerDescriptorWrite.dstSet(currentSet);
-                currentBinding++;
-            }
-            {
-                //Use Global Sampler Table Array
-                //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-//                final int missingTexId = imageSamplerIdx != 0 ? 32 : 32;
-
-
-                final GlTexture vulkanImage = GlTexture.getTexture(BlocksID/*ChestID*/);
-                VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
-                if (image == null) {
-                    image = VTextureSelector.getImage(2);
-                }
-
-
-                long view = image.getImageView();
-
-                //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
-                // + Might be Possible to specify Static Uniform Offsets per Set
-
-
-                image.readOnlyLayout();
-
-
-                //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
-                imageInfo[2] = VkDescriptorImageInfo.calloc(1, stack);
-                imageInfo[2].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                imageInfo[2].imageView(view);
-                imageInfo[2].sampler(defFragSampler);
-
-
-                VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(4);
-                samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                samplerDescriptorWrite.dstBinding(FRAG_SAMPLER_ID);
-                samplerDescriptorWrite.dstArrayElement(1);
-                samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                samplerDescriptorWrite.descriptorCount(1);
-                samplerDescriptorWrite.pImageInfo(imageInfo[2]);
-                samplerDescriptorWrite.dstSet(currentSet);
-
-            }
-            {
-                //Use Global Sampler Table Array
-                //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-//                final int missingTexId = imageSamplerIdx != 0 ? 32 : 32;
-
-
-                final GlTexture vulkanImage = GlTexture.getTexture(BannerID);
-                VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
-                if (image == null) {
-                    image = VTextureSelector.getImage(2);
-                }
-
-
-                long view = image.getImageView();
-
-                //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
-                // + Might be Possible to specify Static Uniform Offsets per Set
-
-
-                image.readOnlyLayout();
-
-
-                //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
-                imageInfo[3] = VkDescriptorImageInfo.calloc(1, stack);
-                imageInfo[3].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                imageInfo[3].imageView(view);
-                imageInfo[3].sampler(defFragSampler);
-
-
-                VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(5);
-                samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                samplerDescriptorWrite.dstBinding(FRAG_SAMPLER_ID);
-                samplerDescriptorWrite.dstArrayElement(2);
-                samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                samplerDescriptorWrite.descriptorCount(1);
-                samplerDescriptorWrite.pImageInfo(imageInfo[3]);
-                samplerDescriptorWrite.dstSet(currentSet);
-
-            } {
-                //Use Global Sampler Table Array
-                //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-//                final int missingTexId = imageSamplerIdx != 0 ? 32 : 32;
-
-
-                final GlTexture vulkanImage = GlTexture.getTexture(MissingTexID);
-                VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
-                if (image == null) {
-                    image = VTextureSelector.getImage(2);
-                }
-
-
-                long view = image.getImageView();
-
-                //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
-                // + Might be Possible to specify Static Uniform Offsets per Set
-
-
-                image.readOnlyLayout();
-
-
-                //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
-                imageInfo[4] = VkDescriptorImageInfo.calloc(1, stack);
-                imageInfo[4].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                imageInfo[4].imageView(view);
-                imageInfo[4].sampler(defFragSampler);
-
-
-                VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(6);
-                samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                samplerDescriptorWrite.dstBinding(FRAG_SAMPLER_ID);
-                samplerDescriptorWrite.dstArrayElement(3);
-                samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                samplerDescriptorWrite.descriptorCount(1);
-                samplerDescriptorWrite.pImageInfo(imageInfo[4]);
-                samplerDescriptorWrite.dstSet(currentSet);
-
-            }
-
-            vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
 
 //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineManager.getTerrainDirectShader().getLayout(),
