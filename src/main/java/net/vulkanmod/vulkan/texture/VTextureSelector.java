@@ -19,19 +19,31 @@ public abstract class VTextureSelector {
     private static int activeTexture = 0;
 //    private static int lastTextureId;
 //    private static VulkanImage lastTexture = null;
+    private static int textureID;
 
-    public static void bindTexture(VulkanImage texture) {
+    //Shader can alias/Access a max of 8 Images at once
+    //Not to be confused w. tetxureID: atciveTexture specifies /reserved WHAT image the shader MUST use, ANW WHICH DEST Bining/SAMPLER is is BOUND/ASSIGNED?ABTRACTED/REGSUTERED/Aliased to to
+    //Thse slots are then utilsied by the current pipeline/state to pick which image sia siigend to#Smapler, and then the textureID it must use
+    //These teuxreIDs are then abtarted in a DescriptAbstartcionArray, allowing TetxureIDs <-> to descriptorIds, allowing speicifc tetxures to eb hardcoded
+
+    //activeTetxurespecific WHICH DesritprSet this Image is targeted for: 0 - 1 are ALWAYS VERTEX, while 2+ is FRAG
+
+    public static void bindTexture(VulkanImage texture, int id) {
+
+//        if(textureID==id) return;
         boundTextures[0] = texture;
+        textureID = id;
     }
 
-    public static void bindTexture(int i, VulkanImage texture) {
-        if(i < 0 || i > 7) {
-            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", i));
+    public static void bindTexture(int activeTexture, VulkanImage texture, int id) {
+        if(activeTexture < 0 || activeTexture > 7) {
+            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", activeTexture));
             return;
         }
-
-        boundTextures[i] = texture;
-        levels[i] = -1;
+//        if(textureID==id) return;
+        textureID = id;
+        boundTextures[activeTexture] = texture;
+        levels[activeTexture] = -1;
     }
 
     public static void bindImage(int i, VulkanImage texture, int level) {

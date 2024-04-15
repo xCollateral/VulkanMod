@@ -2,7 +2,6 @@ package net.vulkanmod.mixin.render.target;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlTexture;
@@ -183,9 +182,10 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
             //If true it means target has not been used
             return;
         }
-
+        //TODO: Diff between frameBuffer and : may just use a separate Binding for Framebuffers
+        //edit fixed to use
         Framebuffer framebuffer = GlFramebuffer.getFramebuffer(this.frameBufferId).getFramebuffer();
-        VTextureSelector.bindTexture(0, framebuffer.getColorAttachment());
+        VTextureSelector.bindTexture(0, framebuffer.getColorAttachment(), colorTextureId);
 
         DrawUtil.blitToScreen();
     }

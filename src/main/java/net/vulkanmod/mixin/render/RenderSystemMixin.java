@@ -1,6 +1,5 @@
 package net.vulkanmod.mixin.render;
 
-import com.mojang.blaze3d.pipeline.RenderCall;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -54,7 +53,7 @@ public abstract class RenderSystemMixin {
         if (i >= 0 && i < shaderTextures.length) {
             TextureManager textureManager = Minecraft.getInstance().getTextureManager();
             AbstractTexture abstractTexture = textureManager.getTexture(location);
-            VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).getVulkanImage());
+            VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).getVulkanImage(), abstractTexture.getId());
 
             //shaderTextures[i] = abstractTexture.getId();
         }
@@ -73,7 +72,7 @@ public abstract class RenderSystemMixin {
             if(vulkanImage == null)
                 return;
 
-            VTextureSelector.bindTexture(i, vulkanImage);
+            VTextureSelector.bindTexture(i, vulkanImage, id);
         }
 
     }

@@ -38,7 +38,7 @@ public class GlRenderbuffer {
 
         VulkanImage vulkanImage = bound.vulkanImage;
         if(vulkanImage != null)
-            VTextureSelector.bindTexture(vulkanImage);
+            VTextureSelector.bindTexture(vulkanImage, id);
     }
 
     public static void deleteRenderbuffer(int i) {
@@ -151,7 +151,7 @@ public class GlRenderbuffer {
                     .addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
                     .createVulkanImage();
 
-        VTextureSelector.bindTexture(this.vulkanImage);
+        VTextureSelector.bindTexture(this.vulkanImage, id);
     }
 
     void updateSampler() {

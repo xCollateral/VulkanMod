@@ -41,7 +41,7 @@ public class MTextureUtil {
                     .createVulkanImage();
 
             glTexture.setVulkanImage(image);
-            VTextureSelector.bindTexture(image);
+            VTextureSelector.bindTexture(image, id);
         }
     }
 }

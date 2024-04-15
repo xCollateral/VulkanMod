@@ -36,18 +36,20 @@ public class GlTexture {
     //TODO: Remove Bindfull Boilerplate+OpenGl handling and make this a selctor-based system instead
     // + use GL_TEZXURE_UNIT IDS Directly Maybe a
     public static void bindTexture(int id) {
-        boundTextureId = id;
+
         boundTexture = map.get(id);
 
-        if(id <= 0)
+        if(id <= 0 || boundTextureId==id)
             return;
+
+        boundTextureId = id;
 
         if(boundTexture == null)
             throw new NullPointerException("bound texture is null");
 
         VulkanImage vulkanImage = boundTexture.vulkanImage;
         if(vulkanImage != null)
-            VTextureSelector.bindTexture(activeTexture, vulkanImage);
+            VTextureSelector.bindTexture(activeTexture, vulkanImage, boundTextureId);
     }
 
     public static void glDeleteTextures(int i) {
@@ -82,7 +84,7 @@ public class GlTexture {
         boundTexture.internalFormat = internalFormat;
 
         boundTexture.allocateIfNeeded(width, height, format, type);
-        VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage);
+        VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage, boundTextureId);
 
         if(pixels != null)
             boundTexture.uploadImage(pixels);
