@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.texture;
 
+import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
@@ -18,7 +19,7 @@ public abstract class VTextureSelector {
     private static final VulkanImage whiteTexture = VulkanImage.createWhiteTexture();
 
     private static int activeTexture = 0;
-//    private static int lastTextureId;
+    private static int lastTextureId;
 //    private static VulkanImage lastTexture = null;
 
     //Shader can alias/Access a max of 8 Images at once
@@ -124,16 +125,28 @@ public abstract class VTextureSelector {
     }
 
 
-    public static void registerTexture(VulkanImage vulkanImage, int bindingID)
+    public static void registerTexture(VulkanImage vulkanImage, int bindingID, ResourceLocation resourceLocation)
     {
+//        if(vulkanImage==null) throw new RuntimeException("Bad Image Load!: " + bindingID);
 
-        if(boundTextures[bindingID]!=null) throw new RuntimeException();
+        if(GlTexture.getTexture(bindingID)==null||vulkanImage==null)
+        {
+            throw new RuntimeException();
+        }
 
+        GlTexture.bindIdToImage(bindingID, vulkanImage);
 
+        Initializer.LOGGER.info("Registered texture: " + lastTextureId + " <-> " + bindingID + "! -> "+resourceLocation);
 
-        vulkanImage.readOnlyLayout();
+        lastTextureId++;
 
-        boundTextures[bindingID]=vulkanImage;
+//        if(boundTextures[bindingID]!=null) throw new RuntimeException();
+//
+//
+//
+//        vulkanImage.readOnlyLayout();
+//
+//        boundTextures[bindingID]=vulkanImage;
 
 
 
@@ -141,13 +154,15 @@ public abstract class VTextureSelector {
     }
 
 
-    public static void setLightTexture(VulkanImage texture) {
+    public static void setLightTexture(VulkanImage texture, int id) {
+        
         boundTextures[2] = texture;
+        boundIDs[2] = id;
     }
 
-    public static void setOverlayTexture(VulkanImage texture) {
+    public static void setOverlayTexture(VulkanImage texture, int id) {
         boundTextures[1] = texture;
-//        loadedTextures[1] = texture;
+        boundIDs[1] = id;
     }
 
     public static void setActiveTexture(int activeTexture) {

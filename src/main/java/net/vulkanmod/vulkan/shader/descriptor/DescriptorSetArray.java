@@ -286,7 +286,7 @@ public class DescriptorSetArray {
                     currentBinding++;
                 }
                 int idx = 0;
-                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
+                final int[] texArray = {VTextureSelector.getBoundId(2), MissingTexID, BlocksID, BannerID, MissingTexID};
                 for (int texId : texArray) {
                     //Use Global Sampler Table Array
                     //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
