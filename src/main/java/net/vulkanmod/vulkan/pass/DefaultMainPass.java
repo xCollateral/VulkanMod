@@ -113,7 +113,7 @@ public class DefaultMainPass implements MainPass {
             swapChain.getColorAttachment().transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
-        VTextureSelector.bindTexture(swapChain.getColorAttachment(), swapChain.getColorAttachmentGlId());
+        VTextureSelector.bindTexture(0, swapChain.getColorAttachment(), swapChain.getColorAttachmentGlId());
     }
 
     public int getColorAttachmentGlId() {

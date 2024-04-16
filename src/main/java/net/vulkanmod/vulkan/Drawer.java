@@ -17,7 +17,7 @@ import static org.lwjgl.vulkan.VK10.vkCmdDraw;
 
 public class Drawer {
     private static final int INITIAL_VB_SIZE = 1048576;
-    private static final int INITIAL_UB_SIZE = 8192;
+    private static final int INITIAL_UB_SIZE = 2048;
 
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
@@ -30,7 +30,7 @@ public class Drawer {
     private final AutoIndexBuffer quadsIndexBuffer;
     private final AutoIndexBuffer triangleFanIndexBuffer;
     private final AutoIndexBuffer triangleStripIndexBuffer;
-    private UniformBuffers uniformBuffers;
+    private final UniformBuffers uniformBuffers;
 
     private int currentFrame;
 
@@ -41,6 +41,7 @@ public class Drawer {
         quadsIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.QUADS);
         triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
         triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
+        uniformBuffers = new UniformBuffers(INITIAL_UB_SIZE);
     }
 
     public void setCurrentFrame(int currentFrame) {
@@ -60,10 +61,6 @@ public class Drawer {
         for (int i = 0; i < framesNum; ++i) {
             this.vertexBuffers[i] = new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM);
         }
-
-        if(this.uniformBuffers != null)
-            this.uniformBuffers.free();
-        this.uniformBuffers = new UniformBuffers(INITIAL_UB_SIZE);
     }
 
     public void resetBuffers(int currentFrame) {

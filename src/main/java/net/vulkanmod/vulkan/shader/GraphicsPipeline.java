@@ -34,7 +34,7 @@ public class GraphicsPipeline extends Pipeline {
         super(builder.shaderPath);
         this.buffers = builder.UBOs;
 //        this.manualUBO = builder.manualUBO;
-//        this.imageDescriptors = builder.imageDescriptors;
+        this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
@@ -42,7 +42,7 @@ public class GraphicsPipeline extends Pipeline {
 //        {
 //            createDescriptorSetLayout();
 //        }
-        if(pipelineLayout==0) createPipelineLayout();
+
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
         this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
 

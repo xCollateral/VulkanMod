@@ -162,7 +162,7 @@ public class Vulkan {
         stagingBuffers = new StagingBuffer[Renderer.getFramesNum()];
 
         for(int i = 0; i < stagingBuffers.length; ++i) {
-            stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
+            stagingBuffers[i] = new StagingBuffer(33554432);
         }
     }
 

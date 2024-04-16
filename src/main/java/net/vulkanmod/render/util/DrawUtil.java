@@ -49,7 +49,7 @@ public class DrawUtil {
 
         Renderer.getInstance().bindGraphicsPipeline(pipeline);
 
-        VTextureSelector.bindTexture(attachment, -1);
+        VTextureSelector.bindTexture(0, attachment, -1);
 
         Matrix4f matrix4f = new Matrix4f().setOrtho(0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 1.0F, true);
         RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.DISTANCE_TO_ORIGIN);

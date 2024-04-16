@@ -70,17 +70,13 @@ public abstract class Pipeline {
     public final String name;
 
 //    protected static long descriptorSetLayout;
-    protected static final long pipelineLayout;
+    protected static final long pipelineLayout = createPipelineLayout();
 
     protected DescriptorSets[] descriptorSets;
     protected List<UBO> buffers;
+    protected List<ImageDescriptor> imageDescriptors;
     protected PushConstants pushConstants;
 
-
-    static
-    {
-        pipelineLayout = createPipelineLayout();
-    }
 
     public Pipeline(String name) {
 
@@ -164,12 +160,12 @@ public abstract class Pipeline {
         //        private long descriptorPool;
 
         private final int frame;
-
+//        private final ImageDescriptor[] boundTextures = new ImageDescriptor[imageDescriptors.size()];
 
         DescriptorSets(int frame) {
             this.frame = frame;
 
-//            Arrays.setAll(boundTextures, i -> new ImageDescriptor.State(0, 0));
+//            Arrays.setAll(boundTextures, i -> new ImageDescriptor(0, 0));
 
 //            try(MemoryStack stack = stackPush()) {
 //                this.createDescriptorPool(stack);
@@ -184,7 +180,9 @@ public abstract class Pipeline {
 
             //                    final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
 
-            this.pushUniforms(uniformBuffers);
+            if(shouldUpdate) this.pushUniforms(uniformBuffers);
+
+            this.updateImageState();
 //                    this.updateDescriptorSet(stack, uniformBuffers, !this.bound);
 
 
@@ -195,6 +193,21 @@ public abstract class Pipeline {
 //                     this.bound = true;
 //                 }
 
+
+        }
+
+        private void updateImageState() {
+
+            for(ImageDescriptor state : imageDescriptors)
+            {
+                //TODO; Disseminate between Fragment and VERTEX Stage binding/reserve slots
+//                 VTextureSelector.getBoundId(state.imageIdx);
+
+                 if(state.getStages()!=VK_SHADER_STAGE_VERTEX_BIT) VTextureSelector.assertImageState(state.imageIdx);
+
+
+
+            }
 
         }
 

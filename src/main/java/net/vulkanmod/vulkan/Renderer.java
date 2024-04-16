@@ -403,7 +403,7 @@ public class Renderer {
         Synchronization.INSTANCE.waitFences();
         Vulkan.waitIdle();
 
-        commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
+        vkResetCommandPool(device, Vulkan.getCommandPool(), VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 
         Vulkan.getSwapChain().recreate();
 
@@ -421,8 +421,6 @@ public class Renderer {
             MemoryManager.createInstance(newFramesNum);
             createStagingBuffers();
             allocateCommandBuffers();
-
-            Pipeline.recreateDescriptorSets(framesNum);
 
             drawer.createResources(framesNum);
         }
@@ -495,7 +493,6 @@ public class Renderer {
     }
 
     public void uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
-        VkCommandBuffer commandBuffer = currentCmdBuffer;
         pipeline.bindDescriptorSets(currentFrame, shouldUpdate);
     }
 

@@ -271,8 +271,8 @@ public class DescriptorSetArray {
                     VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
                     bufferInfos.buffer(uniformId);
                     bufferInfos.offset(x);
-                    bufferInfos.range(4096);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
-                    x += 4096;
+                    bufferInfos.range(1024);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+                    x += 1024;
 
                     //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
                     VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);

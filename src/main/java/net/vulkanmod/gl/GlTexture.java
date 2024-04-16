@@ -167,6 +167,10 @@ public class GlTexture {
         this.id = id;
     }
 
+    public int getId() {
+        return id;
+    }
+
     void allocateIfNeeded(int width, int height, int format, int type) {
         int vkFormat = GlUtil.vulkanFormat(format, type);
 

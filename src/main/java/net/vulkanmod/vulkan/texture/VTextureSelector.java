@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 
 import java.nio.ByteBuffer;
@@ -9,7 +9,8 @@ import java.nio.ByteBuffer;
 public abstract class VTextureSelector {
     public static final int SIZE = 8/*128*/;
 
-    private static final VulkanImage[] boundTextures = new VulkanImage[8];
+    private static final VulkanImage[] boundTextures = new VulkanImage[SIZE];
+    private static final int[] boundIDs = new int[SIZE];
 //    private static final VulkanImage[] loadedTextures = new VulkanImage[SIZE];
 
     private static final int[] levels = new int[SIZE];
@@ -19,7 +20,6 @@ public abstract class VTextureSelector {
     private static int activeTexture = 0;
 //    private static int lastTextureId;
 //    private static VulkanImage lastTexture = null;
-    private static int textureID;
 
     //Shader can alias/Access a max of 8 Images at once
     //Not to be confused w. tetxureID: atciveTexture specifies /reserved WHAT image the shader MUST use, ANW WHICH DEST Bining/SAMPLER is is BOUND/ASSIGNED?ABTRACTED/REGSUTERED/Aliased to to
@@ -28,20 +28,18 @@ public abstract class VTextureSelector {
 
     //activeTetxurespecific WHICH DesritprSet this Image is targeted for: 0 - 1 are ALWAYS VERTEX, while 2+ is FRAG
 
-    public static void bindTexture(VulkanImage texture, int id) {
-
-//        if(textureID==id) return;
-        boundTextures[0] = texture;
-        textureID = id;
-    }
-
     public static void bindTexture(int activeTexture, VulkanImage texture, int id) {
         if(activeTexture < 0 || activeTexture > 7) {
             Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", activeTexture));
             return;
         }
+        if(id == 0 || id == -1) {
+            Initializer.LOGGER.error("bad ID!:" + id);
+            return;
+        }
+
 //        if(textureID==id) return;
-        textureID = id;
+        boundIDs[activeTexture] = id;
         boundTextures[activeTexture] = texture;
         levels[activeTexture] = -1;
     }
@@ -162,6 +160,25 @@ public abstract class VTextureSelector {
     }
 
     public static VulkanImage getBoundTexture(int i) { return boundTextures[i]; }
+    public static int getBoundId(int i) { return boundIDs[i]; }
+
+    public static void assertImageState(int i)
+    {
+        final int boundID = boundIDs[i];
+
+        if(boundID == 0 || boundID == -1)
+        {
+//            Initializer.LOGGER.error(boundID);
+            return;
+        }
+
+        final VulkanImage id = GlTexture.getTexture(boundID).getVulkanImage();
+        final VulkanImage id1 = boundTextures[i];
+        if(id.getId() != id1.getId())
+        {
+            Initializer.LOGGER.error("Bad Image State!: " + boundID);
+        }
+    }
 
     public static VulkanImage getWhiteTexture() { return whiteTexture; }
 }
