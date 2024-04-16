@@ -48,6 +48,7 @@ public abstract class RenderSystemMixin {
     /**
      * @author
      */
+    //TODO: May have potential for texture selection...
     @Overwrite
     public static void _setShaderTexture(int i, ResourceLocation location) {
         if (i >= 0 && i < shaderTextures.length) {
@@ -55,7 +56,7 @@ public abstract class RenderSystemMixin {
             AbstractTexture abstractTexture = textureManager.getTexture(location);
             VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).getVulkanImage(), abstractTexture.getId());
 
-            //shaderTextures[i] = abstractTexture.getId();
+            shaderTextures[i] = abstractTexture.getId();
         }
 
     }
@@ -72,7 +73,9 @@ public abstract class RenderSystemMixin {
             if(vulkanImage == null)
                 return;
 
-            VTextureSelector.bindTexture(i, vulkanImage, id);
+            final int id1 = glTexture.getId();
+            VTextureSelector.bindTexture(i, vulkanImage, id1);
+            shaderTextures[i] = id1;
         }
 
     }

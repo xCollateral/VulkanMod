@@ -48,7 +48,12 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
 
         TextureUtil.releaseTextureId(this.id);
     }
-
+    
+    public int getId2()
+    {
+        return this.id;
+    }
+    
     public void setId(int i) {
         this.id = i;
     }

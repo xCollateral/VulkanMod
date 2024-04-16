@@ -1,14 +1,23 @@
 package net.vulkanmod.mixin.texture;
 
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
+import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Set;
 
@@ -35,5 +44,11 @@ public abstract class MTextureManager {
             SpriteUtil.transitionLayouts(DeviceManager.getGraphicsQueue().getCommandBuffer().getHandle());
             DeviceManager.getGraphicsQueue().endRecordingAndSubmit();
         }
+    }
+
+    @Inject(method = "register(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/renderer/texture/AbstractTexture;)V", at= @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/TextureManager;tickableTextures:Ljava/util/Set;"))
+    private void injectRegister(ResourceLocation resourceLocation, AbstractTexture abstractTexture, CallbackInfo ci)
+    {
+        VTextureSelector.registerTexture(((VAbstractTextureI)(abstractTexture)).getId2(), -1, resourceLocation);
     }
 }

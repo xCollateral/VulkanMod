@@ -6,6 +6,7 @@ public interface VAbstractTextureI {
 
     void bindTexture();
 
+    int getId2();
     void setId(int i);
 
     VulkanImage getVulkanImage();

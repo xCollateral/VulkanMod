@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.texture;
 
+import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
@@ -18,7 +19,7 @@ public abstract class VTextureSelector {
     private static final VulkanImage whiteTexture = VulkanImage.createWhiteTexture();
 
     private static int activeTexture = 0;
-//    private static int lastTextureId;
+    private static int lastTextureId;
 //    private static VulkanImage lastTexture = null;
 
     //Shader can alias/Access a max of 8 Images at once
@@ -28,6 +29,10 @@ public abstract class VTextureSelector {
 
     //activeTetxurespecific WHICH DesritprSet this Image is targeted for: 0 - 1 are ALWAYS VERTEX, while 2+ is FRAG
 
+
+    //0: -> Fragment Index
+    //1; -> Vertex Index: Overlay
+    //2; -> Vertex Index: LightMap
     public static void bindTexture(int activeTexture, VulkanImage texture, int id) {
         if(activeTexture < 0 || activeTexture > 7) {
             Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", activeTexture));
@@ -124,16 +129,24 @@ public abstract class VTextureSelector {
     }
 
 
-    public static void registerTexture(VulkanImage vulkanImage, int bindingID)
+
+    public static void registerTexture(int vulkanImage, int bindingID, ResourceLocation resourceLocation)
     {
 
-        if(boundTextures[bindingID]!=null) throw new RuntimeException();
+//        if(boundTextures[bindingID]!=null) throw new RuntimeException();
 
 
 
-        vulkanImage.readOnlyLayout();
 
-        boundTextures[bindingID]=vulkanImage;
+
+//        GlTexture.bindIdToImage(bindingID, vulkanImage);
+
+        Initializer.LOGGER.info("Registered texture: " + lastTextureId + " <-> " + bindingID + " <-> " + vulkanImage + "! -> "+resourceLocation);
+
+
+//        vulkanImage.readOnlyLayout();
+//
+//        boundTextures[bindingID]=vulkanImage;
 
 
 
