@@ -10,7 +10,7 @@ layout(location = 4) in ivec2 UV2;
 layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP[32];
+   mat4 MVP[64];
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;

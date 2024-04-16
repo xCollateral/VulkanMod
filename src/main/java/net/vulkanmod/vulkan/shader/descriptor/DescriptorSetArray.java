@@ -5,13 +5,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
+import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -143,6 +144,7 @@ public class DescriptorSetArray {
     }
 
 
+
     private LongBuffer allocateDescriptorSets(MemoryStack stack) {
 
         final LongBuffer pSetLayouts = stack.callocLong(value);
@@ -246,7 +248,7 @@ public class DescriptorSetArray {
                 final int NUM_UBOs = 2;
                 final int capacity = NUM_FRAG_TEXTURES + NUM_VERT_TEXTURES + NUM_UBOs;
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
-                VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[2];
+
                 int x = 0;
                 ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
                 //1 : Light_DIR_ vectors
@@ -262,14 +264,14 @@ public class DescriptorSetArray {
                 int currentBinding = 0;
 
                 int i = 0;
-                for (; i < bufferInfos.length; i++) {
+                for (; i < 2; i++) {
 
 
                     final int alignedSize = UniformBuffers.getAlignedSize(64);
-                    bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
-                    bufferInfos[i].buffer(uniformId);
-                    bufferInfos[i].offset(x);
-                    bufferInfos[i].range(x += 4096);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+                    VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
+                    bufferInfos.buffer(uniformId);
+                    bufferInfos.offset(x);
+                    bufferInfos.range(x += 4096);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
 
 
                     //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
@@ -279,7 +281,7 @@ public class DescriptorSetArray {
                     uboDescriptorWrite.dstArrayElement(0);
                     uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                     uboDescriptorWrite.descriptorCount(1);
-                    uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
+                    uboDescriptorWrite.pBufferInfo(bufferInfos);
                     uboDescriptorWrite.dstSet(currentSet);
                     currentBinding++;
                 }
@@ -338,7 +340,7 @@ public class DescriptorSetArray {
             }
 
 //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineManager.getTerrainDirectShader().getLayout(),
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getPipelineLayout(),
                     0, stack.longs(currentSet), null);
 
         }

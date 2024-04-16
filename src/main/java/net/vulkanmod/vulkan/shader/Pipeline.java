@@ -70,18 +70,24 @@ public abstract class Pipeline {
     public final String name;
 
 //    protected static long descriptorSetLayout;
-    protected static long pipelineLayout;
+    protected static final long pipelineLayout;
 
     protected DescriptorSets[] descriptorSets;
     protected List<UBO> buffers;
     protected PushConstants pushConstants;
+
+
+    static
+    {
+        pipelineLayout = createPipelineLayout();
+    }
 
     public Pipeline(String name) {
 
         this.name = name;
     }
 
-    protected void createPipelineLayout() {
+    protected static long createPipelineLayout() {
         try(MemoryStack stack = stackPush()) {
             // ===> PIPELINE LAYOUT CREATION <===
 
@@ -94,9 +100,9 @@ public abstract class Pipeline {
 
             //TODO; PushConstants temp disabed to work aroudn compatiblity isues with DescriptorSet layouts
 
-            if(this.pushConstants != null) {
+          {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);
-                pushConstantRange.size(this.pushConstants.getSize());
+                pushConstantRange.size(12);
                 pushConstantRange.offset(0);
                 pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
@@ -109,7 +115,7 @@ public abstract class Pipeline {
                 throw new RuntimeException("Failed to create pipeline layout");
             }
 
-            pipelineLayout = pPipelineLayout.get(0);
+            return pPipelineLayout.get(0);
         }
     }
 
@@ -123,6 +129,8 @@ public abstract class Pipeline {
     public abstract void cleanUp();
 
     public PushConstants getPushConstants() { return this.pushConstants; }
+
+    public static long getPipelineLayout() { return pipelineLayout; }
 
     public long getLayout() { return pipelineLayout; }
 
