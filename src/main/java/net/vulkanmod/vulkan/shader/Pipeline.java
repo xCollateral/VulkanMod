@@ -130,9 +130,7 @@ public abstract class Pipeline {
 
     public PushConstants getPushConstants() { return this.pushConstants; }
 
-    public static long getPipelineLayout() { return pipelineLayout; }
-
-    public long getLayout() { return pipelineLayout; }
+    public static long getLayout() { return pipelineLayout; }
 
     public void bindDescriptorSets(int frame, boolean shouldUpdate) {
         UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();

@@ -48,7 +48,7 @@ public class DescriptorSetArray {
     private static final int MISSING_TEX_ID = 24;
 
     private final long defFragSampler;
-    private final boolean[] isUpdated = new boolean[]{false, false};
+    private final boolean[] isUpdated = {false, false};
     private int BlocksID =-1;
     private int ChestID = -1;
     private int BannerID = -1;
@@ -286,7 +286,7 @@ public class DescriptorSetArray {
                     currentBinding++;
                 }
                 int idx = 0;
-                final int[] texArray = new int[]{6, MissingTexID, BlocksID, BannerID, MissingTexID};
+                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
                 for (int texId : texArray) {
                     //Use Global Sampler Table Array
                     //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
@@ -340,7 +340,7 @@ public class DescriptorSetArray {
             }
 
 //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getPipelineLayout(),
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getLayout(),
                     0, stack.longs(currentSet), null);
 
         }
