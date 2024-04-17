@@ -39,16 +39,17 @@ public class ResettableQueue<T> implements Iterable<T> {
 
     public void ensureCapacity(int n) {
         while (limit + n > capacity) {
-            resize();
+            int newSize = Math.max(limit + n, capacity * 2);
+            resize(newSize);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void resize() {
-        this.capacity *= 2;
+    private void resize(int capacity) {
+        this.capacity = capacity;
 
         T[] oldQueue = this.queue;
-        this.queue = (T[]) (new Object[capacity]);
+        this.queue = (T[]) (new Object[this.capacity]);
 
         System.arraycopy(oldQueue, 0, this.queue, 0, oldQueue.length);
     }

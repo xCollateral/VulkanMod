@@ -17,7 +17,6 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -70,6 +69,8 @@ public abstract class WindowMixin {
     @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"))
     private void vulkanHint(WindowEventHandler windowEventHandler, ScreenManager screenManager, DisplayData displayData, String string, String string2, CallbackInfo ci) {
         GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        //Fix Gnome Client-Side Decorators
+        GLFW.glfwWindowHint(GLFW_DECORATED, (VideoResolution.isGnome() | VideoResolution.isWeston() | VideoResolution.isGeneric()) && VideoResolution.isWayLand() ? GLFW_FALSE : GLFW_TRUE);
 //        GLFW.glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
 //        GLFW.glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
     }

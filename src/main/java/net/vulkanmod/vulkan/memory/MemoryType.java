@@ -1,7 +1,7 @@
 package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkMemoryHeap;

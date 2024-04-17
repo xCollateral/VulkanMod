@@ -92,8 +92,7 @@
 
     "render.block.BakedQuadM",
 
-    "voxel.VoxelShapeMixin",
-    "voxel.ShapesMixin"
+    "voxel.VoxelShapeMixin"
   ],
   "injectors": {
     "defaultRequire": 1

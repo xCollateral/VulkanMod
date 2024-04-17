@@ -3,12 +3,8 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
@@ -54,8 +50,7 @@ public abstract class VRenderSystem {
 
     private static final float[] depthBias = new float[2];
 
-    public static void initRenderer()
-    {
+    public static void initRenderer() {
         RenderSystem.assertInInitPhase();
 
         Vulkan.initVulkan(window);
@@ -69,15 +64,17 @@ public abstract class VRenderSystem {
     public static void updateScreenSize() {
         Window window = Minecraft.getInstance().getWindow();
 
-        screenSize.putFloat(0, (float)window.getWidth());
-        screenSize.putFloat(4, (float)window.getHeight());
+        screenSize.putFloat(0, (float) window.getWidth());
+        screenSize.putFloat(4, (float) window.getHeight());
     }
 
     public static void setWindow(long window) {
         VRenderSystem.window = window;
     }
 
-    public static ByteBuffer getChunkOffset() { return ChunkOffset.buffer; }
+    public static ByteBuffer getChunkOffset() {
+        return ChunkOffset.buffer;
+    }
 
     public static int maxSupportedTextureSize() {
         return DeviceManager.deviceProperties.limits().maxImageDimension2D();

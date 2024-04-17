@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.vulkanmod.render.chunk.SubCopyCommand;
-import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -33,8 +33,8 @@ public enum Queue {
         {
             PointerBuffer pQueue = stack.mallocPointer(1);
             this.familyIndex = familyIndex;
-            vkGetDeviceQueue(DeviceManager.device, this.familyIndex, 0, pQueue);
-            this.queue = new VkQueue(pQueue.get(0), DeviceManager.device);
+            vkGetDeviceQueue(DeviceManager.vkDevice, this.familyIndex, 0, pQueue);
+            this.queue = new VkQueue(pQueue.get(0), DeviceManager.vkDevice);
 
             this.commandPool = initCommandPool ? new CommandPool(this.familyIndex) : null;
         }
@@ -89,7 +89,7 @@ public enum Queue {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
-            vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, true, VUtil.UINT64_MAX);
+            vkWaitForFences(DeviceManager.vkDevice, commandBuffer.fence, true, VUtil.UINT64_MAX);
             commandBuffer.reset();
         }
     }
@@ -145,7 +145,7 @@ public enum Queue {
     public void trimCmdPool()
     {
         if(commandPool==null) return;
-        VK11.vkTrimCommandPool(Vulkan.getDevice(), this.commandPool.id, 0);
+        VK11.vkTrimCommandPool(DeviceManager.vkDevice, this.commandPool.id, 0);
     }
 
     public static void trimCmdPools()
