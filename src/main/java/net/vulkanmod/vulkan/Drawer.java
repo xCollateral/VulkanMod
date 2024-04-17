@@ -11,7 +11,6 @@ import java.nio.LongBuffer;
 import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.vkCmdDraw;
 
 public class Drawer {
     private static final int INITIAL_VB_SIZE = 2000000;
@@ -28,7 +27,7 @@ public class Drawer {
     private final AutoIndexBuffer quadsIndexBuffer;
     private final AutoIndexBuffer triangleFanIndexBuffer;
     private final AutoIndexBuffer triangleStripIndexBuffer;
-    private UniformBuffers uniformBuffers;
+    private UniformBuffer[] uniformBuffers;
 
     private int currentFrame;
 
@@ -46,28 +45,29 @@ public class Drawer {
     public void createResources(int framesNum) {
         this.framesNum = framesNum;
 
-        if(vertexBuffers != null) {
+        if (vertexBuffers != null) {
             Arrays.stream(this.vertexBuffers).iterator().forEachRemaining(
                     Buffer::freeBuffer
             );
         }
         this.vertexBuffers = new VertexBuffer[framesNum];
-        for (int i = 0; i < framesNum; ++i) {
-            this.vertexBuffers[i] = new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM);
-        }
+        Arrays.setAll(this.vertexBuffers, i -> new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM));
 
-        if(this.uniformBuffers != null)
-            this.uniformBuffers.free();
-        this.uniformBuffers = new UniformBuffers(INITIAL_UB_SIZE);
+        if (this.uniformBuffers != null) {
+            Arrays.stream(this.uniformBuffers).iterator().forEachRemaining(
+                    Buffer::freeBuffer
+            );
+        }
+        this.uniformBuffers = new UniformBuffer[framesNum];
+        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
     }
 
     public void resetBuffers(int currentFrame) {
         this.vertexBuffers[currentFrame].reset();
-        this.uniformBuffers.reset();
+        this.uniformBuffers[currentFrame].reset();
     }
 
-    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount)
-    {
+    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount) {
         AutoIndexBuffer autoIndexBuffer;
         int indexCount;
 
@@ -107,7 +107,9 @@ public class Drawer {
         return triangleFanIndexBuffer;
     }
 
-    public UniformBuffers getUniformBuffers() { return this.uniformBuffers; }
+    public UniformBuffer getUniformBuffer() {
+        return this.uniformBuffers[currentFrame];
+    }
 
     public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
@@ -149,7 +151,7 @@ public class Drawer {
             buffer = this.vertexBuffers[i];
             MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
 
-            buffer = this.uniformBuffers.getUniformBuffer(i);
+            buffer = this.uniformBuffers[i];
             MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
 
         }

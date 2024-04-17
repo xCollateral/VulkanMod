@@ -10,7 +10,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.UniformBuffers;
+import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
@@ -157,7 +157,7 @@ public abstract class Pipeline {
     protected void createDescriptorSets(int frames) {
         descriptorSets = new DescriptorSets[frames];
         for (int i = 0; i < frames; ++i) {
-            descriptorSets[i] = new DescriptorSets(i);
+            descriptorSets[i] = new DescriptorSets(this);
         }
     }
 
@@ -198,12 +198,12 @@ public abstract class Pipeline {
     }
 
     public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
-        UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        UniformBuffer uniformBuffer = Renderer.getDrawer().getUniformBuffer();
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int frame) {
-        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffer uniformBuffer, int frame) {
+        this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
     static long createShaderModule(ByteBuffer spirvCode) {
@@ -225,20 +225,23 @@ public abstract class Pipeline {
         }
     }
 
-    protected class DescriptorSets {
+    protected static class DescriptorSets {
+        private final Pipeline pipeline;
         private int poolSize = 10;
         private long descriptorPool;
         private LongBuffer sets;
-        private long uniformBufferId;
         private long currentSet;
         private int currentIdx = -1;
 
-        private final int frame;
-        private final ImageDescriptor.State[] boundTextures = new ImageDescriptor.State[imageDescriptors.size()];
-        private final IntBuffer dynamicOffsets = MemoryUtil.memAllocInt(buffers.size());
+        private final long[] boundUBs;
+        private final ImageDescriptor.State[] boundTextures;
+        private final IntBuffer dynamicOffsets;
 
-        DescriptorSets(int frame) {
-            this.frame = frame;
+        DescriptorSets(Pipeline pipeline) {
+            this.pipeline = pipeline;
+            this.boundTextures = new ImageDescriptor.State[pipeline.imageDescriptors.size()];
+            this.dynamicOffsets = MemoryUtil.memAllocInt(pipeline.buffers.size());
+            this.boundUBs = new long[pipeline.buffers.size()];
 
             Arrays.setAll(boundTextures, i -> new ImageDescriptor.State(0, 0));
 
@@ -248,45 +251,46 @@ public abstract class Pipeline {
             }
         }
 
-        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers, int bindPoint) {
+        protected void bindSets(VkCommandBuffer commandBuffer, UniformBuffer uniformBuffer, int bindPoint) {
             try (MemoryStack stack = stackPush()) {
 
-                this.updateUniforms(uniformBuffers);
-                this.updateDescriptorSet(stack, uniformBuffers);
+                this.updateUniforms(uniformBuffer);
+                this.updateDescriptorSet(stack, uniformBuffer);
 
-                vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
+                vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipeline.pipelineLayout,
                         0, stack.longs(currentSet), dynamicOffsets);
             }
         }
 
-        private void updateUniforms(UniformBuffers uniformBuffers) {
-            int currentOffset = uniformBuffers.getUsedBytes();
-
+        private void updateUniforms(UniformBuffer globalUB) {
             int i = 0;
-            for (UBO ubo : buffers) {
-//                ubo.update();
-//                uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
+            for (UBO ubo : pipeline.buffers) {
+                boolean useOwnUB = ubo.getUniformBuffer() != null;
+                UniformBuffer ub = useOwnUB ? ubo.getUniformBuffer() : globalUB;
 
+                int currentOffset = (int) ub.getUsedBytes();
                 this.dynamicOffsets.put(i, currentOffset);
 
-                //TODO non mappable memory
+                // TODO: non mappable memory
 
-                int alignedSize = UniformBuffers.getAlignedSize(ubo.getSize());
-                uniformBuffers.checkCapacity(alignedSize);
-                ubo.update(uniformBuffers.getPointer(frame));
+                int alignedSize = UniformBuffer.getAlignedSize(ubo.getSize());
+                ub.checkCapacity(alignedSize);
 
-                uniformBuffers.updateOffset(alignedSize);
+                if (!useOwnUB) {
+                    ubo.update(ub.getPointer());
+                    ub.updateOffset(alignedSize);
+                }
 
-                currentOffset = uniformBuffers.getUsedBytes();
                 ++i;
             }
         }
 
-        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
+        private boolean needsUpdate(UniformBuffer uniformBuffer) {
+            if (currentIdx == -1)
+                return true;
 
-            boolean changed = false;
-            for (int j = 0; j < imageDescriptors.size(); ++j) {
-                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
+            for (int j = 0; j < pipeline.imageDescriptors.size(); ++j) {
+                ImageDescriptor imageDescriptor = pipeline.imageDescriptors.get(j);
                 VulkanImage image = imageDescriptor.getImage();
                 long view = imageDescriptor.getImageView(image);
                 long sampler = image.getSampler();
@@ -295,44 +299,64 @@ public abstract class Pipeline {
                     image.readOnlyLayout();
 
                 if (!this.boundTextures[j].isCurrentState(view, sampler)) {
-                    changed = true;
-                    break;
+                    return true;
                 }
             }
 
-            if (!changed && this.currentIdx != -1 &&
-                    this.uniformBufferId == uniformBuffers.getId(frame)) {
-                this.currentSet = this.sets.get(this.currentIdx);
-                return;
+            for (int j = 0; j < pipeline.buffers.size(); ++j) {
+                UBO ubo = pipeline.buffers.get(j);
+                UniformBuffer uniformBufferI = ubo.getUniformBuffer();
+
+                if (uniformBufferI == null)
+                    uniformBufferI = uniformBuffer;
+
+                if (this.boundUBs[j] != uniformBufferI.getId()) {
+                    return true;
+                }
             }
 
-            this.uniformBufferId = uniformBuffers.getId(frame);
-            this.currentIdx++;
+            return false;
+        }
+
+        private void checkPoolSize(MemoryStack stack) {
             if (this.currentIdx >= this.poolSize) {
                 this.poolSize *= 2;
 
                 this.createDescriptorPool(stack);
                 this.createDescriptorSets(stack);
+                this.currentIdx = 0;
 
                 //debug
 //                System.out.println("resized descriptor pool to: " + this.poolSize);
-
-                this.resetIdx();
-                this.updateDescriptorSet(stack, uniformBuffers);
-                return;
             }
+        }
+
+        private void updateDescriptorSet(MemoryStack stack, UniformBuffer uniformBuffer) {
+
+            //Check if update is needed
+            if (!needsUpdate(uniformBuffer))
+                return;
+
+            this.currentIdx++;
+
+            //Check pool size
+            checkPoolSize(stack);
 
             this.currentSet = this.sets.get(this.currentIdx);
 
-            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(buffers.size() + imageDescriptors.size(), stack);
-            VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[buffers.size()];
+            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(pipeline.buffers.size() + pipeline.imageDescriptors.size(), stack);
+            VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[pipeline.buffers.size()];
 
             //TODO maybe ubo update is not needed everytime
             int i = 0;
-            for (UBO ubo : buffers) {
+            for (UBO ubo : pipeline.buffers) {
+                UniformBuffer ub = ubo.getUniformBuffer();
+                if (ub == null)
+                    ub = uniformBuffer;
+                boundUBs[i] = ub.getId();
 
                 bufferInfos[i] = VkDescriptorBufferInfo.calloc(1, stack);
-                bufferInfos[i].buffer(this.uniformBufferId);
+                bufferInfos[i].buffer(boundUBs[i]);
                 bufferInfos[i].range(ubo.getSize());
 
                 VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);
@@ -347,10 +371,10 @@ public abstract class Pipeline {
                 ++i;
             }
 
-            VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[imageDescriptors.size()];
+            VkDescriptorImageInfo.Buffer[] imageInfo = new VkDescriptorImageInfo.Buffer[pipeline.imageDescriptors.size()];
 
-            for (int j = 0; j < imageDescriptors.size(); ++j) {
-                ImageDescriptor imageDescriptor = imageDescriptors.get(j);
+            for (int j = 0; j < pipeline.imageDescriptors.size(); ++j) {
+                ImageDescriptor imageDescriptor = pipeline.imageDescriptors.get(j);
                 VulkanImage image = imageDescriptor.getImage();
                 long view = imageDescriptor.getImageView(image);
                 long sampler = image.getSampler();
@@ -387,7 +411,7 @@ public abstract class Pipeline {
 //            layout.put(0, descriptorSetLayout);
 
             for (int i = 0; i < this.poolSize; ++i) {
-                layout.put(i, descriptorSetLayout);
+                layout.put(i, pipeline.descriptorSetLayout);
             }
 
             VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.calloc(stack);
@@ -404,19 +428,19 @@ public abstract class Pipeline {
         }
 
         private void createDescriptorPool(MemoryStack stack) {
-            int size = buffers.size() + imageDescriptors.size();
+            int size = pipeline.buffers.size() + pipeline.imageDescriptors.size();
 
             VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(size, stack);
 
             int i;
-            for (i = 0; i < buffers.size(); ++i) {
+            for (i = 0; i < pipeline.buffers.size(); ++i) {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
                 uniformBufferPoolSize.descriptorCount(this.poolSize);
             }
 
-            for (; i < buffers.size() + imageDescriptors.size(); ++i) {
+            for (; i < pipeline.buffers.size() + pipeline.imageDescriptors.size(); ++i) {
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(i);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 textureSamplerPoolSize.descriptorCount(this.poolSize);
@@ -450,6 +474,8 @@ public abstract class Pipeline {
         private void cleanUp() {
             vkResetDescriptorPool(DEVICE, descriptorPool, 0);
             vkDestroyDescriptorPool(DEVICE, descriptorPool, null);
+
+            MemoryUtil.memFree(this.dynamicOffsets);
         }
 
     }
@@ -489,6 +515,9 @@ public abstract class Pipeline {
             Validate.isTrue(this.imageDescriptors != null && this.UBOs != null
                             && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
                     "Cannot create Pipeline: resources missing");
+
+            if (this.manualUBO != null)
+                this.UBOs.add(this.manualUBO);
 
             return new GraphicsPipeline(this);
         }
@@ -593,7 +622,6 @@ public abstract class Pipeline {
                 this.nextBinding = binding + 1;
 
             this.manualUBO = new ManualUBO(binding, stage, size);
-            this.UBOs.add(this.manualUBO);
         }
 
         private void parseSamplerNode(JsonElement jsonelement) {
