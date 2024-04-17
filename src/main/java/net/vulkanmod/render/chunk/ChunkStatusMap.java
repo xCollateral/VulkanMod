@@ -36,7 +36,7 @@ public class ChunkStatusMap {
         current |= flag;
         map.put(l, current);
 
-        if((current & CHUNK_READY) == CHUNK_READY)
+        if ((current & CHUNK_READY) == CHUNK_READY)
             updateNeighbours(x, z);
     }
 
@@ -44,18 +44,16 @@ public class ChunkStatusMap {
         long l = ChunkPos.asLong(x, z);
 
         byte current = map.get(l);
-        current ^= flag;
+        current = (byte) (current & ~flag);
         map.put(l, current);
 
         updateNeighbours(x, z);
-//        if((current & CHUNK_READY) == CHUNK_READY)
-//            updateNeighbours(x, z);
     }
 
     public void updateNeighbours(int x, int z) {
-        for(int x1 = x-1; x1 <= x+1; ++x1) {
-            for(int z1 = z-1; z1 <= z+1; ++z1) {
-                if(checkNeighbours(x1, z1)) {
+        for (int x1 = x - 1; x1 <= x + 1; ++x1) {
+            for (int z1 = z - 1; z1 <= z + 1; ++z1) {
+                if (checkNeighbours(x1, z1)) {
                     map.put(ChunkPos.asLong(x1, z1), ALL_FLAGS);
                 }
                 else {
@@ -64,7 +62,7 @@ public class ChunkStatusMap {
                     byte current = map.get(l);
                     byte n = (byte) (current & ~NEIGHBOURS_READY);
 
-                    if(current == 0b0)
+                    if (current == 0b0)
                         map.remove(l);
                     else if (current != n)
                         map.put(l, n);
@@ -75,11 +73,11 @@ public class ChunkStatusMap {
 
     public boolean checkNeighbours(int x, int z) {
         byte flags = CHUNK_READY;
-        for(int x1 = x-1; x1 <= x+1; ++x1) {
-            for(int z1 = z-1; z1 <= z+1; ++z1) {
+        for (int x1 = x - 1; x1 <= x + 1; ++x1) {
+            for (int z1 = z - 1; z1 <= z + 1; ++z1) {
                 flags &= map.get(ChunkPos.asLong(x1, z1));
 
-                if(flags != CHUNK_READY)
+                if (flags != CHUNK_READY)
                     return false;
             }
         }
