@@ -46,7 +46,7 @@ public abstract class MTextureManager {
         }
     }
 
-    @Inject(method = "register(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/renderer/texture/AbstractTexture;)V", at= @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/TextureManager;tickableTextures:Ljava/util/Set;"))
+    @Inject(method = "register(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/renderer/texture/AbstractTexture;)V", at= @At(value = "RETURN", target = "Lnet/minecraft/client/renderer/texture/TextureManager;tickableTextures:Ljava/util/Set;"))
     private void injectRegister(ResourceLocation resourceLocation, AbstractTexture abstractTexture, CallbackInfo ci)
     {
         VTextureSelector.registerTexture(((VAbstractTextureI)(abstractTexture)).getId2(), -1, resourceLocation);

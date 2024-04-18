@@ -3,19 +3,23 @@ package net.vulkanmod.vulkan.shader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
@@ -160,6 +164,7 @@ public abstract class Pipeline {
         //        private long descriptorPool;
 
         private final int frame;
+        private int currentTexture;
 //        private final ImageDescriptor[] boundTextures = new ImageDescriptor[imageDescriptors.size()];
 
         DescriptorSets(int frame) {
@@ -203,7 +208,18 @@ public abstract class Pipeline {
                 //TODO; Disseminate between Fragment and VERTEX Stage binding/reserve slots
 //                 VTextureSelector.getBoundId(state.imageIdx);
 
-                 if(state.getStages()!=VK_SHADER_STAGE_VERTEX_BIT) VTextureSelector.assertImageState(state.imageIdx);
+//                 if(state.getStages()!=VK_SHADER_STAGE_VERTEX_BIT) VTextureSelector.assertImageState(state.imageIdx);
+
+                final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
+
+              if(shaderTexture!=0)
+              {
+                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
+                  final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
+                  descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, vulkanImage);
+                  this.currentTexture = descriptorSetArray.getInitialisedFragSamplers().TextureID2SamplerIdx(shaderTexture);
+              }
+
 
 
 

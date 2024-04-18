@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.texture;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
@@ -184,7 +185,11 @@ public abstract class VTextureSelector {
 //            Initializer.LOGGER.error(boundID);
             return;
         }
-
+        final int id2 = RenderSystem.getShaderTexture(i);
+        if(id2 != boundID)
+        {
+            Initializer.LOGGER.error("Bad Image ID!: " + i +" Stage "+ id2 + " != " + boundID);
+        }
         final VulkanImage id = GlTexture.getTexture(boundID).getVulkanImage();
         final VulkanImage id1 = boundTextures[i];
         if(id.getId() != id1.getId())

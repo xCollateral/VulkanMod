@@ -7,10 +7,11 @@ layout(binding = 0) uniform UniformBufferObject {
    mat4 MVP[64];
 };
 
-layout(location = 0) out vec2 texCoord0;
+layout(location = 0) invariant flat out uint baseInstance;
+layout(location = 1) out vec2 texCoord0;
 
 void main() {
     gl_Position = MVP[gl_BaseInstance] * vec4(Position, 1.0);
-
+    baseInstance = gl_BaseInstance>>16;
     texCoord0 = UV0;
 }

@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.inventory.InventoryMenu;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
@@ -37,8 +38,9 @@ public class DescriptorSetArray {
     private static final int bindingsSize = 4;
 //    private Int2ObjectLinkedOpenHashMap<Descriptor> DescriptorTableHeap;
 //    private final Int2LongArrayMap perBindingSlowLayouts = new Int2LongArrayMap(bindingsSize);
-    private final descriptorArray<ImageDescriptor> initialisedFragSamplers = new descriptorArray<>(SAMPLER_MAX_LIMIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
-    private final Int2ObjectLinkedOpenHashMap<ImageDescriptor> initialisedVertSamplers = new Int2ObjectLinkedOpenHashMap<>(SAMPLER_MAX_LIMIT);
+    private final DescriptorAbstractionArray initialisedFragSamplers = new DescriptorAbstractionArray(512, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
+    private final DescriptorAbstractionArray initialisedVertSamplers = new DescriptorAbstractionArray(512, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
+//    private final Int2ObjectLinkedOpenHashMap<ImageDescriptor> initialisedVertSamplers = new Int2ObjectLinkedOpenHashMap<>(SAMPLER_MAX_LIMIT);
 
     private final long descriptorSetLayout;
     private final long globalDescriptorPoolArrayPool;
@@ -60,9 +62,15 @@ public class DescriptorSetArray {
         final int stages = vulkanImage.getStages();
         switch (stages)
         {
-            case VK_SHADER_STAGE_FRAGMENT_BIT -> this.initialisedFragSamplers.addSampler(vulkanImage);
-            case VK_SHADER_STAGE_VERTEX_BIT -> initialisedVertSamplers.put(binding, vulkanImage);
+//            case VK_SHADER_STAGE_FRAGMENT_BIT -> this.initialisedFragSamplers.addSampler(vulkanImage);
+//            case VK_SHADER_STAGE_VERTEX_BIT -> initialisedVertSamplers.put(binding, vulkanImage);
         }
+    }
+
+    public void registerTexture(int binding, int TextureID, VulkanImage vulkanImage)
+    {
+       if(binding==0) this.initialisedFragSamplers.registerTexture(TextureID, vulkanImage.getImageView());
+       else initialisedVertSamplers.registerTexture(TextureID, vulkanImage.getImageView());
     }
 
     public DescriptorSetArray() {
@@ -184,7 +192,8 @@ public class DescriptorSetArray {
 
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(1);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                textureSamplerPoolSize.descriptorCount(SAMPLER_MAX_LIMIT+SAMPLER_MAX_LIMIT);
+            final int VERTEX_SAMPLER_MAX = 2;
+            textureSamplerPoolSize.descriptorCount(VERTEX_SAMPLER_MAX + SAMPLER_MAX_LIMIT);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -223,8 +232,9 @@ public class DescriptorSetArray {
         return descriptorSets;
     }
 
-
-
+    public DescriptorAbstractionArray getInitialisedFragSamplers() {
+        return initialisedFragSamplers;
+    }
 
 //TODO; ASync smaper streaming: use a falback missing texture palcehodler if  mod adds a texture, but it not been updated/regsitered w/the Descriptor array yet
 

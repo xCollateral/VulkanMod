@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 
 public class DescriptorAbstractionArray implements Iterable<Long> {
 
-    private final Int2IntArrayMap textureID2DescIDMap = new Int2IntArrayMap(32);
+//    private final Int2IntArrayMap textureID2DescIDMap = new Int2IntArrayMap(32);
 
     final int[] texIds, descriptorIndices;
 
@@ -54,6 +54,8 @@ public class DescriptorAbstractionArray implements Iterable<Long> {
     //Add a new textureID registation/index to the Descripotr Array
     public void registerTexture(int texID, long imageView)
     {
+        if(texIds[texID]!=0) return;
+        if(texIds[texID]!=0&&texIds[texID]!=imageView) throw new RuntimeException(texIds[texID] + " != "+ imageView);
         texIds[texID]=++samplerRange;
         textureSamplerHndls[samplerRange]=imageView;
 
@@ -82,17 +84,7 @@ public class DescriptorAbstractionArray implements Iterable<Long> {
 
             @Override
             public Long next() {
-                long textureSamplerHndl = textureSamplerHndls[pos];
-                while(hasNext())
-                {
-                    pos++;
-                    textureSamplerHndl= textureSamplerHndls[pos];
-                    if(textureSamplerHndl !=0)
-                    {
-                        break;
-                    }
-                }
-                return textureSamplerHndl;
+                return textureSamplerHndls[pos++];
             }
         };
     }
