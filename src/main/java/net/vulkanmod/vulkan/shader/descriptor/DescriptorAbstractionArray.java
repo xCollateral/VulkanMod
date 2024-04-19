@@ -41,17 +41,19 @@ public class DescriptorAbstractionArray {
     //Used for hardcoding "hot Paths" for single etyre only pipelines + Dealing w/ Async Textures (i.e. tetxures that utlsie async Stitching such as Atlases e.g.)
 
     //Requies a ResourceLocation to enforce ID/Slot HardCoding + Guarentee Alignment /correctness + Validation e.g.
-    public void reserveTextureIDDescriptor(int idx, long imageViewHandl, ResourceLocation resourceLocation) {
+    public void reserveTextureIDDescriptor(int idx, int textureID) {
         //Initialize Arrays to zero, as that will default to index texture index 0 which is Missingno/Missing Deture rn
         //+ Actsu as a failsafe to avoid crashes/Driver fails as well
 
 
 //        int idx = getResourceLocationIDfromBinding(resourceLocation.toString());
 
-        if (textureSamplerHndls[idx] != 0) throw new RuntimeException();
+        if(idx<0||textureID==-1) throw new RuntimeException();
+
+        if (texID2DescIdx.containsKey(textureID)) throw new RuntimeException();
 
 
-        textureSamplerHndls[idx] = imageViewHandl;
+        texID2DescIdx.put(textureID, idx);
 
 //        alignedIDs.put(texID, idx);
 

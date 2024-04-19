@@ -1,7 +1,12 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
@@ -264,8 +269,11 @@ public class DescriptorSetArray {
         {
             this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
 
+
             this.initialisedFragSamplers.registerTexture(this.MissingTexID);
-            this.initialisedVertSamplers.registerTexture(this.MissingTexID);
+            this.initialisedFragSamplers.registerTexture(Minecraft.getInstance().getTextureManager().getTexture(InventoryMenu.BLOCK_ATLAS).getId());
+            this.initialisedFragSamplers.registerTexture(Minecraft.getInstance().getTextureManager().getTexture(Sheets.BANNER_SHEET).getId());
+            this.initialisedVertSamplers.registerTexture(6);
         }
         try(MemoryStack stack = stackPush()) {
             final long currentSet = descriptorSets.get(frame);
