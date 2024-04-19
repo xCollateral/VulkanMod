@@ -118,10 +118,10 @@ public class VBO {
 
             Renderer renderer = Renderer.getInstance();
             boolean b = renderer.bindGraphicsPipeline(pipeline);
-            renderer.uploadAndBindUBOs(pipeline, b);
+            int textureID = renderer.uploadAndBindUBOs(pipeline, b);
 
             if(indexBuffer != null)
-                Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+                Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount, textureID);
             else
                 Renderer.getDrawer().draw(vertexBuffer, vertexCount);
 

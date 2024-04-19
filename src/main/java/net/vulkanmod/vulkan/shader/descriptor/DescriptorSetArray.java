@@ -1,21 +1,13 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.Sheets;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.DeviceManager;
-import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.SamplerManager;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -33,13 +25,13 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DescriptorSetArray {
     private static final VkDevice DEVICE = Vulkan.getDevice();
     private static final int UNIFORM_POOLS = 1;
-    private static final int SAMPLER_MAX_LIMIT = 8;
+    private static final int SAMPLER_MAX_LIMIT = 512;
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
     private static final int bindingsSize = 4;
 //    private Int2ObjectLinkedOpenHashMap<Descriptor> DescriptorTableHeap;
 //    private final Int2LongArrayMap perBindingSlowLayouts = new Int2LongArrayMap(bindingsSize);
-    private final DescriptorAbstractionArray initialisedFragSamplers = new DescriptorAbstractionArray(512, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
-    private final DescriptorAbstractionArray initialisedVertSamplers = new DescriptorAbstractionArray(512, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
+    private final DescriptorAbstractionArray initialisedFragSamplers = new DescriptorAbstractionArray(0, 512, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
+    private final DescriptorAbstractionArray initialisedVertSamplers = new DescriptorAbstractionArray(0, 512, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
 //    private final Int2ObjectLinkedOpenHashMap<ImageDescriptor> initialisedVertSamplers = new Int2ObjectLinkedOpenHashMap<>(SAMPLER_MAX_LIMIT);
 
     private final long descriptorSetLayout;
@@ -51,10 +43,29 @@ public class DescriptorSetArray {
 
     private final long defFragSampler;
     private final boolean[] isUpdated = {false, false};
-    private int BlocksID =-1;
-    private int ChestID = -1;
-    private int BannerID = -1;
     private int MissingTexID = -1;
+
+    static
+    {
+/*
+            [21:43:12] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> 4! -> minecraft:missing/0
+            [21:43:31] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/shulker_boxes.png
+            [21:43:37] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/blocks.png
+            [21:43:38] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/armor_trims.png
+            [21:43:39] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/signs.png
+            [21:43:40] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/chest.png
+            [21:43:41] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/banner_patterns.png
+            [21:43:44] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/shield_patterns.png
+            [21:43:44] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/beds.png
+            [21:43:48] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/decorated_pot.png
+            [21:45:16] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> 6! -> minecraft:dynamic/light_map_1
+            [21:45:48] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/particles.png
+            [21:45:55] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/paintings.png
+            [21:45:56] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/mob_effects.png
+            [21:45:56] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/gui.png
+*/
+
+    }
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -69,8 +80,9 @@ public class DescriptorSetArray {
 
     public void registerTexture(int binding, int TextureID, VulkanImage vulkanImage)
     {
-       if(binding==0) this.initialisedFragSamplers.registerTexture(TextureID, vulkanImage.getImageView());
-       else initialisedVertSamplers.registerTexture(TextureID, vulkanImage.getImageView());
+        //TODO:maybe make textureID table global, then asign Ids+SampelrIndicies to DescriptorSetsBindinss
+       if(binding==0) this.initialisedFragSamplers.registerTexture(TextureID);
+       else initialisedVertSamplers.registerTexture(TextureID);
     }
 
     public DescriptorSetArray() {
@@ -240,120 +252,116 @@ public class DescriptorSetArray {
 
     public void updateAndBind(int frame, long uniformId, VkCommandBuffer commandBuffer)
     {
-        if(this.BlocksID ==-1 && this.ChestID == -1 && this.BannerID ==-1 && this.MissingTexID == -1)
+        if(this.MissingTexID == -1)
         {
-            final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-
-            this.BlocksID = textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId();
-            this.ChestID = textureManager.getTexture(Sheets.CHEST_SHEET).getId();
-            this.BannerID = textureManager.getTexture(Sheets.BANNER_SHEET).getId();
             this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
+
+            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
+            this.initialisedVertSamplers.registerTexture(this.MissingTexID);
         }
         try(MemoryStack stack = stackPush()) {
             final long currentSet = descriptorSets.get(frame);
-           if(!isUpdated[frame]) {
-               boolean invalidImages = false;
-                final int NUM_FRAG_TEXTURES = 4;
-                final int NUM_VERT_TEXTURES = 1;
-                final int NUM_UBOs = 2;
-                final int capacity = NUM_FRAG_TEXTURES + NUM_VERT_TEXTURES + NUM_UBOs;
-                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 
-                int x = 0;
-                ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
-                //1 : Light_DIR_ vectors
-                //2: Inv Dir Vectors
-                //3: Global mob Rot + MAt4
+            final int NUM_UBOs = 2;
+            final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs;
+            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
+
+            int x = 0;
+            ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
+            //1 : Light_DIR_ vectors
+            //2: Inv Dir Vectors
+            //3: Global mob Rot + MAt4
 
 
-                // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
+            // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
 
-                //Fog Parameters = ColorModulator -> PushConstants
+            //Fog Parameters = ColorModulator -> PushConstants
 
-                //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
-                int currentBinding = 0;
-
-                int i = 0;
-                for (; i < 2; i++) {
+            //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
+            int currentBinding = 0;
 
 
-                    final int alignedSize = UniformBuffers.getAlignedSize(64);
-                    VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
-                    bufferInfos.buffer(uniformId);
-                    bufferInfos.offset(x);
-                    bufferInfos.range(1024);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
-                    x += 1024;
-
-                    //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
-                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
-                    uboDescriptorWrite.sType$Default();
-                    uboDescriptorWrite.dstBinding(currentBinding);
-                    uboDescriptorWrite.dstArrayElement(0);
-                    uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                    uboDescriptorWrite.descriptorCount(1);
-                    uboDescriptorWrite.pBufferInfo(bufferInfos);
-                    uboDescriptorWrite.dstSet(currentSet);
-                    currentBinding++;
-                }
-                int idx = 0;
-                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
-                for (int texId : texArray) {
-                    //Use Global Sampler Table Array
-                    //TODO: Fix image flickering seizures (i.e. images/Textures need to be premistentlymapped, not rebound over and over each frame)
-//                final int missingTexId = imageSamplerIdx != 0 ? 32 : 32;
+            for (int currentWriteIndex = 0; currentWriteIndex < 2; currentWriteIndex++) {
 
 
-                    final GlTexture vulkanImage = GlTexture.getTexture(texId);
-                    VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
-                    if (image == null) {
-                        image = VTextureSelector.getImage(2);
-                        if(!invalidImages) invalidImages=true;
-                    }
+                VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
+                bufferInfos.buffer(uniformId);
+                bufferInfos.offset(x);
+                bufferInfos.range(1024);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+                x += 1024;
 
-
-                    long view = image.getImageView();
-
-                    //TODO: may bedierct the UBO upload to a Descriptor ofset: based on whta the configjured Binding.Ofset.index
-                    // + Might be Possible to specify Static Uniform Offsets per Set
-
-
-                    image.readOnlyLayout();
-
-
-                    //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
-                    VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack);
-                    imageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    imageInfo.imageView(view);
-                    imageInfo.sampler(defFragSampler);
-
-                    final int vertexSamplerId = texId == 6 ? VERTEX_SAMPLER_ID : FRAG_SAMPLER_ID;
-
-                    VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
-                    samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                    samplerDescriptorWrite.dstBinding(vertexSamplerId);
-
-                    samplerDescriptorWrite.dstArrayElement(vertexSamplerId == VERTEX_SAMPLER_ID ? 0 : idx);
-                    samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                    samplerDescriptorWrite.descriptorCount(1);
-                    samplerDescriptorWrite.pImageInfo(imageInfo);
-                    samplerDescriptorWrite.dstSet(currentSet);
-                    i++;
-                    if (vertexSamplerId != VERTEX_SAMPLER_ID) {
-                        idx++;
-                    }
-
-                }
-
-
-                vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
-               isUpdated[frame]=!invalidImages;
+                //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
+                VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
+                uboDescriptorWrite.sType$Default();
+                uboDescriptorWrite.dstBinding(currentBinding);
+                uboDescriptorWrite.dstArrayElement(0);
+                uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+                uboDescriptorWrite.descriptorCount(1);
+                uboDescriptorWrite.pBufferInfo(bufferInfos);
+                uboDescriptorWrite.dstSet(currentSet);
+                currentBinding++;
             }
 
-//            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
+
+            //                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
+//
+                        final int fragSamplerOffset = NUM_UBOs + this.initialisedVertSamplers.currentSize();
+            isInvalidImages(stack, descriptorWrites, NUM_UBOs, currentSet, this.initialisedVertSamplers);
+            isInvalidImages(stack, descriptorWrites, fragSamplerOffset, currentSet, this.initialisedFragSamplers);
+
+
+            vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+
+            //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getLayout(),
                     0, stack.longs(currentSet), null);
 
         }
+    }
+
+    private void isInvalidImages(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, int currentWriteIndex, long currentSet, DescriptorAbstractionArray descriptorArray) {
+        //TODO: Need DstArrayIdx, ImageView, or DstArrayIdx, TextureID to enumerate/initialise the DescriptorArray
+        if(descriptorArray.currentSize()==0) return;
+
+        for (Int2IntMap.Entry texId : descriptorArray.getAlignedIDs().int2IntEntrySet()) {
+
+
+            final int texId1 = texId.getIntKey();
+            final int samplerIndex = texId.getIntValue();
+
+            final VulkanImage image = getSamplerImage(texId1);
+
+            image.readOnlyLayout();
+
+
+            //Can assign ANY image to a Sampler: might decouple smapler form image creation + allocifNeeded selectively If Sampler needed
+            VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)
+                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                    .imageView(image.getImageView())
+                    .sampler(defFragSampler);
+
+            final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get(currentWriteIndex);
+            vkWriteDescriptorSet.sType$Default()
+                    .dstBinding(descriptorArray.getBinding())
+                    .dstArrayElement(samplerIndex)
+                    .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                    .descriptorCount(1)
+                    .pImageInfo(imageInfo)
+                    .dstSet(currentSet);
+
+
+            currentWriteIndex++;
+
+        }
+    }
+
+    private VulkanImage getSamplerImage(int texId1) {
+        final GlTexture vulkanImage = GlTexture.getTexture(texId1);
+        VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
+        if (image == null) {
+            image = GlTexture.getTexture(MissingTexID).getVulkanImage();
+        }
+        return image;
     }
 
 

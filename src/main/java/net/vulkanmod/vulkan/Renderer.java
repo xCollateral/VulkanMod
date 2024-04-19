@@ -492,8 +492,8 @@ public class Renderer {
         return true;
     }
 
-    public void uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
-        pipeline.bindDescriptorSets(currentFrame, shouldUpdate);
+    public int uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
+        return pipeline.bindDescriptorSets(currentFrame, shouldUpdate);
     }
 
     public void pushConstants(Pipeline pipeline) {

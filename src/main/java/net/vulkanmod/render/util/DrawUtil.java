@@ -26,7 +26,7 @@ public class DrawUtil {
 
         BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
 
-        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount());
+        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount(), 0);
 
     }
 
@@ -41,7 +41,7 @@ public class DrawUtil {
 
         BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
 
-        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount());
+        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount(), 0);
 
     }
 

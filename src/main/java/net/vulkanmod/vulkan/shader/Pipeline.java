@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
-import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
@@ -19,7 +18,6 @@ import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
-import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
@@ -132,9 +130,9 @@ public abstract class Pipeline {
 
     public static long getLayout() { return pipelineLayout; }
 
-    public void bindDescriptorSets(int frame, boolean shouldUpdate) {
+    public int bindDescriptorSets(int frame, boolean shouldUpdate) {
         UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
-        this.descriptorSets[frame].updateSets(uniformBuffers, shouldUpdate);
+        return this.descriptorSets[frame].updateSets(uniformBuffers, shouldUpdate);
     }
 
     public void bindDescriptorSets(UniformBuffers uniformBuffers, int frame, boolean shouldUpdate) {
@@ -180,7 +178,7 @@ public abstract class Pipeline {
 
 
 
-        protected void updateSets(UniformBuffers uniformBuffers, boolean shouldUpdate) {
+        protected int updateSets(UniformBuffers uniformBuffers, boolean shouldUpdate) {
 
 
             //                    final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
@@ -190,7 +188,7 @@ public abstract class Pipeline {
             this.updateImageState();
 //                    this.updateDescriptorSet(stack, uniformBuffers, !this.bound);
 
-
+            return currentTexture;
 //                 {
 //                     final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
 //                     vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
@@ -212,13 +210,14 @@ public abstract class Pipeline {
 
                 final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
-              if(shaderTexture!=0)
+              if(state.getStages()!=VK_PIPELINE_STAGE_VERTEX_SHADER_BIT && shaderTexture!=0)
               {
-                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
+//                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
-                  descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, vulkanImage);
+                  descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, null);
                   this.currentTexture = descriptorSetArray.getInitialisedFragSamplers().TextureID2SamplerIdx(shaderTexture);
               }
+              else this.currentTexture = 0;
 
 
 

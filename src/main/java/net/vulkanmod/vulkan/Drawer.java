@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.UniformState;
-import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -68,7 +67,7 @@ public class Drawer {
         this.uniformBuffers.reset();
     }
 
-    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount)
+    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount, int textureID)
     {
         AutoIndexBuffer autoIndexBuffer;
         int indexCount;
@@ -98,7 +97,7 @@ public class Drawer {
 
         autoIndexBuffer.checkCapacity(vertexCount);
 
-        drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
+        drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount, textureID);
     }
 
     public void updateUniformOffset() {
@@ -126,7 +125,7 @@ public class Drawer {
 
     public UniformBuffers getUniformBuffers() { return this.uniformBuffers; }
 
-    public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+    public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount, int textureID) {
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
         VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
@@ -134,7 +133,8 @@ public class Drawer {
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
-        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, currentUniformOffset);
+        final int baseInstance = textureID << 16 | currentUniformOffset;
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, baseInstance);
     }
 
     public void draw(VertexBuffer vertexBuffer, int vertexCount) {

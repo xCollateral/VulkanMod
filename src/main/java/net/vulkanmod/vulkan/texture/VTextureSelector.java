@@ -130,7 +130,7 @@ public abstract class VTextureSelector {
     }
 
 
-
+    //TODO: Hanlde Atas registration: Atlas stitching is Async + other async Texture Loaders e.g.
     public static void registerTexture(int vulkanImage, int bindingID, ResourceLocation resourceLocation)
     {
 

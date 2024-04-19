@@ -26,7 +26,8 @@ public class GlTexture {
         GlTexture texture = map.get(id);
         texture.vulkanImage = vulkanImage;
     }
-
+    //TODO: Maybe bypass TextureIDs for Reserved slots + (e.g. Atlases)
+    // + May alos be optimal as a tmep workaround for Async Texture Atlas loader
     public static int genTextureId() {
         int id = ID_COUNTER;
         map.put(id, new GlTexture(id));
