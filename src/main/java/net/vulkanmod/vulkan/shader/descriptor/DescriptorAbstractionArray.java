@@ -2,11 +2,6 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.InventoryMenu;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.Iterator;
-import java.util.function.Consumer;
 
 public class DescriptorAbstractionArray {
 
@@ -76,14 +71,15 @@ public class DescriptorAbstractionArray {
     }
 
     //Add a new textureID registation/index to the Descripotr Array
-    public void registerTexture(int texID) {
-        if (texID2DescIdx.containsKey(texID)) return;
+    public boolean registerTexture(int texID) {
+        if (texID2DescIdx.containsKey(texID)) return false;
 //        if (texIds[texID] != 0 && texIds[texID] != imageView)
 //            throw new RuntimeException(texIds[texID] + " != " + imageView);
 //        texIds[texID] = ++samplerRange;
 //        textureSamplerHndls[samplerRange] = imageView;
 
         texID2DescIdx.put(texID, samplerRange++);
+        return true;
 
     }
 

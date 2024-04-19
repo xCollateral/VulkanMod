@@ -15,6 +15,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.Arrays;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -81,8 +82,15 @@ public class DescriptorSetArray {
     public void registerTexture(int binding, int TextureID, VulkanImage vulkanImage)
     {
         //TODO:maybe make textureID table global, then asign Ids+SampelrIndicies to DescriptorSetsBindinss
-       if(binding==0) this.initialisedFragSamplers.registerTexture(TextureID);
-       else initialisedVertSamplers.registerTexture(TextureID);
+        boolean needsUpdate = switch (binding) {
+            case 0 -> this.initialisedFragSamplers.registerTexture(TextureID);
+            default -> initialisedVertSamplers.registerTexture(TextureID);
+        };
+
+        if(needsUpdate)
+        {
+            Arrays.fill(this.isUpdated, false);
+        }
     }
 
     public DescriptorSetArray() {
@@ -261,56 +269,58 @@ public class DescriptorSetArray {
         }
         try(MemoryStack stack = stackPush()) {
             final long currentSet = descriptorSets.get(frame);
+            if(!this.isUpdated[frame]) {
+                final int NUM_UBOs = 2;
+                final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs;
+                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 
-            final int NUM_UBOs = 2;
-            final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs;
-            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
-
-            int x = 0;
-            ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
-            //1 : Light_DIR_ vectors
-            //2: Inv Dir Vectors
-            //3: Global mob Rot + MAt4
-
-
-            // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
-
-            //Fog Parameters = ColorModulator -> PushConstants
-
-            //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
-            int currentBinding = 0;
+                int x = 0;
+                ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
+                //1 : Light_DIR_ vectors
+                //2: Inv Dir Vectors
+                //3: Global mob Rot + MAt4
 
 
-            for (int currentWriteIndex = 0; currentWriteIndex < 2; currentWriteIndex++) {
+                // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
+
+                //Fog Parameters = ColorModulator -> PushConstants
+
+                //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
+                int currentBinding = 0;
 
 
-                VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
-                bufferInfos.buffer(uniformId);
-                bufferInfos.offset(x);
-                bufferInfos.range(1024);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
-                x += 1024;
-
-                //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
-                VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
-                uboDescriptorWrite.sType$Default();
-                uboDescriptorWrite.dstBinding(currentBinding);
-                uboDescriptorWrite.dstArrayElement(0);
-                uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uboDescriptorWrite.descriptorCount(1);
-                uboDescriptorWrite.pBufferInfo(bufferInfos);
-                uboDescriptorWrite.dstSet(currentSet);
-                currentBinding++;
-            }
+                for (int currentWriteIndex = 0; currentWriteIndex < 2; currentWriteIndex++) {
 
 
-            //                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
+                    VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
+                    bufferInfos.buffer(uniformId);
+                    bufferInfos.offset(x);
+                    bufferInfos.range(1024);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+                    x += 1024;
+
+                    //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
+                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
+                    uboDescriptorWrite.sType$Default();
+                    uboDescriptorWrite.dstBinding(currentBinding);
+                    uboDescriptorWrite.dstArrayElement(0);
+                    uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+                    uboDescriptorWrite.descriptorCount(1);
+                    uboDescriptorWrite.pBufferInfo(bufferInfos);
+                    uboDescriptorWrite.dstSet(currentSet);
+                    currentBinding++;
+                }
+
+
+                //                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
 //
-                        final int fragSamplerOffset = NUM_UBOs + this.initialisedVertSamplers.currentSize();
-            isInvalidImages(stack, descriptorWrites, NUM_UBOs, currentSet, this.initialisedVertSamplers);
-            isInvalidImages(stack, descriptorWrites, fragSamplerOffset, currentSet, this.initialisedFragSamplers);
+                final int fragSamplerOffset = NUM_UBOs + this.initialisedVertSamplers.currentSize();
+                isInvalidImages(stack, descriptorWrites, NUM_UBOs, currentSet, this.initialisedVertSamplers);
+                isInvalidImages(stack, descriptorWrites, fragSamplerOffset, currentSet, this.initialisedFragSamplers);
 
 
-            vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+                vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+                this.isUpdated[frame] = true;
+            }
 
             //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getLayout(),

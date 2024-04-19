@@ -188,7 +188,7 @@ public abstract class Pipeline {
             this.updateImageState();
 //                    this.updateDescriptorSet(stack, uniformBuffers, !this.bound);
 
-            return currentTexture;
+            return imageDescriptors.isEmpty() ? 0 : currentTexture;
 //                 {
 //                     final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
 //                     vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
