@@ -208,7 +208,7 @@ public abstract class Pipeline {
 
 //                 if(state.getStages()!=VK_SHADER_STAGE_VERTEX_BIT) VTextureSelector.assertImageState(state.imageIdx);
 
-                final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
+                final int shaderTexture = VTextureSelector.getBoundId(state.imageIdx);
 
               if(state.getStages()!=VK_PIPELINE_STAGE_VERTEX_SHADER_BIT && shaderTexture!=0)
               {
