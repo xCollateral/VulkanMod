@@ -59,8 +59,6 @@ public class DrawUtil {
         RenderSystem.applyModelViewMatrix();
         posestack.popPose();
 
-        Renderer.getInstance().checkUBOs(pipeline, true);
-
         blitQuad(0.0D, 0.0D, 1.0D, 1.0D);
     }
 }

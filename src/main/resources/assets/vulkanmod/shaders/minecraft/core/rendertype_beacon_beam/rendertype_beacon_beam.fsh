@@ -10,7 +10,7 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 }
 
 
-layout(binding = 3) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
 layout(location = 0) in vec4 vertexColor;
 layout(location = 1) in vec2 texCoord0;
@@ -18,7 +18,7 @@ layout(location = 1) in vec2 texCoord0;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0, texCoord0);
+    vec4 color = texture(Sampler0[4], texCoord0);
     color *= vertexColor;
     float fragmentDistance = -((gl_FragCoord.z) * -2.0 + 1.0);
     fragColor = color;

@@ -487,12 +487,12 @@ public class Renderer {
 ////            Initializer.LOGGER.warn("Double Bind: "+pipeline.name);
 //            return true;
 //        }
-
+        this.checkUBOs(pipeline, true);
         addUsedPipeline(pipeline);
         return true;
     }
 
-    public void checkUBOs(Pipeline pipeline, boolean shouldUpdate) {
+    private void checkUBOs(Pipeline pipeline, boolean shouldUpdate) {
        if(shouldUpdate) pipeline.pushUniforms(drawer.getUniformBuffers(), currentFrame);
     }
 

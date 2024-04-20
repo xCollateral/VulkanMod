@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader.descriptor;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.blockentity.BeaconRenderer;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -275,9 +276,11 @@ public class DescriptorSetArray {
 
 //            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
             final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId());
+            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId());
             this.initialisedVertSamplers.registerTexture(6);
         }
         try(MemoryStack stack = stackPush()) {

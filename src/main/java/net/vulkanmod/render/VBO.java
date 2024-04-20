@@ -119,7 +119,7 @@ public class VBO {
 
             Renderer renderer = Renderer.getInstance();
             boolean b = renderer.bindGraphicsPipeline(pipeline);
-            renderer.checkUBOs(pipeline, b);
+
             if(Initializer.CONFIG.renderSky)
             {
                 int textureID = pipeline.updateImageState();

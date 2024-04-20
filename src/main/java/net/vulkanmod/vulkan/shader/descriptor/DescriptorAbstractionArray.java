@@ -116,8 +116,11 @@ public class DescriptorAbstractionArray {
     public boolean removeTexture(int id) {
 
         if(!this.texID2DescIdx.containsKey(id)) return false;
-        this.texID2DescIdx.remove(id);
-        samplerRange--;
+       int freedDescIdx = this.texID2DescIdx.remove(id);
+
+        //TODO; Fix gaps/Incontiguity when Texture Slots are Freed/removed
+
+        samplerRange = Math.min(samplerRange, freedDescIdx);
         return true;
     }
 }
