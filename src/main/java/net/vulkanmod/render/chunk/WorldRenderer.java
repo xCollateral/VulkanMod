@@ -43,6 +43,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.util.*;
 
@@ -318,9 +319,11 @@ public class WorldRenderer {
             Renderer renderer = Renderer.getInstance();
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             boolean b = renderer.bindGraphicsPipeline(pipeline);
-            Renderer.getDrawer().bindAutoIndexBuffer(Renderer.getCommandBuffer(), 7);
+            final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
+            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
             renderer.uploadAndBindUBOs(pipeline, b);
+
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
                 var queue = chunkArea.sectionQueue;
@@ -328,7 +331,7 @@ public class WorldRenderer {
 
                 if (drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(Renderer.getCommandBuffer(), pipeline, terrainRenderType, camX, camY, camZ);
+                    drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
 
 
                     if (indirectDraw)

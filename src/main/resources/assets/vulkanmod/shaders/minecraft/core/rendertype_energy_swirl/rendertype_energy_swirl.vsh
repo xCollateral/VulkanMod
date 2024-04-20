@@ -10,13 +10,13 @@ layout(binding = 0) uniform UniformBufferObject {
    mat4 TextureMat;
 };
 
-layout(location = 0) out float vertexDistance;
+layout(location = 0) invariant flat out uint baseInstance;
 layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out vec2 texCoord0;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance] * vec4(Position, 1.0);
-
+    gl_Position = MVP[gl_BaseInstance & 63] * vec4(Position, 1.0);
+    baseInstance = gl_BaseInstance >> 16;
 
     vertexColor = Color;
     texCoord0 = (TextureMat * vec4(UV0, 0.0, 1.0)).xy;

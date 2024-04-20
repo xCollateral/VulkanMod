@@ -188,7 +188,7 @@ public abstract class Pipeline {
             this.updateImageState();
 //                    this.updateDescriptorSet(stack, uniformBuffers, !this.bound);
 
-            return imageDescriptors.isEmpty() ? 0 : currentTexture;
+            return currentTexture;
 //                 {
 //                     final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
 //                     vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
@@ -217,7 +217,6 @@ public abstract class Pipeline {
                   descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, null);
                   this.currentTexture = descriptorSetArray.getInitialisedFragSamplers().TextureID2SamplerIdx(shaderTexture);
               }
-              else this.currentTexture = 0;
 
 
 
@@ -268,6 +267,7 @@ public abstract class Pipeline {
 
                 int alignedSize = VUtil.align(ubo.getSize(), 64);//Only the Uniform descriptor needs to be aligned, not the contents
                 uniformBuffers.checkCapacity(alignedSize);
+//                int x = (ubo.getStages()&VK_SHADER_STAGE_FRAGMENT_BIT)!=0 ? 1024 : 0;
                 ubo.update(uniformBuffers.getPointer(frame));
 
                 uniformBuffers.updateOffset(alignedSize);

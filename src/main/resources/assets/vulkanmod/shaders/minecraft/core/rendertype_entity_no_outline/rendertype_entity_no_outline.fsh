@@ -21,7 +21,7 @@ layout(location = 3) in float vertexDistance;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0[2], texCoord0) * vertexColor;
+    vec4 color = texture(Sampler0[1], texCoord0) * vertexColor;
     fragColor = color;
 }
 

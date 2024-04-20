@@ -15,15 +15,15 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(binding = 2) uniform sampler2D Sampler2;
 
-layout(location = 0) out vec4 vertexColor;
-layout(location = 1) out vec4 lightMapColor;
-layout(location = 2) out vec4 overlayColor;
-layout(location = 3) out vec2 texCoord0;
-layout(location = 4) out vec3 normal;
-layout(location = 5) out float vertexDistance;
+layout(location = 0) out invariant flat uint baseInstance;
+layout(location = 1) out vec4 vertexColor;
+layout(location = 2) out vec4 lightMapColor;
+layout(location = 3) out vec4 overlayColor;
+layout(location = 4) out vec2 texCoord0;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance&63] * vec4(Position, 1.0);
+    baseInstance = gl_BaseInstance>>16;
 
 
     vertexColor = Color;//minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);

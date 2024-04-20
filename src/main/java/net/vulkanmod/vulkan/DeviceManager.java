@@ -165,16 +165,16 @@ public abstract class DeviceManager {
             final boolean hasIndexedDescriptors = deviceInfo.isHasIndexedDescriptors();
             VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
                     .sType$Default()
-                    .runtimeDescriptorArray(hasIndexedDescriptors)
-                    .descriptorBindingPartiallyBound(hasIndexedDescriptors)
-
-                    .descriptorBindingSampledImageUpdateAfterBind(hasIndexedDescriptors)
-                    .descriptorBindingUniformBufferUpdateAfterBind(deviceInfo.isHasBindlessUBOs())
-
-                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors)
-                    .descriptorBindingUpdateUnusedWhilePending(hasIndexedDescriptors)
-
-                    .shaderSampledImageArrayNonUniformIndexing(hasIndexedDescriptors);
+                    .runtimeDescriptorArray(hasIndexedDescriptors);
+//                    .descriptorBindingPartiallyBound(false)
+//
+//                    .descriptorBindingSampledImageUpdateAfterBind(false)
+//                    .descriptorBindingUniformBufferUpdateAfterBind(false)
+//
+//                    .descriptorBindingVariableDescriptorCount(false)
+//                    .descriptorBindingUpdateUnusedWhilePending(false)
+//
+//                    .shaderSampledImageArrayNonUniformIndexing(false);
 
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);

@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -10,7 +9,6 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -134,7 +132,7 @@ public class DescriptorSetArray {
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
-            bindingFlags.put(VERTEX_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK12.VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+            bindingFlags.put(VERTEX_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
 
 
             bindings.get(FRAG_SAMPLER_ID)
@@ -144,7 +142,7 @@ public class DescriptorSetArray {
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            bindingFlags.put(FRAG_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK12.VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+            bindingFlags.put(FRAG_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
 
 
             VkDescriptorSetLayoutBindingFlagsCreateInfo setLayoutBindingsFlags = VkDescriptorSetLayoutBindingFlagsCreateInfo.calloc(stack)
@@ -155,9 +153,8 @@ public class DescriptorSetArray {
 
             VkDescriptorSetLayoutCreateInfo vkDescriptorSetLayoutCreateInfo = VkDescriptorSetLayoutCreateInfo.calloc(stack)
                     .sType$Default()
-                    .pNext(setLayoutBindingsFlags)
-                    .pBindings(bindings)
-                    .flags(VK12.VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT);
+//                    .pNext(setLayoutBindingsFlags)
+                    .pBindings(bindings);
 
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
@@ -222,7 +219,6 @@ public class DescriptorSetArray {
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-            poolInfo.flags(VK12.VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT);
             poolInfo.pPoolSizes(poolSizes);
             poolInfo.maxSets(value); //One DSet for each binding
 
@@ -270,9 +266,10 @@ public class DescriptorSetArray {
             this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
 
 
-            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
+//            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
             this.initialisedFragSamplers.registerTexture(Minecraft.getInstance().getTextureManager().getTexture(InventoryMenu.BLOCK_ATLAS).getId());
             this.initialisedFragSamplers.registerTexture(Minecraft.getInstance().getTextureManager().getTexture(Sheets.BANNER_SHEET).getId());
+            this.initialisedFragSamplers.registerTexture(Minecraft.getInstance().getTextureManager().getTexture(TextureAtlas.LOCATION_PARTICLES).getId());
             this.initialisedVertSamplers.registerTexture(6);
         }
         try(MemoryStack stack = stackPush()) {
@@ -307,7 +304,7 @@ public class DescriptorSetArray {
                     x += 1024;
 
                     //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
-                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(currentBinding);
+                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
                     uboDescriptorWrite.sType$Default();
                     uboDescriptorWrite.dstBinding(currentBinding);
                     uboDescriptorWrite.dstArrayElement(0);
@@ -321,11 +318,10 @@ public class DescriptorSetArray {
 
                 //                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
 //
-                final int fragSamplerOffset = NUM_UBOs + this.initialisedVertSamplers.currentSize();
-                isInvalidImages(stack, descriptorWrites, NUM_UBOs, currentSet, this.initialisedVertSamplers);
-                isInvalidImages(stack, descriptorWrites, fragSamplerOffset, currentSet, this.initialisedFragSamplers);
+                isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedVertSamplers);
+                isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
 
-
+                descriptorWrites.rewind();
                 vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
                 this.isUpdated[frame] = true;
             }
@@ -337,7 +333,7 @@ public class DescriptorSetArray {
         }
     }
 
-    private void isInvalidImages(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, int currentWriteIndex, long currentSet, DescriptorAbstractionArray descriptorArray) {
+    private void isInvalidImages(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, DescriptorAbstractionArray descriptorArray) {
         //TODO: Need DstArrayIdx, ImageView, or DstArrayIdx, TextureID to enumerate/initialise the DescriptorArray
         if(descriptorArray.currentSize()==0) return;
 
@@ -358,7 +354,7 @@ public class DescriptorSetArray {
                     .imageView(image.getImageView())
                     .sampler(defFragSampler);
 
-            final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get(currentWriteIndex);
+            final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get();
             vkWriteDescriptorSet.sType$Default()
                     .dstBinding(descriptorArray.getBinding())
                     .dstArrayElement(samplerIndex)
@@ -368,7 +364,7 @@ public class DescriptorSetArray {
                     .dstSet(currentSet);
 
 
-            currentWriteIndex++;
+
 
         }
     }
