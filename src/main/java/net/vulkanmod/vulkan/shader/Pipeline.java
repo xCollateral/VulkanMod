@@ -62,13 +62,6 @@ public abstract class Pipeline {
         vkDestroyPipelineCache(DEVICE, PIPELINE_CACHE, null);
     }
 
-    public static void recreateDescriptorSets(int frames) {
-//        PIPELINES.forEach(pipeline -> {
-//            pipeline.destroyDescriptorSets();
-//            pipeline.createDescriptorSets(frames);
-//        });
-    }
-
     public final String name;
 
 //    protected static long descriptorSetLayout;
@@ -159,47 +152,27 @@ public abstract class Pipeline {
     }
 
     protected class DescriptorSets {
-        //        private long descriptorPool;
-
         private final int frame;
-        private int currentTexture;
-//        private final ImageDescriptor[] boundTextures = new ImageDescriptor[imageDescriptors.size()];
+
 
         DescriptorSets(int frame) {
             this.frame = frame;
-
-//            Arrays.setAll(boundTextures, i -> new ImageDescriptor(0, 0));
-
-//            try(MemoryStack stack = stackPush()) {
-//                this.createDescriptorPool(stack);
-//                this.createDescriptorSets(stack);
-//            }
         }
 
 
 
         protected int updateSets(UniformBuffers uniformBuffers, boolean shouldUpdate) {
 
-
-            //                    final boolean textureUpdate = this.transitionSamplers(uniformBuffers);
-
             if(shouldUpdate) this.pushUniforms(uniformBuffers);
 
-            this.updateImageState();
-//                    this.updateDescriptorSet(stack, uniformBuffers, !this.bound);
-
-            return currentTexture;
-//                 {
-//                     final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
-//                     vkCmdBindDescriptorSets(commandBuffer, bindPoint, pipelineLayout,
-//                             0, descriptorSets, null);
-//                     this.bound = true;
-//                 }
+            return this.updateImageState();
 
 
         }
 
-        private void updateImageState() {
+        private int updateImageState() {
+
+            int currentTexture = 0;
 
             for(ImageDescriptor state : imageDescriptors)
             {
@@ -215,39 +188,18 @@ public abstract class Pipeline {
 //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
                   descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, null);
-                  this.currentTexture = descriptorSetArray.getInitialisedFragSamplers().TextureID2SamplerIdx(shaderTexture);
+                  currentTexture = descriptorSetArray.getInitialisedFragSamplers().TextureID2SamplerIdx(shaderTexture);
               }
 
 
-
-
             }
+            return currentTexture;
 
         }
 
 
         private void pushUniforms(UniformBuffers uniformBuffers) {
             int currentOffset = uniformBuffers.getUsedBytes();
-            //TODO: Might be possible to replace w/ BaseDeviceAddress + Pointer Arithmetic
-            int i = 0;
-//            final boolean contains = name.contains("energy")|name.contains("entity_cutout");
-//
-//            if(contains)
-//            {
-//                uniformBuffers.reset();
-////                return;
-////                uniformBuffers.updateOffset(128);
-//            }
-//            if(name.contains("terrain"))
-//            {
-//                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
-//                uniformBuffers.updateOffset(64);
-//            }
-//            if(name.contains("text"))
-//            {
-//                uniformBuffers.reset(); //TODO: maybe make this behave like Push/Pop Matrix w. Matrix Stack
-//                uniformBuffers.updateOffset(128);
-//            }
 
             //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
             // + PreComputed/dynamic uniform offset table: Automatically optimise/+remove redundant hashes+contents, and use Offsets w/ matching hashed instead of using linear bump allocation
@@ -259,9 +211,6 @@ public abstract class Pipeline {
            if(UniformState.MVP.requiresUpdate()&&!UniformState.MVP.hasUniqueHash()) {
                UniformState.MVP.storeCurrentOffset(currentOffset);
             for(UBO ubo : buffers) {
-//                ubo.update();
-//                uniformBuffers.uploadUBO(ubo.getBuffer(), currentOffset, frame);
-
 
                 //TODO non mappable memory
 
@@ -272,9 +221,9 @@ public abstract class Pipeline {
 
                 uniformBuffers.updateOffset(alignedSize);
 
-                ++i;
             }
-               UniformState.MVP.resetAndUpdate();
+
+            UniformState.MVP.resetAndUpdate();
             Renderer.getDrawer().updateUniformOffset();
             }
 
@@ -421,7 +370,6 @@ public abstract class Pipeline {
         private void parseSamplerNode(JsonElement jsonelement) {
             JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "Sampler");
             String name = GsonHelper.getAsString(jsonobject, "name");
-            int binding = GsonHelper.getAsInt(jsonobject, "binding");
 
             int imageIdx = VTextureSelector.getTextureIdx(name);
             final ImageDescriptor sampler2D = new ImageDescriptor("sampler2D", name, imageIdx);

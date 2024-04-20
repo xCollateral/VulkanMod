@@ -7,9 +7,7 @@ public class DescriptorAbstractionArray {
 
 //    private final Int2IntArrayMap textureID2DescIDMap = new Int2IntArrayMap(32);
 
-    final int[] texIds, descriptorIndices;
 
-    final long[] textureSamplerHndls;
     final int maxSize;
     private final int shaderStage;
     private final int descriptorBinding;
@@ -19,12 +17,9 @@ public class DescriptorAbstractionArray {
 
     /*Abstracts between OpenGl texture Bindings and and Initialised descrtior indicies for this particualr dEscriptir Binding*/
     public DescriptorAbstractionArray(int reserveTextureRange, int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
-        texIds = new int[maxSize];
-        descriptorIndices = new int[maxSize];
         this.maxSize = maxSize;
         this.shaderStage = shaderStage;
         this.descriptorBinding = descriptorBinding;
-        textureSamplerHndls = new long[maxSize];
 
         samplerRange = reserveTextureRange; //Thanks to Partially Bound, don't need to worry about initialising all the handles in the Descriptor Array
         this.texID2DescIdx = new Int2IntOpenHashMap(maxSize);
@@ -96,10 +91,10 @@ public class DescriptorAbstractionArray {
     }
 
     //Convert a TextureID to an Imageview
-    public long TextureID2imageView(int textureID) {
-        return textureSamplerHndls[this.TextureID2SamplerIdx(textureID)];
-    }
-    //TODO; Handle Freeing Images
+//    public long TextureID2imageView(int textureID) {
+//        return textureSamplerHndls[this.TextureID2SamplerIdx(textureID)];
+//    }
+    //TODO; Handle Freeing Images + VUID-vkDestroyImage-image-01000 (Free During Use)
     //
     //Using LongIterator to avoid Unboxing
 

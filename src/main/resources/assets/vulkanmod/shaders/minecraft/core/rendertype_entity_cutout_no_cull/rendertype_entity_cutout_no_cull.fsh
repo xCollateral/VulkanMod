@@ -29,6 +29,6 @@ void main() {
     }
     color *= vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
-    color *= lightMapColor;
+    //color *= lightMapColor;
     fragColor = color;
 }

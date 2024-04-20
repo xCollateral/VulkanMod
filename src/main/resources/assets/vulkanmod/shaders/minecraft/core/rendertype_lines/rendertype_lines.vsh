@@ -3,12 +3,11 @@
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 layout(location = 2) in vec3 Normal;
-
+   const vec2 ScreenSize = vec2(1920, 1080);
+   float LineWidth = 1.0f;
 layout(binding = 0) uniform UniformBufferObject {
    mat4 ModelViewMat;
    mat4 ProjMat;
-   vec2 ScreenSize;
-   float LineWidth;
 };
 
 layout(location = 1) out float vertexDistance;

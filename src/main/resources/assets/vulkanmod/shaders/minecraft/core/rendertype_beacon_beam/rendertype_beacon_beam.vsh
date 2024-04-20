@@ -12,7 +12,7 @@ layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec2 texCoord0;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 63] * vec4(Position, 1.0);
 
     vertexColor = Color;
     texCoord0 = UV0;

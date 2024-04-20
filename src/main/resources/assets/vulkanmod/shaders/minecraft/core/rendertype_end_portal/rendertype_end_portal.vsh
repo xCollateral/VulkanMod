@@ -17,7 +17,7 @@ layout(binding = 0) uniform UniformBufferObject {
 layout(location = 0) out vec4 texProj0;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 63] * vec4(Position, 1.0);
 
     texProj0 = projection_from_position(gl_Position);
 }
