@@ -3,7 +3,7 @@
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP;
 };
 

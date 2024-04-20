@@ -150,7 +150,7 @@ public abstract class Pipeline {
 
                 final int shaderTexture = VTextureSelector.getBoundId(state.imageIdx);
 
-              if(state.imageIdx == 0)
+              if(shaderTexture != 0)
               {
 //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();

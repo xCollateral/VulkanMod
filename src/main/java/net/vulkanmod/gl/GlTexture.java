@@ -1,6 +1,7 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
@@ -57,7 +58,10 @@ public class GlTexture {
         GlTexture glTexture = map.remove(i);
         VulkanImage image = glTexture != null ? glTexture.vulkanImage : null;
         if(image != null)
+        {
             MemoryManager.getInstance().addToFreeable(image);
+            Renderer.getDescriptorSetArray().removeImage(glTexture.id);
+        }
     }
 
     public static GlTexture getTexture(int id) {

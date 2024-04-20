@@ -87,22 +87,30 @@ public abstract class Matrix4fM {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        int result2 = 1;
+        int result3 = 1;
+        int result4 = 1;
+
         result = prime * result + Float.floatToRawIntBits(m00());
         result = prime * result + Float.floatToRawIntBits(m01());
         result = prime * result + Float.floatToRawIntBits(m02());
         result = prime * result + Float.floatToRawIntBits(m03());
-        result = prime * result + Float.floatToRawIntBits(m10());
-        result = prime * result + Float.floatToRawIntBits(m11());
-        result = prime * result + Float.floatToRawIntBits(m12());
-        result = prime * result + Float.floatToRawIntBits(m13());
-        result = prime * result + Float.floatToRawIntBits(m20());
-        result = prime * result + Float.floatToRawIntBits(m21());
-        result = prime * result + Float.floatToRawIntBits(m22());
-        result = prime * result + Float.floatToRawIntBits(m23());
-        result = prime * result + Float.floatToRawIntBits(m30());
-        result = prime * result + Float.floatToRawIntBits(m31());
-        result = prime * result + Float.floatToRawIntBits(m32());
-        result = prime * result + Float.floatToRawIntBits(m33());
-        return result;
+
+        result2 = prime * result2 + Float.floatToRawIntBits(m10());
+        result2 = prime * result2 + Float.floatToRawIntBits(m11());
+        result2 = prime * result2 + Float.floatToRawIntBits(m12());
+        result2 = prime * result2 + Float.floatToRawIntBits(m13());
+
+        result3 = prime * result3 + Float.floatToRawIntBits(m20());
+        result3 = prime * result3 + Float.floatToRawIntBits(m21());
+        result3 = prime * result3 + Float.floatToRawIntBits(m22());
+        result3 = prime * result3 + Float.floatToRawIntBits(m23());
+
+        result4 = prime * result4 + Float.floatToRawIntBits(m30());
+        result4 = prime * result4 + Float.floatToRawIntBits(m31());
+        result4 = prime * result4 + Float.floatToRawIntBits(m32());
+        result4 = prime * result4 + Float.floatToRawIntBits(m33());
+
+        return result+result2+result3+result4;
     }
 }

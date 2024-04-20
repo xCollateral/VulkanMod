@@ -202,7 +202,7 @@ public class EffectInstanceM {
             uniform.upload();
         }
 
-        renderer.uploadAndBindUBOs(pipeline, true);
+        renderer.checkUBOs(pipeline, true);
 
     }
 

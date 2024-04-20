@@ -6,8 +6,8 @@ layout(location = 2) in vec2 UV0;
 layout(location = 3) in ivec2 UV2;
 layout(location = 4) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP[64];
+layout(binding = 0) uniform readonly UniformBufferObject {
+   mat4 MVP[16];
 };
 
 layout(location = 0) out vec4 vertexColor;

@@ -1,7 +1,6 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import net.minecraft.resources.ResourceLocation;
 
 public class DescriptorAbstractionArray {
 
@@ -112,5 +111,13 @@ public class DescriptorAbstractionArray {
 
     public int getBinding() {
         return this.descriptorBinding;
+    }
+
+    public boolean removeTexture(int id) {
+
+        if(!this.texID2DescIdx.containsKey(id)) return false;
+        this.texID2DescIdx.remove(id);
+        samplerRange--;
+        return true;
     }
 }

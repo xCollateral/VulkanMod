@@ -9,8 +9,8 @@ layout(location = 3) in ivec2 UV1;
 layout(location = 4) in ivec2 UV2;
 layout(location = 5) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP[64];
+layout(binding = 0) uniform readonly UniformBufferObject {
+   mat4 MVP[16];
 };
 
 layout(binding = 2) uniform sampler2D Sampler2;
@@ -23,7 +23,7 @@ layout(location = 4) out vec2 texCoord0;
 layout(location = 5) out float vertexDistance;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 63] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 15] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
 
     vertexColor = Color;//minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);

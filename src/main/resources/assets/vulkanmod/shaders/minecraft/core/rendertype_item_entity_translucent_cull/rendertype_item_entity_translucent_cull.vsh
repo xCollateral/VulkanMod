@@ -9,7 +9,7 @@ layout(location = 3) in ivec2 UV1;
 layout(location = 4) in ivec2 UV2;
 layout(location = 5) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP;
    vec3 Light0_Direction;
    vec3 Light1_Direction;

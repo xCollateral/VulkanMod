@@ -10,14 +10,14 @@ vec4 projection_from_position(vec4 position) {
 
 layout(location = 0) in vec3 Position;
 
-layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP[64];
+layout(binding = 0) uniform readonly UniformBufferObject {
+   mat4 MVP[16];
 };
 
 layout(location = 0) out vec4 texProj0;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance & 63] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 15] * vec4(Position, 1.0);
 
     texProj0 = projection_from_position(gl_Position);
 }

@@ -17,6 +17,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
+import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -99,7 +100,7 @@ public class DescriptorSetArray {
 
     public int getTexture(int binding, int TextureID)
     {
-        return binding == 0 ? initialisedFragSamplers.TextureID2SamplerIdx(TextureID) : 0;
+        return binding == 0 ? initialisedFragSamplers.TextureID2SamplerIdx(TextureID) : initialisedVertSamplers.TextureID2SamplerIdx(TextureID);
     }
 
     public DescriptorSetArray() {
@@ -393,5 +394,10 @@ public class DescriptorSetArray {
         vkDestroyDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, null);
         vkDestroySampler(DEVICE, this.defFragSampler, null);
         MemoryUtil.memFree(descriptorSets);
+    }
+
+    public void removeImage(int id) {
+        if(this.initialisedFragSamplers.removeTexture(id))
+            Arrays.fill(this.isUpdated, false);
     }
 }

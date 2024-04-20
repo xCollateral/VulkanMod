@@ -5,7 +5,7 @@ layout(location = 1) in vec2 UV0;
 layout(location = 2) in vec4 Color;
 layout(location = 3) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP;
 };
 
