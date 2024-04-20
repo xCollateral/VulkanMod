@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan.shader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.*;
@@ -67,7 +66,8 @@ public abstract class Pipeline {
 //    protected static long descriptorSetLayout;
     protected static final long pipelineLayout = createPipelineLayout();
 
-    protected DescriptorSets[] descriptorSets;
+
+
     protected List<UBO> buffers;
     protected List<ImageDescriptor> imageDescriptors;
     protected PushConstants pushConstants;
@@ -110,27 +110,11 @@ public abstract class Pipeline {
         }
     }
 
-    protected void createDescriptorSets(int frames) {
-        descriptorSets = new DescriptorSets[frames];
-        for(int i = 0; i < frames; ++i) {
-            descriptorSets[i] = new DescriptorSets(i);
-        }
-    }
-
     public abstract void cleanUp();
 
     public PushConstants getPushConstants() { return this.pushConstants; }
 
     public static long getLayout() { return pipelineLayout; }
-
-    public int bindDescriptorSets(int frame, boolean shouldUpdate) {
-        UniformBuffers uniformBuffers = Renderer.getDrawer().getUniformBuffers();
-        return this.descriptorSets[frame].updateSets(uniformBuffers, shouldUpdate);
-    }
-
-    public void bindDescriptorSets(UniformBuffers uniformBuffers, int frame, boolean shouldUpdate) {
-        this.descriptorSets[frame].updateSets(uniformBuffers, shouldUpdate);
-    }
 
     static long createShaderModule(ByteBuffer spirvCode) {
 
@@ -151,26 +135,9 @@ public abstract class Pipeline {
         }
     }
 
-    protected class DescriptorSets {
-        private final int frame;
 
 
-        DescriptorSets(int frame) {
-            this.frame = frame;
-        }
-
-
-
-        protected int updateSets(UniformBuffers uniformBuffers, boolean shouldUpdate) {
-
-            if(shouldUpdate) this.pushUniforms(uniformBuffers);
-
-            return this.updateImageState();
-
-
-        }
-
-        private int updateImageState() {
+        public int updateImageState() {
 
             int currentTexture = 0;
 
@@ -183,12 +150,12 @@ public abstract class Pipeline {
 
                 final int shaderTexture = VTextureSelector.getBoundId(state.imageIdx);
 
-              if(state.getStages()!=VK_PIPELINE_STAGE_VERTEX_SHADER_BIT && shaderTexture!=0)
+              if(state.imageIdx == 0)
               {
 //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
                   descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, null);
-                  currentTexture = descriptorSetArray.getInitialisedFragSamplers().TextureID2SamplerIdx(shaderTexture);
+                  currentTexture = descriptorSetArray.getTexture(state.imageIdx, shaderTexture);
               }
 
 
@@ -198,7 +165,7 @@ public abstract class Pipeline {
         }
 
 
-        private void pushUniforms(UniformBuffers uniformBuffers) {
+        public void pushUniforms(UniformBuffers uniformBuffers, int frame) {
             int currentOffset = uniformBuffers.getUsedBytes();
 
             //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
@@ -208,29 +175,33 @@ public abstract class Pipeline {
             // TODO: e.g. fine the hash of the TOPMOSt uniform, them if the hash matches, overwrite the prior data w. the new non-aligned uniforms
 
 
-           if(UniformState.MVP.requiresUpdate()&&!UniformState.MVP.hasUniqueHash()) {
+           if(!UniformState.MVP.hasUniqueHash()) {
                UniformState.MVP.storeCurrentOffset(currentOffset);
             for(UBO ubo : buffers) {
 
                 //TODO non mappable memory
 
-                int alignedSize = VUtil.align(ubo.getSize(), 64);//Only the Uniform descriptor needs to be aligned, not the contents
-                uniformBuffers.checkCapacity(alignedSize);
+             if(ubo.getUniforms().size()==1 && ubo.getUniforms().stream().anyMatch(uniform -> Objects.equals(uniform.getName(), "MVP")))
+             {
+                 int alignedSize = VUtil.align(ubo.getSize(), 64);//Only the Uniform descriptor needs to be aligned, not the contents
+                 uniformBuffers.checkCapacity(alignedSize);
 //                int x = (ubo.getStages()&VK_SHADER_STAGE_FRAGMENT_BIT)!=0 ? 1024 : 0;
-                ubo.update(uniformBuffers.getPointer(frame));
+                 ubo.update(uniformBuffers.getPointer(frame));
 
-                uniformBuffers.updateOffset(alignedSize);
+                 uniformBuffers.updateOffset(alignedSize);
+                 UniformState.MVP.resetAndUpdate();
+                 Renderer.getDrawer().updateUniformOffset();
+             }
 
             }
 
-            UniformState.MVP.resetAndUpdate();
-            Renderer.getDrawer().updateUniformOffset();
+
             }
 
         }
 
 
-    }
+
 
     public static class Builder {
 

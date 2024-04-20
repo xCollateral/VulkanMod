@@ -61,7 +61,7 @@ public class VertexBufferM {
      */
     @Overwrite
     public void drawWithShader(Matrix4f viewMatrix, Matrix4f projectionMatrix, ShaderInstance shader) {
-        if(Initializer.CONFIG.renderSky)
+
             vbo.drawWithShader(viewMatrix, projectionMatrix, shader);
     }
 

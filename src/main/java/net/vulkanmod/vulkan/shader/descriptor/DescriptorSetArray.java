@@ -97,6 +97,11 @@ public class DescriptorSetArray {
         }
     }
 
+    public int getTexture(int binding, int TextureID)
+    {
+        return binding == 0 ? initialisedFragSamplers.TextureID2SamplerIdx(TextureID) : 0;
+    }
+
     public DescriptorSetArray() {
 
 

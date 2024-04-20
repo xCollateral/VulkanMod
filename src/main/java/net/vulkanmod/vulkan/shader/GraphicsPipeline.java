@@ -50,7 +50,7 @@ public class GraphicsPipeline extends Pipeline {
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
-        createDescriptorSets(Renderer.getFramesNum());
+
 
         PIPELINES.add(this);
     }

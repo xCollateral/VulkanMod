@@ -322,7 +322,7 @@ public class WorldRenderer {
             final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
             Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
 
-            renderer.uploadAndBindUBOs(pipeline, b);
+
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();

@@ -13,6 +13,7 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.shader.*;
@@ -493,7 +494,9 @@ public class Renderer {
     }
 
     public int uploadAndBindUBOs(Pipeline pipeline, boolean shouldUpdate) {
-        return pipeline.bindDescriptorSets(currentFrame, shouldUpdate);
+        if(shouldUpdate) pipeline.pushUniforms(drawer.getUniformBuffers(), currentFrame);
+
+        return pipeline.updateImageState();
     }
 
     public void pushConstants(Pipeline pipeline) {
@@ -506,7 +509,7 @@ public class Renderer {
             long ptr = MemoryUtil.memAddress0(buffer);
             pushConstants.update(ptr);
 
-            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
+            nvkCmdPushConstants(commandBuffer, Pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
         }
 
     }
