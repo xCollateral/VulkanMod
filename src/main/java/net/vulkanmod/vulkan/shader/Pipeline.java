@@ -16,6 +16,7 @@ import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
@@ -174,7 +175,7 @@ public abstract class Pipeline {
             //
             // TODO: e.g. fine the hash of the TOPMOSt uniform, them if the hash matches, overwrite the prior data w. the new non-aligned uniforms
 
-
+            UniformState.MVP.updateOffsetState();
            if(!UniformState.MVP.hasUniqueHash()) {
                UniformState.MVP.storeCurrentOffset(currentOffset);
             for(UBO ubo : buffers) {

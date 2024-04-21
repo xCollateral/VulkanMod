@@ -100,6 +100,20 @@ public class Drawer {
         drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount, textureID);
     }
 
+    public void updateUniformOffset2(int currentUniformOffset1) {
+
+
+        //get the basealignment/offsets of the Base/Initial Uniform on the DescriptorSet
+        //TODO: manage alignment w/ varing offsets/uniforms : may use a uniform block system instead, but unconfirmed if overlapping ranges are problematic otoh
+//        final int currentUniformOffset1 = (UniformState.MVP.getOffsetFromHash()/64);
+
+        if(currentUniformOffset1<0) return;
+
+        currentUniformOffset = currentUniformOffset1;
+
+
+        currentUniformOffset &= 127;
+    }
     public void updateUniformOffset() {
 
 

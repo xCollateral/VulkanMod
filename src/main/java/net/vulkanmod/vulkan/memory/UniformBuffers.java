@@ -59,7 +59,7 @@ public class UniformBuffers {
 
     public void checkCapacity(int size) {
         if (size > this.bufferSize - this.usedBytes) {
-            resizeBuffer((this.bufferSize + size) * 2);
+            reset();
         }
     }
 

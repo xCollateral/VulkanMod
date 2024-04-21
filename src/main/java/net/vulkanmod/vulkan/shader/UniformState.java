@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 
 import java.nio.ByteBuffer;
@@ -63,14 +64,16 @@ public enum UniformState {
         //TODO: if need uodate then also update uniform offset/index
         // or perhaps pushing uniforms here instead
         this.newHash =srcHash;
-        return this.needsUpdate=currentHash!=srcHash;
+
+
+        return this.needsUpdate = !this.hashedUniformOffsetMap.containsKey(srcHash);
     }
     public void needsUpdateOverride(boolean shouldOverride)
     {
         this.needsUpdate=shouldOverride;
     }
 
-    public boolean requiresUpdate() { return this.needsUpdate; }
+    public boolean requiresUpdate() { return this.needsUpdate| this.currentHash!=this.newHash; }
 
     public void resetAndUpdate()
     {
@@ -118,5 +121,13 @@ public enum UniformState {
 
     public boolean hasUniqueHash() {
         return this.hashedUniformOffsetMap.containsKey(this.newHash);
+    }
+
+    public void updateOffsetState() {
+
+        if(hashedUniformOffsetMap.containsKey(this.newHash))
+        {
+            Renderer.getDrawer().updateUniformOffset2((hashedUniformOffsetMap.get(this.newHash)/64));
+        }
     }
 }
