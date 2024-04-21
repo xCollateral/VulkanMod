@@ -48,7 +48,7 @@ public class BufferUploaderM {
         boolean b = renderer.bindGraphicsPipeline(pipeline);
 
         int textureID = pipeline.updateImageState();
-        Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount(), textureID);
+       if(textureID!=-1) Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount(), textureID);
     }
 
 }

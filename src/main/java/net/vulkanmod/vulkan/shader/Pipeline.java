@@ -161,7 +161,7 @@ public abstract class Pipeline {
 
 
             }
-            return isNewTexture ? 0 : currentTexture;
+            return isNewTexture ? -1 : currentTexture;
 
         }
 

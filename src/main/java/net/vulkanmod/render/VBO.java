@@ -123,10 +123,12 @@ public class VBO {
             if(Initializer.CONFIG.renderSky)
             {
                 int textureID = pipeline.updateImageState();
-                if(indexBuffer != null)
-                    Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount, textureID);
-                else
-                    Renderer.getDrawer().draw(vertexBuffer, vertexCount);
+                if (textureID != -1) {
+                    if (indexBuffer != null)
+                        Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount, textureID);
+                    else
+                        Renderer.getDrawer().draw(vertexBuffer, vertexCount);
+                }
             }
 
             VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
