@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.blockentity.BeaconRenderer;
@@ -18,7 +19,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
-import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -74,6 +74,8 @@ public class DescriptorSetArray {
 
     }
 
+    private final IntOpenHashSet newTex = new IntOpenHashSet(32);
+
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
         //Smaplers are not exclusively boudn to a [arotucla rimages: can be boud  to any image which allwos for abstration +smaplfictaion of Descriptor Slots/Sets.indicies e.g. e.tc i.e..elemes
@@ -95,6 +97,7 @@ public class DescriptorSetArray {
 
         if(needsUpdate)
         {
+            this.newTex.add(TextureID);
             Arrays.fill(this.isUpdated, false);
         }
     }
@@ -222,8 +225,7 @@ public class DescriptorSetArray {
 
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(1);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            final int VERTEX_SAMPLER_MAX = 2;
-            textureSamplerPoolSize.descriptorCount(VERTEX_SAMPLER_MAX + SAMPLER_MAX_LIMIT);
+            textureSamplerPoolSize.descriptorCount(SAMPLER_MAX_LIMIT);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -335,6 +337,8 @@ public class DescriptorSetArray {
                 descriptorWrites.rewind();
                 vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
                 this.isUpdated[frame] = true;
+                
+                this.newTex.clear();
             }
 
             //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
@@ -402,5 +406,16 @@ public class DescriptorSetArray {
     public void removeImage(int id) {
         if(this.initialisedFragSamplers.removeTexture(id))
             Arrays.fill(this.isUpdated, false);
+    }
+
+
+    public boolean needsUpdate(int frame)
+    {
+        return !this.isUpdated[frame];
+    }
+
+    public boolean isTexUnInitialised(int textureID)
+    {
+        return this.newTex.contains(textureID);
     }
 }

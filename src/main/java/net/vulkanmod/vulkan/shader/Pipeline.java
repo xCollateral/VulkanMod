@@ -16,7 +16,6 @@ import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
-import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
@@ -141,7 +140,7 @@ public abstract class Pipeline {
         public int updateImageState() {
 
             int currentTexture = 0;
-
+            boolean isNewTexture = false;
             for(ImageDescriptor state : imageDescriptors)
             {
                 //TODO; Disseminate between Fragment and VERTEX Stage binding/reserve slots
@@ -157,11 +156,12 @@ public abstract class Pipeline {
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
                   descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, null);
                   currentTexture = descriptorSetArray.getTexture(state.imageIdx, shaderTexture);
+                  isNewTexture = descriptorSetArray.isTexUnInitialised(shaderTexture);
               }
 
 
             }
-            return currentTexture;
+            return isNewTexture ? 0 : currentTexture;
 
         }
 
