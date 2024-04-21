@@ -4,7 +4,7 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 
 import java.nio.ByteBuffer;
 
@@ -42,7 +42,7 @@ public class IndirectBuffer extends Buffer {
     }
 
     private void resizeBuffer() {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
         int newSize = this.bufferSize + (this.bufferSize >> 1);
         this.createBuffer(newSize);
         this.usedBytes = 0;

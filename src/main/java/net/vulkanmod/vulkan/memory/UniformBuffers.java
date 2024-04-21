@@ -5,13 +5,14 @@ import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
@@ -20,7 +21,7 @@ public class UniformBuffers {
     private int bufferSize;
     private int usedBytes;
 
-    private List<UniformBuffer> uniformBuffers;
+    public List<UniformBuffer> uniformBuffers;
 
     private final static int minOffset = (int) DeviceManager.deviceProperties.limits().minUniformBufferOffsetAlignment();
     private final int framesSize = Renderer.getFramesNum();
@@ -28,7 +29,7 @@ public class UniformBuffers {
     CommandPool.CommandBuffer commandBuffer;
 
     public UniformBuffers(int size) {
-        createUniformBuffers(size, MemoryTypes.HOST_MEM);
+        createUniformBuffers(size, MemoryType.BAR_MEM);
     }
 
     public UniformBuffers(int size, MemoryType memoryType) {
@@ -142,7 +143,7 @@ public class UniformBuffers {
         }
 
         private void resizeBuffer(int newSize) {
-            MemoryManager.getInstance().addToFreeable(this);
+            this.type.freeBuffer(this);
             createBuffer(newSize);
         }
     }

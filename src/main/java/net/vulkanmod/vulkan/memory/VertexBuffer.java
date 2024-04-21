@@ -6,10 +6,6 @@ import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class VertexBuffer extends Buffer {
 
-    public VertexBuffer(int size) {
-        this(size, MemoryTypes.HOST_MEM);
-    }
-
     public VertexBuffer(int size, MemoryType type) {
         super(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, type);
         this.createBuffer(size);
@@ -17,6 +13,8 @@ public class VertexBuffer extends Buffer {
     }
 
     public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {
+        //TODO: Skip Redundant/duplicated uploads
+        // Or do upload/Copy Batching here as well
         int bufferSize = (int) (vertexSize * vertexCount);
 //        long bufferSize = byteBuffer.limit();
 
@@ -31,7 +29,7 @@ public class VertexBuffer extends Buffer {
     }
 
     private void resizeBuffer(int newSize) {
-        MemoryManager.getInstance().addToFreeable(this);
+        this.type.freeBuffer(this);
         this.createBuffer(newSize);
 
 //        System.out.println("resized vertexBuffer to: " + newSize);

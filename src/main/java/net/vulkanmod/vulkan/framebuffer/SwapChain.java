@@ -8,6 +8,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -32,8 +33,9 @@ public class SwapChain extends Framebuffer {
     private static final int DEFAULT_IMAGE_COUNT = 3;
 
     //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on some Wayland installations currently)
-    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on most Wayland installations currently)
+    //Try to use Mailbox if possible (in case FreeSync/G-Sync needs it)
+    private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR);
 
     private final Long2ReferenceOpenHashMap<long[]> FBO_map = new Long2ReferenceOpenHashMap<>();
 
@@ -112,11 +114,9 @@ public class SwapChain extends Framebuffer {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-            Queue.QueueFamilyIndices indices = Queue.getQueueFamilies();
-
-            if (!indices.graphicsFamily.equals(indices.presentFamily)) {
+            if (QueueFamilyIndices.graphicsFamily != QueueFamilyIndices.presentFamily) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(QueueFamilyIndices.graphicsFamily, QueueFamilyIndices.presentFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }
