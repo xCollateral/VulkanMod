@@ -2,8 +2,6 @@ package net.vulkanmod.vulkan;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDevice;
@@ -32,7 +30,7 @@ public class Synchronization {
     }
 
     public synchronized void addFence(long fence) {
-        if(idx == ALLOCATION_SIZE)
+        if (idx == ALLOCATION_SIZE)
             waitFences();
 
         fences.put(idx, fence);
@@ -41,9 +39,9 @@ public class Synchronization {
 
     public synchronized void waitFences() {
 
-        if(idx == 0) return;
+        if (idx == 0) return;
 
-        VkDevice device = Vulkan.getDevice();
+        VkDevice device = Vulkan.getVkDevice();
 
         fences.limit(idx);
 
@@ -57,13 +55,13 @@ public class Synchronization {
     }
 
     public static void waitFence(long fence) {
-        VkDevice device = Vulkan.getDevice();
+        VkDevice device = Vulkan.getVkDevice();
 
         vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
     }
 
     public static boolean checkFenceStatus(long fence) {
-        VkDevice device = Vulkan.getDevice();
+        VkDevice device = Vulkan.getVkDevice();
         return vkGetFenceStatus(device, fence) == VK_SUCCESS;
     }
 

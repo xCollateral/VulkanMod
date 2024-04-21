@@ -35,7 +35,7 @@ public class ModelPartM {
         Matrix3f matrix3f = pose.normal();
         ExtendedVertexBuilder vertexBuilder = (ExtendedVertexBuilder)vertexConsumer;
 
-        int packedColor = ColorUtil.ARGB.pack(r, g, b, a);
+        int packedColor = ColorUtil.RGBA.pack(r, g, b, a);
 
         for (ModelPart.Cube cube : this.cubes) {
             ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);

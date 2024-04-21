@@ -5,8 +5,8 @@ import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightMode;
-import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.device.DeviceManager;
 
 import java.util.stream.IntStream;
 
@@ -55,7 +55,7 @@ public class Options {
                         },
                         () -> minecraftOptions.enableVsync().get()),
                 new CyclingOption<>("Gui Scale",
-                        new Integer[]{0, 1, 2, 3, 4},
+                        getGuiScaleValues(),
                         value -> value == 0 ? Component.literal("Auto") : Component.literal(value.toString()),
                         (value) -> {
                             minecraftOptions.guiScale().set(value);
@@ -91,7 +91,8 @@ public class Options {
                         },
                         () -> Initializer.CONFIG.ambientOcclusion)
                         .setTooltip(Component.nullToEmpty("""
-                        On (Sub-block): Enables smooth lighting for non full block (experimental).""")),
+                        On (Sub-block): Enables smooth lighting for non full block (experimental).
+                        Not working properly when using lithium.""")),
                 new SwitchOption("View Bobbing",
                         (value) -> minecraftOptions.bobView().set(value),
                         () -> minecraftOptions.bobView().get()),
@@ -245,7 +246,7 @@ public class Options {
                         value -> config.device = value,
                         () -> config.device)
                         .setTooltip(Component.nullToEmpty(
-                        String.format("Current device: %s", DeviceManager.deviceInfo.deviceName)))
+                        String.format("Current device: %s", DeviceManager.device.deviceName)))
         };
 
     }
@@ -258,5 +259,17 @@ public class Options {
         }
 
         config.write();
+    }
+
+    static Integer[] getGuiScaleValues() {
+        int max = window.calculateScale(0, Minecraft.getInstance().isEnforceUnicode());
+
+        Integer[] values = new Integer[max];
+
+        for (int i = 0; i < max; i++) {
+            values[i] = i;
+        }
+
+        return values;
     }
 }

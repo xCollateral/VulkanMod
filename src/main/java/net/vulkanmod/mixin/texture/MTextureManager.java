@@ -8,8 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.texture.SpriteUtil;
-import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,16 +32,16 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-        if(Renderer.skipRendering | !Initializer.CONFIG.animations)
+        if (Renderer.skipRendering | !Initializer.CONFIG.animations)
             return;
 
         //Debug D
-        if(SpriteUtil.shouldUpload())
+        if (SpriteUtil.shouldUpload())
             DeviceManager.getGraphicsQueue().startRecording();
         for (Tickable tickable : this.tickableTextures) {
             tickable.tick();
         }
-        if(SpriteUtil.shouldUpload()) {
+        if (SpriteUtil.shouldUpload()) {
             SpriteUtil.transitionLayouts(DeviceManager.getGraphicsQueue().getCommandBuffer().getHandle());
             DeviceManager.getGraphicsQueue().endRecordingAndSubmit();
         }

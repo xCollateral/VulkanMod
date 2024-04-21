@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.texture;
 
 import it.unimi.dsi.fastutil.shorts.Short2LongMap;
 import it.unimi.dsi.fastutil.shorts.Short2LongOpenHashMap;
-import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSamplerCreateInfo;
@@ -10,7 +10,7 @@ import org.lwjgl.vulkan.VkSamplerReductionModeCreateInfo;
 
 import java.nio.LongBuffer;
 
-import static net.vulkanmod.vulkan.Vulkan.getDevice;
+import static net.vulkanmod.vulkan.Vulkan.getVkDevice;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK12.VK_SAMPLER_REDUCTION_MODE_MAX;
@@ -25,7 +25,7 @@ public abstract class SamplerManager {
         short key = (short) (flags | (maxLod << 8));
         long sampler = SAMPLERS.getOrDefault(key, 0L);
 
-        if(sampler == 0L) {
+        if (sampler == 0L) {
             sampler = createTextureSampler(maxLod, flags);
             SAMPLERS.put(key, sampler);
         }
@@ -38,12 +38,12 @@ public abstract class SamplerManager {
                 (flags & (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)) != (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)
         );
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack);
             samplerInfo.sType(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
 
-            if((flags & LINEAR_FILTERING_BIT) != 0) {
+            if ((flags & LINEAR_FILTERING_BIT) != 0) {
                 samplerInfo.magFilter(VK_FILTER_LINEAR);
                 samplerInfo.minFilter(VK_FILTER_LINEAR);
             } else {
@@ -51,7 +51,7 @@ public abstract class SamplerManager {
                 samplerInfo.minFilter(VK_FILTER_NEAREST);
             }
 
-            if((flags & CLAMP_BIT) != 0) {
+            if ((flags & CLAMP_BIT) != 0) {
                 samplerInfo.addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
                 samplerInfo.addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
                 samplerInfo.addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
@@ -68,7 +68,7 @@ public abstract class SamplerManager {
             samplerInfo.compareEnable(false);
             samplerInfo.compareOp(VK_COMPARE_OP_ALWAYS);
 
-            if((flags & USE_MIPMAPS_BIT) != 0) {
+            if ((flags & USE_MIPMAPS_BIT) != 0) {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(maxLod);
                 samplerInfo.minLod(0.0F);
@@ -80,7 +80,7 @@ public abstract class SamplerManager {
             }
 
             //Reduction Mode
-            if((flags & (REDUCTION_MAX_BIT | REDUCTION_MIN_BIT)) != 0) {
+            if ((flags & (REDUCTION_MAX_BIT | REDUCTION_MIN_BIT)) != 0) {
                 VkSamplerReductionModeCreateInfo reductionModeInfo = VkSamplerReductionModeCreateInfo.calloc(stack);
                 reductionModeInfo.sType$Default();
                 reductionModeInfo.reductionMode((flags & REDUCTION_MAX_BIT) != 0 ? VK_SAMPLER_REDUCTION_MODE_MAX : VK_SAMPLER_REDUCTION_MODE_MIN);
@@ -89,7 +89,7 @@ public abstract class SamplerManager {
 
             LongBuffer pTextureSampler = stack.mallocLong(1);
 
-            if(vkCreateSampler(getDevice(), samplerInfo, null, pTextureSampler) != VK_SUCCESS) {
+            if (vkCreateSampler(getVkDevice(), samplerInfo, null, pTextureSampler) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create texture sampler");
             }
 
@@ -98,8 +98,8 @@ public abstract class SamplerManager {
     }
 
     public static void cleanUp() {
-        for(long id : SAMPLERS.values()) {
-            vkDestroySampler(DeviceManager.device, id, null);
+        for (long id : SAMPLERS.values()) {
+            vkDestroySampler(DeviceManager.vkDevice, id, null);
         }
     }
 
