@@ -10,7 +10,7 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.SamplerManager;
@@ -30,7 +30,7 @@ import static org.lwjgl.system.MemoryUtil.memAddressSafe;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DescriptorSetArray {
-    private static final VkDevice DEVICE = Vulkan.getDevice();
+    private static final VkDevice DEVICE = Vulkan.getVkDevice();
     private static final int UNIFORM_POOLS = 1;
     private static final int SAMPLER_MAX_LIMIT = 512;
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
@@ -169,7 +169,7 @@ public class DescriptorSetArray {
 
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
-            if (vkCreateDescriptorSetLayout(DeviceManager.device, vkDescriptorSetLayoutCreateInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
+            if (vkCreateDescriptorSetLayout(DEVICE, vkDescriptorSetLayoutCreateInfo, null, pDescriptorSetLayout) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create descriptor set layout");
             }
 

@@ -172,12 +172,12 @@ public abstract class DeviceManager {
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
-            deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
-            deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
-            deviceFeatures.features().multiDrawIndirect(deviceInfo.isDrawIndirectSupported());
-            shaderDrawParameterFeatures.shaderDrawParameters(deviceInfo.isDrawIndirectSupported());
+            deviceFeatures.features().samplerAnisotropy(device.availableFeatures.features().samplerAnisotropy());
+            deviceFeatures.features().logicOp(device.availableFeatures.features().logicOp());
+            deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
+            shaderDrawParameterFeatures.shaderDrawParameters(device.isDrawIndirectSupported());
 
-            final boolean hasIndexedDescriptors = deviceInfo.isHasIndexedDescriptors();
+            final boolean hasIndexedDescriptors = true;// device.isHasIndexedDescriptors();
             VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
                     .sType$Default()
                     .runtimeDescriptorArray(hasIndexedDescriptors);

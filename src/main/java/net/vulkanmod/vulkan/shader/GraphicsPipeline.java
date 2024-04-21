@@ -6,7 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormatElement;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import net.vulkanmod.interfaces.VertexFormatMixed;
-import net.vulkanmod.vulkan.DeviceManager;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
@@ -197,7 +197,7 @@ public class GraphicsPipeline extends Pipeline {
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
-            if(vkCreateGraphicsPipelines(DeviceManager.device, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
+            if(vkCreateGraphicsPipelines(DeviceManager.vkDevice, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create graphics pipeline");
             }
 
@@ -279,13 +279,13 @@ public class GraphicsPipeline extends Pipeline {
     }
 
     public void cleanUp() {
-        vkDestroyShaderModule(DeviceManager.device, vertShaderModule, null);
-        vkDestroyShaderModule(DeviceManager.device, fragShaderModule, null);
+        vkDestroyShaderModule(DeviceManager.vkDevice, vertShaderModule, null);
+        vkDestroyShaderModule(DeviceManager.vkDevice, fragShaderModule, null);
 
 
 
         graphicsPipelines.forEach((state, pipeline) -> {
-            vkDestroyPipeline(DeviceManager.device, pipeline, null);
+            vkDestroyPipeline(DeviceManager.vkDevice, pipeline, null);
         });
         graphicsPipelines.clear();
 

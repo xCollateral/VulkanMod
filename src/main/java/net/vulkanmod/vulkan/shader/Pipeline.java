@@ -35,8 +35,8 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class Pipeline {
 
-    private static final VkDevice DEVICE = Vulkan.getDevice();
-    private static final boolean hasBindlessUBOs = Vulkan.getDeviceInfo().isHasBindlessUBOs();
+    private static final VkDevice DEVICE = Vulkan.getVkDevice();
+//    private static final boolean hasBindlessUBOs = Vulkan.getDeviceInfo().isHasBindlessUBOs();
     protected static final long PIPELINE_CACHE = createPipelineCache();
     protected static final List<Pipeline> PIPELINES = new LinkedList<>();
 //    private static final long descriptorSetLayout = Renderer.getDescriptorSetArray().getDescriptorSetLayout();

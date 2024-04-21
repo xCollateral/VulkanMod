@@ -129,7 +129,7 @@ public class RenderPass {
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
-            if(vkCreateRenderPass(Vulkan.getDevice(), renderPassInfo, null, pRenderPass) != VK_SUCCESS) {
+            if(vkCreateRenderPass(Vulkan.getVkDevice(), renderPassInfo, null, pRenderPass) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create render pass");
             }
 
@@ -235,7 +235,7 @@ public class RenderPass {
 
         if(!Vulkan.DYNAMIC_RENDERING)
             MemoryManager.getInstance().addFrameOp(
-                    () -> vkDestroyRenderPass(Vulkan.getDevice(), this.id, null));
+                    () -> vkDestroyRenderPass(Vulkan.getVkDevice(), this.id, null));
 
     }
 
