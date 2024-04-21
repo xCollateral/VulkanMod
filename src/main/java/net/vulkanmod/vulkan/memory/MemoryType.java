@@ -8,28 +8,28 @@ import org.lwjgl.vulkan.VkMemoryHeap;
 import org.lwjgl.vulkan.VkMemoryType;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum MemoryType {
-    GPU_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    GPU_MEM(true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
 
-    BAR_MEM(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-//    RAM_MEM(false, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
+    BAR_MEM(true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
+    RAM_MEM(false, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
 
     private final long maxSize;
     private long usedBytes;
     private final int flags;
 
-    MemoryType(int... optimalFlags) {
+    MemoryType(boolean useVRAM, int... optimalFlags) {
 
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
 
+        final int heapType = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
         for (int optimalFlagMask : optimalFlags) {
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
 
@@ -39,14 +39,15 @@ public enum MemoryType {
                 final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
 //                final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
 
-                if (hasRequiredFlags) {
-                    if(memoryHeap.flags()!=VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
-                        Initializer.LOGGER.error(this.name() + ": Unable to find Available VRAM: Falling back to System RAM: Performance may be degraded!");
+                if (hasRequiredFlags && memoryHeap.flags() == heapType) {
+//                    if(memoryHeap.flags()!= heapType)
+//                        Initializer.LOGGER.error(this.name() + ": Unable to find Available VRAM: Falling back to System RAM: Performance may be degraded!");
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
 
                     Initializer.LOGGER.info(this.name()+"\n"
                             + "     Memory Heap Index/Bank: "+ memoryType.heapIndex() +"\n"
+                            + "     IsVRAM: "+ memoryHeap.flags() +"\n"
                             + "     MaxSize: " + this.maxSize+ " Bytes" +"\n"
                             + "     AvailableFlags:" + getMemoryTypeFlags(availableFlags) + "\n"
                             + "     EnabledFlags:" + getMemoryTypeFlags(optimalFlagMask));
@@ -101,7 +102,7 @@ public enum MemoryType {
     {
 
 
-        final int usage = buffer.usage | (this.equals(BAR_MEM) ? 0 : VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        final int usage = buffer.usage | (this.mappable() ? 0 : VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
         MemoryManager.getInstance().createBuffer(buffer, size, usage, this.flags);
         this.usedBytes+=size;
