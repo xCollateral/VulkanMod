@@ -110,7 +110,7 @@ public class WorldRenderer {
 
 
         for(int i = 0; i < this.indirectBuffers.length; ++i) {
-            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.RAM_MEM);
+            this.indirectBuffers[i] = new IndirectBuffer(1048576, MemoryType.RAM_MEM);
 //            this.indirectBuffers[i] = new IndirectBuffer(1000000, MemoryType.GPU_MEM);
         }
 
@@ -318,7 +318,7 @@ public class WorldRenderer {
         int currentFrame = Renderer.getCurrentFrame();
         Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(terrainRenderType)) {
-
+            VRenderSystem.depthMask(!isTranslucent); ////Disable Depth writes if Translucent
             Renderer renderer = Renderer.getInstance();
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             boolean b = renderer.bindGraphicsPipeline(pipeline);
@@ -334,7 +334,7 @@ public class WorldRenderer {
 
                 if (drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() > 0) {
 
-                    drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
+                    drawBuffers.bindBuffers(commandBuffer, terrainRenderType, camX, camY, camZ);
 
 
                     if (indirectDraw)
