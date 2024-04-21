@@ -14,6 +14,7 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.Map;
 import java.util.Queue;
 
 public class TaskDispatcher {
@@ -150,26 +151,14 @@ public class TaskDispatcher {
 
     private void doSectionUpdate(CompileResult compileResult) {
         RenderSection section = compileResult.renderSection;
-        ChunkArea renderArea = section.getChunkArea();
-        DrawBuffers drawBuffers = renderArea.getDrawBuffers();
+        DrawBuffers drawBuffers = section.getChunkArea().getDrawBuffers();
 
         if(compileResult.fullUpdate) {
-            var renderLayers = compileResult.renderedLayers;
-            for(TerrainRenderType renderType : TerrainRenderType.VALUES) {
-                UploadBuffer uploadBuffer = renderLayers.get(renderType);
-
-                if(uploadBuffer != null) {
-                    drawBuffers.upload(section, uploadBuffer, renderType);
-                } else {
-                    section.getDrawParameters(renderType).reset(renderArea, renderType);
-                }
-            }
-
+            compileResult.renderedLayers.forEach((key, uploadBuffer) -> drawBuffers.upload(section, uploadBuffer, key));
             compileResult.updateSection();
         }
         else {
-            UploadBuffer uploadBuffer = compileResult.renderedLayers.get(TerrainRenderType.TRANSLUCENT);
-            drawBuffers.upload(section, uploadBuffer, TerrainRenderType.TRANSLUCENT);
+            drawBuffers.upload(section, compileResult.renderedLayers.get(TerrainRenderType.TRANSLUCENT), TerrainRenderType.TRANSLUCENT);
         }
     }
 
