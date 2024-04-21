@@ -61,7 +61,7 @@ public class DrawBuffers {
         }
 
         drawParameters.indexCount = buffer.indexCount;
-        drawParameters.instanceCount = vertexOffset == -1 ? 0 : 1;
+//        drawParameters.instanceCount = vertexOffset == -1 ? 0 : 1;
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
