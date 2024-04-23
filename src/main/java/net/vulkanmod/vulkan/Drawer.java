@@ -16,7 +16,7 @@ import static org.lwjgl.vulkan.VK10.vkCmdDraw;
 
 public class Drawer {
     private static final int INITIAL_VB_SIZE = 1048576;
-    private static final int INITIAL_UB_SIZE = 2048;
+    private static final int INITIAL_UB_SIZE = 1024;
 
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);

@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Minecraft;
@@ -20,6 +21,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -27,7 +29,7 @@ import java.util.Arrays;
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memAddressSafe;
+import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DescriptorSetArray {
@@ -51,7 +53,7 @@ public class DescriptorSetArray {
 
     private final long defFragSampler;
     private final boolean[] isUpdated = {false, false};
-    private static final int INLINE_UNIFORM_SIZE = 16;
+    private static final int INLINE_UNIFORM_SIZE = 16 + 4;
     private int MissingTexID = -1;
 
     static
@@ -301,10 +303,11 @@ public class DescriptorSetArray {
         }
         try(MemoryStack stack = stackPush()) {
             final long currentSet = descriptorSets.get(frame);
-            if(!this.isUpdated[frame]) {
+            {
                 final int NUM_UBOs = 2;
-                final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs;
-                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
+                final boolean b = !this.isUpdated[frame];
+                final int capacity = (b ? this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() : 0)  + NUM_UBOs;
+                VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity+1, stack);
 
                 int x = 0;
                 ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
@@ -345,8 +348,9 @@ public class DescriptorSetArray {
 
 
                     VkWriteDescriptorSetInlineUniformBlock bufferInfos = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
-                            .sType$Default()
-                            .pData(UniformState.ColorModulator.buffer());
+                            .sType$Default();
+                    memPutAddress(bufferInfos.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, UniformState.ColorModulator.getMappedBufferPtr().ptr);
+                    VkWriteDescriptorSetInlineUniformBlock.ndataSize(bufferInfos.address(),  UniformState.ColorModulator.size*4);
 
 
                     //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
@@ -356,15 +360,35 @@ public class DescriptorSetArray {
                     uboDescriptorWrite.dstBinding(FRAG_UBO_ID);
                     uboDescriptorWrite.dstArrayElement(0);
                     uboDescriptorWrite.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
-                    uboDescriptorWrite.descriptorCount(INLINE_UNIFORM_SIZE);
+                    uboDescriptorWrite.descriptorCount(16);
                     uboDescriptorWrite.dstSet(currentSet);
+
+                    VkWriteDescriptorSetInlineUniformBlock inlineUniformBlock = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
+                            .sType$Default();
+
+                    memPutAddress(inlineUniformBlock.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, stack.nfloat(RenderSystem.getShaderGameTime()));
+                    VkWriteDescriptorSetInlineUniformBlock.ndataSize(inlineUniformBlock.address(), 4);
+
+
+                    //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
+                    VkWriteDescriptorSet uboDescriptorWrite2 = descriptorWrites.get();
+                    uboDescriptorWrite2.sType$Default();
+                    uboDescriptorWrite2.pNext(inlineUniformBlock);
+                    uboDescriptorWrite2.dstBinding(FRAG_UBO_ID);
+                    uboDescriptorWrite2.dstArrayElement(16); //ByteOffset in Current Uniform Block: I.E. Strong Aliasing Potential
+                    uboDescriptorWrite2.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+                    uboDescriptorWrite2.descriptorCount(4);
+                    uboDescriptorWrite2.dstSet(currentSet);
                 }
 
 
                 //                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
 //
-                isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedVertSamplers);
-                isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
+                  if(b)
+                  {
+                      isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedVertSamplers);
+                      isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
+                  }
 
                 descriptorWrites.rewind();
                 vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
