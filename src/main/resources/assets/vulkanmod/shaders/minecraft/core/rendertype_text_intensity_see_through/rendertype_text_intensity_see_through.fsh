@@ -2,7 +2,7 @@
 
 layout(binding = 3) uniform sampler2D Sampler0;
 
-layout(binding = 1) uniform UBO {
+layout(binding = 1) readonly uniform UBO {
     vec4 ColorModulator;
 };
 

@@ -2,7 +2,7 @@
 
 layout(location = 0) in vec4 vertexColor;
 
-layout(binding = 1) uniform UBO{
+layout(binding = 1) readonly uniform UBO{
     vec4 ColorModulator;
 };
 
