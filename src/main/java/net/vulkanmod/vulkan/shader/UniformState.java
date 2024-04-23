@@ -33,7 +33,8 @@ public enum UniformState {
     Light1_Direction("vec4",4,4),
     ChunkOffset("vec3",4,3),
     ColorModulator("vec4",4,4),
-    FogColor("vec4",4,4);
+    FogColor("vec4",4,4),
+    SkyColor("vec4", 4, 4);
 
     public final String type;
     public final int align;

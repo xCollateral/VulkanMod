@@ -6,12 +6,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.io.IOException;
@@ -52,5 +54,11 @@ public abstract class LevelRendererMixin {
 ////            this.entityTarget = null;
 ////        }
 //    }
+
+    @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V", ordinal = 0))
+    private void getSkyColor(float f, float g, float h, float i)
+    {
+        VRenderSystem.setSkyColor(f, g, h, i);
+    }
 
 }

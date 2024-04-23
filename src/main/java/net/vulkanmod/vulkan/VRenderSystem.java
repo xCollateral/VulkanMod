@@ -238,4 +238,8 @@ public abstract class VRenderSystem {
             default -> throw new IllegalStateException("Unexpected value: " + j);
         };*/
     }
+
+    public static void setSkyColor(float f, float g, float h, float i) {
+        ColorUtil.setRGBA_Buffer(UniformState.SkyColor.getMappedBufferPtr(), f, g, h, i);
+    }
 }

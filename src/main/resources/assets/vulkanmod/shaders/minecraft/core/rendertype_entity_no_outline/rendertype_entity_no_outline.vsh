@@ -24,7 +24,7 @@ void main() {
     gl_Position = MVP[gl_BaseInstance & 15] * vec4(Position, 1.0);
 
 
-    //vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
+    vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
     texCoord0 = UV0;
     //normal = (MVP * vec4(Normal, 0.0)).xyz;
 }

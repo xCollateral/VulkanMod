@@ -24,6 +24,7 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
+import java.util.EnumSet;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -52,7 +53,7 @@ public class DescriptorSetArray {
 
     private final long defFragSampler;
     private final boolean[] isUpdated = {false, false};
-    private static final int INLINE_UNIFORM_SIZE = 16 + 4;
+    private static final int INLINE_UNIFORM_SIZE = 16 + 16+ 4;
     private int MissingTexID = -1;
 
     static
@@ -304,7 +305,7 @@ public class DescriptorSetArray {
             final long currentSet = descriptorSets.get(frame);
             {
                 final int NUM_UBOs = 1;
-                final int NUM_INLINE_UBOs = 2;
+                final int NUM_INLINE_UBOs = 3;
                 final boolean b = !this.isUpdated[frame];
                 final int capacity = (b ? this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs : 0) + NUM_INLINE_UBOs;
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
@@ -372,38 +373,35 @@ public class DescriptorSetArray {
     }
 
     private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet) {
-        VkWriteDescriptorSetInlineUniformBlock bufferInfos = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
-                .sType$Default();
-        memPutAddress(bufferInfos.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, UniformState.ColorModulator.getMappedBufferPtr().ptr);
-        VkWriteDescriptorSetInlineUniformBlock.ndataSize(bufferInfos.address(),  UniformState.ColorModulator.size*4);
 
-        //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
-        VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
-        uboDescriptorWrite.sType$Default();
-        uboDescriptorWrite.pNext(bufferInfos);
-        uboDescriptorWrite.dstBinding(FRAG_UBO_ID);
-        uboDescriptorWrite.dstArrayElement(0);
-        uboDescriptorWrite.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
-        uboDescriptorWrite.descriptorCount(16);
-        uboDescriptorWrite.dstSet(currentSet);
+        int offset = 0;
 
-        VkWriteDescriptorSetInlineUniformBlock inlineUniformBlock = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
-                .sType$Default();
+        final UniformState[] uniformStates = {UniformState.ColorModulator, UniformState.SkyColor, UniformState.GameTime};
+        for(UniformState uniformState : uniformStates) {
+            final long ptr = switch (uniformState)
+            {
+                default -> uniformState.getMappedBufferPtr().ptr;
+                case GameTime -> stack.nfloat(RenderSystem.getShaderGameTime());
+            };
 
-        memPutAddress(inlineUniformBlock.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, stack.nfloat(RenderSystem.getShaderGameTime()));
-        VkWriteDescriptorSetInlineUniformBlock.ndataSize(inlineUniformBlock.address(), 4);
+            VkWriteDescriptorSetInlineUniformBlock bufferInfos = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
+                    .sType$Default();
+            memPutAddress(bufferInfos.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, ptr);
+            VkWriteDescriptorSetInlineUniformBlock.ndataSize(bufferInfos.address(), uniformState.size * 4);
 
+            //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
+            VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
+            uboDescriptorWrite.sType$Default();
+            uboDescriptorWrite.pNext(bufferInfos);
+            uboDescriptorWrite.dstBinding(FRAG_UBO_ID);
+            uboDescriptorWrite.dstArrayElement(offset);
+            uboDescriptorWrite.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+            uboDescriptorWrite.descriptorCount(uniformState.size*4);
+            uboDescriptorWrite.dstSet(currentSet);
+            offset += uniformState.size*4;
+        }
+        }
 
-        //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
-        VkWriteDescriptorSet uboDescriptorWrite2 = descriptorWrites.get();
-        uboDescriptorWrite2.sType$Default();
-        uboDescriptorWrite2.pNext(inlineUniformBlock);
-        uboDescriptorWrite2.dstBinding(FRAG_UBO_ID);
-        uboDescriptorWrite2.dstArrayElement(16); //ByteOffset in Current Uniform Block: I.E. Strong Aliasing Potential
-        uboDescriptorWrite2.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
-        uboDescriptorWrite2.descriptorCount(4);
-        uboDescriptorWrite2.dstSet(currentSet);
-    }
 
     private void isInvalidImages(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, DescriptorAbstractionArray descriptorArray) {
         //TODO: Need DstArrayIdx, ImageView, or DstArrayIdx, TextureID to enumerate/initialise the DescriptorArray
