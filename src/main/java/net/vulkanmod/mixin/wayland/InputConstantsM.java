@@ -14,10 +14,9 @@ public class InputConstantsM {
      * @author
      * @reason Setting the cursor position is not supported on Wayland
      */
-    @Overwrite
-    public static void grabOrReleaseMouse(long l, int i, double d, double e) {
+    @Redirect(method = "grabOrReleaseMouse", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSetCursorPos(JDD)V"))
+    private static void grabOrReleaseMouse(long window, double xpos, double ypos) {
         if (!VideoResolution.isWayLand())
-            GLFW.glfwSetCursorPos(l, d, e);
-        GLFW.glfwSetInputMode(l, 208897, i);
+            GLFW.glfwSetCursorPos(window, xpos, ypos);
     }
 }
