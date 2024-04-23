@@ -1,11 +1,11 @@
 package net.vulkanmod.vulkan.shader;
 
-import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.util.MappedBuffer;
+import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
@@ -57,6 +57,24 @@ public enum UniformState {
     }
 
 
+    public boolean forcePushUpdate(int srcHash, UniformBuffers uniformBuffer, int frame)
+    {
+        boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(srcHash);
+        if(isUniqueHash) {
+            final int align1 = VUtil.align(this.size * 4, this.align);
+            this.hashedUniformOffsetMap.put(srcHash, uniformBuffer.getUsedBytes());
+            MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getPointer(frame), align1);
+            uniformBuffer.updateOffset(align1);
+            this.needsUpdate=true;
+        }
+        this.currentHash=srcHash;
+        Renderer.getDrawer().updateUniformOffset2(this.hashedUniformOffsetMap.get(this.currentHash)/64);
+
+
+
+        return isUniqueHash;
+    }
+
     public boolean needsUpdate(int srcHash)
     {
         //hash the Uniform contents, then stroe the current offset
@@ -91,7 +109,7 @@ public enum UniformState {
 
     public static void resetAll()
     {
-        for (UniformState uniformState : EnumSet.of(MVP)) {
+        for (UniformState uniformState : EnumSet.of(MVP, ProjMat, ModelViewMat, TextureMat)) {
             uniformState.currentHash = 0;
             uniformState.currentOffset = 0;
             uniformState.needsUpdate=false;
@@ -112,7 +130,7 @@ public enum UniformState {
     }
 
     public int getCurrentOffset() {
-        return currentOffset;
+        return this.hashedUniformOffsetMap.get(this.currentHash);
     }
 
     public int getOffsetFromHash() {

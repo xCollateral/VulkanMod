@@ -5,14 +5,15 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.blockentity.BeaconRenderer;
+import net.minecraft.client.renderer.blockentity.TheEndPortalRenderer;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -50,6 +51,7 @@ public class DescriptorSetArray {
 
     private final long defFragSampler;
     private final boolean[] isUpdated = {false, false};
+    private static final int INLINE_UNIFORM_SIZE = 16;
     private int MissingTexID = -1;
 
     static
@@ -129,8 +131,8 @@ public class DescriptorSetArray {
 
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
-                    .descriptorCount(1)
-                    .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                    .descriptorCount(INLINE_UNIFORM_SIZE)
+                    .descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 
@@ -215,20 +217,30 @@ public class DescriptorSetArray {
         try(MemoryStack stack = stackPush()) {
 //            int size = DescriptorTableHeap.size();
             //TODO: Separate descriptorSet for each type: allows for the ability to selectively update+bind DescriptorSets
-            VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(2, stack);
+            VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(3, stack);
 
 
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uniformBufferPoolSize.descriptorCount(2);
+                uniformBufferPoolSize.descriptorCount(1);
 
-                VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(1);
+                VkDescriptorPoolSize uniformBufferPoolSize2 = poolSizes.get(1);
+//                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+                uniformBufferPoolSize2.type(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+                uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE); //Byte Count/Size For Inline Uniform block
+
+                VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(2);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             textureSamplerPoolSize.descriptorCount(SAMPLER_MAX_LIMIT);
 
+            VkDescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo = VkDescriptorPoolInlineUniformBlockCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .maxInlineUniformBlockBindings(4);
+
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+            poolInfo.pNext(inlineUniformBlockCreateInfo);
             poolInfo.pPoolSizes(poolSizes);
             poolInfo.maxSets(value); //One DSet for each binding
 
@@ -283,6 +295,8 @@ public class DescriptorSetArray {
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId());
             this.initialisedVertSamplers.registerTexture(6);
         }
         try(MemoryStack stack = stackPush()) {
@@ -304,28 +318,46 @@ public class DescriptorSetArray {
                 //Fog Parameters = ColorModulator -> PushConstants
 
                 //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
-                int currentBinding = 0;
 
 
-                for (int currentWriteIndex = 0; currentWriteIndex < 2; currentWriteIndex++) {
+
+              {
 
 
                     VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
                     bufferInfos.buffer(uniformId);
                     bufferInfos.offset(x);
                     bufferInfos.range(1024);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
-                    x += 1024;
+
 
                     //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
                     VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
                     uboDescriptorWrite.sType$Default();
-                    uboDescriptorWrite.dstBinding(currentBinding);
+                    uboDescriptorWrite.dstBinding(VERT_UBO_ID);
                     uboDescriptorWrite.dstArrayElement(0);
                     uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                     uboDescriptorWrite.descriptorCount(1);
                     uboDescriptorWrite.pBufferInfo(bufferInfos);
                     uboDescriptorWrite.dstSet(currentSet);
-                    currentBinding++;
+
+                }
+                {
+
+
+                    VkWriteDescriptorSetInlineUniformBlock bufferInfos = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
+                            .sType$Default()
+                            .pData(UniformState.ColorModulator.buffer());
+
+
+                    //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
+                    VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
+                    uboDescriptorWrite.sType$Default();
+                    uboDescriptorWrite.pNext(bufferInfos);
+                    uboDescriptorWrite.dstBinding(FRAG_UBO_ID);
+                    uboDescriptorWrite.dstArrayElement(0);
+                    uboDescriptorWrite.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+                    uboDescriptorWrite.descriptorCount(INLINE_UNIFORM_SIZE);
+                    uboDescriptorWrite.dstSet(currentSet);
                 }
 
 

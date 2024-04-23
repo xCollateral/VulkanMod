@@ -10,8 +10,7 @@ mat2 mat2_rotate_z(float radians) {
 layout(location = 0) in vec4 texProj0;
 
 
-layout(binding = 3) uniform sampler2D Sampler0;
-layout(binding = 3) uniform sampler2D SamplerProj;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
 const vec3[] COLORS = vec3[](
     vec3(0.022087, 0.098399, 0.110818),
@@ -57,9 +56,9 @@ mat4 end_portal_layer(float layer) {
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec3 color = textureProj(Sampler0, texProj0).rgb * COLORS[0];
+    vec3 color = textureProj(Sampler0[5], texProj0).rgb * COLORS[0];
     for (int i = 0; i < 15; i++) {
-        color += textureProj(SamplerProj, texProj0 * end_portal_layer(float(i + 1))).rgb * COLORS[i];
+        color += textureProj(Sampler0[6], texProj0 * end_portal_layer(float(i + 1))).rgb * COLORS[i];
     }
     fragColor = vec4(color, 1.0);
 }

@@ -23,7 +23,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 public abstract class DeviceManager {
     public static List<Device> availableDevices;
@@ -186,11 +186,16 @@ public abstract class DeviceManager {
 //
 //                    .shaderSampledImageArrayNonUniformIndexing(false);
 
+            VkPhysicalDeviceInlineUniformBlockFeatures inlineUniformBlockFeatures = VkPhysicalDeviceInlineUniformBlockFeatures.calloc(stack)
+                    .sType$Default()
+                    .inlineUniformBlock(true)
+                    .descriptorBindingInlineUniformBlockUpdateAfterBind(true); //TODO: Interestingly inlineUniformBlock has wider support for Update After bind than Uniform buffers
+
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(descriptorIndexingFeatures).pNext(shaderDrawParameterFeatures);
+            createInfo.pNext(descriptorIndexingFeatures).pNext(inlineUniformBlockFeatures).pNext(shaderDrawParameterFeatures);
             createInfo.pEnabledFeatures(deviceFeatures.features());
             createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
             createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
@@ -200,7 +205,7 @@ public abstract class DeviceManager {
             int res = vkCreateDevice(physicalDevice, createInfo, null, pDevice);
             Vulkan.checkResult(res, "Failed to create logical device");
 
-            vkDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+            vkDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_3);
 
 //            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 //

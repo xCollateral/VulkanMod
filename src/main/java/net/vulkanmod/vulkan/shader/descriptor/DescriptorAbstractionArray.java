@@ -9,6 +9,7 @@ public class DescriptorAbstractionArray {
 
     final int maxSize;
     private final int shaderStage;
+    private final int descriptorType;
     private final int descriptorBinding;
 
     private int samplerRange;
@@ -18,6 +19,7 @@ public class DescriptorAbstractionArray {
     public DescriptorAbstractionArray(int reserveTextureRange, int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
         this.maxSize = maxSize;
         this.shaderStage = shaderStage;
+        this.descriptorType = descriptorType;
         this.descriptorBinding = descriptorBinding;
 
         samplerRange = reserveTextureRange; //Thanks to Partially Bound, don't need to worry about initialising all the handles in the Descriptor Array
@@ -116,11 +118,15 @@ public class DescriptorAbstractionArray {
     public boolean removeTexture(int id) {
 
         if(!this.texID2DescIdx.containsKey(id)) return false;
-       int freedDescIdx = this.texID2DescIdx.remove(id);
-
-        //TODO; Fix gaps/Incontiguity when Texture Slots are Freed/removed
-
-        samplerRange = Math.min(samplerRange, freedDescIdx);
+//       int freedDescIdx = this.texID2DescIdx.remove(id);
+//
+//        //TODO; Fix Descriptor Holes: gaps/Incontiguity when Texture Slots are Freed/removed
+//
+//        samplerRange = Math.min(samplerRange, freedDescIdx);
         return true;
+    }
+
+    public int getDescType() {
+        return this.descriptorType;
     }
 }

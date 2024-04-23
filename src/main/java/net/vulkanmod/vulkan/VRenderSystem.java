@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.ColorUtil;
@@ -14,7 +15,6 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static net.vulkanmod.vulkan.shader.UniformState.MVP;
@@ -83,6 +83,7 @@ public abstract class VRenderSystem {
 
     public static void applyModelViewMatrix(Matrix4f mat) {
         mat.get(UniformState.ModelViewMat.buffer().asFloatBuffer());
+
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
     //TODO: SKip if Hashcode Matches

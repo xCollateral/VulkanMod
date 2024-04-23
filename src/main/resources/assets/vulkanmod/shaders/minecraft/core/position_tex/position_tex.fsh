@@ -2,6 +2,9 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 layout(binding = 3) uniform sampler2D Sampler0[];
 
+layout(binding = 1) uniform UBO{
+    vec4 ColorModulator;
+};
 
 layout(location = 0) in flat uint baseInstance;
 layout(location = 1) in vec2 texCoord0;
@@ -13,5 +16,5 @@ void main() {
     if (color.a == 0.0) {
         discard;
     }
-    fragColor = color;
+    fragColor = color * ColorModulator;
 }
