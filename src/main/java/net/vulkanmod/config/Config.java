@@ -2,6 +2,8 @@ package net.vulkanmod.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.vulkanmod.config.video.VideoModeManager;
+import net.vulkanmod.config.video.VideoModeSet;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -13,7 +15,7 @@ import java.util.Collections;
 public class Config {
 
     public int frameQueueSize = 2;
-    public VideoResolution resolution = VideoResolution.getFirstAvailable();
+    public VideoModeSet.VideoMode videoMode = VideoModeManager.getFirstAvailable().getVideoMode();
     public boolean xWayland = false;
     public boolean windowedFullscreen = false;
 
