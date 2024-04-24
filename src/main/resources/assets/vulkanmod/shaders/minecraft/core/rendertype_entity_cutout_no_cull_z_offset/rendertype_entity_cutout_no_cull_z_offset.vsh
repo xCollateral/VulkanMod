@@ -12,6 +12,12 @@ layout(location = 5) in vec3 Normal;
 layout(binding = 0) uniform readonly UniformBufferObject {
     mat4 MVP[16];
 };
+//Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
+layout(push_constant) uniform PushConstant
+{
+    vec3 Light0_Direction;
+    vec3 Light1_Direction;
+};
 
 layout(binding = 2) uniform sampler2D Sampler2;
 

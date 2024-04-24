@@ -24,7 +24,7 @@ layout(location = 0) out vec4 fragColor;
 void main() {
     vec4 color = texture(Sampler0[baseInstance], texCoord0) * vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
-    //color *= lightMapColor;
+    color *= lightMapColor;
     fragColor = color;
 }
 

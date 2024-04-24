@@ -385,7 +385,7 @@ public abstract class RenderSystemMixin {
                 p_157174_.get(0, byteBuffer);
                 p_157175_.get(16, byteBuffer);
 
-                vkCmdPushConstants(Renderer.getCommandBuffer(), Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer.rewind());
+                vkCmdPushConstants(Renderer.getCommandBuffer(), Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
 
             }
         }
