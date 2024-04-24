@@ -44,6 +44,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
+    public static boolean recomp;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -73,6 +74,7 @@ public class Renderer {
     }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
+    private long boundPipeline;
 
     private Drawer drawer;
 
@@ -383,6 +385,7 @@ public class Renderer {
         }
 
         usedPipelines.clear();
+        boundPipeline=0;
     }
 
     void waitForSwapChain() {
@@ -482,7 +485,14 @@ public class Renderer {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
+        final long handle = pipeline.getHandle(currentState);
+
+        if (boundPipeline == handle) {
+            return;
+        }
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
+        boundPipeline = handle;
 
         addUsedPipeline(pipeline);
     }
