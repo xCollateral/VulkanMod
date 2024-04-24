@@ -7,9 +7,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.vulkanmod.Initializer.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.glfw.GLFW.GLFW_ANY_PLATFORM;
 
 public abstract class VideoModeManager {
     private static VideoModeSet.VideoMode osVideoMode;

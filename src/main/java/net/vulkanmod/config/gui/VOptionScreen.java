@@ -56,6 +56,9 @@ public class VOptionScreen extends Screen {
         page = new OptionPage("Graphics", Options.getGraphicsOpts());
         this.optionPages.add(page);
 
+        page = new OptionPage("Optimizations", Options.getOptimizationOpts());
+        this.optionPages.add(page);
+
         page = new OptionPage("Other", Options.getOtherOpts());
         this.optionPages.add(page);
     }

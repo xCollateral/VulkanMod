@@ -138,16 +138,6 @@ public abstract class Options {
                         new SwitchOption(Component.translatable("Autosave Indicator"),
                                 value -> minecraftOptions.showAutosaveIndicator().set(value),
                                 () -> minecraftOptions.showAutosaveIndicator().get()),
-                        new RangeOption(Component.translatable("Distortion Effects"),
-                                0, 100, 1,
-                                value -> minecraftOptions.screenEffectScale().set(value * 0.01),
-                                () -> (int) (minecraftOptions.screenEffectScale().get() * 100.0f))
-                                .setTooltip(Component.translatable("options.screenEffectScale.tooltip")),
-                        new RangeOption(Component.translatable("FOV Effects"),
-                                0, 100, 1,
-                                value -> minecraftOptions.fovEffectScale().set(value * 0.01),
-                                () -> (int) (minecraftOptions.fovEffectScale().get() * 100.0f))
-                                .setTooltip(Component.translatable("options.fovEffectScale.tooltip"))
                 })
         };
     }
@@ -251,7 +241,7 @@ public abstract class Options {
         };
     }
 
-    public static OptionBlock[] getOtherOpts() {
+    public static OptionBlock[] getOptimizationOpts() {
         return new OptionBlock[] {
                 new OptionBlock("", new Option[] {
                         new CyclingOption<>(Component.translatable("Advanced Chunk Culling"),
@@ -277,7 +267,13 @@ public abstract class Options {
                                 value -> config.indirectDraw = value,
                                 () -> config.indirectDraw)
                                 .setTooltip(Component.translatable("vulkanmod.options.indirectDraw.tooltip")),
-                }),
+                })
+        };
+
+    }
+
+    public static OptionBlock[] getOtherOpts() {
+        return new OptionBlock[] {
                 new OptionBlock("", new Option[] {
                         new RangeOption(Component.translatable("Render queue size"),
                                 2, 5, 1,
