@@ -14,6 +14,7 @@ import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.UniformState;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
@@ -367,14 +368,10 @@ public abstract class RenderSystemMixin {
     public static void _setShaderLights(Vector3f p_157174_, Vector3f p_157175_) {
         shaderLightDirections[0] = p_157174_;
         shaderLightDirections[1] = p_157175_;
-
-        UniformState.Light0_Direction.getMappedBufferPtr().putFloat(0, p_157174_.x());
-        UniformState.Light0_Direction.getMappedBufferPtr().putFloat(4, p_157174_.y());
-        UniformState.Light0_Direction.getMappedBufferPtr().putFloat(8, p_157174_.z());
-
-        UniformState.Light1_Direction.getMappedBufferPtr().putFloat(0, p_157175_.x());
-        UniformState.Light1_Direction.getMappedBufferPtr().putFloat(4, p_157175_.y());
-        UniformState.Light1_Direction.getMappedBufferPtr().putFloat(8, p_157175_.z());
+        UniformState.Light0_Direction.needsUpdate(p_157174_.hashCode());
+        UniformState.Light1_Direction.needsUpdate(p_157175_.hashCode());
+        p_157174_.getToAddress(UniformState.Light0_Direction.getMappedBufferPtr().ptr);
+        p_157175_.getToAddress(UniformState.Light1_Direction.getMappedBufferPtr().ptr);
     }
 
     /**

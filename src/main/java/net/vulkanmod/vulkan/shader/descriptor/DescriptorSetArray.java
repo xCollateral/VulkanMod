@@ -300,6 +300,7 @@ public class DescriptorSetArray {
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId());
             this.initialisedVertSamplers.registerTexture(6);
+            this.initialisedVertSamplers.registerTexture(6);
         }
         try(MemoryStack stack = stackPush()) {
             final long currentSet = descriptorSets.get(frame);
@@ -382,6 +383,8 @@ public class DescriptorSetArray {
             {
                 default -> uniformState.getMappedBufferPtr().ptr;
                 case GameTime -> stack.nfloat(RenderSystem.getShaderGameTime());
+                case FogStart -> stack.nfloat(RenderSystem.getShaderFogStart());
+                case FogEnd -> stack.nfloat(RenderSystem.getShaderFogEnd());
             };
 
             VkWriteDescriptorSetInlineUniformBlock bufferInfos = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)

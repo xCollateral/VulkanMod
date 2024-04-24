@@ -505,12 +505,17 @@ public class Renderer {
 //            return true;
 //        }
         this.checkUBOs(pipeline, true);
+        this.checkPushConstantState(pipeline, true, commandBuffer);
         addUsedPipeline(pipeline);
         return true;
     }
 
     private void checkUBOs(Pipeline pipeline, boolean shouldUpdate) {
        if(shouldUpdate) pipeline.pushUniforms(drawer.getUniformBuffers(), currentFrame);
+    }
+
+    private void checkPushConstantState(Pipeline pipeline, boolean shouldUpdate, VkCommandBuffer commandBuffer) {
+       if(shouldUpdate) pipeline.pushConstants(commandBuffer);
     }
 
     public void pushConstants(Pipeline pipeline) {

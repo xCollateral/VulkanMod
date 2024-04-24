@@ -16,11 +16,12 @@ import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.io.InputStream;
@@ -94,7 +95,7 @@ public abstract class Pipeline {
 
           {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);
-                pushConstantRange.size(12);
+                pushConstantRange.size(24);
                 pushConstantRange.offset(0);
                 pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
@@ -202,7 +203,33 @@ public abstract class Pipeline {
 
         }
 
+    public void pushConstants(VkCommandBuffer commandBuffer) {
+        if (this.pushConstants != null && !this.name.contains("terrain")) {
+            try(MemoryStack stack = stackPush()) {
+            ByteBuffer byteBuffer = stack.malloc(24);
 
+
+
+                for(Uniform uniform : this.pushConstants.getUniforms())
+                {
+                    final UniformState uniformState = UniformState.valueOf(uniform.getName());
+                    if(uniformState.requiresUpdate())
+                    {
+                        MappedBuffer mappedBuffer = uniformState.getMappedBufferPtr();
+
+                        byteBuffer.putFloat(mappedBuffer.getFloat(0));
+                        byteBuffer.putFloat(mappedBuffer.getFloat(4));
+                        byteBuffer.putFloat(mappedBuffer.getFloat(8));
+                        uniformState.resetAndUpdate();
+                    }
+
+                }
+
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer.rewind());
+
+            }
+        }
+    }
 
 
     public static class Builder {
