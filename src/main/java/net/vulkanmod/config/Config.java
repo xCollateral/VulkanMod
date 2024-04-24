@@ -16,10 +16,8 @@ public class Config {
 
     public int frameQueueSize = 2;
     public VideoModeSet.VideoMode videoMode = VideoModeManager.getFirstAvailable().getVideoMode();
-    public boolean xWayland = false;
     public boolean windowedFullscreen = false;
 
-    public boolean guiOptimizations = false;
     public int advCulling = 2;
     public boolean indirectDraw = false;
 
