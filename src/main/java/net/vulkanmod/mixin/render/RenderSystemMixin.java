@@ -13,18 +13,25 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.*;
 
+import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import static com.mojang.blaze3d.systems.RenderSystem.*;
+import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
+import static org.lwjgl.vulkan.VK10.vkCmdPushConstants;
 
 @Mixin(RenderSystem.class)
 public abstract class RenderSystemMixin {
@@ -366,12 +373,28 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void _setShaderLights(Vector3f p_157174_, Vector3f p_157175_) {
-        shaderLightDirections[0] = p_157174_;
-        shaderLightDirections[1] = p_157175_;
-        UniformState.Light0_Direction.needsUpdate(p_157174_.hashCode());
-        UniformState.Light1_Direction.needsUpdate(p_157175_.hashCode());
-        p_157174_.getToAddress(UniformState.Light0_Direction.getMappedBufferPtr().ptr);
-        p_157175_.getToAddress(UniformState.Light1_Direction.getMappedBufferPtr().ptr);
+
+        if(shaderLightDirections[0] != p_157174_ && shaderLightDirections[1] != p_157175_)
+        {
+            shaderLightDirections[0] = p_157174_;
+            shaderLightDirections[1] = p_157175_;
+
+            try(MemoryStack stack = stackPush()) {
+                ByteBuffer byteBuffer = stack.malloc(24);
+
+                byteBuffer.putFloat(p_157174_.x);
+                byteBuffer.putFloat(p_157174_.y);
+                byteBuffer.putFloat(p_157174_.z);
+
+                byteBuffer.putFloat(p_157175_.x);
+                byteBuffer.putFloat(p_157175_.y);
+                byteBuffer.putFloat(p_157175_.z);
+
+                vkCmdPushConstants(Renderer.getCommandBuffer(), Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer.rewind());
+
+            }
+        }
+
     }
 
     /**

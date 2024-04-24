@@ -505,7 +505,6 @@ public class Renderer {
 //            return true;
 //        }
         this.checkUBOs(pipeline, true);
-        this.checkPushConstantState(pipeline, true, commandBuffer);
         addUsedPipeline(pipeline);
         return true;
     }

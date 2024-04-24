@@ -76,6 +76,18 @@ public enum UniformState {
         return isUniqueHash;
     }
 
+    public boolean needsUpdate2(int srcHash)
+    {
+        //hash the Uniform contents, then stroe the current offset
+
+        //TODO: if need uodate then also update uniform offset/index
+        // or perhaps pushing uniforms here instead
+        this.newHash =srcHash;
+
+
+        return this.needsUpdate = this.newHash!=this.currentHash;
+    }
+
     public boolean needsUpdate(int srcHash)
     {
         //hash the Uniform contents, then stroe the current offset

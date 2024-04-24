@@ -66,7 +66,7 @@ public abstract class Pipeline {
     public final String name;
 
 //    protected static long descriptorSetLayout;
-    protected static final long pipelineLayout = createPipelineLayout();
+    public static final long pipelineLayout = createPipelineLayout();
 
 
 
