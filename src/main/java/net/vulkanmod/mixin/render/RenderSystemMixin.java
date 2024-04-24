@@ -43,7 +43,7 @@ public abstract class RenderSystemMixin {
     @Shadow private static Matrix4f textureMatrix;
     @Shadow @Final private static int[] shaderTextures;
     @Shadow @Final private static float[] shaderColor;
-    @Shadow @Final private static Vector3f[] shaderLightDirections;
+    @Shadow @Final private static final Vector3f[] shaderLightDirections = {new Vector3f(), new Vector3f()};
 
     @Shadow
     public static void assertOnGameThreadOrInit() {
@@ -374,21 +374,16 @@ public abstract class RenderSystemMixin {
     @Overwrite(remap = false)
     public static void _setShaderLights(Vector3f p_157174_, Vector3f p_157175_) {
 
-        if(shaderLightDirections[0] != p_157174_ && shaderLightDirections[1] != p_157175_)
+        if(shaderLightDirections[0].hashCode() != p_157174_.hashCode() && shaderLightDirections[1].hashCode() != p_157175_.hashCode())
         {
             shaderLightDirections[0] = p_157174_;
             shaderLightDirections[1] = p_157175_;
 
             try(MemoryStack stack = stackPush()) {
-                ByteBuffer byteBuffer = stack.malloc(24);
+                ByteBuffer byteBuffer = stack.malloc(28);
 
-                byteBuffer.putFloat(p_157174_.x);
-                byteBuffer.putFloat(p_157174_.y);
-                byteBuffer.putFloat(p_157174_.z);
-
-                byteBuffer.putFloat(p_157175_.x);
-                byteBuffer.putFloat(p_157175_.y);
-                byteBuffer.putFloat(p_157175_.z);
+                p_157174_.get(0, byteBuffer);
+                p_157175_.get(16, byteBuffer);
 
                 vkCmdPushConstants(Renderer.getCommandBuffer(), Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer.rewind());
 
