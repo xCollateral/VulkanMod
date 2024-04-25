@@ -31,8 +31,8 @@ import static org.lwjgl.vulkan.VK10.*;
 public class SwapChain extends Framebuffer {
     private static final int DEFAULT_IMAGE_COUNT = 3;
 
-    //Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
-    //(As Immediate Mode (and by extension Screen tearing) doesn't exist on some Wayland installations currently)
+    // Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
+    // (As Immediate Mode (and by extension Screen tearing) doesn't exist on some Wayland installations currently)
     private static final int defUncappedMode = checkPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 
     private final Long2ReferenceOpenHashMap<long[]> FBO_map = new Long2ReferenceOpenHashMap<>();
@@ -90,8 +90,8 @@ public class SwapChain extends Framebuffer {
                 return;
             }
 
-            //minImageCount depends on driver: Mesa/RADV needs a min of 4, but most other drivers are at least 2 or 3
-            //TODO using FIFO present mode with image num > 2 introduces (unnecessary) input lag
+            // minImageCount depends on driver: Mesa/RADV needs a min of 4, but most other drivers are at least 2 or 3
+            // TODO using FIFO present mode with image num > 2 introduces (unnecessary) input lag
             int requestedImages = Math.max(DEFAULT_IMAGE_COUNT, surfaceProperties.capabilities.minImageCount());
 
             IntBuffer imageCount = stack.ints(requestedImages);
@@ -135,7 +135,7 @@ public class SwapChain extends Framebuffer {
             }
 
             if (this.swapChainId != VK_NULL_HANDLE) {
-                this.swapChainImages.forEach(iamge -> vkDestroyImageView(device, iamge.getImageView(), null));
+                this.swapChainImages.forEach(image -> vkDestroyImageView(device, image.getImageView(), null));
                 vkDestroySwapchainKHR(device, this.swapChainId, null);
             }
 
@@ -156,7 +156,9 @@ public class SwapChain extends Framebuffer {
                 long imageId = pSwapchainImages.get(i);
                 long imageView = VulkanImage.createImageView(imageId, this.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
-                this.swapChainImages.add(new VulkanImage(imageId, this.format, 1, this.width, this.height, 4, 0, imageView));
+                VulkanImage image = new VulkanImage(imageId, this.format, 1, this.width, this.height, 4, 0, imageView);
+                image.updateTextureSampler(true, true, false);
+                this.swapChainImages.add(image);
             }
         }
 
@@ -185,11 +187,8 @@ public class SwapChain extends Framebuffer {
             long[] framebuffers = new long[this.swapChainImages.size()];
 
             for (int i = 0; i < this.swapChainImages.size(); ++i) {
-
-//                LongBuffer attachments = stack.longs(imageViews.get(i), depthAttachment.getImageView());
                 LongBuffer attachments = stack.longs(this.swapChainImages.get(i).getImageView(), this.depthAttachment.getImageView());
 
-                //attachments = stack.mallocLong(1);
                 LongBuffer pFramebuffer = stack.mallocLong(1);
 
                 VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack);
@@ -288,7 +287,7 @@ public class SwapChain extends Framebuffer {
     private int getPresentMode(IntBuffer availablePresentModes) {
         int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : defUncappedMode;
 
-        //fifo mode is the only mode that has to be supported
+        // FIFO mode is the only mode that has to be supported
         if (requestedMode == VK_PRESENT_MODE_FIFO_KHR)
             return VK_PRESENT_MODE_FIFO_KHR;
 
