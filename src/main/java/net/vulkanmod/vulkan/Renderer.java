@@ -90,6 +90,7 @@ public class Renderer {
 
     private static int currentFrame = 0;
     private static int imageIndex;
+    private static int lastReset = -1;
     private VkCommandBuffer currentCmdBuffer;
     private boolean recordingCmds = false;
 
@@ -361,6 +362,13 @@ public class Renderer {
         p.pop();
         p.round();
         p.push("Frame_ops");
+
+        // runTick might be called recursively,
+        // this check forces sync to avoid upload corruption
+        if (lastReset == currentFrame) {
+            Synchronization.INSTANCE.waitFences();
+        }
+        lastReset = currentFrame;
 
         drawer.resetBuffers(currentFrame);
 
