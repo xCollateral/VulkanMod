@@ -29,7 +29,10 @@ public enum MemoryType {
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
 
-        final int heapType = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : 0;
+        //Some devices (e.g. LLVMPipe, some iGPUs) use a singular pool, and only have VK_MEMORY_HEAP_DEVICE_LOCAL_BIT
+        boolean hasRAMFlag = hasHeapFlag(0);
+
+        final int heapType = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : hasRAMFlag ? 0 : VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
         for (int optimalFlagMask : optimalFlags) {
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
 
@@ -37,11 +40,8 @@ public enum MemoryType {
                 final int availableFlags = memoryType.propertyFlags();
                 final int extractedFlags = optimalFlagMask & availableFlags;
                 final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
-//                final boolean hasRequiredHeapType = memoryHeap.flags() == heapFlag;
 
                 if (hasRequiredFlags && memoryHeap.flags() == heapType) {
-//                    if(memoryHeap.flags()!= heapType)
-//                        Initializer.LOGGER.error(this.name() + ": Unable to find Available VRAM: Falling back to System RAM: Performance may be degraded!");
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
 
@@ -91,7 +91,7 @@ public enum MemoryType {
         return memTypeFlags.toString();
     }
 
-    private static boolean getVRAMHeaps(int heapFlag) {
+    private static boolean hasHeapFlag(int heapFlag) {
         for(VkMemoryHeap memoryHeap : DeviceManager.memoryProperties.memoryHeaps()) {
             if(memoryHeap.flags()==heapFlag) return true;
         }
@@ -101,7 +101,7 @@ public enum MemoryType {
     void createBuffer(Buffer buffer, int size)
     {
 
-
+        //Allow resizable bar heaps to bypass the staging buffer
         final int usage = buffer.usage | (this.mappable() ? 0 : VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
         MemoryManager.getInstance().createBuffer(buffer, size, usage, this.flags);
