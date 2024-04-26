@@ -64,7 +64,8 @@ public class VideoModeSet {
     }
 
     public VideoMode getVideoMode() {
-        return new VideoMode(this.width, this.height, this.bitDepth, this.refreshRates.get(0));
+        int refreshRate = this.refreshRates.get(this.refreshRates.size() - 1);
+        return new VideoMode(this.width, this.height, this.bitDepth, refreshRate);
     }
 
     public static final class VideoMode {
