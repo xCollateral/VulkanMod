@@ -18,6 +18,7 @@ import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -30,8 +31,7 @@ import java.util.function.Consumer;
 
 import static com.mojang.blaze3d.systems.RenderSystem.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
-import static org.lwjgl.vulkan.VK10.vkCmdPushConstants;
+import static org.lwjgl.vulkan.VK10.*;
 
 @Mixin(RenderSystem.class)
 public abstract class RenderSystemMixin {
@@ -380,7 +380,7 @@ public abstract class RenderSystemMixin {
             shaderLightDirections[1] = p_157175_;
 
             try(MemoryStack stack = stackPush()) {
-                ByteBuffer byteBuffer = stack.malloc(28);
+                ByteBuffer byteBuffer = stack.malloc(32);
 
                 p_157174_.get(0, byteBuffer);
                 p_157175_.get(16, byteBuffer);
@@ -403,6 +403,10 @@ public abstract class RenderSystemMixin {
             shaderColor[1] = g;
             shaderColor[2] = b;
             shaderColor[3] = a;
+
+            ColorUtil.setRGBA_Buffer(UniformState.ColorModulator.getMappedBufferPtr(), r, g, b, a);
+            vkCmdPushConstants(Renderer.getCommandBuffer(), Pipeline.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 32, UniformState.ColorModulator.buffer());
+
             VRenderSystem.setShaderColor(r, g, b, a);
         }
 

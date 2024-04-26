@@ -55,10 +55,10 @@ public abstract class LevelRendererMixin {
 ////        }
 //    }
 
-    @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V", ordinal = 0))
+/*    @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V", ordinal = 0))
     private void getSkyColor(float f, float g, float h, float i)
     {
         VRenderSystem.setSkyColor(f, g, h, i);
-    }
+    }*/
 
 }

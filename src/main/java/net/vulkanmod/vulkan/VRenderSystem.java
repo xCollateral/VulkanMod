@@ -40,12 +40,6 @@ public abstract class VRenderSystem {
     private static final float[] checkedClearColor = new float[4];
     public static float alphaCutout = 0.0f;
 
-    static
-    {
-        //Set shaderColor to White first (Fixes Mojang splash visibility)
-        ColorUtil.setRGBA_Buffer(UniformState.ColorModulator.getMappedBufferPtr(), 1, 1, 1, 1);
-    }
-
     private static final float[] depthBias = new float[2];
 
     public static void initRenderer()
@@ -111,7 +105,7 @@ public abstract class VRenderSystem {
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
-        ColorUtil.setRGBA_Buffer(UniformState.ColorModulator.getMappedBufferPtr(), f1, f2, f3, f4);
+
     }
     //TOOD: Schedule update when actually unique data has been provided
     public static void setShaderFogColor(float f1, float f2, float f3, float f4) {

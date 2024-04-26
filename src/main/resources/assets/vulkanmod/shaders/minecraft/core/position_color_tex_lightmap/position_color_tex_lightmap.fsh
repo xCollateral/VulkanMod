@@ -2,8 +2,8 @@
 
 layout(binding = 3) uniform sampler2D Sampler0;
 
-layout(binding = 1) readonly uniform UBO{
-    vec4 ColorModulator;
+layout(push_constant) readonly uniform pushConstant{
+    layout(offset = 32) vec4 ColorModulator;
 };
 
 layout(location = 0) in vec4 vertexColor;
