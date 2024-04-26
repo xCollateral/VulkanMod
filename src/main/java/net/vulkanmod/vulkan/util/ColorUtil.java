@@ -38,6 +38,15 @@ public class ColorUtil {
         public static float unpackB(int color) {
             return unpackColor(color, 0);
         }
+
+        public static float unpackA(int color) {
+            return unpackColor(color, 24);
+        }
+
+        public static int multiplyAlpha(int color, float m) {
+            int newA = floatToInt(unpackA(color) * m);
+            return (color & 0x00FFFFFF) | newA << 24;
+        }
     }
 
     public static class RGBA {
