@@ -1,0 +1,9 @@
+{
+  "vulkanmod.options.videoMode.tooltip" : "Only works on fullscreen",
+  "vulkanmod.options.windowedFullscreen" : "Windowed Fullscreen",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip" : "Use a unique render layer for opaque terrain to improve performance. It changes some distant blocks aspect",
+  "vulkanmod.options.advCulling.tooltip" : "Use a culling algorithm that might improve performance by reducing the number of non visible chunk sections rendered.",
+  "vulkanmod.options.entityCulling.tooltip" : "Enables culling for entities on not visible sections.",
+  "vulkanmod.options.indirectDraw.tooltip" : "Reduces CPU overhead but increases GPU overhead. Enabling it might help in CPU limited systems.",
+  "vulkanmod.options.frameQueue.tooltip" : "Higher values might help stabilize frametime but will increase input lag."
+}

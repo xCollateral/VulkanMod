@@ -17,12 +17,12 @@ float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     return smoothstep(fogEnd, fogStart, vertexDistance);
 }
 
-float fog_distance(mat4 modelViewMat, vec3 pos, int shape) {
+float fog_distance(vec3 pos, int shape) {
     if (shape == 0) {
-        return length((modelViewMat * vec4(pos, 1.0)).xyz);
+        return length(pos);
     } else {
-        float distXZ = length((modelViewMat * vec4(pos.x, 0.0, pos.z, 1.0)).xyz);
-        float distY = length((modelViewMat * vec4(0.0, pos.y, 0.0, 1.0)).xyz);
+        float distXZ = length(pos.xz);
+        float distY = abs(pos.y);
         return max(distXZ, distY);
     }
 }

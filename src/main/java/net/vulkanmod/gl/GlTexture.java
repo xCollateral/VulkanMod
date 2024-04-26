@@ -107,6 +107,8 @@ public class GlTexture {
             case GL11.GL_TEXTURE_MAG_FILTER -> boundTexture.setMagFilter(param);
             case GL11.GL_TEXTURE_MIN_FILTER -> boundTexture.setMinFilter(param);
 
+            case GL11.GL_TEXTURE_WRAP_S, GL11.GL_TEXTURE_WRAP_T -> boundTexture.setClamp(param);
+
             default -> {}
         }
 
@@ -160,6 +162,8 @@ public class GlTexture {
     int maxLod = 0;
     int minFilter, magFilter = GL11.GL_LINEAR;
 
+    boolean clamp = true;
+
     public GlTexture(int id) {
         this.id = id;
     }
@@ -169,7 +173,7 @@ public class GlTexture {
 
         needsUpdate |= vulkanImage == null ||
                 vulkanImage.width != width || vulkanImage.height != height ||
-                 vkFormat != vulkanImage.format;
+                vkFormat != vulkanImage.format;
 
         if(needsUpdate) {
             allocateImage(width, height, vkFormat);
@@ -202,6 +206,8 @@ public class GlTexture {
 
         byte samplerFlags = magFilter == GL11.GL_LINEAR ? SamplerManager.LINEAR_FILTERING_BIT : 0;
         samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
+        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
+        samplerFlags |= clamp ? SamplerManager.CLAMP_BIT : 0;
         vulkanImage.updateTextureSampler(maxLod, samplerFlags);
     }
 
@@ -258,14 +264,24 @@ public class GlTexture {
     void setMinFilter(int v) {
         switch (v) {
             case GL11.GL_LINEAR, GL11.GL_NEAREST,
-                    GL11.GL_LINEAR_MIPMAP_LINEAR, GL11.GL_NEAREST_MIPMAP_LINEAR,
-                    GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST
+                 GL11.GL_LINEAR_MIPMAP_LINEAR, GL11.GL_NEAREST_MIPMAP_LINEAR,
+                 GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST
                     -> {}
 
             default -> throw new IllegalArgumentException("illegal min filter value: " + v);
         }
 
         this.magFilter = v;
+        updateSampler();
+    }
+
+    void setClamp(int v) {
+        if (v == GL30.GL_CLAMP_TO_EDGE) {
+            this.clamp = true;
+        } else {
+            this.clamp = false;
+        }
+
         updateSampler();
     }
 
