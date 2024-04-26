@@ -254,7 +254,7 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            this.descriptorSetArray.updateAndBind(currentFrame, drawer.getUniformBuffers().getId(currentFrame), commandBuffer);
+            this.descriptorSetArray.updateAndBind(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 
@@ -510,7 +510,7 @@ public class Renderer {
     }
 
     private void checkUBOs(Pipeline pipeline, boolean shouldUpdate) {
-       if(shouldUpdate) pipeline.pushUniforms(drawer.getUniformBuffers(), currentFrame);
+       if(shouldUpdate) pipeline.pushUniforms(drawer.getUniformBuffer(), currentFrame);
     }
 
     private void checkPushConstantState(Pipeline pipeline, boolean shouldUpdate, VkCommandBuffer commandBuffer) {

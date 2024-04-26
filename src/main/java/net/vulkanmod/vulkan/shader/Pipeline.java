@@ -7,9 +7,10 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
+import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.memory.UniformBuffers;
+import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
@@ -168,7 +169,7 @@ public abstract class Pipeline {
         }
 
 
-        public void pushUniforms(UniformBuffers uniformBuffers, int frame) {
+        public void pushUniforms(UniformBuffer uniformBuffers, int frame) {
             int currentOffset = uniformBuffers.getUsedBytes();
 
             //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
@@ -189,7 +190,7 @@ public abstract class Pipeline {
                  int alignedSize = VUtil.align(ubo.getSize(), 64);//Only the Uniform descriptor needs to be aligned, not the contents
                  uniformBuffers.checkCapacity(alignedSize);
 //                int x = (ubo.getStages()&VK_SHADER_STAGE_FRAGMENT_BIT)!=0 ? 1024 : 0;
-                 ubo.update(uniformBuffers.getPointer(frame));
+                 ubo.update(uniformBuffers.getPointer());
 
                  uniformBuffers.updateOffset(alignedSize);
                  UniformState.MVP.resetAndUpdate();

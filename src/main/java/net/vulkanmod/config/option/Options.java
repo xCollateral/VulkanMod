@@ -219,6 +219,12 @@ public abstract class Options {
                                     Minecraft.getInstance().levelRenderer.allChanged();
                                 },
                                 () -> minecraftOptions.biomeBlendRadius().get()),
+                        new SwitchOption(Component.translatable("Animations"),
+                                (value) -> config.animations = value,
+                                () -> config.animations),
+                        new SwitchOption(Component.translatable("RenderSky"),
+                                (value) -> config.renderSky = value,
+                                () -> config.renderSky)
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new SwitchOption(Component.translatable("Entity Shadows"),

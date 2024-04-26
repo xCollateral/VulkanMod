@@ -2,7 +2,7 @@ package net.vulkanmod.vulkan.shader;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import net.vulkanmod.vulkan.Renderer;
-import net.vulkanmod.vulkan.memory.UniformBuffers;
+import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -58,13 +58,13 @@ public enum UniformState {
     }
 
 
-    public boolean forcePushUpdate(int srcHash, UniformBuffers uniformBuffer, int frame)
+    public boolean forcePushUpdate(int srcHash, UniformBuffer uniformBuffer, int frame)
     {
         boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(srcHash);
         if(isUniqueHash) {
             final int align1 = VUtil.align(this.size * 4, this.align);
             this.hashedUniformOffsetMap.put(srcHash, uniformBuffer.getUsedBytes());
-            MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getPointer(frame), align1);
+            MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getPointer(), align1);
             uniformBuffer.updateOffset(align1);
             this.needsUpdate=true;
         }

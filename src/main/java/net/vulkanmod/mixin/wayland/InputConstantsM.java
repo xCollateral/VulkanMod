@@ -1,7 +1,8 @@
 package net.vulkanmod.mixin.wayland;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.vulkanmod.config.VideoResolution;
+
+import net.vulkanmod.config.Platform;
 import org.lwjgl.glfw.*;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -16,7 +17,7 @@ public class InputConstantsM {
      */
     @Redirect(method = "grabOrReleaseMouse", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSetCursorPos(JDD)V"))
     private static void grabOrReleaseMouse(long window, double xpos, double ypos) {
-        if (!VideoResolution.isWayLand())
+        if (!Platform.isWayLand())
             GLFW.glfwSetCursorPos(window, xpos, ypos);
     }
 }
