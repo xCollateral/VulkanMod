@@ -27,8 +27,6 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    color *= vertexColor;
-    color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
-    color *= lightMapColor;
-    fragColor = color;
+
+    fragColor = color * vertexColor * lightMapColor;;
 }
