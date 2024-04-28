@@ -11,7 +11,9 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
-
+layout(push_constant) uniform PushConstant{
+   layout(offset = 32) vec4 ColorModulator;
+};
 
 layout(location = 0) flat in uint baseInstance;
 layout(location = 1) in vec4 vertexColor;
@@ -25,9 +27,7 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
-    color *= vertexColor;
-    fragColor = color;
+    fragColor = color * vertexColor * ColorModulator;
 }
 
 /*

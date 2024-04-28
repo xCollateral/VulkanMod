@@ -97,13 +97,13 @@ public abstract class Pipeline {
           {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(2, stack);
                 VkPushConstantRange pushConstantVertRange = pushConstantRange.get(0);
-                pushConstantVertRange.size(28);
+                pushConstantVertRange.size(32);
                 pushConstantVertRange.offset(0);
                 pushConstantVertRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
                 VkPushConstantRange pushConstantFragRange = pushConstantRange.get(1);
-                pushConstantFragRange.size(12);
-                pushConstantFragRange.offset(28);
+                pushConstantFragRange.size(16);
+                pushConstantFragRange.offset(32);
                 pushConstantFragRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
