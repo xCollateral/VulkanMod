@@ -159,8 +159,9 @@ public abstract class VTextureSelector {
         boundTextures[2] = texture;
     }
 
-    public static void setOverlayTexture(VulkanImage texture) {
+    public static void setOverlayTexture(int id, VulkanImage texture) {
         boundTextures[1] = texture;
+        boundIDs[1]=id;
 //        loadedTextures[1] = texture;
     }
 

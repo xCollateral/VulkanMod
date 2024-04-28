@@ -18,6 +18,7 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.SamplerManager;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -302,7 +303,7 @@ public class DescriptorSetArray {
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId());
             this.initialisedVertSamplers.registerTexture(6);
-            this.initialisedVertSamplers.registerTexture(6);
+            this.initialisedVertSamplers.registerTexture(VTextureSelector.getBoundId(1));
         }
         try(MemoryStack stack = stackPush()) {
             final long currentSet = descriptorSets.get(frame);
@@ -484,5 +485,11 @@ public class DescriptorSetArray {
     public boolean isTexUnInitialised(int textureID)
     {
         return this.newTex.contains(textureID);
+    }
+
+    //todo: Allow Reserving ranges in Descriptor Array, so a approx 2048 range can be reserved.allocated for AF/MSAA mode + to supply Indices to the VertexBuilder/BuildTask
+    public String getDebugInfo()
+    {
+        return"textures["+this.initialisedFragSamplers.currentSize()+"="+SAMPLER_MAX_LIMIT+"]";
     }
 }

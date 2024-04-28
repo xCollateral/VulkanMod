@@ -20,7 +20,7 @@ layout(push_constant) uniform PushConstant
 };
 
 //layout(binding = 2) uniform sampler2D Sampler1;
-layout(binding = 2) uniform sampler2D Sampler2;
+layout(binding = 2) uniform sampler2D Sampler2[];
 
 layout(location = 0) invariant flat out uint baseInstance;
 layout(location = 1) out vec4 vertexColor;
@@ -34,8 +34,8 @@ void main() {
     baseInstance = gl_BaseInstance >> 16;
 
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
-    lightMapColor = texelFetch(Sampler2, UV2 / 16, 0);
-    ////overlayColor = texelFetch(Sampler1, UV1, 0);
+    lightMapColor = texelFetch(Sampler2[0], UV2 / 16, 0);
+    overlayColor = texelFetch(Sampler2[1], UV1, 0);
     texCoord0 = UV0;
     //normal = (MVP * vec4(Normal, 0.0)).xyz;
 }

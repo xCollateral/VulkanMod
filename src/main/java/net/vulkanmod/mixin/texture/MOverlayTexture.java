@@ -4,7 +4,6 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
-import org.apache.commons.lang3.Validate;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,7 +20,7 @@ public class MOverlayTexture {
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/texture/DynamicTexture;bind()V"))
     private void overlay(DynamicTexture instance) {
 
-        VTextureSelector.setOverlayTexture(((VAbstractTextureI)this.texture).getVulkanImage());
+        VTextureSelector.setOverlayTexture(texture.getId(), ((VAbstractTextureI)this.texture).getVulkanImage());
         VTextureSelector.setActiveTexture(1);
     }
 
@@ -33,7 +32,7 @@ public class MOverlayTexture {
 
     @Inject(method = "setupOverlayColor", at = @At(value = "HEAD"), cancellable = true)
     private void setupOverlay(CallbackInfo ci) {
-        VTextureSelector.setOverlayTexture(((VAbstractTextureI)this.texture).getVulkanImage());
+        VTextureSelector.setOverlayTexture(texture.getId(), ((VAbstractTextureI)this.texture).getVulkanImage());
         ci.cancel();
     }
 }
