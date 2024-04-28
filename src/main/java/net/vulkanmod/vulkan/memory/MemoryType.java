@@ -28,9 +28,11 @@ public enum MemoryType {
 
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
-        //Some devices don't have a separate RAM only/Non-Device local heap
-        final int VRAMFlag = useVRAM ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : hasHeapFlag(0) ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        final boolean useVRAM1 = useVRAM || !hasHeapFlag(0);
         for (int optimalFlagMask : optimalFlags) {
+            final String requiredFlagString = getMemoryTypeFlags(optimalFlagMask);
+            Initializer.LOGGER.info("Requesting Flags: "+ requiredFlagString + "...");
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
 
                 VkMemoryHeap memoryHeap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
@@ -38,22 +40,26 @@ public enum MemoryType {
                 final int extractedFlags = optimalFlagMask & availableFlags;
                 final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
 
-                final boolean hasMemType = useVRAM == ((availableFlags & VRAMFlag) != 0);
+                if(availableFlags!=0)  Initializer.LOGGER.info(
+                        "AvailableFlags: " + getMemoryTypeFlags(availableFlags) + "\t --> " + "SelectedFlags: " + getMemoryTypeFlags(extractedFlags));
+
+                final boolean hasMemType = useVRAM1 == ((availableFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0);
                 if (hasRequiredFlags && hasMemType) {
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
 
-                    Initializer.LOGGER.info(this.name()+"\n"
+                    Initializer.LOGGER.info("Found Requested Flags for: "+this.name()+"\n"
                             + "     Memory Heap Index/Bank: "+ memoryType.heapIndex() +"\n"
                             + "     IsVRAM: "+ memoryHeap.flags() +"\n"
                             + "     MaxSize: " + this.maxSize+ " Bytes" +"\n"
                             + "     AvailableFlags:" + getMemoryTypeFlags(availableFlags) + "\n"
-                            + "     EnabledFlags:" + getMemoryTypeFlags(optimalFlagMask));
+                            + "     EnabledFlags:" + requiredFlagString);
 //                    this.mappable = ((this.flags = optimalFlagMask) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
 
                     return;
                 }
             }
+            Initializer.LOGGER.error(requiredFlagString + " Not Found, using next Fallback");
 //            optimalFlagMask ^= optimalFlags[currentFlagCount]; //remove each Property bit, based on varargs priority ordering from right to left
         }
 
@@ -71,6 +77,7 @@ public enum MemoryType {
 
     private String getMemoryTypeFlags(int memFlags)
     {
+        if(memFlags==0) return " | NONE/SKIPPING";
         final int[] x = new int[]{1,2,4,8,16};
         StringBuilder memTypeFlags = new StringBuilder();
         for (int memFlag : x) {
