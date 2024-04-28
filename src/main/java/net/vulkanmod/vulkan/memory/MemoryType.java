@@ -28,11 +28,8 @@ public enum MemoryType {
 
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
-
-        //Some devices (e.g. LLVMPipe, some iGPUs) use a singular pool, and only have VK_MEMORY_HEAP_DEVICE_LOCAL_BIT
-        boolean hasRAMFlag = hasHeapFlag(0);
-
-        final int heapType = useVRAM ? VK_MEMORY_HEAP_DEVICE_LOCAL_BIT : hasRAMFlag ? 0 : VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
+        //Some devices don't have a separate RAM only/Non-Device local heap
+        final int VRAMFlag = useVRAM ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : hasHeapFlag(0) ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         for (int optimalFlagMask : optimalFlags) {
             for (VkMemoryType memoryType : DeviceManager.memoryProperties.memoryTypes()) {
 
@@ -41,7 +38,8 @@ public enum MemoryType {
                 final int extractedFlags = optimalFlagMask & availableFlags;
                 final boolean hasRequiredFlags = extractedFlags == optimalFlagMask;
 
-                if (hasRequiredFlags && memoryHeap.flags() == heapType) {
+                final boolean hasMemType = useVRAM == ((availableFlags & VRAMFlag) != 0);
+                if (hasRequiredFlags && hasMemType) {
                     this.maxSize = memoryHeap.size();
                     this.flags = optimalFlagMask;
 
