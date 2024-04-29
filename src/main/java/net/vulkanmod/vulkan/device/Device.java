@@ -28,44 +28,48 @@ public class Device {
     public final String driverVersion;
     public final String vkVersion;
 
-    public final VkPhysicalDeviceFeatures2 availableFeatures;
-    public final VkPhysicalDeviceVulkan11Features availableFeatures11;
-
-//    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
+    //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
 
-    private boolean drawIndirectSupported;
+    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasLogicOp;
 
     public Device(VkPhysicalDevice device) {
-        this.physicalDevice = device;
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            this.physicalDevice = device;
 
-        properties = VkPhysicalDeviceProperties.malloc();
-        vkGetPhysicalDeviceProperties(physicalDevice, properties);
+            properties = VkPhysicalDeviceProperties.malloc();
+            vkGetPhysicalDeviceProperties(physicalDevice, properties);
 
-        this.vendorId = properties.vendorID();
-        this.vendorIdString = decodeVendor(properties.vendorID());
-        this.deviceName = properties.deviceNameString();
-        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+            this.vendorId = properties.vendorID();
+            this.vendorIdString = decodeVendor(properties.vendorID());
+            this.deviceName = properties.deviceNameString();
+            this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
+            this.vkVersion = decDefVersion(getVkVer());
 
-        this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
-        this.availableFeatures.sType$Default();
+            VkPhysicalDeviceFeatures2 availableFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
+            availableFeatures.sType$Default();
 
-        this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
-        this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+            VkPhysicalDeviceVulkan12Features availableFeatures12 = VkPhysicalDeviceVulkan12Features.malloc(stack).sType$Default();
 
-        //Vulkan 1.3
+            VkPhysicalDeviceVulkan11Features availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc(stack).sType$Default();
+            availableFeatures.pNext(availableFeatures12);
+            availableFeatures.pNext(availableFeatures11);
+
+            //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
 //        this.availableFeatures13.sType$Default();
 //        this.availableFeatures11.pNext(this.availableFeatures13.address());
 //
 //        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
 
-        vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
+            vkGetPhysicalDeviceFeatures2(this.physicalDevice, availableFeatures);
 
-        if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-            this.drawIndirectSupported = true;
+
+            this.drawIndirectSupported = availableFeatures.features().multiDrawIndirect() && availableFeatures11.shaderDrawParameters();
+            this.hasIndexedDescriptors = availableFeatures12.runtimeDescriptorArray() && availableFeatures12.descriptorBindingVariableDescriptorCount();
+            this.hasSamplerAnisotropy = availableFeatures.features().samplerAnisotropy();
+            this.hasLogicOp = availableFeatures.features().logicOp();
+        }
 
     }
 
@@ -146,6 +150,10 @@ public class Device {
         return drawIndirectSupported;
     }
 
+    public boolean isHasIndexedDescriptors() {
+        return hasIndexedDescriptors;
+    }
+
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:
     // (e.g. such as in case we encounter a vendor specific driver bug)
     public boolean isAMD() {
@@ -158,5 +166,13 @@ public class Device {
 
     public boolean isIntel() {
         return vendorId == 0x8086;
+    }
+
+    public boolean hasSamplerAnisotropy() {
+        return this.hasSamplerAnisotropy;
+    }
+
+    public boolean hasLogicOp() {
+        return this.hasLogicOp;
     }
 }

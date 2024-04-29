@@ -167,21 +167,21 @@ public abstract class DeviceManager {
 
             VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
             deviceFeatures.sType$Default();
-            deviceFeatures.features().samplerAnisotropy(device.availableFeatures.features().samplerAnisotropy());
-            deviceFeatures.features().logicOp(device.availableFeatures.features().logicOp());
+            deviceFeatures.features().samplerAnisotropy(device.hasSamplerAnisotropy());
+            deviceFeatures.features().logicOp(device.hasLogicOp());
             deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
             shaderDrawParameterFeatures.shaderDrawParameters(device.isDrawIndirectSupported());
 
-            final boolean hasIndexedDescriptors = true;// device.isHasIndexedDescriptors();
+            final boolean hasIndexedDescriptors = device.isHasIndexedDescriptors();
             VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
                     .sType$Default()
-                    .runtimeDescriptorArray(hasIndexedDescriptors);
+                    .runtimeDescriptorArray(hasIndexedDescriptors)
 //                    .descriptorBindingPartiallyBound(false)
 //
 //                    .descriptorBindingSampledImageUpdateAfterBind(false)
 //                    .descriptorBindingUniformBufferUpdateAfterBind(false)
 //
-//                    .descriptorBindingVariableDescriptorCount(false)
+                    .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors);
 //                    .descriptorBindingUpdateUnusedWhilePending(false)
 //
 //                    .shaderSampledImageArrayNonUniformIndexing(false);
