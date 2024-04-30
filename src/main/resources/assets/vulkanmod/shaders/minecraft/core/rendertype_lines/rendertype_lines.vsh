@@ -1,14 +1,13 @@
-#version 450
+#version 460
 
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 layout(location = 2) in vec3 Normal;
+const vec2 ScreenSize = vec2(1920, 1080);
+const float LineWidth = 2.0f;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
-   mat4 ModelViewMat;
-   mat4 ProjMat;
-   vec2 ScreenSize;
-   float LineWidth;
+   mat4 ModelViewMat[16];
 };
 
 layout(location = 1) out float vertexDistance;
@@ -23,8 +22,8 @@ const mat4 VIEW_SCALE = mat4(
 );
 
 void main() {
-    vec4 linePosStart = ProjMat * VIEW_SCALE * ModelViewMat * vec4(Position, 1.0);
-    vec4 linePosEnd = ProjMat * VIEW_SCALE * ModelViewMat * vec4(Position + Normal, 1.0);
+    vec4 linePosStart = ModelViewMat[gl_BaseInstance & 15] * vec4(Position, 1.0);
+    vec4 linePosEnd = ModelViewMat[gl_BaseInstance & 15] * vec4(Position + Normal, 1.0);
 
     vec3 ndc1 = linePosStart.xyz / linePosStart.w;
     vec3 ndc2 = linePosEnd.xyz / linePosEnd.w;

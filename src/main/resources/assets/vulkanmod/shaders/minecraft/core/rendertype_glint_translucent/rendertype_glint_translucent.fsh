@@ -10,7 +10,7 @@ float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
     return smoothstep(fogEnd, fogStart, vertexDistance);
 }
 
-layout(binding = 3) uniform sampler2D Sampler0;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
 
 
@@ -20,12 +20,12 @@ layout(location = 1) in vec2 texCoord0;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0, texCoord0);
+    vec4 color = texture(Sampler0[7], texCoord0);
     if (color.a < 0.1) {
         discard;
     }
     float fade = 1;
-    fragColor = vec4(color.rgb * fade, color.a);
+    fragColor = vec4(color.rgb, color.a);
 }
 
 /*

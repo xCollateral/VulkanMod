@@ -11,14 +11,14 @@ layout(binding = 0) uniform readonly UniformBufferObject {
 
 layout(binding = 2) uniform sampler2D Sampler2;
 
-layout(location = 0) out vec4 vertexColor;
+layout(location = 0) invariant flat out uint baseInstance;
 layout(location = 1) out vec2 texCoord0;
-layout(location = 2) out float vertexDistance;
+layout(location = 2) out vec4 vertexColor;
 
 void main() {
     //TODO: Particles can share the same mat as terrain: Uniform indexing can be optimised out
     gl_Position = MVP * vec4(Position, 1.0);
-
+    baseInstance = gl_BaseInstance >> 16;
 
     texCoord0 = UV0;
     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);

@@ -1,8 +1,10 @@
 package net.vulkanmod.vulkan.util;
 
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VkDevice;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
@@ -10,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.Collection;
 
+import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 
 public class VUtil {
@@ -17,6 +20,7 @@ public class VUtil {
     public static final long UINT64_MAX = 0xFFFFFFFFFFFFFFFFL;
 
     public static final Unsafe UNSAFE;
+    private static final long[] mPtr = new long[1];
 
     static {
         Field f = null;
@@ -120,5 +124,11 @@ public class VUtil {
 
     public static boolean checkUsage(int usage, int requestedUsage) {
         return (usage & requestedUsage)!=0;
+    }
+
+    public static long doPointerAlloc(VkDevice device, long address, long vkCreateSwapchainKHR, long i) {
+
+        JNI.callPPPPI(device.address(), address, 0, vkCreateSwapchainKHR, i);
+        return UNSAFE.getLong(vkCreateSwapchainKHR);
     }
 }

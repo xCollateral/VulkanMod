@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.*;
@@ -157,7 +158,7 @@ public abstract class Pipeline {
 
 //                 if(state.getStages()!=VK_SHADER_STAGE_VERTEX_BIT) VTextureSelector.assertImageState(state.imageIdx);
 
-                final int shaderTexture = VTextureSelector.getBoundId(state.imageIdx);
+                final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
               if(shaderTexture != 0)
               {
@@ -191,7 +192,7 @@ public abstract class Pipeline {
 
                 //TODO non mappable memory
 
-             if(ubo.getUniforms().size()==1 && ubo.getUniforms().stream().anyMatch(uniform -> Objects.equals(uniform.getName(), "MVP")))
+             if(Objects.equals(ubo.getUniforms().get(0).getName(), "MVP"))
              {
                  int alignedSize = VUtil.align(ubo.getSize(), 64);//Only the Uniform descriptor needs to be aligned, not the contents
                  uniformBuffers.checkCapacity(alignedSize);

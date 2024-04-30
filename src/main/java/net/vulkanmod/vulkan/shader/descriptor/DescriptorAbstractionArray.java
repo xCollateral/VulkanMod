@@ -1,13 +1,14 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import net.vulkanmod.vulkan.util.VUtil;
 
 public class DescriptorAbstractionArray {
 
 //    private final Int2IntArrayMap textureID2DescIDMap = new Int2IntArrayMap(32);
 
 
-    final int maxSize;
+    int maxSize;
     private final int shaderStage;
     private final int descriptorType;
     private final int descriptorBinding;
@@ -128,5 +129,14 @@ public class DescriptorAbstractionArray {
 
     public int getDescType() {
         return this.descriptorType;
+    }
+
+    public boolean checkCapacity() {
+        return this.samplerRange>=maxSize;
+    }
+
+    public int resize() {
+        final int align = VUtil.align(this.samplerRange, 64);
+        return this.maxSize = align==maxSize ? align+64 : align;
     }
 }

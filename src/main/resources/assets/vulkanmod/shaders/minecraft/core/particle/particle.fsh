@@ -1,5 +1,5 @@
 #version 450
-
+#extension GL_EXT_nonuniform_qualifier : enable
 vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
     if (vertexDistance <= fogStart) {
         return inColor;
@@ -12,15 +12,15 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 layout(binding = 3) uniform sampler2D Sampler0[];
 
 
-
-layout(location = 0) in vec4 vertexColor;
+layout(location = 0) in flat uint baseInstance;
 layout(location = 1) in vec2 texCoord0;
-layout(location = 2) in float vertexDistance;
+layout(location = 2) in vec4 vertexColor;
+
 
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0[2], texCoord0) * vertexColor;
+    vec4 color = texture(Sampler0[baseInstance], texCoord0) * vertexColor;
     if (color.a < 0.1) {
         discard;
     }

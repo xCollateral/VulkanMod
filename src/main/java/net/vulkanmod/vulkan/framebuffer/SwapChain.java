@@ -10,7 +10,9 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
@@ -129,18 +131,15 @@ public class SwapChain extends Framebuffer {
 
             createInfo.oldSwapchain(this.swapChainId);
 
-            LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
-            if (vkCreateSwapchainKHR(device, createInfo, null, pSwapChain) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create swap chain");
-            }
+            long a = VUtil.doPointerAlloc(device, createInfo.address(), stack.nmalloc(4, 4), device.getCapabilities().vkCreateSwapchainKHR);
 
             if (this.swapChainId != VK_NULL_HANDLE) {
                 this.swapChainImages.forEach(image -> vkDestroyImageView(device, image.getImageView(), null));
                 vkDestroySwapchainKHR(device, this.swapChainId, null);
             }
 
-            this.swapChainId = pSwapChain.get(0);
+            this.swapChainId = a;
 
             vkGetSwapchainImagesKHR(device, this.swapChainId, imageCount, null);
 

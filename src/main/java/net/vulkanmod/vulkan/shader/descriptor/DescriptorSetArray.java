@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.blockentity.BeaconRenderer;
 import net.minecraft.client.renderer.blockentity.TheEndPortalRenderer;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -19,6 +20,7 @@ import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -37,7 +39,7 @@ public class DescriptorSetArray {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     private static final int UNIFORM_POOLS = 1;
     private static final int VERT_SAMPLER_MAX_LIMIT = 8;
-    private static final int SAMPLER_MAX_LIMIT_DEFAULT = 512;
+    private static final int SAMPLER_MAX_LIMIT_DEFAULT = 32;
     private static final int MAX_POOL_SAMPLERS = 4096;
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
     private static final int bindingsSize = 4;
@@ -82,6 +84,7 @@ public class DescriptorSetArray {
     }
 
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
+    private int currentSamplerSize;
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -307,20 +310,26 @@ public class DescriptorSetArray {
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId());
             this.initialisedVertSamplers.registerTexture(6);
             this.initialisedVertSamplers.registerTexture(VTextureSelector.getBoundId(1));
         }
         try(MemoryStack stack = stackPush()) {
-            final long currentSet = descriptorSets.get(frame);
+            if(initialisedFragSamplers.checkCapacity())
+            {
+                resizeSamplerArray(frame, this.currentSamplerSize = initialisedFragSamplers.resize());
+                Arrays.fill(this.isUpdated, false);
+            }
             final boolean b = !this.isUpdated[frame];
             if(b){
+                final long currentSet = descriptorSets.get(frame);
                 final int NUM_UBOs = 1;
                 final int NUM_INLINE_UBOs = 3;
                 final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs + NUM_INLINE_UBOs;
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 
                 int x = 0;
-                ;           // 0 : reserved for constant Mat4s for Chunk Translations + PoV
+                // 0 : reserved for constant Mat4s for Chunk Translations + PoV
                 //1 : Light_DIR_ vectors
                 //2: Inv Dir Vectors
                 //3: Global mob Rot + MAt4
@@ -350,7 +359,7 @@ public class DescriptorSetArray {
 
             //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getLayout(),
-                    0, stack.longs(currentSet), null);
+                    0, stack.longs(descriptorSets.get(frame)), null);
 
 //            vkCmdPushConstants(commandBuffer, Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, UniformState.Light0_Direction.buffer());
 //            vkCmdPushConstants(commandBuffer, Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 16, UniformState.Light1_Direction.buffer());
@@ -488,27 +497,25 @@ public class DescriptorSetArray {
 
     private void resizeSamplerArray(int frame, int samplerLimit)
     {
-        vkFreeDescriptorSets(DEVICE, this.globalDescriptorPoolArrayPool, this.descriptorSets.get(frame));
+        Vulkan.waitIdle();
+        vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
             VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo = VkDescriptorSetVariableDescriptorCountAllocateInfo.calloc(stack)
                     .sType$Default()
-                    .pDescriptorCounts(stack.ints(samplerLimit));
+                    .pDescriptorCounts(stack.ints(samplerLimit,samplerLimit));
 
 
             VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.calloc(stack);
             allocInfo.sType$Default();
             allocInfo.pNext(variableDescriptorCountAllocateInfo);
             allocInfo.descriptorPool(this.globalDescriptorPoolArrayPool);
-            allocInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
+            allocInfo.pSetLayouts(stack.longs(this.descriptorSetLayout,this.descriptorSetLayout));
 
-            LongBuffer dLongBuffer = MemoryUtil.memAllocLong(value);
-
-            int result = vkAllocateDescriptorSets(DEVICE, allocInfo, dLongBuffer);
+            Vulkan.checkResult(vkAllocateDescriptorSets(DEVICE, allocInfo, descriptorSets),"");
 
             Initializer.LOGGER.info("Resized to "+ samplerLimit);
 
-            this.descriptorSets.put(frame, dLongBuffer.get(0));
         }
     }
 
@@ -527,6 +534,6 @@ public class DescriptorSetArray {
     //todo: Allow Reserving ranges in Descriptor Array, so a approx 2048 range can be reserved.allocated for AF/MSAA mode + to supply Indices to the VertexBuilder/BuildTask
     public String getDebugInfo()
     {
-        return"textures["+this.initialisedFragSamplers.currentSize()+"="+ SAMPLER_MAX_LIMIT_DEFAULT +"]";
+        return"textures["+this.initialisedFragSamplers.currentSize()+"="+ this.currentSamplerSize +"]";
     }
 }
