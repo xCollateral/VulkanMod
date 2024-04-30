@@ -364,9 +364,9 @@ public class VulkanImage {
         if (this.id == 0L)
             return;
 
+        vkDestroyImageView(Vulkan.getVkDevice(), this.mainImageView, null);
         MemoryManager.freeImage(this.id, this.allocation);
 
-        vkDestroyImageView(Vulkan.getVkDevice(), this.mainImageView, null);
 
         if (this.levelImageViews != null)
             Arrays.stream(this.levelImageViews).forEach(

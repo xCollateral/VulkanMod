@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.util.VUtil;
 
 public class DescriptorAbstractionArray {
@@ -15,6 +17,7 @@ public class DescriptorAbstractionArray {
 
     private int samplerRange;
     private final Int2IntOpenHashMap texID2DescIdx; //alignedIDs
+    private final IntArrayFIFOQueue FreeIDs=new IntArrayFIFOQueue(32);
 
     /*Abstracts between OpenGl texture Bindings and and Initialised descrtior indicies for this particualr dEscriptir Binding*/
     public DescriptorAbstractionArray(int reserveTextureRange, int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
@@ -77,7 +80,8 @@ public class DescriptorAbstractionArray {
 //        texIds[texID] = ++samplerRange;
 //        textureSamplerHndls[samplerRange] = imageView;
 
-        texID2DescIdx.put(texID, samplerRange++);
+        final int v = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : samplerRange++;
+        texID2DescIdx.put(texID, v);
         return true;
 
     }
@@ -107,6 +111,9 @@ public class DescriptorAbstractionArray {
     public int currentSize() {
         return this.texID2DescIdx.size();//this.samplerRange;
     }
+    public int currentLim() {
+        return this.samplerRange;
+    }
 
     public int getStage() {
         return this.shaderStage;
@@ -119,7 +126,9 @@ public class DescriptorAbstractionArray {
     public boolean removeTexture(int id) {
 
         if(!this.texID2DescIdx.containsKey(id)) return false;
-//       int freedDescIdx = this.texID2DescIdx.remove(id);
+       int freedDescIdx = this.texID2DescIdx.remove(id);
+        Initializer.LOGGER.info("Freeing: "+freedDescIdx);
+        this.FreeIDs.enqueue(freedDescIdx);
 //
 //        //TODO; Fix Descriptor Holes: gaps/Incontiguity when Texture Slots are Freed/removed
 //
@@ -132,7 +141,9 @@ public class DescriptorAbstractionArray {
     }
 
     public boolean checkCapacity() {
-        return this.samplerRange>=maxSize;
+        final boolean b = this.samplerRange >= maxSize;
+        if(b && !this.FreeIDs.isEmpty()) Initializer.LOGGER.error("Descriptor Fragmentation/Holes: "+this.FreeIDs.size());
+        return b;
     }
 
     public int resize() {

@@ -59,9 +59,10 @@ public class GlTexture {
         VulkanImage image = glTexture != null ? glTexture.vulkanImage : null;
         if(image != null)
         {
+            //TODO; disseminate between Sampler/Currently Bound textrues and etxure snot be utilised in the Descriptor Array
             MemoryManager.getInstance().addToFreeable(image);
-            Renderer.getDescriptorSetArray().removeImage(glTexture.id);
         }
+        Renderer.getDescriptorSetArray().removeImage(i);
     }
 
     public static GlTexture getTexture(int id) {

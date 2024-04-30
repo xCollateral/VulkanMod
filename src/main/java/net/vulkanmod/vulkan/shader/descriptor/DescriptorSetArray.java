@@ -20,7 +20,6 @@ import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -31,8 +30,7 @@ import java.util.Arrays;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memPutAddress;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DescriptorSetArray {
@@ -315,13 +313,12 @@ public class DescriptorSetArray {
             this.initialisedVertSamplers.registerTexture(VTextureSelector.getBoundId(1));
         }
         try(MemoryStack stack = stackPush()) {
-            if(initialisedFragSamplers.checkCapacity())
-            {
-                resizeSamplerArray(frame, this.currentSamplerSize = initialisedFragSamplers.resize());
-                Arrays.fill(this.isUpdated, false);
-            }
             final boolean b = !this.isUpdated[frame];
             if(b){
+                if(initialisedFragSamplers.checkCapacity())
+                {
+                    resizeSamplerArray(frame, this.currentSamplerSize = initialisedFragSamplers.resize());
+                }
                 final long currentSet = descriptorSets.get(frame);
                 final int NUM_UBOs = 1;
                 final int NUM_INLINE_UBOs = 3;
@@ -441,7 +438,11 @@ public class DescriptorSetArray {
             final int samplerIndex = texId.getIntValue();
 
             final VulkanImage image = getSamplerImage(texId1);
-
+            if(image==null)
+            {
+                Initializer.LOGGER.error(texId1);
+                continue;
+            }
             image.readOnlyLayout();
 
 
@@ -489,6 +490,11 @@ public class DescriptorSetArray {
         MemoryUtil.memFree(descriptorSets);
     }
 
+    //TODO: Peristent Tetxure: i.e. skip GUi tetxiures beign stored peristently withint the DescriptorArray
+    // Fix ImageView free during DescripotorSet usage
+    // VRAM Tetxure Usage
+
+
     public void removeImage(int id) {
         if(this.initialisedFragSamplers.removeTexture(id))
             Arrays.fill(this.isUpdated, false);
@@ -534,6 +540,6 @@ public class DescriptorSetArray {
     //todo: Allow Reserving ranges in Descriptor Array, so a approx 2048 range can be reserved.allocated for AF/MSAA mode + to supply Indices to the VertexBuilder/BuildTask
     public String getDebugInfo()
     {
-        return"textures["+this.initialisedFragSamplers.currentSize()+"="+ this.currentSamplerSize +"]";
+        return"textures[Loaded="+this.initialisedFragSamplers.currentSize()+"Frag="+this.initialisedFragSamplers.currentLim()+"PoolRange="+ this.currentSamplerSize +"]";
     }
 }
