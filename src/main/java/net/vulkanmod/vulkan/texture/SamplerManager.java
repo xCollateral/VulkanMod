@@ -67,8 +67,8 @@ public abstract class SamplerManager {
             samplerInfo.unnormalizedCoordinates(false);
             samplerInfo.compareEnable(false);
             samplerInfo.compareOp(VK_COMPARE_OP_ALWAYS);
-
-            if ((flags & USE_MIPMAPS_BIT) != 0) {
+            //TODO: Check overriding MIPMAPS flag like this is correct _(Possible code typo: MIPMAPs not updated correctly atm)_
+            if (maxLod>1||(flags & USE_MIPMAPS_BIT) != 0) {
                 samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
                 samplerInfo.maxLod(maxLod);
                 samplerInfo.minLod(0.0F);

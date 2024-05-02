@@ -55,7 +55,7 @@ public class DescriptorSetArray {
 
     private static final int MISSING_TEX_ID = 24;
 
-    private long defFragSampler;
+
     private final boolean[] isUpdated = {false, false};
     private static final int INLINE_UNIFORM_SIZE = 16 + 16+ 4;
     private int MissingTexID = -1;
@@ -190,8 +190,6 @@ public class DescriptorSetArray {
             this.descriptorSets = allocateDescriptorSets(stack);
 
         }
-        final byte i = Options.getMipmaps();
-        defFragSampler = SamplerManager.getTextureSampler(i, i>1?SamplerManager.USE_MIPMAPS_BIT:0);
     }
 
 
@@ -452,7 +450,7 @@ public class DescriptorSetArray {
             VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)
                     .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
                     .imageView(image.getImageView())
-                    .sampler(defFragSampler);
+                    .sampler(image.getSampler());
 
             final VkWriteDescriptorSet vkWriteDescriptorSet = descriptorWrites.get();
             vkWriteDescriptorSet.sType$Default()
@@ -481,17 +479,11 @@ public class DescriptorSetArray {
         }
         return image;
     }
-
-    public void setSampler(int miplevels)
-    {
-        this.defFragSampler = SamplerManager.getTextureSampler((byte) miplevels, miplevels>1 ? SamplerManager.USE_MIPMAPS_BIT : 0);
-    }
     public void cleanup()
     {
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
         vkDestroyDescriptorSetLayout(DEVICE, this.descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, null);
-        vkDestroySampler(DEVICE, this.defFragSampler, null);
         MemoryUtil.memFree(descriptorSets);
     }
 
