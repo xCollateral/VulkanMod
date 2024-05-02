@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.option.Options;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -54,7 +55,7 @@ public class DescriptorSetArray {
 
     private static final int MISSING_TEX_ID = 24;
 
-    private final long defFragSampler;
+    private long defFragSampler;
     private final boolean[] isUpdated = {false, false};
     private static final int INLINE_UNIFORM_SIZE = 16 + 16+ 4;
     private int MissingTexID = -1;
@@ -106,7 +107,7 @@ public class DescriptorSetArray {
         if(needsUpdate)
         {
             this.newTex.add(TextureID);
-            Arrays.fill(this.isUpdated, false);
+            forceDescriptorUpdate();
         }
     }
 
@@ -189,7 +190,8 @@ public class DescriptorSetArray {
             this.descriptorSets = allocateDescriptorSets(stack);
 
         }
-        defFragSampler = SamplerManager.getTextureSampler((byte) 1, (byte) 0);
+        final byte i = Options.getMipmaps();
+        defFragSampler = SamplerManager.getTextureSampler(i, i>1?SamplerManager.USE_MIPMAPS_BIT:0);
     }
 
 
@@ -480,7 +482,10 @@ public class DescriptorSetArray {
         return image;
     }
 
-
+    public void setSampler(int miplevels)
+    {
+        this.defFragSampler = SamplerManager.getTextureSampler((byte) miplevels, miplevels>1 ? SamplerManager.USE_MIPMAPS_BIT : 0);
+    }
     public void cleanup()
     {
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
@@ -497,7 +502,11 @@ public class DescriptorSetArray {
 
     public void removeImage(int id) {
         if(this.initialisedFragSamplers.removeTexture(id))
-            Arrays.fill(this.isUpdated, false);
+            forceDescriptorUpdate();
+    }
+
+    public void forceDescriptorUpdate() {
+        Arrays.fill(this.isUpdated, false);
     }
 
 

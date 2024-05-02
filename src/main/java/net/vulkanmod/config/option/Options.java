@@ -15,9 +15,9 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import java.util.stream.IntStream;
 
 public abstract class Options {
-    static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
+    private static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
-    static Window window = Minecraft.getInstance().getWindow();
+    private static final Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
 
     public static OptionBlock[] getVideoOpts() {
@@ -117,11 +117,11 @@ public abstract class Options {
                                 .setTranslator(value -> value == 0 ? Component.literal("Auto") : Component.literal(value.toString())),
                         new RangeOption(Component.translatable("Brightness"),
                                 0, 100, 1,
-                                value -> {
-                                    if (value == 0) return Component.translatable("options.gamma.min");
-                                    else if (value == 50) return Component.translatable("options.gamma.default");
-                                    else if (value == 100) return Component.translatable("options.gamma.max");
-                                    return Component.literal(String.valueOf(value));
+                                value -> switch (value) {
+                                    case 0 -> Component.translatable("options.gamma.min");
+                                    case 50 -> Component.translatable("options.gamma.default");
+                                    case 100 -> Component.translatable("options.gamma.max");
+                                    default -> Component.literal(String.valueOf(value));
                                 },
                                 value -> minecraftOptions.gamma().set(value * 0.01),
                                 () -> (int) (minecraftOptions.gamma().get() * 100.0)),
@@ -240,6 +240,8 @@ public abstract class Options {
                                     minecraftOptions.mipmapLevels().set(value);
                                     Minecraft.getInstance().updateMaxMipLevel(value);
                                     Minecraft.getInstance().delayTextureReload();
+                                    Renderer.getDescriptorSetArray().setSampler(value);
+                                    Renderer.getDescriptorSetArray().forceDescriptorUpdate();
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())
                                 .setTranslator(value -> Component.nullToEmpty(value.toString()))
@@ -308,7 +310,10 @@ public abstract class Options {
         };
 
     }
-
+    public static byte getMipmaps()
+    {
+        return (byte) (int) minecraftOptions.mipmapLevels().get();
+    }
     static Integer[] getGuiScaleValues() {
         int max = window.calculateScale(0, Minecraft.getInstance().isEnforceUnicode());
 
