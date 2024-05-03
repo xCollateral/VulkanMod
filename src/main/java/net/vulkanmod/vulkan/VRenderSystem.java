@@ -12,6 +12,8 @@ import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
+import static org.lwjgl.vulkan.VK10.*;
+
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
@@ -21,6 +23,8 @@ public abstract class VRenderSystem {
     public static boolean depthTest = true;
     public static boolean depthMask = true;
     public static int depthFun = 515;
+    public static int topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    public static int polygonMode = VK_POLYGON_MODE_FILL;
 
     public static int colorMask = PipelineState.ColorMask.getColorMask(true, true, true, true);
 

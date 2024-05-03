@@ -27,6 +27,8 @@ public class Drawer {
     private final AutoIndexBuffer quadsIndexBuffer;
     private final AutoIndexBuffer triangleFanIndexBuffer;
     private final AutoIndexBuffer triangleStripIndexBuffer;
+    private final AutoIndexBuffer linesIndexBuffer;
+    private final AutoIndexBuffer lineStripIndexBuffer;
     private UniformBuffer[] uniformBuffers;
 
     private int currentFrame;
@@ -34,8 +36,10 @@ public class Drawer {
     public Drawer() {
         //Index buffers
         quadsIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.QUADS);
-        triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
-        triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
+        triangleFanIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
+        triangleStripIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
+        linesIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.LINES);
+        lineStripIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.LINE_STRIP);
     }
 
     public void setCurrentFrame(int currentFrame) {
@@ -77,7 +81,7 @@ public class Drawer {
         switch (mode) {
             case QUADS, LINES -> {
                 autoIndexBuffer = this.quadsIndexBuffer;
-                indexCount = vertexCount * 3 / 2;
+                indexCount = vertexCount / 4 * 6;
             }
             case TRIANGLE_FAN -> {
                 autoIndexBuffer = this.triangleFanIndexBuffer;
@@ -85,13 +89,21 @@ public class Drawer {
             }
             case TRIANGLE_STRIP, LINE_STRIP -> {
                 autoIndexBuffer = this.triangleStripIndexBuffer;
-                indexCount = (vertexCount - 2) * 3;
+                indexCount = vertexCount;
+            }
+            case DEBUG_LINES -> {
+                autoIndexBuffer = this.linesIndexBuffer;
+                indexCount = vertexCount;
+            }
+            case DEBUG_LINE_STRIP -> {
+                autoIndexBuffer = this.lineStripIndexBuffer;
+                indexCount = vertexCount;
             }
             case TRIANGLES -> {
                 draw(vertexBuffer, vertexCount);
                 return;
             }
-            default -> throw new RuntimeException(String.format("unknown drawMode: %s", mode));
+            default -> throw new RuntimeException(String.format("Unknown drawMode: %s", mode));
         }
 
         autoIndexBuffer.checkCapacity(vertexCount);
@@ -105,6 +117,18 @@ public class Drawer {
 
     public AutoIndexBuffer getTriangleFanIndexBuffer() {
         return triangleFanIndexBuffer;
+    }
+
+    public AutoIndexBuffer getTriangleStripIndexBuffer() {
+        return triangleStripIndexBuffer;
+    }
+
+    public AutoIndexBuffer getLinesIndexBuffer() {
+        return this.linesIndexBuffer;
+    }
+
+    public AutoIndexBuffer getLineStripIndexBuffer() {
+        return this.lineStripIndexBuffer;
     }
 
     public UniformBuffer getUniformBuffer() {

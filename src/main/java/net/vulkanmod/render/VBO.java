@@ -58,36 +58,49 @@ public class VBO {
 
     private void configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
         if (parameters.sequentialIndex()) {
-
             AutoIndexBuffer autoIndexBuffer;
+
             switch (this.mode) {
                 case TRIANGLE_FAN -> {
                     autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
                     this.indexCount = (vertexCount - 2) * 3;
                 }
-                case QUADS -> {
+                case QUADS, LINES -> {
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
+                    this.indexCount = vertexCount;
                 }
                 case TRIANGLES -> {
                     autoIndexBuffer = null;
                 }
-                default -> throw new IllegalStateException("Unexpected draw mode:" + this.mode);
+                case DEBUG_LINES -> {
+                    autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
+                    this.indexCount = vertexCount;
+                }
+                case TRIANGLE_STRIP, LINE_STRIP -> {
+                    autoIndexBuffer = Renderer.getDrawer().getTriangleStripIndexBuffer();
+                    this.indexCount = vertexCount;
+                }
+                case DEBUG_LINE_STRIP -> {
+                    autoIndexBuffer = Renderer.getDrawer().getLineStripIndexBuffer();
+                    this.indexCount = vertexCount;
+                }
+                default -> throw new IllegalStateException(String.format("Unexpected draw mode: %s", this.mode));
             }
 
-            if(indexBuffer != null && !this.autoIndexed)
+            if (indexBuffer != null && !this.autoIndexed) {
                 indexBuffer.freeBuffer();
+            }
 
-            if(autoIndexBuffer != null) {
+            if (autoIndexBuffer != null) {
                 autoIndexBuffer.checkCapacity(vertexCount);
                 indexBuffer = autoIndexBuffer.getIndexBuffer();
+                this.autoIndexed = true;
             }
-
-            this.autoIndexed = true;
-
         }
         else {
-            if(indexBuffer != null)
+            if (indexBuffer != null) {
                 this.indexBuffer.freeBuffer();
+            }
             this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
 //            this.indexBuffer = new AsyncIndexBuffer(data.remaining());
             indexBuffer.copyBuffer(data);
