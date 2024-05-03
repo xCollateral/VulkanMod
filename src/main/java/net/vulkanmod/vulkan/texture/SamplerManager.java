@@ -61,8 +61,15 @@ public abstract class SamplerManager {
                 samplerInfo.addressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT);
             }
 
-            samplerInfo.anisotropyEnable(false);
-            //samplerInfo.maxAnisotropy(16.0f);
+            //TODO: AnisoTropic filtering only applies if MipMaps are also Enabled
+            if((flags & (USE_MIPMAPS_BIT|USE_ANISOTROPIC_BIT)) != 0) {
+                samplerInfo.anisotropyEnable(true);
+                samplerInfo.maxAnisotropy(16.0f);
+            } else {
+                samplerInfo.anisotropyEnable(false);
+                samplerInfo.maxAnisotropy(0.0f);
+            }
+
             samplerInfo.borderColor(VK_BORDER_COLOR_INT_OPAQUE_WHITE);
             samplerInfo.unnormalizedCoordinates(false);
             samplerInfo.compareEnable(false);
@@ -108,4 +115,5 @@ public abstract class SamplerManager {
     public static final byte USE_MIPMAPS_BIT = 4;
     public static final byte REDUCTION_MIN_BIT = 8;
     public static final byte REDUCTION_MAX_BIT = 16;
+    public static final byte USE_ANISOTROPIC_BIT = 32;
 }

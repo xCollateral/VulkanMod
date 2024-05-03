@@ -438,11 +438,6 @@ public class DescriptorSetArray {
             final int samplerIndex = texId.getIntValue();
 
             final VulkanImage image = getSamplerImage(texId1);
-            if(image==null)
-            {
-                Initializer.LOGGER.error(texId1);
-                continue;
-            }
             image.readOnlyLayout();
 
 

@@ -9,6 +9,7 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.util.VUtil;
 import net.vulkanmod.vulkan.util.VkResult;
 import org.lwjgl.PointerBuffer;
@@ -200,6 +201,7 @@ public class Vulkan {
 
         vmaDestroyAllocator(allocator);
 
+        SamplerManager.cleanUp();
         DeviceManager.destroy();
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, null);
         KHRSurface.vkDestroySurfaceKHR(instance, surface, null);
