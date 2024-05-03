@@ -11,7 +11,7 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
-layout(push_constant) uniform PushConstant{
+layout(push_constant) readonly uniform  PushConstant{
    layout(offset = 32) vec4 ColorModulator;
 };
 

@@ -13,7 +13,7 @@ layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP[16];
 };
 //Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
-layout(push_constant) uniform PushConstant
+layout(push_constant) readonly uniform  PushConstant
 {
     vec3 Light0_Direction;
     vec3 Light1_Direction;

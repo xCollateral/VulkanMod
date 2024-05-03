@@ -7,7 +7,7 @@ layout (binding = 0) uniform UniformBufferObject {
     mat4 MVP;
 };
 
-layout (push_constant) uniform pushConstant {
+layout (push_constant) readonly uniform  PushConstant {
     vec3 ChunkOffset;
 };
 
