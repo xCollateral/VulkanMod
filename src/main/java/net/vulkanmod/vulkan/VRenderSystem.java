@@ -28,6 +28,7 @@ public abstract class VRenderSystem {
     public static int depthFun = 515;
     public static int topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     public static int polygonMode = VK_POLYGON_MODE_FILL;
+    public static boolean canSetLineWidth = false;
 
     public static int colorMask = PipelineState.ColorMask.getColorMask(true, true, true, true);
 
@@ -194,6 +195,12 @@ public abstract class VRenderSystem {
             case QUADS, TRIANGLES, TRIANGLE_FAN, TRIANGLE_STRIP -> {
                 VRenderSystem.polygonMode = VK_POLYGON_MODE_FILL;
             }
+        }
+    }
+
+    public static void setLineWidth(float width) {
+        if (canSetLineWidth) {
+            Renderer.setLineWidth(width);
         }
     }
 

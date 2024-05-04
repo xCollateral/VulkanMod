@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.device;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.*;
 import org.lwjgl.PointerBuffer;
@@ -169,31 +170,28 @@ public abstract class DeviceManager {
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
 
-            VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
-            deviceFeatures.sType$Default();
-
-            //TODO indirect draw option disabled in case it is not supported
-            if (device.availableFeatures.features().samplerAnisotropy())
-                deviceFeatures.features().samplerAnisotropy(true);
-            if (device.availableFeatures.features().logicOp())
-                deviceFeatures.features().logicOp(true);
-
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
+            deviceVulkan11Features.shaderDrawParameters(device.isDrawIndirectSupported());
 
-            if (device.isDrawIndirectSupported()) {
-                deviceFeatures.features().multiDrawIndirect(true);
-                deviceVulkan11Features.shaderDrawParameters(true);
+            VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
+            deviceFeatures.sType$Default();
+            deviceFeatures.features().samplerAnisotropy(device.availableFeatures.features().samplerAnisotropy());
+            deviceFeatures.features().logicOp(device.availableFeatures.features().logicOp());
+            // TODO: Disable indirect draw option if unsupported.
+            deviceFeatures.features().multiDrawIndirect(device.isDrawIndirectSupported());
+
+            // Must not set line width to anything other than 1.0 if this is not supported
+            if (device.availableFeatures.features().wideLines()) {
+                deviceFeatures.features().wideLines(true);
+                VRenderSystem.canSetLineWidth = true;
             }
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
-
+            createInfo.sType$Default();
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            // queueCreateInfoCount is automatically set
-
             createInfo.pEnabledFeatures(deviceFeatures.features());
-
             createInfo.pNext(deviceVulkan11Features);
 
             if (Vulkan.DYNAMIC_RENDERING) {
@@ -218,9 +216,7 @@ public abstract class DeviceManager {
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 
-            if (Vulkan.ENABLE_VALIDATION_LAYERS) {
-                createInfo.ppEnabledLayerNames(asPointerBuffer(Vulkan.VALIDATION_LAYERS));
-            }
+            createInfo.ppEnabledLayerNames(Vulkan.ENABLE_VALIDATION_LAYERS ? asPointerBuffer(Vulkan.VALIDATION_LAYERS) : null);
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
 

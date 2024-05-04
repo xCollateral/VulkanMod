@@ -104,6 +104,13 @@ public class Renderer {
         imagesNum = getSwapChain().getImagesNum();
     }
 
+    public static void setLineWidth(float width) {
+        if (INSTANCE.boundFramebuffer == null) {
+            return;
+        }
+        vkCmdSetLineWidth(INSTANCE.currentCmdBuffer, width);
+    }
+
     private void init() {
         MemoryManager.createInstance(Renderer.getFramesNum());
         Vulkan.createStagingBuffers();
@@ -250,6 +257,8 @@ public class Renderer {
             mainPass.begin(commandBuffer, stack);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
+
+            vkCmdSetLineWidth(commandBuffer, 1.0F);
         }
 
         p.pop();
