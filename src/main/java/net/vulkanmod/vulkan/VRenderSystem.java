@@ -3,6 +3,8 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.PipelineState;
@@ -10,6 +12,7 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -165,6 +168,33 @@ public abstract class VRenderSystem {
 
     public static void depthMask(boolean b) {
         depthMask = b;
+    }
+
+    public static void setPipelineParamsFromVFMode(VertexFormat.Mode mode) {
+        switch (mode.asGLMode) {
+            case GL11.GL_LINES -> {
+                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            }
+            case GL11.GL_LINE_STRIP -> {
+                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+            }
+            // TODO: Use Triangle Fan topology if supported by the device
+            case GL11.GL_TRIANGLE_FAN, GL11.GL_TRIANGLES -> {
+                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            }
+            case GL11.GL_TRIANGLE_STRIP -> {
+                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+            }
+            default -> throw new RuntimeException(String.format("Unknown VertexFormat mode: %s", mode));
+        }
+        switch (mode) {
+            case LINES, LINE_STRIP, DEBUG_LINES, DEBUG_LINE_STRIP -> {
+                VRenderSystem.polygonMode = VK_POLYGON_MODE_LINE;
+            }
+            case QUADS, TRIANGLES, TRIANGLE_FAN, TRIANGLE_STRIP -> {
+                VRenderSystem.polygonMode = VK_POLYGON_MODE_FILL;
+            }
+        }
     }
 
     public static void colorMask(boolean b, boolean b1, boolean b2, boolean b3) {

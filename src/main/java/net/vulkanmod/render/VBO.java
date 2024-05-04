@@ -65,19 +65,23 @@ public class VBO {
                     autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
                     this.indexCount = (vertexCount - 2) * 3;
                 }
-                case QUADS, LINES -> {
+                case QUADS -> {
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
-                    this.indexCount = vertexCount;
+                    this.indexCount = vertexCount / 4 * 6;
+                }
+                case LINES -> {
+                    autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
+                    this.indexCount = vertexCount / 4 * 6;
                 }
                 case TRIANGLES -> {
                     autoIndexBuffer = null;
                 }
                 case DEBUG_LINES -> {
-                    autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
+                    autoIndexBuffer = Renderer.getDrawer().getDebugLinesIndexBuffer();
                     this.indexCount = vertexCount;
                 }
                 case TRIANGLE_STRIP, LINE_STRIP -> {
-                    autoIndexBuffer = Renderer.getDrawer().getTriangleStripIndexBuffer();
+                    autoIndexBuffer = Renderer.getDrawer().getStripIndexBuffer();
                     this.indexCount = vertexCount;
                 }
                 case DEBUG_LINE_STRIP -> {
@@ -124,6 +128,7 @@ public class VBO {
             RenderSystem.assertOnRenderThread();
 
             VRenderSystem.applyMVP(MV, P);
+            VRenderSystem.setPipelineParamsFromVFMode(this.mode);
 
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);

@@ -26,13 +26,17 @@ public class AutoIndexBuffer {
                 size = vertexCount / 4 * 6 * IndexBuffer.IndexType.SHORT.size;
                 buffer = genQuadIndices(vertexCount);
             }
+            case LINES -> {
+                size = vertexCount / 4 * 6 * IndexBuffer.IndexType.SHORT.size;
+                buffer = genLineIndices(vertexCount);
+            }
             case TRIANGLE_FAN -> {
                 size = (vertexCount - 2) * 3 * IndexBuffer.IndexType.SHORT.size;
                 buffer = genTriangleFanIndices(vertexCount);
             }
-            case TRIANGLE_STRIP, LINES, LINE_STRIP -> {
+            case TRIANGLE_STRIP, DEBUG_LINES, LINE_STRIP -> {
                 size = vertexCount * IndexBuffer.IndexType.SHORT.size;
-                buffer = genIncrementalIndices(vertexCount);
+                buffer = genSequentialIndices(vertexCount);
             }
             default -> throw new RuntimeException("unknown drawType");
         }
@@ -44,7 +48,7 @@ public class AutoIndexBuffer {
     }
 
     public void checkCapacity(int vertexCount) {
-        if(vertexCount <= this.vertexCount) {
+        if (vertexCount <= this.vertexCount) {
             return;
         }
 
@@ -65,9 +69,28 @@ public class AutoIndexBuffer {
             indices.put(j, (short) i);
             indices.put(j + 1, (short) (i + 1));
             indices.put(j + 2, (short) (i + 2));
-            indices.put(j + 3, (short) (i));
+            indices.put(j + 3, (short) (i + 2));
+            indices.put(j + 4, (short) (i + 3));
+            indices.put(j + 5, (short) i);
+
+            j += 6;
+        }
+
+        return buffer;
+    }
+
+    public static ByteBuffer genLineIndices(int vertexCount) {
+        ByteBuffer buffer = MemoryUtil.memAlloc(vertexCount / 4 * 6 * Short.BYTES);
+        ShortBuffer indices = buffer.asShortBuffer();
+
+        int j = 0;
+        for (int i = 0; i < vertexCount; i += 4) {
+            indices.put(j, (short) i);
+            indices.put(j + 1, (short) (i + 1));
+            indices.put(j + 2, (short) (i + 2));
+            indices.put(j + 3, (short) (i + 3));
             indices.put(j + 4, (short) (i + 2));
-            indices.put(j + 5, (short) (i + 3));
+            indices.put(j + 5, (short) (i + 1));
 
             j += 6;
         }
@@ -89,7 +112,7 @@ public class AutoIndexBuffer {
         return buffer;
     }
 
-    public static ByteBuffer genIncrementalIndices(int vertexCount) {
+    public static ByteBuffer genSequentialIndices(int vertexCount) {
         ByteBuffer buffer = MemoryUtil.memAlloc(vertexCount * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
@@ -106,8 +129,9 @@ public class AutoIndexBuffer {
         QUADS(7),
         TRIANGLE_FAN(6),
         TRIANGLE_STRIP(5),
-        LINES(4),
-        LINE_STRIP(3);
+        DEBUG_LINES(4),
+        LINE_STRIP(3),
+        LINES(2);
 
         public final int n;
 
