@@ -189,10 +189,10 @@ public abstract class VRenderSystem {
             default -> throw new RuntimeException(String.format("Unknown VertexFormat mode: %s", mode));
         }
         switch (mode) {
-            case LINES, LINE_STRIP, DEBUG_LINES, DEBUG_LINE_STRIP -> {
+            case LINE_STRIP, DEBUG_LINES, DEBUG_LINE_STRIP -> {
                 VRenderSystem.polygonMode = VK_POLYGON_MODE_LINE;
             }
-            case QUADS, TRIANGLES, TRIANGLE_FAN, TRIANGLE_STRIP -> {
+            case QUADS, LINES, TRIANGLES, TRIANGLE_FAN, TRIANGLE_STRIP -> {
                 VRenderSystem.polygonMode = VK_POLYGON_MODE_FILL;
             }
         }
