@@ -38,7 +38,7 @@ public abstract class VRenderSystem {
     public static int logicOpFun = 0;
 
     public static final float clearDepth = 1.0f;
-    public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
+    public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4);
 
     public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
     public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
@@ -171,8 +171,8 @@ public abstract class VRenderSystem {
         depthMask = b;
     }
 
-    public static void setPipelineParamsFromVFMode(VertexFormat.Mode mode) {
-        switch (mode.asGLMode) {
+    public static void setPrimitiveTopologyGL(final int mode) {
+        switch (mode) {
             case GL11.GL_LINES -> {
                 VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
             }
@@ -186,15 +186,16 @@ public abstract class VRenderSystem {
             case GL11.GL_TRIANGLE_STRIP -> {
                 VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
             }
-            default -> throw new RuntimeException(String.format("Unknown VertexFormat mode: %s", mode));
+            default -> throw new RuntimeException(String.format("Unknown GL primitive topology: %s", mode));
         }
+    }
+
+    public static void setPolygonModeGL(final int mode) {
         switch (mode) {
-            case LINE_STRIP, DEBUG_LINES, DEBUG_LINE_STRIP -> {
-                VRenderSystem.polygonMode = VK_POLYGON_MODE_LINE;
-            }
-            case QUADS, LINES, TRIANGLES, TRIANGLE_FAN, TRIANGLE_STRIP -> {
-                VRenderSystem.polygonMode = VK_POLYGON_MODE_FILL;
-            }
+            case GL11.GL_POINT -> VRenderSystem.polygonMode = VK_POLYGON_MODE_POINT;
+            case GL11.GL_LINE -> VRenderSystem.polygonMode = VK_POLYGON_MODE_LINE;
+            case GL11.GL_FILL -> VRenderSystem.polygonMode = VK_POLYGON_MODE_FILL;
+            default -> throw new RuntimeException(String.format("Unknown GL polygon mode: %s", mode));
         }
     }
 

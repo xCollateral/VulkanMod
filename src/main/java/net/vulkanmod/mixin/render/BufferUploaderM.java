@@ -43,7 +43,7 @@ public class BufferUploaderM {
         shaderInstance.apply();
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
-        VRenderSystem.setPipelineParamsFromVFMode(parameters.mode());
+        VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
         renderer.bindGraphicsPipeline(pipeline);
         renderer.uploadAndBindUBOs(pipeline);
         Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());

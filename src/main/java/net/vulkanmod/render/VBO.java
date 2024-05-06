@@ -73,9 +73,7 @@ public class VBO {
                     autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
                     this.indexCount = vertexCount / 4 * 6;
                 }
-                case TRIANGLES -> {
-                    autoIndexBuffer = null;
-                }
+                case TRIANGLES -> autoIndexBuffer = null;
                 case DEBUG_LINES -> {
                     autoIndexBuffer = Renderer.getDrawer().getDebugLinesIndexBuffer();
                     this.indexCount = vertexCount;
@@ -128,7 +126,7 @@ public class VBO {
             RenderSystem.assertOnRenderThread();
 
             VRenderSystem.applyMVP(MV, P);
-            VRenderSystem.setPipelineParamsFromVFMode(this.mode);
+            VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
 
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);

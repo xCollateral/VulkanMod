@@ -61,7 +61,7 @@ public class AutoIndexBuffer {
     }
 
     public static ByteBuffer genQuadIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memAlloc(vertexCount / 4 * 6 * Short.BYTES);
+        ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount / 4 * 6 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
         int j = 0;
@@ -80,7 +80,7 @@ public class AutoIndexBuffer {
     }
 
     public static ByteBuffer genLineIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memAlloc(vertexCount / 4 * 6 * Short.BYTES);
+        ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount / 4 * 6 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
         int j = 0;
@@ -99,7 +99,7 @@ public class AutoIndexBuffer {
     }
 
     public static ByteBuffer genTriangleFanIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memAlloc((vertexCount - 2) * 3 * Short.BYTES);
+        ByteBuffer buffer = MemoryUtil.memCalloc((vertexCount - 2) * 3 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
         
         int j = 0;
@@ -113,7 +113,7 @@ public class AutoIndexBuffer {
     }
 
     public static ByteBuffer genSequentialIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memAlloc(vertexCount * Short.BYTES);
+        ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
         for (int i = 0; i < vertexCount; i += 1) {
