@@ -11,7 +11,6 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
-import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
@@ -21,7 +20,6 @@ import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.MappedBuffer;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -185,29 +183,43 @@ public abstract class Pipeline {
             //
             // TODO: e.g. fine the hash of the TOPMOSt uniform, them if the hash matches, overwrite the prior data w. the new non-aligned uniforms
 
-            UniformState.MVP.updateOffsetState();
+
+
+            int currentByteOffset = buffers.stream().mapToInt(AlignedStruct::getSize).sum();
+
+            final int baseAlignment = 64; //The largest alignment (i.e. Size) of all indivusla Uniforms
+            boolean isAligned = (currentOffset % baseAlignment)==0;
+            //baseoffset isaligned, donlt need to push More Unform space
+            // if the current layout(offset=0) Uniform has not been updated, but a new unform needs to be added (e.g. ProjMat)
+
+
+            //Find a free Unform blockthata void iverwiritng currently used uniform data
+
+            int baseOffset = UniformState.valueOf(buffers.get(0).getUniforms().get(0).getName()).getCurrentOffset();
+
+
+
+            //Get the base offset fo the head/1st/initial Uniform i.e. the currently "active"
+
+
            if(!UniformState.MVP.hasUniqueHash()) {
+
+               UniformState.MVP.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
+
+              /* uniformBuffers.upload(currentOffset, UniformState.MVP);
                UniformState.MVP.storeCurrentOffset(currentOffset);
-            for(UBO ubo : buffers) {
+               uniformBuffers.updateOffset(64);
 
-                //TODO non mappable memory
+               UniformState.MVP.resetAndUpdate();*/
 
-             if(Objects.equals(ubo.getUniforms().get(0).getName(), "MVP"))
-             {
-                 int alignedSize = VUtil.align(ubo.getSize(), 64);//Only the Uniform descriptor needs to be aligned, not the contents
-                 uniformBuffers.checkCapacity(alignedSize);
-//                int x = (ubo.getStages()&VK_SHADER_STAGE_FRAGMENT_BIT)!=0 ? 1024 : 0;
-                 ubo.update(uniformBuffers.getPointer());
-
-                 uniformBuffers.updateOffset(alignedSize);
-                 UniformState.MVP.resetAndUpdate();
-                 Renderer.getDrawer().updateUniformOffset();
-             }
-
-            }
+           }
 
 
-            }
+            UniformState.MVP.updateOffsetState(uniformBuffers, 64);
+//            Renderer.getDrawer().updateUniformOffset2((baseOffset/ baseAlignment));
+
+
+
 
         }
 

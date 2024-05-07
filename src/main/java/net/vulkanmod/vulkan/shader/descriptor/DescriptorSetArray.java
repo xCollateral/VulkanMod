@@ -57,7 +57,8 @@ public class DescriptorSetArray {
 
 
     private final boolean[] isUpdated = {false, false};
-    private static final int INLINE_UNIFORM_SIZE = 16 + 16+ 4;
+    private static final UniformState[] uniformStates = {UniformState.FogStart, UniformState.FogEnd, UniformState.FogColor};
+    private static final int INLINE_UNIFORM_SIZE = 16 + 4 + 4;
     private int MissingTexID = -1;
 
     static
@@ -340,7 +341,7 @@ public class DescriptorSetArray {
 
 
                 updateUBOs(uniformId, stack, x, descriptorWrites, currentSet);
-                updateInlineUniformBlocks(stack, descriptorWrites, currentSet);
+                updateInlineUniformBlocks(stack, descriptorWrites, currentSet, uniformStates);
 
 
                 //                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
@@ -394,18 +395,18 @@ public class DescriptorSetArray {
         isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
     }
 
-    private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet) {
+    private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, UniformState... uniformStates) {
 
         int offset = 0;
 
-        final UniformState[] uniformStates = {UniformState.ColorModulator, UniformState.SkyColor, UniformState.GameTime};
+        //TODO: can't specify static offsets in shader without Spec constants/Stringify Macro Hacks
         for(UniformState uniformState : uniformStates) {
             final long ptr = switch (uniformState)
             {
                 default -> uniformState.getMappedBufferPtr().ptr;
-                case GameTime -> stack.nfloat(RenderSystem.getShaderGameTime());
                 case FogStart -> stack.nfloat(RenderSystem.getShaderFogStart());
                 case FogEnd -> stack.nfloat(RenderSystem.getShaderFogEnd());
+//                case FogColor -> stack.npointer(UniformState.FogColor.getMappedBufferPtr().ptr);
             };
 
             VkWriteDescriptorSetInlineUniformBlock bufferInfos = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)

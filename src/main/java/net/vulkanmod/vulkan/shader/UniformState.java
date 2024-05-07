@@ -58,18 +58,18 @@ public enum UniformState {
     }
 
 
-    public boolean forcePushUpdate(int srcHash, UniformBuffer uniformBuffer, int frame)
+    public boolean forcePushUpdate(int srcHash, UniformBuffer uniformBuffer, int frame, int baseAlignment)
     {
-        boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(srcHash);
+        boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(this.newHash);
         if(isUniqueHash) {
             final int align1 = VUtil.align(this.size * 4, this.align);
-            this.hashedUniformOffsetMap.put(srcHash, uniformBuffer.getUsedBytes());
+            this.hashedUniformOffsetMap.put(this.newHash, uniformBuffer.getUsedBytes());
             MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getPointer(), align1);
             uniformBuffer.updateOffset(align1);
             this.needsUpdate=true;
         }
-        this.currentHash=srcHash;
-        Renderer.getDrawer().updateUniformOffset2(this.hashedUniformOffsetMap.get(this.currentHash)/64);
+        this.currentHash=this.newHash;
+        Renderer.getDrawer().updateUniformOffset2(this.hashedUniformOffsetMap.get(this.currentHash)/ baseAlignment);
 
 
 
@@ -154,11 +154,11 @@ public enum UniformState {
         return this.hashedUniformOffsetMap.containsKey(this.newHash);
     }
 
-    public void updateOffsetState() {
+    public void updateOffsetState(UniformBuffer uniformBuffers, int baseAlignment) {
 
         if(hashedUniformOffsetMap.containsKey(this.newHash))
         {
-            Renderer.getDrawer().updateUniformOffset2((hashedUniformOffsetMap.get(this.newHash)/64));
+            Renderer.getDrawer().updateUniformOffset2((hashedUniformOffsetMap.get(this.newHash)/ baseAlignment));
         }
     }
 }
