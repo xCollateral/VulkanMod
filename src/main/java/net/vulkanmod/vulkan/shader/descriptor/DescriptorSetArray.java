@@ -3,7 +3,9 @@ package net.vulkanmod.vulkan.shader.descriptor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.blockentity.BeaconRenderer;
 import net.minecraft.client.renderer.blockentity.TheEndPortalRenderer;
@@ -14,6 +16,7 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
@@ -23,13 +26,15 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DescriptorSetArray {
@@ -55,8 +60,8 @@ public class DescriptorSetArray {
 
 
     private final boolean[] isUpdated = {false, false};
-    private static final UniformState[] uniformStates = {UniformState.FogStart, UniformState.FogEnd, UniformState.FogColor};
-    private static final int INLINE_UNIFORM_SIZE = 16 + 4 + 4;
+    private static final UniformState[] uniformStates = {UniformState.FogStart, UniformState.FogEnd, UniformState.GameTime, UniformState.LineWidth, UniformState.FogColor};
+    private static final int INLINE_UNIFORM_SIZE = 4 + 4 + 4 + 4 + 16;
     private int MissingTexID = -1;
 
     static
@@ -315,7 +320,7 @@ public class DescriptorSetArray {
                 }
                 final long currentSet = descriptorSets.get(frame);
                 final int NUM_UBOs = 1;
-                final int NUM_INLINE_UBOs = 3;
+                final int NUM_INLINE_UBOs = uniformStates.length;
                 final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs + NUM_INLINE_UBOs;
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 
@@ -391,7 +396,13 @@ public class DescriptorSetArray {
     private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, UniformState... uniformStates) {
 
         int offset = 0;
-
+        final Camera playerPos = Minecraft.getInstance().gameRenderer.getMainCamera();
+        final int effectiveRenderDistance = Minecraft.getInstance().options.getEffectiveRenderDistance() * 16;
+        FogRenderer.setupFog(playerPos,
+                FogRenderer.FogMode.FOG_TERRAIN,
+                effectiveRenderDistance,
+                false,
+                1);
         //TODO: can't specify static offsets in shader without Spec constants/Stringify Macro Hacks
         for(UniformState uniformState : uniformStates) {
             final long ptr = switch (uniformState)
@@ -399,18 +410,20 @@ public class DescriptorSetArray {
                 default -> uniformState.getMappedBufferPtr().ptr;
                 case FogStart -> stack.nfloat(RenderSystem.getShaderFogStart());
                 case FogEnd -> stack.nfloat(RenderSystem.getShaderFogEnd());
-//                case FogColor -> stack.npointer(UniformState.FogColor.getMappedBufferPtr().ptr);
+                case GameTime -> stack.nfloat(RenderSystem.getShaderGameTime());
+                case LineWidth -> stack.nfloat(RenderSystem.getShaderLineWidth());
+//                case FogColor -> VRenderSystem.getShaderFogColor().ptr;
             };
 
-            VkWriteDescriptorSetInlineUniformBlock bufferInfos = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
+            VkWriteDescriptorSetInlineUniformBlock inlineUniformBlock = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
                     .sType$Default();
-            memPutAddress(bufferInfos.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, ptr);
-            VkWriteDescriptorSetInlineUniformBlock.ndataSize(bufferInfos.address(), uniformState.size * 4);
+            memPutAddress(inlineUniformBlock.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, ptr);
+            VkWriteDescriptorSetInlineUniformBlock.ndataSize(inlineUniformBlock.address(), uniformState.size*4);
 
             //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
             VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
             uboDescriptorWrite.sType$Default();
-            uboDescriptorWrite.pNext(bufferInfos);
+            uboDescriptorWrite.pNext(inlineUniformBlock);
             uboDescriptorWrite.dstBinding(FRAG_UBO_ID);
             uboDescriptorWrite.dstArrayElement(offset);
             uboDescriptorWrite.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);

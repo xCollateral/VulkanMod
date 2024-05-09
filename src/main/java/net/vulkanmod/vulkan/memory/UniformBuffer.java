@@ -38,6 +38,9 @@ public class UniformBuffer extends Buffer {
     public long getPointer() {
         return this.data.get(0) + usedBytes;
     }
+    public long getBasePointer() {
+        return this.data.get(0);
+    }
 
     public void upload(int i, UniformState uniformState) {
 

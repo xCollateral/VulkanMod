@@ -22,6 +22,7 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.io.InputStream;
@@ -201,8 +202,16 @@ public abstract class Pipeline {
 
             //Get the base offset fo the head/1st/initial Uniform i.e. the currently "active"
 
+            if(this.name.contains("terrain")) {
+            //               UniformState.ModelViewMat.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
 
-           if(!UniformState.MVP.hasUniqueHash()) {
+                for(Uniform uniform: buffers.get(0).getUniforms())
+                {
+                    UniformState.valueOf(uniform.getName()).forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
+                }
+            }
+
+           else if(!UniformState.MVP.hasUniqueHash()) {
 
                UniformState.MVP.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
 
