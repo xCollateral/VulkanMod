@@ -6,66 +6,34 @@ import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
 public class AutoIndexBuffer {
-    int vertexCount;
-    DrawType drawType;
-    IndexBuffer indexBuffer;
 
-    public AutoIndexBuffer(int vertexCount, DrawType type) {
-        this.drawType = type;
+    private static final int UINT16_INDEX_MAX = 65536; //Indices overflow past 1<<16 due to use of VK_INDEX_TYPE_UINT16
+    final IndexBuffer indexBuffer;
 
-        createIndexBuffer(vertexCount);
-    }
+    public AutoIndexBuffer(DrawType drawType) {
 
-    private void createIndexBuffer(int vertexCount) {
-        this.vertexCount = vertexCount;
-        int size;
-        ByteBuffer buffer;
+        final ByteBuffer buffer = switch (drawType) {
+            case QUADS -> genQuadIdxs();
+            case TRIANGLE_FAN -> genTriangleFanIdxs();
+            case TRIANGLE_STRIP -> genTriangleStripIdxs();
+        };
 
-        switch (drawType) {
-            case QUADS -> {
-                size = vertexCount * 3 / 2 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genQuadIdxs(vertexCount);
-            }
-            case TRIANGLE_FAN -> {
-                size = (vertexCount - 2) * 3 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genTriangleFanIdxs(vertexCount);
-            }
-            case TRIANGLE_STRIP -> {
-                size = (vertexCount - 2) * 3 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genTriangleStripIdxs(vertexCount);
-            }
-            default -> throw new RuntimeException("unknown drawType");
-        }
-
-        indexBuffer = new IndexBuffer(size, MemoryType.GPU_MEM);
+        indexBuffer = new IndexBuffer(buffer.capacity(), MemoryType.GPU_MEM);
         indexBuffer.copyBuffer(buffer);
 
         MemoryUtil.memFree(buffer);
     }
 
-    public void checkCapacity(int vertexCount) {
-        if(this.drawType==DrawType.QUADS) return;
-        if(vertexCount > this.vertexCount) {
-            int newVertexCount = this.vertexCount * 2;
-            System.out.println("Reallocating AutoIndexBuffer from " + this.vertexCount + " to " + newVertexCount);
-
-            //TODO: free old
-            //Can't know when VBO will stop using it
-            indexBuffer.freeBuffer();
-            createIndexBuffer(newVertexCount);
-        }
-    }
-
-    public static ByteBuffer genQuadIdxs(int vertexCount) {
+    public static ByteBuffer genQuadIdxs() {
         //short[] idxs = {0, 1, 2, 0, 2, 3};
 
-        int indexCount = vertexCount * 3 / 2;
+        int indexCount = UINT16_INDEX_MAX * 3 / 2;
         ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
         ShortBuffer idxs = buffer.asShortBuffer();
         //short[] idxs = new short[indexCount];
 
         int j = 0;
-        for(int i = 0; i < vertexCount; i += 4) {
+        for(int i = 0; i < UINT16_INDEX_MAX; i += 4) {
 
             idxs.put(j, (short) i);
             idxs.put(j + 1, (short) (i + 1));
@@ -81,15 +49,15 @@ public class AutoIndexBuffer {
         //this.type.copyIndexBuffer(this, bufferSize, idxs);
     }
 
-    public static ByteBuffer genTriangleFanIdxs(int vertexCount) {
-        int indexCount = (vertexCount - 2) * 3;
+    public static ByteBuffer genTriangleFanIdxs() {
+        int indexCount = (UINT16_INDEX_MAX - 2) * 3;
         ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
         ShortBuffer idxs = buffer.asShortBuffer();
 
         //short[] idxs = byteBuffer.asShortBuffer().array();
 
         int j = 0;
-        for (int i = 0; i < vertexCount - 2; ++i) {
+        for (int i = 0; i < UINT16_INDEX_MAX - 2; ++i) {
 //            idxs[j] = 0;
 //            idxs[j + 1] = (short) (i + 1);
 //            idxs[j + 2] = (short) (i + 2);
@@ -105,8 +73,8 @@ public class AutoIndexBuffer {
         return buffer;
     }
 
-    public static ByteBuffer genTriangleStripIdxs(int vertexCount) {
-        int indexCount = (vertexCount - 2) * 3;
+    public static ByteBuffer genTriangleStripIdxs() {
+        int indexCount = (UINT16_INDEX_MAX - 2) * 3;
 
         //TODO: free buffer
         ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
@@ -115,7 +83,7 @@ public class AutoIndexBuffer {
         //short[] idxs = byteBuffer.asShortBuffer().array();
 
         int j = 0;
-        for (int i = 0; i < vertexCount - 2; ++i) {
+        for (int i = 0; i < UINT16_INDEX_MAX - 2; ++i) {
 //            idxs[j] = 0;
 //            idxs[j + 1] = (short) (i + 1);
 //            idxs[j + 2] = (short) (i + 2);

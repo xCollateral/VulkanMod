@@ -10,7 +10,10 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
+import net.vulkanmod.vulkan.memory.IndexBuffer;
+import net.vulkanmod.vulkan.memory.MemoryType;
+import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.Matrix4f;
 
@@ -82,7 +85,6 @@ public class VBO {
                 indexBuffer.freeBuffer();
 
             if(autoIndexBuffer != null) {
-                autoIndexBuffer.checkCapacity(vertexCount);
                 indexBuffer = autoIndexBuffer.getIndexBuffer();
             }
 
