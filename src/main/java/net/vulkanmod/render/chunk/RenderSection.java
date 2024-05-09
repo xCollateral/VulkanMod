@@ -245,7 +245,7 @@ public class RenderSection {
         Level level = WorldRenderer.getLevel();
         int secX = xOffset >> 4;
         int secZ = zOffset >> 4;
-        int secY = (yOffset - level.getMinBuildHeight()) >> 4;
+        int secY = yOffset >> 4;
 
         if (!ChunkStatusMap.INSTANCE.chunkRenderReady(secX, secZ))
             return null;
