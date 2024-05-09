@@ -149,6 +149,7 @@ public class WorldRenderer {
         this.cameraPos = camera.getPosition();
         if (this.minecraft.options.getEffectiveRenderDistance() != this.renderDistance) {
             this.allChanged();
+            Renderer.getDescriptorSetArray().forceDescriptorUpdate();
         }
 
         this.level.getProfiler().push("camera");
@@ -262,7 +263,7 @@ public class WorldRenderer {
                 this.sectionGrid.repositionCamera(entity.getX(), entity.getZ());
             }
 
-            Renderer.getDescriptorSetArray().forceDescriptorUpdate();
+
         }
     }
 
