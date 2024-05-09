@@ -10,7 +10,7 @@ layout(location = 4) in ivec2 UV2;
 layout(location = 5) in vec3 Normal;
 
 layout(binding = 0) uniform readonly UniformBufferObject {
-   mat4 MVP[16];
+   mat4 MVP[8];
 };
 //Exploit aliasing and allow new Uniforms to overwrite the prior content: reducing required PushConstant Range
 layout(push_constant) readonly uniform  PushConstant
@@ -27,7 +27,7 @@ layout(location = 2) out vec2 texCoord0;
 layout(location = 3) out vec2 texCoord1;
 
 void main() {
-    gl_Position = MVP[gl_BaseInstance& 15] * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance& 7] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
 
 

@@ -11,6 +11,12 @@ vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd
 
 layout(binding = 3) uniform sampler2D Sampler0[];
 
+layout(binding = 1) uniform InlineUniforms
+{
+    layout(offset=0) float FogStart;
+    layout(offset=4) float FogEnd;
+    layout(offset=16) vec4 FogColor;
+};
 
 
 layout(location = 0) flat in uint baseInstance;
@@ -30,5 +36,5 @@ void main() {
     color *= vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
-    fragColor = color;
+    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }

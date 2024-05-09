@@ -196,7 +196,7 @@ public abstract class Pipeline {
 
             //Find a free Unform blockthata void iverwiritng currently used uniform data
 
-            int baseOffset = UniformState.valueOf(buffers.get(0).getUniforms().get(0).getName()).getCurrentOffset();
+            int baseOffset = buffers.get(0).getUniforms().stream().mapToInt(value -> uniformBuffers.getUsedBytes()).sum();
 
 
 
@@ -205,10 +205,10 @@ public abstract class Pipeline {
             if(this.name.contains("terrain")) {
             //               UniformState.ModelViewMat.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
 
-                for(Uniform uniform: buffers.get(0).getUniforms())
-                {
-                    UniformState.valueOf(uniform.getName()).forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
-                }
+                UniformState.MVP.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
+                MemoryUtil.memCopy(UniformState.ModelViewMat.getMappedBufferPtr().ptr, uniformBuffers.getBasePointer() + 512, 64);
+
+
             }
 
            else if(!UniformState.MVP.hasUniqueHash()) {

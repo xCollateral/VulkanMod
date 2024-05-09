@@ -234,7 +234,6 @@ public class WorldRenderer {
     public void allChanged() {
         if (this.level != null) {
 //            this.graphicsChanged();
-            Renderer.getDescriptorSetArray().forceDescriptorUpdate();
             this.level.clearTintCaches();
 
             this.renderRegionCache.clear();
@@ -263,6 +262,7 @@ public class WorldRenderer {
                 this.sectionGrid.repositionCamera(entity.getX(), entity.getZ());
             }
 
+            Renderer.getDescriptorSetArray().forceDescriptorUpdate();
         }
     }
 

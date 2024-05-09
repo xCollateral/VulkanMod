@@ -17,6 +17,7 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
@@ -373,7 +374,7 @@ public class DescriptorSetArray {
         VkDescriptorBufferInfo.Buffer bufferInfos = VkDescriptorBufferInfo.calloc(1, stack);
         bufferInfos.buffer(uniformId);
         bufferInfos.offset(x);
-        bufferInfos.range(1024);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
+        bufferInfos.range(Drawer.INITIAL_UB_SIZE);  //Udescriptors seem to be untyped: reserve range, but can fit anything + within the range
 
 
         //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)

@@ -4,8 +4,8 @@
 
 
 layout (binding = 0) uniform UniformBufferObject {
-    mat4 MVP;
-    mat4 ModelViewMat;
+    layout(offset = 0) mat4 MVP;
+    layout(offset = 512) mat4 ModelViewMat;
 };
 
 layout (push_constant) readonly uniform  PushConstant {
