@@ -64,16 +64,13 @@ public class AutoIndexBuffer {
         ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount / 4 * 6 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
-        int j = 0;
-        for (int i = 0; i < vertexCount; i += 4) {
+        for (int i = 0, j = 0; i < vertexCount; i += 4, j += 6) {
             indices.put(j, (short) i);
             indices.put(j + 1, (short) (i + 1));
             indices.put(j + 2, (short) (i + 2));
             indices.put(j + 3, (short) (i + 2));
             indices.put(j + 4, (short) (i + 3));
             indices.put(j + 5, (short) i);
-
-            j += 6;
         }
 
         return buffer;
@@ -83,16 +80,13 @@ public class AutoIndexBuffer {
         ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount / 4 * 6 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
-        int j = 0;
-        for (int i = 0; i < vertexCount; i += 4) {
+        for (int i = 0, j = 0; i < vertexCount; i += 4, j += 6) {
             indices.put(j, (short) i);
             indices.put(j + 1, (short) (i + 1));
             indices.put(j + 2, (short) (i + 2));
             indices.put(j + 3, (short) (i + 3));
             indices.put(j + 4, (short) (i + 2));
             indices.put(j + 5, (short) (i + 1));
-
-            j += 6;
         }
 
         return buffer;
@@ -102,8 +96,7 @@ public class AutoIndexBuffer {
         ByteBuffer buffer = MemoryUtil.memCalloc((vertexCount - 2) * 3 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
         
-        int j = 0;
-        for (int i = 0; i < vertexCount - 2; i += 1) {
+        for (int i = 0, j = 0; i < vertexCount - 2; i += 1, j += 3) {
             indices.put(j, (short) 0);
             indices.put(j + 1, (short) (i + 1));
             indices.put(j + 2, (short) (i + 2));
