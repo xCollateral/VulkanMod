@@ -43,7 +43,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DescriptorSetArray {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     private static final int UNIFORM_POOLS = 1;
-    private static final int VERT_SAMPLER_MAX_LIMIT = 8;
+    private static final int VERT_SAMPLER_MAX_LIMIT = 2;
     private static final int SAMPLER_MAX_LIMIT_DEFAULT = 32;
     private static final int MAX_POOL_SAMPLERS = 4096;
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
@@ -136,7 +136,7 @@ public class DescriptorSetArray {
 
             bindings.get(VERT_UBO_ID)
                     .binding(VERT_UBO_ID)
-                    .descriptorCount(MAX_SETS)
+                    .descriptorCount(1)
                     .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
@@ -145,7 +145,7 @@ public class DescriptorSetArray {
 
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
-                    .descriptorCount(INLINE_UNIFORM_SIZE*MAX_SETS)
+                    .descriptorCount(INLINE_UNIFORM_SIZE)
                     .descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -154,7 +154,7 @@ public class DescriptorSetArray {
 
             bindings.get(VERTEX_SAMPLER_ID)
                     .binding(VERTEX_SAMPLER_ID)
-                    .descriptorCount(VERT_SAMPLER_MAX_LIMIT*MAX_SETS)
+                    .descriptorCount(VERT_SAMPLER_MAX_LIMIT)
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
@@ -238,12 +238,12 @@ public class DescriptorSetArray {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uniformBufferPoolSize.descriptorCount(1);
+                uniformBufferPoolSize.descriptorCount(MAX_SETS);
 
                 VkDescriptorPoolSize uniformBufferPoolSize2 = poolSizes.get(1);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize2.type(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
-                uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE); //Byte Count/Size For Inline Uniform block
+                uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE*MAX_SETS); //Byte Count/Size For Inline Uniform block
 
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(2);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -251,7 +251,7 @@ public class DescriptorSetArray {
 
             VkDescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo = VkDescriptorPoolInlineUniformBlockCreateInfo.calloc(stack)
                     .sType$Default()
-                    .maxInlineUniformBlockBindings(4);
+                    .maxInlineUniformBlockBindings(2);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
