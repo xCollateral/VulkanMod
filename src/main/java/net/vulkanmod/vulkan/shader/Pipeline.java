@@ -175,7 +175,7 @@ public abstract class Pipeline {
         }
 
 
-        public void pushUniforms(UniformBuffer uniformBuffers, int frame) {
+        public void pushUniforms(UniformBuffer uniformBuffers, int frame, boolean shouldUpdate) {
             int currentOffset = uniformBuffers.getUsedBytes();
 
             //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)

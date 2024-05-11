@@ -494,6 +494,7 @@ public class Renderer {
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         final long handle = pipeline.getHandle(currentState);
+        this.checkUBOs(pipeline, boundPipeline!=handle);
         if(boundPipeline==handle) {
             return false;
         }
@@ -504,13 +505,13 @@ public class Renderer {
 ////            Initializer.LOGGER.warn("Double Bind: "+pipeline.name);
 //            return true;
 //        }
-        this.checkUBOs(pipeline, true);
+
         addUsedPipeline(pipeline);
         return true;
     }
 
     private void checkUBOs(Pipeline pipeline, boolean shouldUpdate) {
-       if(shouldUpdate) pipeline.pushUniforms(drawer.getUniformBuffer(), currentFrame);
+       pipeline.pushUniforms(drawer.getUniformBuffer(), currentFrame, shouldUpdate);
     }
 
     private void checkPushConstantState(Pipeline pipeline, boolean shouldUpdate, VkCommandBuffer commandBuffer) {
