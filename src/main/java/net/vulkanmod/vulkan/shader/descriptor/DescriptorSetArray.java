@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.option.Options;
@@ -309,6 +310,7 @@ public class DescriptorSetArray {
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId());
             this.initialisedFragSamplers.registerTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId());
+            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(new ResourceLocation("textures/environment/clouds.png")/*LevelRenderer.CLOUDS_LOCATION*/).getId());
             this.initialisedVertSamplers.registerTexture(6);
             this.initialisedVertSamplers.registerTexture(VTextureSelector.getBoundId(1));
         }
