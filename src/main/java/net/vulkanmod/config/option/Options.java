@@ -240,7 +240,7 @@ public abstract class Options {
                                     minecraftOptions.mipmapLevels().set(value);
                                     Minecraft.getInstance().updateMaxMipLevel(value);
                                     Minecraft.getInstance().delayTextureReload();
-                                    Renderer.getDescriptorSetArray().setSampler(value);
+
                                     Renderer.getDescriptorSetArray().forceDescriptorUpdate();
                                 },
                                 () -> minecraftOptions.mipmapLevels().get())

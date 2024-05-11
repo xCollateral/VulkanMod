@@ -62,7 +62,7 @@ public abstract class SamplerManager {
             }
 
             //TODO: AnisoTropic filtering only applies if MipMaps are also Enabled
-            if((flags & (USE_MIPMAPS_BIT|USE_ANISOTROPIC_BIT)) != 0) {
+            if((flags & (USE_ANISOTROPIC_BIT)) != 0) {
                 samplerInfo.anisotropyEnable(true);
                 samplerInfo.maxAnisotropy(16.0f);
             } else {

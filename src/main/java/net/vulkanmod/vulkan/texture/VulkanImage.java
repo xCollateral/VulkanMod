@@ -34,6 +34,8 @@ public class VulkanImage {
 
     private long[] levelImageViews;
 
+    private long sampler;
+
     public final int format;
     public final int aspect;
     public final int mipLevels;
@@ -57,6 +59,7 @@ public class VulkanImage {
         this.usage = usage;
         this.aspect = getAspect(this.format);
 
+        this.sampler = SamplerManager.getTextureSampler((byte) this.mipLevels, (byte) this.mipLevels>1 ? USE_MIPMAPS_BIT : 0);
     }
 
     private VulkanImage(Builder builder) {
@@ -74,7 +77,8 @@ public class VulkanImage {
 
         image.createImage(builder.mipLevels, builder.width, builder.height, builder.format, builder.usage);
         image.mainImageView = createImageView(image.id, builder.format, image.aspect, builder.mipLevels);
-        //Skip Samplers if not needed (To help alleiavte mas Smapler alloc limit potwntially e.g.)
+
+        image.sampler = SamplerManager.getTextureSampler(builder.mipLevels, builder.samplerFlags);
 
         if (builder.levelViews) {
             image.levelImageViews = new long[builder.mipLevels];
@@ -403,7 +407,9 @@ public class VulkanImage {
         return levelImageViews;
     }
 
-    public int getUsage() { return usage; }
+    public long getSampler() {
+        return sampler;
+    }
 
     public static Builder builder(int width, int height) {
         return new Builder(width, height);
