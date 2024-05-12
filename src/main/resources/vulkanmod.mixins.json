@@ -22,6 +22,7 @@
     "compatibility.ProgramM",
     "compatibility.UniformM",
     "compatibility.gl.GL11M",
+    "compatibility.gl.GL15M",
     "compatibility.gl.GL30M",
 
     "debug.ChunkBorderRendererM",
