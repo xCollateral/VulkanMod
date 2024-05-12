@@ -44,7 +44,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DescriptorSetArray {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     private static final int UNIFORM_POOLS = 1;
-    private static final int VERT_SAMPLER_MAX_LIMIT = 2;
+    private static final int VERT_SAMPLER_MAX_LIMIT = 4;
     private static final int SAMPLER_MAX_LIMIT_DEFAULT = 32;
     private static final int MAX_POOL_SAMPLERS = 4096;
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
