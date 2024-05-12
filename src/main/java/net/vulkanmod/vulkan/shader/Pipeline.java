@@ -176,7 +176,6 @@ public abstract class Pipeline {
 
 
         public void pushUniforms(UniformBuffer uniformBuffers, int frame, boolean shouldUpdate) {
-            int currentOffset = uniformBuffers.getUsedBytes();
 
             //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
             // + PreComputed/dynamic uniform offset table: Automatically optimise/+remove redundant hashes+contents, and use Offsets w/ matching hashed instead of using linear bump allocation
@@ -186,45 +185,18 @@ public abstract class Pipeline {
 
 
 
-            int currentByteOffset = buffers.stream().mapToInt(AlignedStruct::getSize).sum();
-
-            final int baseAlignment = 64; //The largest alignment (i.e. Size) of all indivusla Uniforms
-            boolean isAligned = (currentOffset % baseAlignment)==0;
-            //baseoffset isaligned, donlt need to push More Unform space
-            // if the current layout(offset=0) Uniform has not been updated, but a new unform needs to be added (e.g. ProjMat)
-
-
-            //Find a free Unform blockthata void iverwiritng currently used uniform data
-
-            int baseOffset = buffers.get(0).getUniforms().stream().mapToInt(value -> uniformBuffers.getUsedBytes()).sum();
-
-
-
-            //Get the base offset fo the head/1st/initial Uniform i.e. the currently "active"
-
-            if(this.name.contains("terrain")) {
-            //               UniformState.ModelViewMat.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
-
-                UniformState.MVP.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
-                MemoryUtil.memCopy(UniformState.ModelViewMat.getMappedBufferPtr().ptr, uniformBuffers.getBasePointer() + 512, 64);
-
-
+            int msk = 0;
+            for(var a : buffers.get(0).getUniforms())
+            {
+                UniformState.valueOf(a.getName()).updateBank(uniformBuffers);
+                msk |=  UniformState.valueOf(a.getName()).getCurrentOffset();
             }
 
-           else if(!UniformState.MVP.hasUniqueHash()) {
 
-               UniformState.MVP.forcePushUpdate(0, uniformBuffers, 0, baseAlignment);
-
-              /* uniformBuffers.upload(currentOffset, UniformState.MVP);
-               UniformState.MVP.storeCurrentOffset(currentOffset);
-               uniformBuffers.updateOffset(64);
-
-               UniformState.MVP.resetAndUpdate();*/
-
-           }
+//                MemoryUtil.memCopy(UniformState.ModelViewMat.getMappedBufferPtr().ptr, uniformBuffers.getBasePointer() + 512, 64);
 
 
-            UniformState.MVP.updateOffsetState(uniformBuffers, 64);
+            Renderer.getDrawer().updateUniformOffset2(msk);
 //            Renderer.getDrawer().updateUniformOffset2((baseOffset/ baseAlignment));
 
 

@@ -3,12 +3,9 @@
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec2 UV0;
 
-layout (push_constant) uniform readonly pushConstant {
-    mat2x4 TextureMat;
-};
-
 layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP[8];
+   layout(offset = 768) mat4 TextureMat[4];
 };
 
 layout(location = 0) out float vertexDistance;
@@ -18,7 +15,7 @@ void main() {
     gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0);
 
 
-    texCoord0 = (TextureMat * UV0).xy;
+    texCoord0 = (TextureMat[(gl_BaseInstance & 31) >> 3] * vec4(UV0, 0.0, 1.0)).xy;
 }
 
 /*

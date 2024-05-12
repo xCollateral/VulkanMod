@@ -5,7 +5,6 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.ColorUtil;
@@ -14,15 +13,13 @@ import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.VK10;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static net.vulkanmod.vulkan.shader.UniformState.MVP;
+import static net.vulkanmod.vulkan.shader.UniformState.TextureMat;
 import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
 import static org.lwjgl.vulkan.VK10.vkCmdPushConstants;
 
 public abstract class VRenderSystem {
@@ -102,12 +99,12 @@ public abstract class VRenderSystem {
     public static void setTextureMatrix(Matrix4f mat) {
 
 
-
-//        if(UniformState.TextureMat.needsUpdate(mat.hashCode()))
+        mat.get(TextureMat.buffer());
+        TextureMat.needsUpdate(mat.hashCode());
+//
+//        if(!UniformState.TextureMat.hasUniqueHash())
 //        {
-//            mat.getToAddress(UniformState.TextureMat.getMappedBufferPtr().ptr);
-//            VK10.nvkCmdPushConstants(Renderer.getCommandBuffer(), Pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 32, UniformState.TextureMat.getMappedBufferPtr().ptr);
-//            UniformState.TextureMat.resetAndUpdate();
+//            UniformState.TextureMat.updateBank(Renderer.getDrawer().getUniformBuffer());
 //        }
     }
     public static void setChunkOffset(float f1, float f2, float f3) {
