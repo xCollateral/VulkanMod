@@ -64,6 +64,7 @@ public enum UniformState {
         {
             default -> 0;
             case "TextureMat" -> 3;
+            case "ModelViewMat" -> 5;
         };
     }
 
