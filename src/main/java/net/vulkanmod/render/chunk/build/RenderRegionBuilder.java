@@ -22,7 +22,7 @@ public class RenderRegionBuilder {
     public RenderRegion createRegion(Level level, int secX, int secY, int secZ) {
         LevelChunk levelChunk = getLevelChunk(level, secX, secZ);
         var sections = levelChunk.getSections();
-        LevelChunkSection section = sections[secY];
+        LevelChunkSection section = sections[level.getSectionIndexFromSectionY(secY)];
 
         if(section == null || section.hasOnlyAir())
             return null;
@@ -47,7 +47,8 @@ public class RenderRegionBuilder {
                 sections = levelChunk1.getSections();
 
                 for(int y = minSecY; y <= maxSecY; ++y) {
-                    section = y >= 0 && y < sections.length ? sections[y] : null;
+                    int sectionIdx = y - minHeightSec;
+                    section = sectionIdx >= 0 && sectionIdx < sections.length ? sections[sectionIdx] : null;
 
                     final int relX = (x - minSecX), relY = (y - minSecY), relZ = (z - minSecZ);
                     final int idx = (relY * RenderRegion.WIDTH + relZ) * RenderRegion.WIDTH + relX;
@@ -56,7 +57,7 @@ public class RenderRegionBuilder {
 
                     blockData[idx] = values;
 
-                    SectionPos pos = SectionPos.of(x, y + minHeightSec, z);
+                    SectionPos pos = SectionPos.of(x, y, z);
                     DataLayer[] dataLayers = getSectionDataLayers(level, pos);
 
                     lightData[idx] = dataLayers;

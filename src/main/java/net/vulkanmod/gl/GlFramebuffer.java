@@ -1,6 +1,8 @@
 package net.vulkanmod.gl;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -39,19 +41,17 @@ public class GlFramebuffer {
         // 36160 GL_FRAMEBUFFER
         // 36161 GL_RENDERBUFFER
 
-//        if(target != GL30.GL_FRAMEBUFFER) {
-//            throw new IllegalArgumentException("target is not GL_FRAMEBUFFER");
-//        }
-
         if(boundId == id)
             return;
 
         if(id == 0) {
             Renderer.getInstance().endRenderPass();
 
-//            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-//            if(renderTarget != null)
-//                renderTarget.bindWrite(true);
+            if (Renderer.isRecording()) {
+                RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+                renderTarget.bindWrite(true);
+            }
+
             boundFramebuffer = null;
             boundId = 0;
             return;
@@ -105,17 +105,10 @@ public class GlFramebuffer {
     }
 
     public static void framebufferRenderbuffer(int target, int attachment, int renderbuffertarget, int renderbuffer) {
-//        GL30C.glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
-
-//        if(target != GL30.GL_FRAMEBUFFER) {
-//            throw new IllegalArgumentException("target is not GL_FRAMEBUFFER");
-//        }
-//        if(renderbuffertarget != GL30.GL_RENDERBUFFER) {
-//            throw new UnsupportedOperationException();
-//        }
+        if (boundFramebuffer == null)
+            return;
 
         boundFramebuffer.setAttachmentRenderbuffer(attachment, renderbuffer);
-        //TODO
     }
 
     public static int glCheckFramebufferStatus(int target) {
