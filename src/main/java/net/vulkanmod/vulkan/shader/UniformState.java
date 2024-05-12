@@ -68,7 +68,7 @@ public enum UniformState {
     }
 
 
-    public void updateBank(UniformBuffer uniformBuffer)
+    public int updateBank(UniformBuffer uniformBuffer)
     {
         boolean isUniqueHash = !this.hashedUniformOffsetMap.containsKey(this.newHash);
         if(isUniqueHash) {
@@ -85,7 +85,7 @@ public enum UniformState {
         this.currentHash=this.newHash;
 
 
-//        return this.hashedUniformOffsetMap.get(this.currentHash) / getByteSize() << STATE_MSK;
+        return this.hashedUniformOffsetMap.get(this.currentHash) / getByteSize() << STATE_MSK;
     }
 
     public int getByteSize() {

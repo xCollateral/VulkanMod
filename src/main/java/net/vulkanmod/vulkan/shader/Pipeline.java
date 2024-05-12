@@ -31,8 +31,10 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static net.vulkanmod.vulkan.shader.SPIRVUtils.*;
+import static net.vulkanmod.vulkan.shader.UniformState.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -184,12 +186,9 @@ public abstract class Pipeline {
             // TODO: e.g. fine the hash of the TOPMOSt uniform, them if the hash matches, overwrite the prior data w. the new non-aligned uniforms
 
 
-
             int msk = 0;
-            for(var a : buffers.get(0).getUniforms())
-            {
-                UniformState.valueOf(a.getName()).updateBank(uniformBuffers);
-                msk |=  UniformState.valueOf(a.getName()).getCurrentOffset();
+            for (Uniform a : this.buffers.get(0).getUniforms()) {
+                msk |= UniformState.valueOf(a.getName()).updateBank(uniformBuffers);
             }
 
 
