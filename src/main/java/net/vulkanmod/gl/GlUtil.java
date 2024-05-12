@@ -52,7 +52,7 @@ public abstract class GlUtil {
                     switch (type) {
                         case GL11.GL_UNSIGNED_BYTE -> VK_FORMAT_B8G8R8A8_UNORM;
                         case GL11.GL_BYTE -> VK_FORMAT_B8G8R8A8_UNORM;
-                        case GL30.GL_UNSIGNED_INT_8_8_8_8_REV -> VK_FORMAT_R8G8B8A8_UINT;
+                        case GL30.GL_UNSIGNED_INT_8_8_8_8, GL30.GL_UNSIGNED_INT_8_8_8_8_REV -> VK_FORMAT_R8G8B8A8_UNORM;
                         default -> throw new IllegalStateException("Unexpected type: " + type);
                     };
             case GL30.GL_UNSIGNED_INT_8_8_8_8_REV ->
