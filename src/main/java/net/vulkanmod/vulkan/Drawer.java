@@ -16,15 +16,18 @@ public class Drawer {
     private static final int INITIAL_VB_SIZE = 2000000;
     private static final int INITIAL_UB_SIZE = 200000;
 
+    private static final int MAX_QUAD_VERTICES_UINT16 = 65536 * 2 / 3;
+
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
     private static final long pBuffers = MemoryUtil.memAddress0(buffers);
     private static final long pOffsets = MemoryUtil.memAddress0(offsets);
-    private static final int UINT16_INDEX_MAX = 98304;
 
     private int framesNum;
     private VertexBuffer[] vertexBuffers;
     private final AutoIndexBuffer quadsIndexBuffer;
+    private final AutoIndexBuffer linesIndexBuffer;
+    private final AutoIndexBuffer debugLineStripIndexBuffer;
     private final AutoIndexBuffer triangleFanIndexBuffer;
     private final AutoIndexBuffer triangleStripIndexBuffer;
     private UniformBuffer[] uniformBuffers;
@@ -32,10 +35,12 @@ public class Drawer {
     private int currentFrame;
 
     public Drawer() {
-        //Index buffers
-        quadsIndexBuffer = new AutoIndexBuffer(UINT16_INDEX_MAX, AutoIndexBuffer.DrawType.QUADS);
+        // Index buffers
+        quadsIndexBuffer = new AutoIndexBuffer(MAX_QUAD_VERTICES_UINT16, AutoIndexBuffer.DrawType.QUADS);
+        linesIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.LINES);
+        debugLineStripIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.DEBUG_LINE_STRIP);
         triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
-        triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
+        triangleStripIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
     }
 
     public void setCurrentFrame(int currentFrame) {
@@ -75,8 +80,12 @@ public class Drawer {
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
         switch (mode) {
-            case QUADS, LINES -> {
+            case QUADS -> {
                 autoIndexBuffer = this.quadsIndexBuffer;
+                indexCount = vertexCount * 3 / 2;
+            }
+            case LINES -> {
+                autoIndexBuffer = this.linesIndexBuffer;
                 indexCount = vertexCount * 3 / 2;
             }
             case TRIANGLE_FAN -> {
@@ -87,16 +96,25 @@ public class Drawer {
                 autoIndexBuffer = this.triangleStripIndexBuffer;
                 indexCount = (vertexCount - 2) * 3;
             }
-            case TRIANGLES -> {
-                draw(vertexBuffer, vertexCount);
-                return;
+            case DEBUG_LINE_STRIP -> {
+                autoIndexBuffer = this.debugLineStripIndexBuffer;
+                indexCount = (vertexCount - 1) * 2;
+            }
+            case TRIANGLES, DEBUG_LINES -> {
+                indexCount = 0;
+                autoIndexBuffer = null;
             }
             default -> throw new RuntimeException(String.format("unknown drawMode: %s", mode));
         }
 
-        autoIndexBuffer.checkCapacity(vertexCount);
+        if (indexCount > 0) {
+            autoIndexBuffer.checkCapacity(vertexCount);
 
-        drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
+            drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
+        } else {
+            draw(vertexBuffer, vertexCount);
+        }
+
     }
 
     public AutoIndexBuffer getQuadsIndexBuffer() {
