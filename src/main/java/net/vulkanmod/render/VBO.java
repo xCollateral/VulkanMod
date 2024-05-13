@@ -29,8 +29,8 @@ public class VBO {
 
     public VBO() {}
 
-    public void upload(BufferBuilder.RenderedBuffer buffer) {
-        BufferBuilder.DrawState parameters = buffer.drawState();
+    public void upload(final BufferBuilder.RenderedBuffer buffer) {
+        final BufferBuilder.DrawState parameters = buffer.drawState();
 
         this.indexCount = parameters.indexCount();
         this.vertexCount = parameters.vertexCount();
@@ -41,122 +41,123 @@ public class VBO {
         this.configureIndexBuffer(parameters, buffer.indexBuffer());
 
         buffer.release();
-
     }
 
-    private void configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
-        if (!parameters.indexOnly()) {
-
-            if(vertexBuffer != null)
-                this.vertexBuffer.freeBuffer();
-
-            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
-
+    private void configureVertexFormat(final BufferBuilder.DrawState parameters, final ByteBuffer data) {
+        if (parameters.indexOnly()) {
+            return;
         }
+
+        if (vertexBuffer != null) {
+            this.vertexBuffer.freeBuffer();
+        }
+
+        this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+        this.vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
     }
 
-    private void configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
+    private void configureIndexBuffer(final BufferBuilder.DrawState parameters, final ByteBuffer data) {
         if (parameters.sequentialIndex()) {
-            AutoIndexBuffer autoIndexBuffer;
-
-            switch (this.mode) {
+            final AutoIndexBuffer autoIndexBuffer = switch (this.mode) {
                 case TRIANGLE_FAN -> {
-                    autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
-                    this.indexCount = (vertexCount - 2) * 3;
+                    this.indexCount = (this.vertexCount - 2) * 3;
+                    yield Renderer.getDrawer().getTriangleFanIndexBuffer();
                 }
                 case QUADS -> {
-                    autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
-                    this.indexCount = vertexCount / 4 * 6;
+                    this.indexCount = this.vertexCount / 4 * 6;
+                    yield Renderer.getDrawer().getQuadsIndexBuffer();
                 }
                 case LINES -> {
-                    autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
-                    this.indexCount = vertexCount / 4 * 6;
+                    this.indexCount = this.vertexCount / 4 * 6;
+                    yield Renderer.getDrawer().getLinesIndexBuffer();
                 }
-                case TRIANGLES -> autoIndexBuffer = null;
+                case TRIANGLES -> null;
                 case DEBUG_LINES -> {
-                    autoIndexBuffer = Renderer.getDrawer().getDebugLinesIndexBuffer();
-                    this.indexCount = vertexCount;
+                    this.indexCount = this.vertexCount;
+                    yield Renderer.getDrawer().getDebugLinesIndexBuffer();
                 }
                 case TRIANGLE_STRIP, LINE_STRIP -> {
-                    autoIndexBuffer = Renderer.getDrawer().getStripIndexBuffer();
-                    this.indexCount = vertexCount;
+                    this.indexCount = this.vertexCount;
+                    yield Renderer.getDrawer().getStripIndexBuffer();
                 }
                 case DEBUG_LINE_STRIP -> {
-                    autoIndexBuffer = Renderer.getDrawer().getLineStripIndexBuffer();
-                    this.indexCount = vertexCount;
+                    this.indexCount = this.vertexCount;
+                    yield Renderer.getDrawer().getLineStripIndexBuffer();
                 }
                 default -> throw new IllegalStateException(String.format("Unexpected draw mode: %s", this.mode));
+            };
+
+            if (!this.autoIndexed && this.indexBuffer != null) {
+                this.indexBuffer.freeBuffer();
             }
 
-            if (indexBuffer != null && !this.autoIndexed) {
-                indexBuffer.freeBuffer();
-            }
-
-            if (autoIndexBuffer != null) {
-                autoIndexBuffer.checkCapacity(vertexCount);
-                indexBuffer = autoIndexBuffer.getIndexBuffer();
-                this.autoIndexed = true;
-            }
-        }
-        else {
-            if (indexBuffer != null) {
+            this.indexBuffer = autoIndexBuffer == null ? null : autoIndexBuffer.getIndexBuffer();
+            this.autoIndexed = true;
+        } else {
+            if (this.indexBuffer != null) {
                 this.indexBuffer.freeBuffer();
             }
             this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
 //            this.indexBuffer = new AsyncIndexBuffer(data.remaining());
-            indexBuffer.copyBuffer(data);
+            this.indexBuffer.copyBuffer(data);
         }
 
     }
 
-    public void drawWithShader(Matrix4f MV, Matrix4f P, ShaderInstance shader) {
-        if (this.indexCount != 0) {
-            RenderSystem.assertOnRenderThread();
-
-            RenderSystem.setShader(() -> shader);
-
-            drawWithShader(MV, P, ((ShaderMixed)shader).getPipeline());
-
+    public void drawWithShader(final Matrix4f MV, final Matrix4f P, final ShaderInstance shader) {
+        if (this.indexCount == 0) {
+            return;
         }
+
+        RenderSystem.assertOnRenderThread();
+        RenderSystem.setShader(() -> shader);
+
+        this.drawWithShader(MV, P, ((ShaderMixed)shader).getPipeline());
     }
 
-    public void drawWithShader(Matrix4f MV, Matrix4f P, GraphicsPipeline pipeline) {
-        if (this.indexCount != 0) {
-            RenderSystem.assertOnRenderThread();
-
-            VRenderSystem.applyMVP(MV, P);
-            VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
-
-            Renderer renderer = Renderer.getInstance();
-            renderer.bindGraphicsPipeline(pipeline);
-            renderer.uploadAndBindUBOs(pipeline);
-
-            if(indexBuffer != null)
-                Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
-            else
-                Renderer.getDrawer().draw(vertexBuffer, vertexCount);
-
-            VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
-
+    public void drawWithShader(final Matrix4f MV, final Matrix4f P, final GraphicsPipeline pipeline) {
+        if (this.indexCount == 0) {
+            return;
         }
+
+        RenderSystem.assertOnRenderThread();
+
+        VRenderSystem.applyMVP(MV, P);
+        VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
+
+        final Renderer renderer = Renderer.getInstance();
+        renderer.bindGraphicsPipeline(pipeline);
+        renderer.uploadAndBindUBOs(pipeline);
+
+        if (indexBuffer == null) {
+            Renderer.getDrawer().draw(vertexBuffer, vertexCount);
+        } else {
+            Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+        }
+
+        VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
     }
 
     public void drawChunkLayer() {
-        if (this.indexCount != 0) {
-
-            RenderSystem.assertOnRenderThread();
-            Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+        if (this.indexCount == 0) {
+            return;
         }
+
+        RenderSystem.assertOnRenderThread();
+        Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
     }
 
     public void close() {
-        if(vertexCount <= 0) return;
-        vertexBuffer.freeBuffer();
-        vertexBuffer = null;
-        if(!autoIndexed) {
-            indexBuffer.freeBuffer();
-            indexBuffer = null;
+        if (this.vertexCount <= 0) {
+            return;
+        }
+
+        this.vertexBuffer.freeBuffer();
+        this.vertexBuffer = null;
+
+        if (!this.autoIndexed && this.indexBuffer != null) {
+            this.indexBuffer.freeBuffer();
+            this.indexBuffer = null;
         }
 
         this.vertexCount = 0;
@@ -166,5 +167,4 @@ public class VBO {
 //    public VertexFormat getFormat() {
 //        return this.vertexFormat;
 //    }
-
 }

@@ -6,65 +6,29 @@ import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
 public class AutoIndexBuffer {
-    int vertexCount;
-    DrawType drawType;
+    private static final int UINT16_INDEX_MAX = 65536;
     IndexBuffer indexBuffer;
 
-    public AutoIndexBuffer(int vertexCount, DrawType type) {
-        this.drawType = type;
+    public AutoIndexBuffer(DrawType drawType) {
+        final ByteBuffer buffer = switch (drawType) {
+            case QUADS -> genQuadIndices();
+            case LINES -> genLineIndices();
+            case TRIANGLE_FAN -> genTriangleFanIndices();
+            case DEBUG_LINES, TRIANGLE_STRIP, LINE_STRIP -> genSequentialIndices();
+            default -> throw new RuntimeException(String.format("Unknown drawType: %s", drawType));
+        };
 
-        createIndexBuffer(vertexCount);
-    }
-
-    private void createIndexBuffer(int vertexCount) {
-        this.vertexCount = vertexCount;
-        int size;
-        ByteBuffer buffer;
-
-        switch (drawType) {
-            case QUADS -> {
-                size = vertexCount / 4 * 6 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genQuadIndices(vertexCount);
-            }
-            case LINES -> {
-                size = vertexCount / 4 * 6 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genLineIndices(vertexCount);
-            }
-            case TRIANGLE_FAN -> {
-                size = (vertexCount - 2) * 3 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genTriangleFanIndices(vertexCount);
-            }
-            case TRIANGLE_STRIP, DEBUG_LINES, LINE_STRIP -> {
-                size = vertexCount * IndexBuffer.IndexType.SHORT.size;
-                buffer = genSequentialIndices(vertexCount);
-            }
-            default -> throw new RuntimeException("unknown drawType");
-        }
-
-        indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM);
-        indexBuffer.copyBuffer(buffer);
+        this.indexBuffer = new IndexBuffer(buffer.capacity(), MemoryTypes.GPU_MEM);
+        this.indexBuffer.copyBuffer(buffer);
 
         MemoryUtil.memFree(buffer);
     }
 
-    public void checkCapacity(int vertexCount) {
-        if (vertexCount <= this.vertexCount) {
-            return;
-        }
-
-        System.out.println("Reallocating AutoIndexBuffer from " + this.vertexCount + " to " + vertexCount);
-
-        // TODO: free old
-        // Can't know when VBO will stop using it
-        indexBuffer.freeBuffer();
-        createIndexBuffer(vertexCount);
-    }
-
-    public static ByteBuffer genQuadIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount / 4 * 6 * Short.BYTES);
+    public static ByteBuffer genQuadIndices() {
+        ByteBuffer buffer = MemoryUtil.memAlloc(UINT16_INDEX_MAX / 4 * 6 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
-        for (int i = 0, j = 0; i < vertexCount; i += 4, j += 6) {
+        for (int i = 0, j = 0; i < UINT16_INDEX_MAX; i += 4, j += 6) {
             indices.put(j, (short) i);
             indices.put(j + 1, (short) (i + 1));
             indices.put(j + 2, (short) (i + 2));
@@ -76,11 +40,11 @@ public class AutoIndexBuffer {
         return buffer;
     }
 
-    public static ByteBuffer genLineIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount / 4 * 6 * Short.BYTES);
+    public static ByteBuffer genLineIndices() {
+        ByteBuffer buffer = MemoryUtil.memAlloc(UINT16_INDEX_MAX / 4 * 6 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
-        for (int i = 0, j = 0; i < vertexCount; i += 4, j += 6) {
+        for (int i = 0, j = 0; i < UINT16_INDEX_MAX; i += 4, j += 6) {
             indices.put(j, (short) i);
             indices.put(j + 1, (short) (i + 1));
             indices.put(j + 2, (short) (i + 2));
@@ -92,11 +56,11 @@ public class AutoIndexBuffer {
         return buffer;
     }
 
-    public static ByteBuffer genTriangleFanIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memCalloc((vertexCount - 2) * 3 * Short.BYTES);
+    public static ByteBuffer genTriangleFanIndices() {
+        ByteBuffer buffer = MemoryUtil.memAlloc((UINT16_INDEX_MAX - 2) * 3 * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
         
-        for (int i = 0, j = 0; i < vertexCount - 2; i += 1, j += 3) {
+        for (int i = 0, j = 0; i < UINT16_INDEX_MAX - 2; i += 1, j += 3) {
             indices.put(j, (short) 0);
             indices.put(j + 1, (short) (i + 1));
             indices.put(j + 2, (short) (i + 2));
@@ -105,18 +69,27 @@ public class AutoIndexBuffer {
         return buffer;
     }
 
-    public static ByteBuffer genSequentialIndices(int vertexCount) {
-        ByteBuffer buffer = MemoryUtil.memCalloc(vertexCount * Short.BYTES);
+    public static ByteBuffer genSequentialIndices() {
+        ByteBuffer buffer = MemoryUtil.memAlloc(UINT16_INDEX_MAX * Short.BYTES);
         ShortBuffer indices = buffer.asShortBuffer();
 
-        for (int i = 0; i < vertexCount; i += 1) {
+        for (int i = 0; i < UINT16_INDEX_MAX; i += 1) {
             indices.put(i, (short) i);
         }
 
         return buffer;
     }
 
-    public IndexBuffer getIndexBuffer() { return indexBuffer; }
+    public IndexBuffer getIndexBuffer() { return this.indexBuffer; }
+
+    public void freeBuffer() {
+        if (this.indexBuffer == null) {
+            return;
+        }
+
+        this.indexBuffer.freeBuffer();
+        this.indexBuffer = null;
+    }
 
     public enum DrawType {
         QUADS(7),

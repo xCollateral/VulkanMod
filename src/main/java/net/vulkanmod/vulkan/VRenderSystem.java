@@ -199,7 +199,7 @@ public abstract class VRenderSystem {
         }
     }
 
-    public static void setLineWidth(float width) {
+    public static void setLineWidth(final float width) {
         if (canSetLineWidth) {
             Renderer.setLineWidth(width);
         }
