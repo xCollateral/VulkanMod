@@ -22,7 +22,6 @@ public class Drawer {
     private static final long pBuffers = MemoryUtil.memAddress0(buffers);
     private static final long pOffsets = MemoryUtil.memAddress0(offsets);
 
-    private int framesNum;
     private VertexBuffer[] vertexBuffers;
     private final AutoIndexBuffer quadsIndexBuffer;
     private final AutoIndexBuffer linesIndexBuffer;
@@ -49,8 +48,6 @@ public class Drawer {
     }
 
     public void createResources(final int framesNum) {
-        this.framesNum = framesNum;
-
         if (this.vertexBuffers != null) {
             Arrays.stream(this.vertexBuffers).iterator().forEachRemaining(
                     Buffer::freeBuffer
