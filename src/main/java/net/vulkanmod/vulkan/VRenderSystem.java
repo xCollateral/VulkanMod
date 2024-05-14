@@ -172,30 +172,21 @@ public abstract class VRenderSystem {
     }
 
     public static void setPrimitiveTopologyGL(final int mode) {
-        switch (mode) {
-            case GL11.GL_LINES -> {
-                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-            }
-            case GL11.GL_LINE_STRIP -> {
-                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-            }
-            case GL11.GL_TRIANGLE_FAN, GL11.GL_TRIANGLES -> {
-                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            }
-            case GL11.GL_TRIANGLE_STRIP -> {
-                VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-            }
+        VRenderSystem.topology = switch (mode) {
+            case GL11.GL_LINES -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            case GL11.GL_LINE_STRIP, GL11.GL_TRIANGLE_FAN,
+                 GL11.GL_TRIANGLES, GL11.GL_TRIANGLE_STRIP -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             default -> throw new RuntimeException(String.format("Unknown GL primitive topology: %s", mode));
-        }
+        };
     }
 
     public static void setPolygonModeGL(final int mode) {
-        switch (mode) {
-            case GL11.GL_POINT -> VRenderSystem.polygonMode = VK_POLYGON_MODE_POINT;
-            case GL11.GL_LINE -> VRenderSystem.polygonMode = VK_POLYGON_MODE_LINE;
-            case GL11.GL_FILL -> VRenderSystem.polygonMode = VK_POLYGON_MODE_FILL;
+        VRenderSystem.polygonMode = switch (mode) {
+            case GL11.GL_POINT -> VK_POLYGON_MODE_POINT;
+            case GL11.GL_LINE -> VK_POLYGON_MODE_LINE;
+            case GL11.GL_FILL -> VK_POLYGON_MODE_FILL;
             default -> throw new RuntimeException(String.format("Unknown GL polygon mode: %s", mode));
-        }
+        };
     }
 
     public static void setLineWidth(final float width) {

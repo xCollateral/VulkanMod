@@ -9,6 +9,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.nio.ShortBuffer;
 import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -26,21 +27,48 @@ public class Drawer {
     private final AutoIndexBuffer quadsIndexBuffer;
     private final AutoIndexBuffer linesIndexBuffer;
     private final AutoIndexBuffer triangleFanIndexBuffer;
-    private final AutoIndexBuffer stripIndexBuffer;
-    private final AutoIndexBuffer debugLinesIndexBuffer;
-    private final AutoIndexBuffer lineStripIndexBuffer;
+    private final AutoIndexBuffer triangleStripIndexBuffer;
+    private final AutoIndexBuffer debugLineStripIndexBuffer;
+    private final AutoIndexBuffer sequentialIndexBuffer;
     private UniformBuffer[] uniformBuffers;
 
     private int currentFrame;
 
     public Drawer() {
-        //Index buffers
-        this.quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.QUADS);
-        this.linesIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.LINES);
-        this.triangleFanIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.TRIANGLE_FAN);
-        this.stripIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
-        this.debugLinesIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.DEBUG_LINES);
-        this.lineStripIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.LINE_STRIP);
+        // Index buffers
+        this.quadsIndexBuffer = new AutoIndexBuffer(0, 4, 6, (consumer, vertex, index) -> {
+            consumer.accept(index + 0, vertex + 0);
+            consumer.accept(index + 1, vertex + 1);
+            consumer.accept(index + 2, vertex + 2);
+            consumer.accept(index + 3, vertex + 2);
+            consumer.accept(index + 4, vertex + 3);
+            consumer.accept(index + 5, vertex + 0);
+        });
+        this.linesIndexBuffer = new AutoIndexBuffer(0, 4, 6, (consumer, vertex, index) -> {
+            consumer.accept(index + 0, vertex + 0);
+            consumer.accept(index + 1, vertex + 1);
+            consumer.accept(index + 2, vertex + 2);
+            consumer.accept(index + 3, vertex + 3);
+            consumer.accept(index + 4, vertex + 2);
+            consumer.accept(index + 5, vertex + 1);
+        });
+        this.triangleFanIndexBuffer = new AutoIndexBuffer(2, 1, 3, (consumer, vertex, index) -> {
+            consumer.accept(index + 0, 0);
+            consumer.accept(index + 1, vertex + 1);
+            consumer.accept(index + 2, vertex + 2);
+        });
+        this.triangleStripIndexBuffer = new AutoIndexBuffer(2, 1, 3, (consumer, vertex, index) -> {
+            consumer.accept(index + 0, vertex + 0);
+            consumer.accept(index + 1, vertex + 1);
+            consumer.accept(index + 2, vertex + 2);
+        });
+        this.debugLineStripIndexBuffer = new AutoIndexBuffer(1, 1, 2, (consumer, vertex, index) -> {
+            consumer.accept(index + 0, vertex + 0);
+            consumer.accept(index + 1, vertex + 1);
+        });
+        this.sequentialIndexBuffer = new AutoIndexBuffer(0, 1, 1, (consumer, vertex, index) -> {
+            consumer.accept(index + 0, vertex + 0);
+        });
     }
 
     public void setCurrentFrame(final int currentFrame) {
@@ -74,42 +102,23 @@ public class Drawer {
         final VertexBuffer vertexBuffer = this.vertexBuffers[currentFrame];
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
-        final AutoIndexBuffer autoIndexBuffer;
-        final int indexCount;
+        final AutoIndexBuffer autoIndexBuffer = switch (mode) {
+            case QUADS -> this.quadsIndexBuffer;
+            case LINES -> this.linesIndexBuffer;
+            case TRIANGLE_FAN -> this.triangleFanIndexBuffer;
+            case LINE_STRIP, TRIANGLE_STRIP -> this.triangleStripIndexBuffer;
+            case DEBUG_LINE_STRIP -> this.debugLineStripIndexBuffer;
+            case DEBUG_LINES -> this.sequentialIndexBuffer;
+            case TRIANGLES -> null;
+            default -> throw new RuntimeException(String.format("Unknown mode: %s", mode));
+        };
 
-        switch (mode) {
-            case QUADS -> {
-                autoIndexBuffer = this.quadsIndexBuffer;
-                indexCount = vertexCount / 4 * 6;
-            }
-            case LINES -> {
-                autoIndexBuffer = this.linesIndexBuffer;
-                indexCount = vertexCount / 4 * 6;
-            }
-            case TRIANGLE_FAN -> {
-                autoIndexBuffer = this.triangleFanIndexBuffer;
-                indexCount = (vertexCount - 2) * 3;
-            }
-            case TRIANGLE_STRIP, LINE_STRIP -> {
-                autoIndexBuffer = this.stripIndexBuffer;
-                indexCount = vertexCount;
-            }
-            case DEBUG_LINES -> {
-                autoIndexBuffer = this.debugLinesIndexBuffer;
-                indexCount = vertexCount;
-            }
-            case DEBUG_LINE_STRIP -> {
-                autoIndexBuffer = this.lineStripIndexBuffer;
-                indexCount = vertexCount;
-            }
-            case TRIANGLES -> {
-                draw(vertexBuffer, vertexCount);
-                return;
-            }
-            default -> throw new RuntimeException(String.format("Unknown drawMode: %s", mode));
+        if (autoIndexBuffer == null) {
+            this.draw(vertexBuffer, vertexCount);
+        } else {
+            final int indexCount = DrawType.fromVertexFormat(mode).indexCount(vertexCount);
+            this.drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
         }
-
-        this.drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
     }
 
     public AutoIndexBuffer getQuadsIndexBuffer() {
@@ -124,16 +133,16 @@ public class Drawer {
         return this.triangleFanIndexBuffer;
     }
 
-    public AutoIndexBuffer getStripIndexBuffer() {
-        return this.stripIndexBuffer;
+    public AutoIndexBuffer getTriangleStripIndexBuffer() {
+        return this.triangleStripIndexBuffer;
     }
 
-    public AutoIndexBuffer getDebugLinesIndexBuffer() {
-        return this.debugLinesIndexBuffer;
+    public AutoIndexBuffer getDebugLineStripIndexBuffer() {
+        return this.debugLineStripIndexBuffer;
     }
 
-    public AutoIndexBuffer getLineStripIndexBuffer() {
-        return this.lineStripIndexBuffer;
+    public AutoIndexBuffer getSequentialIndexBuffer() {
+        return this.sequentialIndexBuffer;
     }
 
     public UniformBuffer getUniformBuffer() {
@@ -164,10 +173,11 @@ public class Drawer {
     public void bindAutoIndexBuffer(final VkCommandBuffer commandBuffer, final DrawType drawMode) {
         final AutoIndexBuffer autoIndexBuffer = switch (drawMode) {
             case QUADS -> this.quadsIndexBuffer;
-            case TRIANGLE_FAN -> this.triangleFanIndexBuffer;
-            case LINE_STRIP, TRIANGLE_STRIP -> this.stripIndexBuffer;
-            case DEBUG_LINES -> this.debugLinesIndexBuffer;
             case LINES -> this.linesIndexBuffer;
+            case TRIANGLE_FAN -> this.triangleFanIndexBuffer;
+            case TRIANGLE_STRIP, LINE_STRIP -> this.triangleStripIndexBuffer;
+            case DEBUG_LINE_STRIP -> this.debugLineStripIndexBuffer;
+            case DEBUG_LINES -> this.sequentialIndexBuffer;
             default -> throw new IllegalArgumentException(String.format("Unexpected drawMode: %s", drawMode));
         };
         IndexBuffer indexBuffer = autoIndexBuffer.getIndexBuffer();
@@ -189,8 +199,7 @@ public class Drawer {
         this.quadsIndexBuffer.freeBuffer();
         this.linesIndexBuffer.freeBuffer();
         this.triangleFanIndexBuffer.freeBuffer();
-        this.stripIndexBuffer.freeBuffer();
-        this.debugLinesIndexBuffer.freeBuffer();
-        this.lineStripIndexBuffer.freeBuffer();
+        this.sequentialIndexBuffer.freeBuffer();
+        this.debugLineStripIndexBuffer.freeBuffer();
     }
 }

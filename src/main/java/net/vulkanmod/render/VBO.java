@@ -10,6 +10,7 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.memory.AutoIndexBuffer.DrawType;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
@@ -59,49 +60,34 @@ public class VBO {
     private void configureIndexBuffer(final BufferBuilder.DrawState parameters, final ByteBuffer data) {
         if (parameters.sequentialIndex()) {
             final AutoIndexBuffer autoIndexBuffer = switch (this.mode) {
-                case TRIANGLE_FAN -> {
-                    this.indexCount = (this.vertexCount - 2) * 3;
-                    yield Renderer.getDrawer().getTriangleFanIndexBuffer();
-                }
-                case QUADS -> {
-                    this.indexCount = this.vertexCount / 4 * 6;
-                    yield Renderer.getDrawer().getQuadsIndexBuffer();
-                }
-                case LINES -> {
-                    this.indexCount = this.vertexCount / 4 * 6;
-                    yield Renderer.getDrawer().getLinesIndexBuffer();
-                }
+                case QUADS -> Renderer.getDrawer().getQuadsIndexBuffer();
+                case LINES -> Renderer.getDrawer().getLinesIndexBuffer();
                 case TRIANGLES -> null;
-                case DEBUG_LINES -> {
-                    this.indexCount = this.vertexCount;
-                    yield Renderer.getDrawer().getDebugLinesIndexBuffer();
-                }
-                case TRIANGLE_STRIP, LINE_STRIP -> {
-                    this.indexCount = this.vertexCount;
-                    yield Renderer.getDrawer().getStripIndexBuffer();
-                }
-                case DEBUG_LINE_STRIP -> {
-                    this.indexCount = this.vertexCount;
-                    yield Renderer.getDrawer().getLineStripIndexBuffer();
-                }
-                default -> throw new IllegalStateException(String.format("Unexpected draw mode: %s", this.mode));
+                case TRIANGLE_FAN -> Renderer.getDrawer().getTriangleFanIndexBuffer();
+                case LINE_STRIP, TRIANGLE_STRIP  -> Renderer.getDrawer().getTriangleStripIndexBuffer();
+                case DEBUG_LINES -> Renderer.getDrawer().getSequentialIndexBuffer();
+                case DEBUG_LINE_STRIP -> Renderer.getDrawer().getDebugLineStripIndexBuffer();
+                default -> throw new IllegalStateException(String.format("Unexpected mode: %s", this.mode));
             };
 
             if (!this.autoIndexed && this.indexBuffer != null) {
                 this.indexBuffer.freeBuffer();
+                this.indexBuffer = null;
+                this.indexCount = 0;
             }
 
-            this.indexBuffer = autoIndexBuffer == null ? null : autoIndexBuffer.getIndexBuffer();
+            if (autoIndexBuffer != null) {
+                this.indexBuffer = autoIndexBuffer.getIndexBuffer();
+                this.indexCount = DrawType.fromVertexFormat(this.mode).indexCount(this.vertexCount);
+            }
             this.autoIndexed = true;
         } else {
             if (this.indexBuffer != null) {
                 this.indexBuffer.freeBuffer();
             }
             this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-//            this.indexBuffer = new AsyncIndexBuffer(data.remaining());
             this.indexBuffer.copyBuffer(data);
         }
-
     }
 
     public void drawWithShader(final Matrix4f MV, final Matrix4f P, final ShaderInstance shader) {
@@ -129,10 +115,10 @@ public class VBO {
         renderer.bindGraphicsPipeline(pipeline);
         renderer.uploadAndBindUBOs(pipeline);
 
-        if (indexBuffer == null) {
-            Renderer.getDrawer().draw(vertexBuffer, vertexCount);
+        if (this.indexBuffer == null) {
+            Renderer.getDrawer().draw(this.vertexBuffer, this.vertexCount);
         } else {
-            Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
         }
 
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
@@ -144,7 +130,12 @@ public class VBO {
         }
 
         RenderSystem.assertOnRenderThread();
-        Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
+        VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
+        if (this.indexBuffer == null) {
+            Renderer.getDrawer().draw(this.vertexBuffer, this.vertexCount);
+        } else {
+            Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
+        }
     }
 
     public void close() {

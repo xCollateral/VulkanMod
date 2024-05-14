@@ -2,21 +2,33 @@ package net.vulkanmod.vulkan.memory;
 
 import org.lwjgl.system.MemoryUtil;
 
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
 public class AutoIndexBuffer {
     private static final int UINT16_INDEX_MAX = 65536;
-    IndexBuffer indexBuffer;
+    private final IndexBuffer indexBuffer;
 
-    public AutoIndexBuffer(DrawType drawType) {
-        final ByteBuffer buffer = switch (drawType) {
-            case QUADS -> genQuadIndices();
-            case LINES -> genLineIndices();
-            case TRIANGLE_FAN -> genTriangleFanIndices();
-            case DEBUG_LINES, TRIANGLE_STRIP, LINE_STRIP -> genSequentialIndices();
-            default -> throw new RuntimeException(String.format("Unknown drawType: %s", drawType));
+    public interface IndexConsumer {
+        public void accept(int i, int index);
+    }
+
+    public interface IndexGenerator {
+        public void accept(IndexConsumer consumer, int vertex, int index);
+    }
+
+    public AutoIndexBuffer(final int vertexSubtrahend, final int vertexStride, final int indexStride, final IndexGenerator generator) {
+        final int indexCount = ((UINT16_INDEX_MAX - vertexSubtrahend) + (vertexStride - 1)) / vertexStride * indexStride;
+        final ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
+        final ShortBuffer indices = buffer.asShortBuffer();
+        final IndexConsumer indexConsumer = (i, index) -> {
+            indices.put(i, (short) index);
         };
+        for (int i = 0; i < indexCount; i += indexStride) {
+            generator.accept(indexConsumer, i / indexStride * vertexStride, i);
+        }
 
         this.indexBuffer = new IndexBuffer(buffer.capacity(), MemoryTypes.GPU_MEM);
         this.indexBuffer.copyBuffer(buffer);
@@ -24,63 +36,7 @@ public class AutoIndexBuffer {
         MemoryUtil.memFree(buffer);
     }
 
-    public static ByteBuffer genQuadIndices() {
-        ByteBuffer buffer = MemoryUtil.memAlloc(UINT16_INDEX_MAX / 4 * 6 * Short.BYTES);
-        ShortBuffer indices = buffer.asShortBuffer();
-
-        for (int i = 0, j = 0; i < UINT16_INDEX_MAX; i += 4, j += 6) {
-            indices.put(j, (short) i);
-            indices.put(j + 1, (short) (i + 1));
-            indices.put(j + 2, (short) (i + 2));
-            indices.put(j + 3, (short) (i + 2));
-            indices.put(j + 4, (short) (i + 3));
-            indices.put(j + 5, (short) i);
-        }
-
-        return buffer;
-    }
-
-    public static ByteBuffer genLineIndices() {
-        ByteBuffer buffer = MemoryUtil.memAlloc(UINT16_INDEX_MAX / 4 * 6 * Short.BYTES);
-        ShortBuffer indices = buffer.asShortBuffer();
-
-        for (int i = 0, j = 0; i < UINT16_INDEX_MAX; i += 4, j += 6) {
-            indices.put(j, (short) i);
-            indices.put(j + 1, (short) (i + 1));
-            indices.put(j + 2, (short) (i + 2));
-            indices.put(j + 3, (short) (i + 3));
-            indices.put(j + 4, (short) (i + 2));
-            indices.put(j + 5, (short) (i + 1));
-        }
-
-        return buffer;
-    }
-
-    public static ByteBuffer genTriangleFanIndices() {
-        ByteBuffer buffer = MemoryUtil.memAlloc((UINT16_INDEX_MAX - 2) * 3 * Short.BYTES);
-        ShortBuffer indices = buffer.asShortBuffer();
-        
-        for (int i = 0, j = 0; i < UINT16_INDEX_MAX - 2; i += 1, j += 3) {
-            indices.put(j, (short) 0);
-            indices.put(j + 1, (short) (i + 1));
-            indices.put(j + 2, (short) (i + 2));
-        }
-
-        return buffer;
-    }
-
-    public static ByteBuffer genSequentialIndices() {
-        ByteBuffer buffer = MemoryUtil.memAlloc(UINT16_INDEX_MAX * Short.BYTES);
-        ShortBuffer indices = buffer.asShortBuffer();
-
-        for (int i = 0; i < UINT16_INDEX_MAX; i += 1) {
-            indices.put(i, (short) i);
-        }
-
-        return buffer;
-    }
-
-    public IndexBuffer getIndexBuffer() { return this.indexBuffer; }
+    public final IndexBuffer getIndexBuffer() { return this.indexBuffer; }
 
     public void freeBuffer() {
         if (this.indexBuffer == null) {
@@ -88,7 +44,6 @@ public class AutoIndexBuffer {
         }
 
         this.indexBuffer.freeBuffer();
-        this.indexBuffer = null;
     }
 
     public enum DrawType {
@@ -97,12 +52,35 @@ public class AutoIndexBuffer {
         TRIANGLE_STRIP(5),
         DEBUG_LINES(4),
         LINE_STRIP(3),
-        LINES(2);
+        LINES(2),
+        DEBUG_LINE_STRIP(1);
 
         public final int n;
 
-        DrawType(int n) {
+        DrawType(final int n) {
             this.n = n;
+        }
+
+        public static final DrawType fromVertexFormat(final VertexFormat.Mode mode) {
+            return switch (mode) {
+                case QUADS -> DrawType.QUADS;
+                case TRIANGLE_FAN -> DrawType.TRIANGLE_FAN;
+                case TRIANGLE_STRIP -> DrawType.TRIANGLE_STRIP;
+                case DEBUG_LINES -> DrawType.DEBUG_LINES;
+                case LINE_STRIP -> DrawType.LINE_STRIP;
+                case LINES -> DrawType.LINES;
+                case DEBUG_LINE_STRIP -> DrawType.DEBUG_LINE_STRIP;
+                default -> throw new IllegalArgumentException(String.format("Invalid VertexFormat.Mode %s for AutoIndexBuffer", mode));
+            };
+        }
+
+        public final int indexCount(final int vertexCount) {
+            return switch (this) {
+                case QUADS, LINES -> (vertexCount + 3) / 4 * 6;
+                case TRIANGLE_FAN, TRIANGLE_STRIP, LINE_STRIP -> (vertexCount - 2) * 3;
+                case DEBUG_LINE_STRIP -> (vertexCount - 1) * 2;
+                default -> vertexCount;
+            };
         }
     }
 }
