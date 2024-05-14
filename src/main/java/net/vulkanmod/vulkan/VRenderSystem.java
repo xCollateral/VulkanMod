@@ -179,7 +179,6 @@ public abstract class VRenderSystem {
             case GL11.GL_LINE_STRIP -> {
                 VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
             }
-            // TODO: Use Triangle Fan topology if supported by the device
             case GL11.GL_TRIANGLE_FAN, GL11.GL_TRIANGLES -> {
                 VRenderSystem.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             }
