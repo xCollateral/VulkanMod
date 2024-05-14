@@ -36,8 +36,7 @@ void main() {
         lineOffset *= -1.0;
     }
 
-    int div = (gl_VertexIndex / 2);
-    if (gl_VertexIndex - div * 2 == 0) {
+    if (mod(gl_VertexIndex, 2) == 0) {
         gl_Position = vec4((ndc1 + vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
     } else {
         gl_Position = vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
@@ -46,19 +45,4 @@ void main() {
     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
     vertexColor = Color;
 }
-
-// #version 150
-//
-// in vec3 Position;
-// in vec4 Color;
-// in vec3 Normal;
-//
-// uniform mat4 ModelViewMat;
-// uniform mat4 ProjMat;
-// uniform float LineWidth;
-// uniform vec2 ScreenSize;
-//
-// out float vertexDistance;
-// out vec4 vertexColor;
-
 
