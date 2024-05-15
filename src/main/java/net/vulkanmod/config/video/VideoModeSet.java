@@ -27,7 +27,7 @@ public class VideoModeSet {
     }
 
     public boolean hasRefreshRate(int r) {
-        return this.refreshRates.indexOf(r) >= 0;
+        return this.refreshRates.contains(r);
     }
 
     public List<Integer> getRefreshRates() {

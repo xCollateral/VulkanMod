@@ -45,7 +45,12 @@ public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
 
         color = this.active ? 0xFFFFFF : 0xA0A0A0;
         Font textRenderer = Minecraft.getInstance().font;
-        int x = this.controlX + this.controlWidth / 2 - (int) (halfWidth * 1.5f) - 4;
+        int margin = Math.max(
+                textRenderer.width(Component.translatable("options.on").getString()) / 3,
+                textRenderer.width(Component.translatable("options.off").getString()) / 3
+        );
+
+        int x = this.controlX + this.controlWidth / 2 - (int) (halfWidth * 1.5f) - 4 - margin;
         int y = this.y + (this.height - 8) / 2;
         GuiRenderer.drawCenteredString(textRenderer, this.getDisplayedValue(), x, y, color);
     }
@@ -66,7 +71,9 @@ public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
     }
 
     protected void updateDisplayedValue() {
-        this.displayedValue = option.getNewValue() ? Component.nullToEmpty("On") : Component.nullToEmpty("Off");
+        this.displayedValue = option.getNewValue()
+                ? Component.translatable("options.on")
+                : Component.translatable("options.off");
     }
 
     @Override

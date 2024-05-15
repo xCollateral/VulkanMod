@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.vulkanmod.config.gui.GuiElement;
 import net.vulkanmod.config.gui.GuiRenderer;
-import net.vulkanmod.config.gui.VOptionScreen;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
 public abstract class VAbstractWidget extends GuiElement {

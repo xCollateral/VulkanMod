@@ -44,6 +44,6 @@ public class RangeOption extends Option<Integer> {
 
         n = this.step * Math.round(n / this.step);
 
-        this.setNewValue(Integer.valueOf((int)n));
+        this.setNewValue((int) n);
     }
 }
