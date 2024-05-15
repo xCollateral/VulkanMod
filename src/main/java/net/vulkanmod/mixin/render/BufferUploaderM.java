@@ -6,8 +6,9 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -32,15 +33,17 @@ public class BufferUploaderM {
 
         Renderer renderer = Renderer.getInstance();
 
-        if(parameters.vertexCount() <= 0)
+        if(parameters.vertexCount() <= 0) {
             return;
+        }
 
         ShaderInstance shaderInstance = RenderSystem.getShader();
-        //Used to update legacy shader uniforms
-        //TODO it would be faster to allocate a buffer from stack and set all values
+        // Used to update legacy shader uniforms
+        // TODO it would be faster to allocate a buffer from stack and set all values
         shaderInstance.apply();
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
+        VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
         renderer.bindGraphicsPipeline(pipeline);
         renderer.uploadAndBindUBOs(pipeline);
         Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());

@@ -15,25 +15,29 @@ public class PipelineState {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
 
-    public static final PipelineState DEFAULT = new PipelineState(true, getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), null);
+    public static final PipelineState DEFAULT = new PipelineState(getAssemblyRasterState(), getBlendState(), getDepthState(), getLogicOpState(), VRenderSystem.getColorMask(), null);
 
     public static PipelineState currentState = DEFAULT;
 
     public static PipelineState getCurrentPipelineState(RenderPass renderPass) {
-        boolean cullState = VRenderSystem.cull;
+        int assemblyRasterState = getAssemblyRasterState();
         int blendState = getBlendState();
         int currentColorMask = VRenderSystem.getColorMask();
         int depthState = getDepthState();
         int logicOp = getLogicOpState();
 
-        if(currentState.checkEquals(cullState, blendState, depthState, logicOp, currentColorMask, renderPass))
+        if(currentState.checkEquals(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass))
             return currentState;
         else
-            return currentState = new PipelineState(cullState, blendState, depthState, logicOp, currentColorMask, renderPass);
+            return currentState = new PipelineState(assemblyRasterState, blendState, depthState, logicOp, currentColorMask, renderPass);
     }
 
     public static int getBlendState() {
         return BlendState.getState(blendInfo);
+    }
+
+    public static int getAssemblyRasterState() {
+        return AssemblyRasterState.encode(VRenderSystem.cull, VRenderSystem.topology, VRenderSystem.polygonMode);
     }
 
     public static int getDepthState() {
@@ -57,28 +61,29 @@ public class PipelineState {
         return logicOpState;
     }
 
-    final boolean cullState;
     final RenderPass renderPass;
 
+    int assemblyRasterState;
     int blendState_i;
     int depthState_i;
     int colorMask_i;
     int logicOp_i;
 
-    public PipelineState(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
+    public PipelineState(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
         this.renderPass = renderPass;
 
-        this.cullState = cullState;
+        this.assemblyRasterState = assemblyRasterState;
         this.blendState_i = blendState;
         this.depthState_i = depthState;
         this.colorMask_i = colorMask;
         this.logicOp_i = logicOp;
     }
 
-    private boolean checkEquals(boolean cullState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
+    private boolean checkEquals(int assemblyRasterState, int blendState, int depthState, int logicOp, int colorMask, RenderPass renderPass) {
         return (blendState == this.blendState_i) && (depthState == this.depthState_i)
                 && renderPass == this.renderPass && logicOp == this.logicOp_i
-                && (cullState == this.cullState) && colorMask == this.colorMask_i;
+                && (assemblyRasterState == this.assemblyRasterState)
+                && colorMask == this.colorMask_i;
     }
 
     @Override
@@ -91,12 +96,13 @@ public class PipelineState {
         PipelineState that = (PipelineState) o;
         return (blendState_i == that.blendState_i) && (depthState_i == that.depthState_i)
                 && this.renderPass == that.renderPass && logicOp_i == that.logicOp_i
-                && (cullState == that.cullState) && colorMask_i == that.colorMask_i;
+                && this.assemblyRasterState == that.assemblyRasterState
+                && this.colorMask_i == that.colorMask_i;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(blendState_i, depthState_i, logicOp_i, cullState, colorMask_i, renderPass);
+        return Objects.hash(blendState_i, depthState_i, logicOp_i, assemblyRasterState, colorMask_i, renderPass);
     }
 
     public static BlendInfo defaultBlendInfo() {
@@ -297,6 +303,37 @@ public class PipelineState {
             };
         }
 
+    }
+
+    public abstract static class AssemblyRasterState {
+        public static final int POLYGON_MODE_MASK = 7;
+
+        public static final int TOPOLOGY_OFFSET = 3;
+        public static final int TOPOLOGY_BITS = 4;
+        public static final int TOPOLOGY_MASK = 0b11111;
+
+        public static final int CULL_MODE_OFFSET = TOPOLOGY_OFFSET + TOPOLOGY_BITS;
+        public static final int CULL_MODE_BITS = 2;
+        public static final int CULL_MODE_MASK = 0b11;
+
+        public static int encode(boolean cull, int topology, int polygonMode) {
+            int state = (polygonMode | (topology << TOPOLOGY_OFFSET));
+            state |= ((cull ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE) << CULL_MODE_OFFSET);
+
+            return state;
+        }
+
+        public static int decodeTopology(int state) {
+            return (state >>> TOPOLOGY_OFFSET) & TOPOLOGY_MASK;
+        }
+
+        public static int decodePolygonMode(int state) {
+            return state & POLYGON_MODE_MASK;
+        }
+
+        public static int decodeCullMode(int state) {
+            return (state >>> CULL_MODE_OFFSET) & CULL_MODE_MASK;
+        }
     }
 
     public static abstract class ColorMask {

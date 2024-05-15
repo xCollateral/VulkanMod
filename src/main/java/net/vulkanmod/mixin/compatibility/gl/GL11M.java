@@ -40,6 +40,15 @@ public class GL11M {
      * @author
      * @reason
      */
+    @Overwrite(remap = false)
+    public static void glLineWidth(@NativeType("GLfloat") float width) {
+        VRenderSystem.setLineWidth(width);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
     @NativeType("void")
     @Overwrite(remap = false)
     public static int glGenTextures() {

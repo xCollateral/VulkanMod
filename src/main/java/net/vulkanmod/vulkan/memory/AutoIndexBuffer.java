@@ -21,18 +21,18 @@ public class AutoIndexBuffer {
         this.vertexCount = vertexCount;
         ByteBuffer buffer;
 
-        switch (drawType) {
+        switch (this.drawType) {
             case QUADS -> buffer = genQuadIndices(vertexCount);
             case TRIANGLE_FAN -> buffer = genTriangleFanIndices(vertexCount);
             case TRIANGLE_STRIP -> buffer = genTriangleStripIndices(vertexCount);
             case LINES -> buffer = genLinesIndices(vertexCount);
             case DEBUG_LINE_STRIP -> buffer = genDebugLineStripIndices(vertexCount);
-            default -> throw new IllegalArgumentException("Unsupported drawType: %s".formatted(drawType));
+            default -> throw new IllegalArgumentException("Unsupported drawType: %s".formatted(this.drawType));
         }
 
         int size = buffer.capacity();
-        indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM);
-        indexBuffer.copyBuffer(buffer);
+        this.indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM);
+        this.indexBuffer.copyBuffer(buffer);
 
         MemoryUtil.memFree(buffer);
     }
@@ -42,7 +42,7 @@ public class AutoIndexBuffer {
             int newVertexCount = this.vertexCount * 2;
             Initializer.LOGGER.info("Reallocating AutoIndexBuffer from {} to {}", this.vertexCount, newVertexCount);
 
-            indexBuffer.freeBuffer();
+            this.indexBuffer.freeBuffer();
             createIndexBuffer(newVertexCount);
         }
     }
@@ -56,10 +56,10 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for(int i = 0; i < vertexCount; i += 4) {
-            idxs.put(j + 0, (short) (i + 0));
+            idxs.put(j, (short) (i));
             idxs.put(j + 1, (short) (i + 1));
             idxs.put(j + 2, (short) (i + 2));
-            idxs.put(j + 3, (short) (i + 0));
+            idxs.put(j + 3, (short) (i));
             idxs.put(j + 4, (short) (i + 2));
             idxs.put(j + 5, (short) (i + 3));
 
@@ -78,7 +78,7 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for(int i = 0; i < vertexCount; i += 4) {
-            idxs.put(j + 0, (short) (i + 0));
+            idxs.put(j, (short) (i));
             idxs.put(j + 1, (short) (i + 1));
             idxs.put(j + 2, (short) (i + 2));
             idxs.put(j + 3, (short) (i + 3));
@@ -98,7 +98,7 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for (int i = 0; i < vertexCount - 2; ++i) {
-            idxs.put(j + 0, (short) 0);
+            idxs.put(j, (short) 0);
             idxs.put(j + 1, (short) (i + 1));
             idxs.put(j + 2, (short) (i + 2));
 
@@ -134,7 +134,7 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for (int i = 0; i < vertexCount - 1; ++i) {
-            idxs.put(j + 0, (short) i);
+            idxs.put(j, (short) i);
             idxs.put(j + 1, (short) (i + 1));
 
             j += 2;
@@ -147,7 +147,11 @@ public class AutoIndexBuffer {
         return ((n + d - 1) / d) * d;
     }
 
-    public IndexBuffer getIndexBuffer() { return indexBuffer; }
+    public IndexBuffer getIndexBuffer() { return this.indexBuffer; }
+
+    public void freeBuffer() {
+        this.indexBuffer.freeBuffer();
+    }
 
     public enum DrawType {
         QUADS(7),
@@ -159,7 +163,7 @@ public class AutoIndexBuffer {
 
         public final int n;
 
-        DrawType (int n) {
+        DrawType(int n) {
             this.n = n;
         }
 

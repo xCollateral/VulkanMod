@@ -317,6 +317,15 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
+    public static void polygonMode(final int i, final int j) {
+        assertOnGameThread();
+        VRenderSystem.setPolygonModeGL(i);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
     public static void enablePolygonOffset() {
         assertOnGameThread();
         VRenderSystem.enablePolygonOffset();
