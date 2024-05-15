@@ -51,8 +51,8 @@ public class DescriptorSetArray {
     private static final int bindingsSize = 4;
 //    private Int2ObjectLinkedOpenHashMap<Descriptor> DescriptorTableHeap;
 //    private final Int2LongArrayMap perBindingSlowLayouts = new Int2LongArrayMap(bindingsSize);
-    private final DescriptorAbstractionArray initialisedFragSamplers = new DescriptorAbstractionArray(0, SAMPLER_MAX_LIMIT_DEFAULT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
-    private final DescriptorAbstractionArray initialisedVertSamplers = new DescriptorAbstractionArray(0, VERT_SAMPLER_MAX_LIMIT, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
+    private final DescriptorAbstractionArray initialisedFragSamplers = new DescriptorAbstractionArray(16, SAMPLER_MAX_LIMIT_DEFAULT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, FRAG_SAMPLER_ID);
+    private final DescriptorAbstractionArray initialisedVertSamplers = new DescriptorAbstractionArray(2, VERT_SAMPLER_MAX_LIMIT, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VERTEX_SAMPLER_ID);
 //    private final Int2ObjectLinkedOpenHashMap<ImageDescriptor> initialisedVertSamplers = new Int2ObjectLinkedOpenHashMap<>(SAMPLER_MAX_LIMIT);
 
     private final long descriptorSetLayout;
@@ -303,17 +303,17 @@ public class DescriptorSetArray {
 
 //            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
             final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId());
-            this.initialisedFragSamplers.registerTexture(textureManager.getTexture(new ResourceLocation("textures/environment/clouds.png")/*LevelRenderer.CLOUDS_LOCATION*/).getId());
-            this.initialisedVertSamplers.registerTexture(6);
-            this.initialisedVertSamplers.registerTexture(VTextureSelector.getBoundId(1));
+            this.initialisedFragSamplers.registerImmutableTexture(this.MissingTexID, 0);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId(), 1);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId(), 2);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 3);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId(), 4);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId(), 5);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId(), 6);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId(), 7);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(new ResourceLocation("textures/environment/clouds.png")/*LevelRenderer.CLOUDS_LOCATION*/).getId(), 8);
+            this.initialisedVertSamplers.registerImmutableTexture(6, 0);
+            this.initialisedVertSamplers.registerImmutableTexture(VTextureSelector.getBoundId(1), 1);
         }
         try(MemoryStack stack = stackPush()) {
             final boolean b = !this.isUpdated[frame];

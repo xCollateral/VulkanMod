@@ -80,8 +80,23 @@ public class DescriptorAbstractionArray {
 //        texIds[texID] = ++samplerRange;
 //        textureSamplerHndls[samplerRange] = imageView;
 
-        final int v = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : samplerRange++;
-        texID2DescIdx.put(texID, v);
+        final int samplerIndex = !this.FreeIDs.isEmpty() ? this.FreeIDs.dequeueInt() : samplerRange++;
+        texID2DescIdx.put(texID, samplerIndex);
+        return true;
+
+    }
+    //Hardcode a texture to a fixed Sampler Index: Avoids the need to fallback to Non-Uniform Indexing
+    public boolean registerImmutableTexture(int texID, int SamplerIndex) {
+
+        if(samplerRange<=SamplerIndex) throw new RuntimeException();
+        if (texID2DescIdx.containsKey(texID)) return false;
+//        if (texIds[texID] != 0 && texIds[texID] != imageView)
+//            throw new RuntimeException(texIds[texID] + " != " + imageView);
+//        texIds[texID] = ++samplerRange;
+//        textureSamplerHndls[samplerRange] = imageView;
+
+
+        texID2DescIdx.put(texID, SamplerIndex);
         return true;
 
     }
