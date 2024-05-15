@@ -1,36 +1,19 @@
 package net.vulkanmod.config.gui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.Mth;
-import net.vulkanmod.config.gui.GuiElement;
 import net.vulkanmod.config.gui.GuiRenderer;
-import net.vulkanmod.config.option.CyclingOption;
 import net.vulkanmod.config.option.Option;
-import net.vulkanmod.render.util.MathUtil;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
-import java.util.Objects;
-
-public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget
-        implements NarratableEntry {
-
-    public static final ResourceLocation WIDGETS_TEXTURE = new ResourceLocation("textures/gui/widgets.png");
-
+public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget {
+    private final Component name;
     public int controlX;
     public int controlWidth;
-    private final Component name;
     protected Component displayedValue;
 
     protected boolean controlHovered;
@@ -73,7 +56,6 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget
 
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        int i = this.getYImage(this.isHovered());
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
@@ -87,7 +69,6 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget
         this.renderHovering(0, 0);
 
         color = this.active ? 0xFFFFFF : 0xA0A0A0;
-//        j = 0xB0f0d0a0;
 
         Font textRenderer = minecraftClient.font;
         GuiRenderer.drawString(textRenderer, this.getName().getVisualOrderText(), this.x + 8, this.y + (this.height - 8) / 2, color);
@@ -118,10 +99,6 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget
     public abstract void onRelease(double mouseX, double mouseY);
 
     protected abstract void onDrag(double mouseX, double mouseY, double deltaX, double deltaY);
-
-    protected boolean isValidClickButton(int button) {
-        return button == 0;
-    }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
@@ -157,12 +134,7 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return this.active && this.visible && mouseX >= (double)this.x && mouseY >= (double)this.y && mouseX < (double)(this.x + this.width) && mouseY < (double)(this.y + this.height);
-    }
-
-    @Override
-    public void setFocused(boolean bl) {
-        this.focused = bl;
+        return this.active && this.visible && mouseX >= (double) this.x && mouseY >= (double) this.y && mouseX < (double) (this.x + this.width) && mouseY < (double) (this.y + this.height);
     }
 
     @Override
@@ -170,8 +142,13 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget
         return this.focused;
     }
 
+    @Override
+    public void setFocused(boolean bl) {
+        this.focused = bl;
+    }
+
     protected boolean clicked(double mouseX, double mouseY) {
-        return this.active && this.visible && mouseX >= (double)this.controlX && mouseY >= (double)this.y && mouseX < (double)(this.x + this.width) && mouseY < (double)(this.y + this.height);
+        return this.active && this.visible && mouseX >= (double) this.controlX && mouseY >= (double) this.y && mouseX < (double) (this.x + this.width) && mouseY < (double) (this.y + this.height);
     }
 
     public Component getName() {
@@ -203,10 +180,6 @@ public abstract class OptionWidget<O extends Option<?>> extends VAbstractWidget
 
     @Override
     public final void updateNarration(NarrationElementOutput narrationElementOutput) {
-    }
-
-    public void playDownSound(SoundManager soundManager) {
-        soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
     }
 
 }

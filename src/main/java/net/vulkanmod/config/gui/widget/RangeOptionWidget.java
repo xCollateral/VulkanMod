@@ -7,7 +7,6 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.vulkanmod.config.gui.GuiRenderer;
-import net.vulkanmod.config.option.Option;
 import net.vulkanmod.config.option.RangeOption;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.lwjgl.glfw.GLFW;
@@ -33,7 +32,7 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
     protected void renderControls(double mouseX, double mouseY) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-        int valueX = this.controlX + (int)(this.value * (this.controlWidth));
+        int valueX = this.controlX + (int) (this.value * (this.controlWidth));
 
         if (this.controlHovered) {
             int halfWidth = 2;
@@ -41,18 +40,17 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
             float y0 = this.y + this.height * 0.5f - 1.0f;
             float y1 = y0 + 2.0f;
-            GuiRenderer.fill(this.controlX, y0, this.controlX + this.controlWidth, y1 , ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.1f));
+            GuiRenderer.fill(this.controlX, y0, this.controlX + this.controlWidth, y1, ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.1f));
             GuiRenderer.fill(this.controlX, y0, valueX - halfWidth, y1, ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.3f));
 
             int color = ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.3f);
             GuiRenderer.renderBorder(valueX - halfWidth, y0 - halfHeight, valueX + halfWidth, y1 + halfHeight, 1, color);
 //            GuiRenderer.fill(valueX - halfWidth, y0 - 3.0f, valueX + halfWidth, y1 + 3.0f, color);
 
-        }
-        else {
+        } else {
             float y0 = this.y + this.height - 5.0f;
             float y1 = y0 + 1.5f;
-            GuiRenderer.fill(this.controlX, y0, this.controlX + this.controlWidth, y1 , ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.3f));
+            GuiRenderer.fill(this.controlX, y0, this.controlX + this.controlWidth, y1, ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.3f));
             GuiRenderer.fill(this.controlX, y0, valueX, y1, ColorUtil.ARGB.pack(1.0f, 1.0f, 1.0f, 0.8f));
         }
 
@@ -73,12 +71,14 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        boolean bl;
-        boolean bl2 = bl = keyCode == GLFW.GLFW_KEY_LEFT;
-        if (bl || keyCode == GLFW.GLFW_KEY_RIGHT) {
-            float f = bl ? -1.0f : 1.0f;
-            this.setValue(this.value + (double)(f / (float)(this.width - 8)));
+        boolean isLeft = keyCode == GLFW.GLFW_KEY_LEFT;
+        boolean isRight = keyCode == GLFW.GLFW_KEY_RIGHT;
+
+        if (isLeft || isRight) {
+            float direction = isLeft ? -1.0f : 1.0f;
+            this.setValue(this.value + (double) (direction / (float) (this.width - 8)));
         }
+
         return false;
     }
 
@@ -93,7 +93,7 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
     }
 
     private void setValueFromMouse(double mouseX) {
-        this.setValue((mouseX - (double)(this.controlX + 4)) / (double)((this.controlWidth) - 8));
+        this.setValue((mouseX - (double) (this.controlX + 4)) / (double) ((this.controlWidth) - 8));
     }
 
     private void setValue(double value) {
@@ -121,6 +121,8 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
     @Override
     public void onRelease(double mouseX, double mouseY) {
-        super.playDownSound(Minecraft.getInstance().getSoundManager());
+        if (this.controlHovered) {
+            super.playDownSound(Minecraft.getInstance().getSoundManager());
+        }
     }
 }

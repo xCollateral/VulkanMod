@@ -14,10 +14,6 @@ public class OptionPage {
     }
 
     public void createList(int x, int y, int width, int height, int itemHeight) {
-        for (var optionBlock : optionBlocks) {
-            optionBlock.getOptions();
-        }
-
         this.optionList = new VOptionList(x, y, width, height, itemHeight);
         this.optionList.addAll(optionBlocks);
     }
@@ -29,7 +25,7 @@ public class OptionPage {
     public boolean optionChanged() {
         boolean changed = false;
         for (var block : this.optionBlocks) {
-            for (var option : block.getOptions()) {
+            for (var option : block.options()) {
                 if (option.isChanged())
                     changed = true;
             }
@@ -39,7 +35,7 @@ public class OptionPage {
 
     public void applyOptionChanges() {
         for (var block : this.optionBlocks) {
-            for (var option : block.getOptions()) {
+            for (var option : block.options()) {
                 if (option.isChanged())
                     option.apply();
             }

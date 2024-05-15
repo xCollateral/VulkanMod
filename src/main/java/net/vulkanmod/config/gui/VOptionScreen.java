@@ -8,12 +8,13 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.gui.widget.VAbstractWidget;
 import net.vulkanmod.config.gui.widget.VButtonWidget;
-import net.vulkanmod.config.option.Options;
 import net.vulkanmod.config.option.OptionPage;
+import net.vulkanmod.config.option.Options;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
 import java.util.ArrayList;
@@ -50,16 +51,28 @@ public class VOptionScreen extends Screen {
     private void addPages() {
         this.optionPages.clear();
 
-        OptionPage page = new OptionPage("Video", Options.getVideoOpts());
+        OptionPage page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.video").getString(),
+                Options.getVideoOpts()
+        );
         this.optionPages.add(page);
 
-        page = new OptionPage("Graphics", Options.getGraphicsOpts());
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.graphics").getString(),
+                Options.getGraphicsOpts()
+        );
         this.optionPages.add(page);
 
-        page = new OptionPage("Optimizations", Options.getOptimizationOpts());
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.optimizations").getString(),
+                Options.getOptimizationOpts()
+        );
         this.optionPages.add(page);
 
-        page = new OptionPage("Other", Options.getOtherOpts());
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.other").getString(),
+                Options.getOtherOpts()
+        );
         this.optionPages.add(page);
     }
 
@@ -140,23 +153,36 @@ public class VOptionScreen extends Screen {
 
     private void addButtons() {
         int rightMargin = 20;
-        int buttonWidth = 50;
         int buttonHeight = 20;
+        int padding = 10;
+        int buttonWidth = minecraft.font.width(CommonComponents.GUI_DONE) + padding;
         int x0 = (this.width - buttonWidth - rightMargin);
         int y0 = this.height - buttonHeight - 7;
-        int padding = 5;
 
-        this.doneButton = new VButtonWidget(x0, y0, buttonWidth, buttonHeight, CommonComponents.GUI_DONE,
-                button -> this.minecraft.setScreen(this.parent));
+        this.doneButton = new VButtonWidget(
+                x0, y0,
+                buttonWidth, buttonHeight,
+                CommonComponents.GUI_DONE,
+                button -> this.minecraft.setScreen(this.parent)
+        );
 
-        x0 -= (buttonWidth + padding);
-        this.applyButton = new VButtonWidget(x0, y0, buttonWidth, buttonHeight, Component.literal("Apply"),
-                button -> this.applyOptions());
+        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.apply")) + padding;
+        x0 -= (buttonWidth + padding / 2);
+        this.applyButton = new VButtonWidget(
+                x0, y0,
+                buttonWidth, buttonHeight,
+                Component.translatable("vulkanmod.options.buttons.apply"),
+                button -> this.applyOptions()
+        );
 
-        buttonWidth = 70;
+        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.kofi")) + padding;
         x0 = (this.width - buttonWidth - rightMargin);
-        this.supportButton = new VButtonWidget(x0, 6, buttonWidth, buttonHeight, Component.literal("Support me"),
-                button -> Util.getPlatform().openUri("https://ko-fi.com/xcollateral"));
+        this.supportButton = new VButtonWidget(
+                x0, 6,
+                buttonWidth, buttonHeight,
+                Component.translatable("vulkanmod.options.buttons.kofi"),
+                button -> Util.getPlatform().openUri("https://ko-fi.com/xcollateral")
+        );
 
         buttons.add(this.applyButton);
         buttons.add(this.doneButton);
@@ -217,12 +243,15 @@ public class VOptionScreen extends Screen {
 
         this.renderBackground(guiGraphics, 0, 0, 0);
 
-        GuiRenderer.drawString(this.font, Component.nullToEmpty("Video Settings"), 20, 14, 0xffffffff);
+        ResourceLocation icon = new ResourceLocation("vulkanmod", "vlogo_transparent.png");
+        int size = minecraft.font.lineHeight * 4;
+
+        guiGraphics.blit(icon, 30, 4, 0f, 0f, size, size, size, size);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
         currentList.updateState(mouseX, mouseY);
-        currentList.renderWidget(guiGraphics, mouseX, mouseY, delta);
-        renderButtons(guiGraphics, mouseX, mouseY, delta);
+        currentList.renderWidget(mouseX, mouseY);
+        renderButtons(mouseX, mouseY);
 
         List<FormattedCharSequence> list = getHoveredButtonTooltip(currentList, mouseX, mouseY);
         if (list != null) {
@@ -230,7 +259,7 @@ public class VOptionScreen extends Screen {
         }
     }
 
-    public void renderButtons(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
+    public void renderButtons(int mouseX, int mouseY) {
         for (VButtonWidget button : buttons) {
             button.render(mouseX, mouseY);
         }
