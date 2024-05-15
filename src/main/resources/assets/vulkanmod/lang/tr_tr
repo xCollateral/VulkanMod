@@ -1,0 +1,9 @@
+{
+  "vulkanmod.options.videoMode.tooltip" : "Sadece tam ekranda çalışır.",
+  "vulkanmod.options.windowedFullscreen" : "Pencereli Tam Ekran.",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip" : "Performansı artırmak için opak arazi için benzersiz bir render katmanı kullanın. Bazı uzak blokların yönünü değiştirir.",
+  "vulkanmod.options.advCulling.tooltip" : "Oluşturulan görünür olmayan yığın bölümlerinin sayısını azaltarak performansı artırabilecek bir ayıklama algoritması kullanın.",
+  "vulkanmod.options.entityCulling.tooltip" : "Görünmeyen bölümlerdeki varlıklar için ayıklamayı etkinleştirir.",
+  "vulkanmod.options.indirectDraw.tooltip" : "CPU yükünü azaltır ancak GPU yükünü artırır. Bunu etkinleştirmek CPU sınırlı sistemlerde yardımcı olabilir.",
+  "vulkanmod.options.frameQueue.tooltip" : "Yüksek değerler fps stabilizesini artırılır fakat giriş geçikmesinide artırılır."
+}
