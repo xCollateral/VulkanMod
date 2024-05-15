@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.UniformState;
+import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -17,6 +18,8 @@ public class Drawer {
     private static final int INITIAL_VB_SIZE = 1048576;
     public static final int INITIAL_UB_SIZE = 1024;
 
+    private static final int MAX_QUAD_VERTICES_UINT16 = 65536 * 2 / 3;
+
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
     private static final long pBuffers = MemoryUtil.memAddress0(buffers);
@@ -25,6 +28,8 @@ public class Drawer {
     private int framesNum;
     private VertexBuffer[] vertexBuffers;
     private final AutoIndexBuffer quadsIndexBuffer;
+    private final AutoIndexBuffer linesIndexBuffer;
+    private final AutoIndexBuffer debugLineStripIndexBuffer;
     private final AutoIndexBuffer triangleFanIndexBuffer;
     private final AutoIndexBuffer triangleStripIndexBuffer;
     private UniformBuffer[] uniformBuffers;
@@ -34,10 +39,12 @@ public class Drawer {
     private int currentUniformOffset;
 
     public Drawer() {
-        //Index buffers
-        quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.QUADS);
-        triangleFanIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.TRIANGLE_FAN);
-        triangleStripIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
+        // Index buffers
+        quadsIndexBuffer = new AutoIndexBuffer(MAX_QUAD_VERTICES_UINT16, AutoIndexBuffer.DrawType.QUADS);
+        linesIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.LINES);
+        debugLineStripIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.DEBUG_LINE_STRIP);
+        triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
+        triangleStripIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
     }
 
     public void setCurrentFrame(int currentFrame) {
@@ -79,8 +86,12 @@ public class Drawer {
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
         switch (mode) {
-            case QUADS, LINES, DEBUG_LINES -> {
+            case QUADS -> {
                 autoIndexBuffer = this.quadsIndexBuffer;
+                indexCount = vertexCount * 3 / 2;
+            }
+            case LINES -> {
+                autoIndexBuffer = this.linesIndexBuffer;
                 indexCount = vertexCount * 3 / 2;
             }
             case TRIANGLE_FAN -> {
@@ -91,14 +102,25 @@ public class Drawer {
                 autoIndexBuffer = this.triangleStripIndexBuffer;
                 indexCount = (vertexCount - 2) * 3;
             }
-            case TRIANGLES -> {
-                draw(vertexBuffer, vertexCount);
-                return;
+            case DEBUG_LINE_STRIP -> {
+                autoIndexBuffer = this.debugLineStripIndexBuffer;
+                indexCount = (vertexCount - 1) * 2;
+            }
+            case TRIANGLES, DEBUG_LINES -> {
+                indexCount = 0;
+                autoIndexBuffer = null;
             }
             default -> throw new RuntimeException(String.format("unknown drawMode: %s", mode));
         }
 
-        drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount, textureID);
+        if (indexCount > 0) {
+            autoIndexBuffer.checkCapacity(vertexCount);
+
+            drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount, textureID);
+        } else {
+            draw(vertexBuffer, vertexCount);
+        }
+
     }
 
     public void updateUniformOffset2(int currentUniformOffset1) {

@@ -83,6 +83,22 @@ public class GlStateManagerM {
      * @author
      */
     @Overwrite(remap = false)
+    public static void _enableCull() {
+        VRenderSystem.enableCull();
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _disableCull() {
+        VRenderSystem.disableCull();
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
     public static void _viewport(int x, int y, int width, int height) {
         Renderer.setViewport(x, y, width, height);
     }
