@@ -31,7 +31,7 @@ public class AutoIndexBuffer {
         }
 
         int size = buffer.capacity();
-        indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM);
+        indexBuffer = new IndexBuffer(size, MemoryType.GPU_MEM);
         indexBuffer.copyBuffer(buffer);
 
         MemoryUtil.memFree(buffer);
