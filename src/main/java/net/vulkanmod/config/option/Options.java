@@ -33,7 +33,7 @@ public abstract class Options {
         var refreshRates = videoModeSet.getRefreshRates();
 
         CyclingOption<Integer> RefreshRate = (CyclingOption<Integer>) new CyclingOption<>(
-                Component.translatable("Refresh Rate"),
+                Component.translatable("vulkanmod.options.refreshRate"),
                 refreshRates.toArray(new Integer[0]),
                 (value) -> {
                     VideoModeManager.selectedVideoMode.refreshRate = value;
@@ -46,7 +46,7 @@ public abstract class Options {
                 .setTranslator(refreshRate -> Component.nullToEmpty(refreshRate.toString()));
 
         Option<VideoModeSet> resolutionOption = new CyclingOption<>(
-                Component.translatable("Resolution"),
+                Component.translatable("vulkanmod.options.resolution"),
                 VideoModeManager.getVideoResolutions(),
                 (value) -> {
                     VideoModeManager.selectedVideoMode = value.getVideoMode(RefreshRate.getNewValue());
@@ -84,14 +84,14 @@ public abstract class Options {
                                     fullscreenDirty = true;
                                 },
                                 () -> config.windowedFullscreen),
-                        new SwitchOption(Component.translatable("Fullscreen"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.fullscreen"),
                                 value -> {
                                     minecraftOptions.fullscreen().set(value);
 //                            window.toggleFullScreen();
                                     fullscreenDirty = true;
                                 },
                                 () -> minecraftOptions.fullscreen().get()),
-                        new RangeOption(Component.translatable("Max Framerate"),
+                        new RangeOption(Component.translatable("vulkanmod.options.maxFramerate"),
                                 10, 260, 10,
                                 value -> Component.nullToEmpty(value == 260 ? "Unlimited" : String.valueOf(value)),
                                 value -> {
@@ -99,7 +99,7 @@ public abstract class Options {
                                     window.setFramerateLimit(value);
                                 },
                                 () -> minecraftOptions.framerateLimit().get()),
-                        new SwitchOption(Component.translatable("VSync"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.vsync"),
                                 value -> {
                                     minecraftOptions.enableVsync().set(value);
                                     Minecraft.getInstance().getWindow().updateVsync(value);
@@ -107,7 +107,7 @@ public abstract class Options {
                                 () -> minecraftOptions.enableVsync().get()),
                 }),
                 new OptionBlock("", new Option<?>[]{
-                        new CyclingOption<>(Component.translatable("Gui Scale"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.guiScale"),
                                 getGuiScaleValues(),
                                 (value) -> {
                                     minecraftOptions.guiScale().set(value);
@@ -115,7 +115,7 @@ public abstract class Options {
                                 },
                                 () -> minecraftOptions.guiScale().get())
                                 .setTranslator(value -> value == 0 ? Component.literal("Auto") : Component.literal(value.toString())),
-                        new RangeOption(Component.translatable("Brightness"),
+                        new RangeOption(Component.translatable("vulkanmod.options.brightness"),
                                 0, 100, 1,
                                 value -> {
                                     if (value == 0) return Component.translatable("options.gamma.min");
@@ -127,15 +127,15 @@ public abstract class Options {
                                 () -> (int) (minecraftOptions.gamma().get() * 100.0)),
                 }),
                 new OptionBlock("", new Option<?>[]{
-                        new SwitchOption(Component.translatable("View Bobbing"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.viewBobbing"),
                                 (value) -> minecraftOptions.bobView().set(value),
                                 () -> minecraftOptions.bobView().get()),
-                        new CyclingOption<>(Component.translatable("Attack Indicator"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.attackIndicator"),
                                 AttackIndicatorStatus.values(),
                                 value -> minecraftOptions.attackIndicator().set(value),
                                 () -> minecraftOptions.attackIndicator().get())
                                 .setTranslator(value -> Component.translatable(value.getKey())),
-                        new SwitchOption(Component.translatable("Autosave Indicator"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.autosaveIndicator"),
                                 value -> minecraftOptions.showAutosaveIndicator().set(value),
                                 () -> minecraftOptions.showAutosaveIndicator().get()),
                 })
@@ -145,19 +145,19 @@ public abstract class Options {
     public static OptionBlock[] getGraphicsOpts() {
         return new OptionBlock[] {
                 new OptionBlock("", new Option<?>[]{
-                        new RangeOption(Component.translatable("Render Distance"),
+                        new RangeOption(Component.translatable("vulkanmod.options.renderDistance"),
                                 2, 32, 1,
                                 (value) -> {
                                     minecraftOptions.renderDistance().set(value);
                                 },
                                 () -> minecraftOptions.renderDistance().get()),
-                        new RangeOption(Component.translatable("Simulation Distance"),
+                        new RangeOption(Component.translatable("vulkanmod.options.simulationDistance"),
                                 5, 32, 1,
                                 (value) -> {
                                     minecraftOptions.simulationDistance().set(value);
                                 },
                                 () -> minecraftOptions.simulationDistance().get()),
-                        new CyclingOption<>(Component.translatable("Chunk Builder Mode"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.chunkBuilderMode"),
 
                                 PrioritizeChunkUpdates.values(),
                                 value -> minecraftOptions.prioritizeChunkUpdates().set(value),
@@ -165,22 +165,22 @@ public abstract class Options {
                                 .setTranslator(value -> Component.translatable(value.getKey())),
                 }),
                 new OptionBlock("", new Option<?>[]{
-                        new CyclingOption<>(Component.translatable("Graphics"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.graphics"),
                                 new GraphicsStatus[]{GraphicsStatus.FAST, GraphicsStatus.FANCY},
                                 value -> minecraftOptions.graphicsMode().set(value),
                                 () -> minecraftOptions.graphicsMode().get())
                                 .setTranslator(graphicsMode -> Component.translatable(graphicsMode.getKey())),
-                        new CyclingOption<>(Component.translatable("Particles"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.particles"),
                                 new ParticleStatus[]{ParticleStatus.MINIMAL, ParticleStatus.DECREASED, ParticleStatus.ALL},
                                 value -> minecraftOptions.particles().set(value),
                                 () -> minecraftOptions.particles().get())
                                 .setTranslator(particlesMode -> Component.translatable(particlesMode.getKey())),
-                        new CyclingOption<>(Component.translatable("Clouds"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.clouds"),
                                 CloudStatus.values(),
                                 value -> minecraftOptions.cloudStatus().set(value),
                                 () -> minecraftOptions.cloudStatus().get())
                                 .setTranslator(value -> Component.translatable(value.getKey())),
-                        new CyclingOption<>(Component.translatable("Smooth Lighting"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.smoothLighting"),
                                 new Integer[]{LightMode.FLAT, LightMode.SMOOTH, LightMode.SUB_BLOCK},
                                 (value) -> {
                                     if (value > LightMode.FLAT)
@@ -201,14 +201,14 @@ public abstract class Options {
                                 })
                                 .setTooltip(Component.nullToEmpty("""
                                 On (Sub-block): Enables smooth lighting for non full block (experimental).""")),
-                        new SwitchOption(Component.translatable("Unique opaque layer"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.uniqueOpaqueLayer"),
                                 value -> {
                                     config.uniqueOpaqueLayer = value;
                                     Minecraft.getInstance().levelRenderer.allChanged();
                                 },
                                 () -> config.uniqueOpaqueLayer)
                                 .setTooltip(Component.translatable("vulkanmod.options.uniqueOpaqueLayer.tooltip")),
-                        new RangeOption(Component.translatable("Biome Blend Radius"),
+                        new RangeOption(Component.translatable("vulkanmod.options.biomeBlend"),
                                 0, 7, 1,
                                 value -> {
                                     int v = value * 2 + 1;
@@ -221,14 +221,14 @@ public abstract class Options {
                                 () -> minecraftOptions.biomeBlendRadius().get()),
                 }),
                 new OptionBlock("", new Option<?>[]{
-                        new SwitchOption(Component.translatable("Entity Shadows"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.entityShadows"),
                                 value -> minecraftOptions.entityShadows().set(value),
                                 () -> minecraftOptions.entityShadows().get()),
-                        new RangeOption(Component.translatable("Entity Distance"),
+                        new RangeOption(Component.translatable("vulkanmod.options.entityDistance"),
                                 50, 500, 25,
                                 value -> minecraftOptions.entityDistanceScaling().set(value * 0.01),
                                 () -> minecraftOptions.entityDistanceScaling().get().intValue() * 100),
-                        new CyclingOption<>(Component.translatable("Mipmap Levels"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.mipmapLevels"),
                                 new Integer[]{0, 1, 2, 3, 4},
                                 value -> {
                                     minecraftOptions.mipmapLevels().set(value);
@@ -244,7 +244,7 @@ public abstract class Options {
     public static OptionBlock[] getOptimizationOpts() {
         return new OptionBlock[] {
                 new OptionBlock("", new Option[] {
-                        new CyclingOption<>(Component.translatable("Advanced Chunk Culling"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.advCulling"),
                                 new Integer[]{1, 2, 3, 10},
                                 value -> config.advCulling = value,
                                 () -> config.advCulling)
@@ -259,11 +259,11 @@ public abstract class Options {
                                     return Component.nullToEmpty(t);
                                 })
                                 .setTooltip(Component.translatable("vulkanmod.options.advCulling.tooltip")),
-                        new SwitchOption(Component.translatable("Entity Culling"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.entityCulling"),
                                 value -> config.entityCulling = value,
                                 () -> config.entityCulling)
                                 .setTooltip(Component.translatable("vulkanmod.options.entityCulling.tooltip")),
-                        new SwitchOption(Component.translatable("Indirect Draw"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.indirectDraw"),
                                 value -> config.indirectDraw = value,
                                 () -> config.indirectDraw)
                                 .setTooltip(Component.translatable("vulkanmod.options.indirectDraw.tooltip")),
@@ -275,14 +275,14 @@ public abstract class Options {
     public static OptionBlock[] getOtherOpts() {
         return new OptionBlock[] {
                 new OptionBlock("", new Option[] {
-                        new RangeOption(Component.translatable("Render queue size"),
+                        new RangeOption(Component.translatable("vulkanmod.options.frameQueue"),
                                 2, 5, 1,
                                 value -> {
                                     config.frameQueueSize = value;
                                     Renderer.scheduleSwapChainUpdate();
                                 }, () -> config.frameQueueSize)
                                 .setTooltip(Component.translatable("vulkanmod.options.frameQueue.tooltip")),
-                        new CyclingOption<>(Component.translatable("Device selector"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.deviceSelector"),
                                 IntStream.range(-1, DeviceManager.suitableDevices.size()).boxed().toArray(Integer[]::new),
                                 value -> config.device = value,
                                 () -> config.device)
