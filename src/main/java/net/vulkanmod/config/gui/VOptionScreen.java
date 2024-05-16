@@ -50,16 +50,28 @@ public class VOptionScreen extends Screen {
     private void addPages() {
         this.optionPages.clear();
 
-        OptionPage page = new OptionPage("Video", Options.getVideoOpts());
+        OptionPage page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.video").getString(),
+                Options.getVideoOpts()
+        );
         this.optionPages.add(page);
 
-        page = new OptionPage("Graphics", Options.getGraphicsOpts());
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.graphics").getString(),
+                Options.getGraphicsOpts()
+        );
         this.optionPages.add(page);
 
-        page = new OptionPage("Optimizations", Options.getOptimizationOpts());
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.optimizations").getString(),
+                Options.getOptimizationOpts()
+        );
         this.optionPages.add(page);
 
-        page = new OptionPage("Other", Options.getOtherOpts());
+        page = new OptionPage(
+                Component.translatable("vulkanmod.options.pages.other").getString(),
+                Options.getOtherOpts()
+        );
         this.optionPages.add(page);
     }
 
@@ -150,12 +162,12 @@ public class VOptionScreen extends Screen {
                 button -> this.minecraft.setScreen(this.parent));
 
         x0 -= (buttonWidth + padding);
-        this.applyButton = new VButtonWidget(x0, y0, buttonWidth, buttonHeight, Component.literal("Apply"),
+        this.applyButton = new VButtonWidget(x0, y0, buttonWidth, buttonHeight, Component.translatable("vulkanmod.options.buttons.apply"),
                 button -> this.applyOptions());
 
         buttonWidth = 70;
         x0 = (this.width - buttonWidth - rightMargin);
-        this.supportButton = new VButtonWidget(x0, 6, buttonWidth, buttonHeight, Component.literal("Support me"),
+        this.supportButton = new VButtonWidget(x0, 6, buttonWidth, buttonHeight, Component.translatable("vulkanmod.options.buttons.kofi"),
                 button -> Util.getPlatform().openUri("https://ko-fi.com/xcollateral"));
 
         buttons.add(this.applyButton);
@@ -217,7 +229,7 @@ public class VOptionScreen extends Screen {
 
         this.renderBackground(guiGraphics, 0, 0, 0);
 
-        GuiRenderer.drawString(this.font, Component.nullToEmpty("Video Settings"), 20, 14, 0xffffffff);
+        GuiRenderer.drawString(this.font, Component.translatable("vulkanmod.options.title"), 20, 14, 0xffffffff);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
         currentList.updateState(mouseX, mouseY);
