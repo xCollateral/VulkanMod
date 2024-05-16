@@ -179,7 +179,7 @@ public abstract class Options {
                                 value -> minecraftOptions.cloudStatus().set(value),
                                 () -> minecraftOptions.cloudStatus().get())
                                 .setTranslator(value -> Component.translatable(value.getKey())),
-                        new CyclingOption<>(Component.translatable("options.ao"), // Smooth lighting
+                        new CyclingOption<>(Component.translatable("options.ao"),
                                 new Integer[]{LightMode.FLAT, LightMode.SMOOTH, LightMode.SUB_BLOCK},
                                 (value) -> {
                                     if (value > LightMode.FLAT)
@@ -195,8 +195,8 @@ public abstract class Options {
                                 .setTranslator(value -> switch (value) {
                                     case LightMode.FLAT -> Component.translatable("options.off");
                                     case LightMode.SMOOTH -> Component.translatable("options.on");
-                                    case LightMode.SUB_BLOCK -> Component.literal("On (Sub-block)");
-                                    default -> Component.literal("Unk");
+                                    case LightMode.SUB_BLOCK -> Component.translatable("vulkanmod.options.ao.subBlock");
+                                    default -> Component.translatable("vulkanmod.options.unknown");
                                 })
                                 .setTooltip(Component.translatable("vulkanmod.options.ao.subBlock.tooltip")),
                         new SwitchOption(Component.translatable("vulkanmod.options.uniqueOpaqueLayer"),
@@ -248,13 +248,13 @@ public abstract class Options {
                                 () -> config.advCulling)
                                 .setTranslator(value -> {
                                     String t = switch (value) {
-                                        case 1 -> "Aggressive";
-                                        case 2 -> "Normal";
-                                        case 3 -> "Conservative";
-                                        case 10 -> "Off";
-                                        default -> "Unk";
+                                        case 1 -> "vulkanmod.options.advCulling.aggressive";
+                                        case 2 -> "vulkanmod.options.advCulling.normal";
+                                        case 3 -> "vulkanmod.options.advCulling.conservative";
+                                        case 10 -> "options.off";
+                                        default -> "vulkanmod.options.unknown";
                                     };
-                                    return Component.nullToEmpty(t);
+                                    return Component.translatable(t);
                                 })
                                 .setTooltip(Component.translatable("vulkanmod.options.advCulling.tooltip")),
                         new SwitchOption(Component.translatable("vulkanmod.options.entityCulling"),
@@ -288,11 +288,11 @@ public abstract class Options {
                                     String t;
 
                                     if (value == -1)
-                                        t = "Auto";
+                                        t = "options.guiScale.auto";
                                     else
                                         t = DeviceManager.suitableDevices.get(value).deviceName;
 
-                                    return Component.nullToEmpty(t);
+                                    return Component.translatable(t);
                                 })
                                 .setTooltip(Component.nullToEmpty("%s: %s".formatted(
                                         Component.translatable("vulkanmod.options.deviceSelector.tooltip").getString(),
