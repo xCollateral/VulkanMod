@@ -9,6 +9,7 @@ import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 import org.lwjgl.vulkan.VK11;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
@@ -37,11 +38,11 @@ public class DrawUtil {
     public static void defualtBlit() {
         Matrix4f matrix4f = new Matrix4f().setOrtho(0.0F, 1.0F, 1.0F, 0.0F, 0.0F, 1.0F);
         RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.setIdentity();
+        Matrix4fStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushMatrix();
+        posestack.identity();
         RenderSystem.applyModelViewMatrix();
-        posestack.popPose();
+        posestack.popMatrix();
 
         ShaderInstance shaderInstance = Minecraft.getInstance().gameRenderer.blitShader;
 //        RenderSystem.setShader(() -> shaderInstance);

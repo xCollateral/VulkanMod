@@ -8,6 +8,7 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 public class DrawUtil {
 
@@ -54,11 +55,11 @@ public class DrawUtil {
 
         Matrix4f matrix4f = new Matrix4f().setOrtho(0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 1.0F, true);
         RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.DISTANCE_TO_ORIGIN);
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.setIdentity();
+        Matrix4fStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushMatrix();
+        posestack.identity();
         RenderSystem.applyModelViewMatrix();
-        posestack.popPose();
+        posestack.popMatrix();
 
         Renderer.getInstance().uploadAndBindUBOs(pipeline);
 
