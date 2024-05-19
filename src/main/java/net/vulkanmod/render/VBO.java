@@ -11,7 +11,7 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
 import net.vulkanmod.vulkan.memory.IndexBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.MemoryType;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.Matrix4f;
@@ -51,7 +51,7 @@ public class VBO {
             if (this.vertexBuffer != null)
                 this.vertexBuffer.freeBuffer();
 
-            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryType.GPU_MEM);
             this.vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
 
         }
@@ -99,7 +99,7 @@ public class VBO {
             if (this.indexBuffer != null)
                 this.indexBuffer.freeBuffer();
 
-            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryType.GPU_MEM);
             this.indexBuffer.copyBuffer(data);
         }
 
