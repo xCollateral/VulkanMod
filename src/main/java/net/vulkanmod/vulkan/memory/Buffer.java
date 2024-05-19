@@ -11,11 +11,11 @@ public class Buffer {
     protected int usedBytes;
     protected int offset;
 
-    protected final MemoryType type;
+    protected final MemoryTypes type;
     protected final int usage;
     public final PointerBuffer data;
 
-    protected Buffer(int usage, MemoryType type) {
+    protected Buffer(int usage, MemoryTypes type) {
         //TODO: check usage
         this.usage = usage;
         this.type = type;

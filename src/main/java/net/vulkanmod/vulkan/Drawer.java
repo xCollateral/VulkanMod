@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.UniformState;
-import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -61,7 +60,7 @@ public class Drawer {
             );
         }
         this.vertexBuffers = new VertexBuffer[framesNum];
-        Arrays.setAll(this.vertexBuffers, i -> new VertexBuffer(INITIAL_VB_SIZE, MemoryType.BAR_MEM));
+        Arrays.setAll(this.vertexBuffers, i -> new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.BAR_MEM));
 
         if (this.uniformBuffers != null) {
             Arrays.stream(this.uniformBuffers).iterator().forEachRemaining(
@@ -69,7 +68,7 @@ public class Drawer {
             );
         }
         this.uniformBuffers = new UniformBuffer[framesNum];
-        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryType.BAR_MEM));
+        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.BAR_MEM));
     }
 
     public void resetBuffers(int currentFrame) {

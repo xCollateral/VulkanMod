@@ -15,7 +15,7 @@ public class UniformBuffer extends Buffer {
         return align(uploadSize, minOffset);
     }
 
-    public UniformBuffer(int size, MemoryType memoryType) {
+    public UniformBuffer(int size, MemoryTypes memoryType) {
         super(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryType);
         this.createBuffer(size);
     }

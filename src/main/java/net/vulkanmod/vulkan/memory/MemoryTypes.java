@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public enum MemoryType {
+public enum MemoryTypes {
     GPU_MEM(true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
@@ -24,7 +24,7 @@ public enum MemoryType {
     private long usedBytes;
     private final int flags;
 
-    MemoryType(boolean useVRAM, int... optimalFlags) {
+    MemoryTypes(boolean useVRAM, int... optimalFlags) {
 
 //        this.maxSize = maxSize;
 //        this.resizableBAR = size > 0xD600000;
