@@ -2,6 +2,7 @@ package net.vulkanmod.mixin.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.vulkanmod.gl.GlBuffer;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlRenderbuffer;
 import net.vulkanmod.gl.GlTexture;
@@ -12,6 +13,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 @Mixin(GlStateManager.class)
@@ -76,6 +78,22 @@ public class GlStateManagerM {
      */
     @Overwrite(remap = false)
     public static void _enableScissorTest() {}
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _enableCull() {
+        VRenderSystem.enableCull();
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _disableCull() {
+        VRenderSystem.disableCull();
+    }
 
     /**
      * @author
@@ -321,7 +339,70 @@ public class GlStateManagerM {
     @Overwrite(remap = false)
     public static int glCheckFramebufferStatus(int i) {
         RenderSystem.assertOnRenderThreadOrInit();
-//        return GL30.glCheckFramebufferStatus(i);
         return GlFramebuffer.glCheckFramebufferStatus(i);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static int _glGenBuffers() {
+        RenderSystem.assertOnRenderThreadOrInit();
+        return GlBuffer.glGenBuffers();
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _glBindBuffer(int i, int j) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        GlBuffer.glBindBuffer(i, j);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _glBufferData(int i, ByteBuffer byteBuffer, int j) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        GlBuffer.glBufferData(i, byteBuffer, j);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _glBufferData(int i, long l, int j) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        GlBuffer.glBufferData(i, l, j);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    @Nullable
+    public static ByteBuffer _glMapBuffer(int i, int j) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        return GlBuffer.glMapBuffer(i, j);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _glUnmapBuffer(int i) {
+        RenderSystem.assertOnRenderThreadOrInit();
+        GlBuffer.glUnmapBuffer(i);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _glDeleteBuffers(int i) {
+        RenderSystem.assertOnRenderThread();
+        GlBuffer.glDeleteBuffers(i);
     }
 }

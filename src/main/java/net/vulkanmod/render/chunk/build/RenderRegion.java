@@ -42,13 +42,11 @@ public class RenderRegion implements BlockAndTintGetter {
     private TintCache tintCache;
 
     private final Map<BlockPos, BlockEntity> blockEntityMap;
-    private final int minHeight;
 
     private final Function<BlockPos, BlockState> blockStateGetter;
 
     RenderRegion(Level level, int x, int y, int z, PalettedContainer<BlockState>[] blockData, DataLayer[][] lightData, Map<BlockPos, BlockEntity> blockEntityMap) {
         this.level = level;
-        this.minHeight = level.getMinBuildHeight();
 
         this.minSecX = x - 1;
         this.minSecY = y - 1;
@@ -144,7 +142,7 @@ public class RenderRegion implements BlockAndTintGetter {
 
     public int getBrightness(LightLayer lightLayer, BlockPos blockPos) {
         int secX = SectionPos.blockToSectionCoord(blockPos.getX()) - this.minSecX;
-        int secY = SectionPos.blockToSectionCoord(blockPos.getY() - minHeight) - this.minSecY;
+        int secY = SectionPos.blockToSectionCoord(blockPos.getY()) - this.minSecY;
         int secZ = SectionPos.blockToSectionCoord(blockPos.getZ()) - this.minSecZ;
 
         DataLayer dataLayer = this.lightData[getSectionIdx(secX, secY, secZ)][lightLayer.ordinal()];
@@ -154,7 +152,7 @@ public class RenderRegion implements BlockAndTintGetter {
 
     public int getRawBrightness(BlockPos blockPos, int i) {
         int secX = SectionPos.blockToSectionCoord(blockPos.getX()) - this.minSecX;
-        int secY = SectionPos.blockToSectionCoord(blockPos.getY() - minHeight) - this.minSecY;
+        int secY = SectionPos.blockToSectionCoord(blockPos.getY()) - this.minSecY;
         int secZ = SectionPos.blockToSectionCoord(blockPos.getZ()) - this.minSecZ;
 
         DataLayer[] dataLayers = this.lightData[getSectionIdx(secX, secY, secZ)];
@@ -199,7 +197,7 @@ public class RenderRegion implements BlockAndTintGetter {
     }
 
     public BlockState defaultBlockState(BlockPos blockPos) {
-        return blockData[getBlockIdx(blockPos.getX(), blockPos.getY() - minHeight, blockPos.getZ())];
+        return blockData[getBlockIdx(blockPos.getX(), blockPos.getY(), blockPos.getZ())];
     }
 
     public BlockState debugBlockState(BlockPos blockPos) {

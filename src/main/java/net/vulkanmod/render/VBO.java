@@ -9,9 +9,11 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
+import net.vulkanmod.vulkan.memory.IndexBuffer;
+import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
@@ -34,7 +36,6 @@ public class VBO {
 
         this.indexCount = parameters.indexCount();
         this.vertexCount = parameters.vertexCount();
-//        this.indexType = parameters.indexType();
         this.mode = parameters.mode();
 
         this.configureVertexFormat(parameters, buffer.vertexBuffer());
@@ -47,11 +48,11 @@ public class VBO {
     private void configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
         if (!parameters.indexOnly()) {
 
-            if(vertexBuffer != null)
+            if (this.vertexBuffer != null)
                 this.vertexBuffer.freeBuffer();
 
-            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryType.GPU_MEM);
-            vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
+            this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
 
         }
     }
@@ -63,34 +64,43 @@ public class VBO {
             switch (this.mode) {
                 case TRIANGLE_FAN -> {
                     autoIndexBuffer = Renderer.getDrawer().getTriangleFanIndexBuffer();
-                    this.indexCount = (vertexCount - 2) * 3;
+                    this.indexCount = AutoIndexBuffer.DrawType.getTriangleStripIndexCount(this.vertexCount);
+                }
+                case TRIANGLE_STRIP, LINE_STRIP -> {
+                    autoIndexBuffer = Renderer.getDrawer().getTriangleStripIndexBuffer();
+                    this.indexCount = AutoIndexBuffer.DrawType.getTriangleStripIndexCount(this.vertexCount);
                 }
                 case QUADS -> {
                     autoIndexBuffer = Renderer.getDrawer().getQuadsIndexBuffer();
                 }
-                case TRIANGLES -> {
+                case LINES -> {
+                    autoIndexBuffer = Renderer.getDrawer().getLinesIndexBuffer();
+                }
+                case DEBUG_LINE_STRIP -> {
+                    autoIndexBuffer = Renderer.getDrawer().getDebugLineStripIndexBuffer();
+                }
+                case TRIANGLES, DEBUG_LINES -> {
                     autoIndexBuffer = null;
                 }
-                default -> throw new IllegalStateException("Unexpected draw mode:" + this.mode);
+                default -> throw new IllegalStateException("Unexpected draw mode: %s".formatted(this.mode));
             }
 
-            if(indexBuffer != null && !this.autoIndexed)
-                indexBuffer.freeBuffer();
+            if (this.indexBuffer != null && !this.autoIndexed)
+                this.indexBuffer.freeBuffer();
 
-            if(autoIndexBuffer != null) {
-                autoIndexBuffer.checkCapacity(vertexCount);
-                indexBuffer = autoIndexBuffer.getIndexBuffer();
+            if (autoIndexBuffer != null) {
+                autoIndexBuffer.checkCapacity(this.vertexCount);
+                this.indexBuffer = autoIndexBuffer.getIndexBuffer();
             }
 
             this.autoIndexed = true;
 
-        }
-        else {
-            if(indexBuffer != null)
+        } else {
+            if (this.indexBuffer != null)
                 this.indexBuffer.freeBuffer();
-            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryType.GPU_MEM);
-//            this.indexBuffer = new AsyncIndexBuffer(data.remaining());
-            indexBuffer.copyBuffer(data);
+
+            this.indexBuffer = new IndexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+            this.indexBuffer.copyBuffer(data);
         }
 
     }
@@ -101,7 +111,7 @@ public class VBO {
 
             RenderSystem.setShader(() -> shader);
 
-            drawWithShader(MV, P, ((ShaderMixed)shader).getPipeline());
+            drawWithShader(MV, P, ((ShaderMixed) shader).getPipeline());
 
         }
     }
@@ -112,14 +122,16 @@ public class VBO {
 
             VRenderSystem.applyMVP(MV, P);
 
+            VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
+
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
 
-            if(indexBuffer != null)
-                Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            if (this.indexBuffer != null)
+                Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
             else
-                Renderer.getDrawer().draw(vertexBuffer, vertexCount);
+                Renderer.getDrawer().draw(this.vertexBuffer, this.vertexCount);
 
             VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
@@ -130,25 +142,24 @@ public class VBO {
         if (this.indexCount != 0) {
 
             RenderSystem.assertOnRenderThread();
-            Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount);
+            Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
         }
     }
 
     public void close() {
-        if(vertexCount <= 0) return;
-        vertexBuffer.freeBuffer();
-        vertexBuffer = null;
-        if(!autoIndexed) {
-            indexBuffer.freeBuffer();
-            indexBuffer = null;
+        if (this.vertexCount <= 0)
+            return;
+
+        this.vertexBuffer.freeBuffer();
+        this.vertexBuffer = null;
+
+        if (!this.autoIndexed) {
+            this.indexBuffer.freeBuffer();
+            this.indexBuffer = null;
         }
 
         this.vertexCount = 0;
         this.indexCount = 0;
     }
-
-//    public VertexFormat getFormat() {
-//        return this.vertexFormat;
-//    }
 
 }

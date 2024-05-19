@@ -40,6 +40,15 @@ public class GL11M {
      * @author
      * @reason
      */
+    @Overwrite(remap = false)
+    public static void glLineWidth(@NativeType("GLfloat") float width) {
+        VRenderSystem.setLineWidth(width);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
     @NativeType("void")
     @Overwrite(remap = false)
     public static int glGenTextures() {
@@ -108,6 +117,15 @@ public class GL11M {
      * @reason
      */
     @Overwrite(remap = false)
+    public static void glTexSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, long pixels) {
+        GlTexture.texSubImage2D(target, level, xOffset, yOffset, width, height, format, type, pixels);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
     public static void glTexSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
         GlTexture.texSubImage2D(target, level, xOffset, yOffset, width, height, format, type, pixels);
     }
@@ -161,8 +179,35 @@ public class GL11M {
      * @reason
      */
     @Overwrite(remap = false)
+    public static void glDeleteTextures(@NativeType("GLuint const *") int texture) {
+        GlTexture.glDeleteTextures(texture);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
     public static void glGetTexImage(@NativeType("GLenum") int tex, @NativeType("GLint") int level, @NativeType("GLenum") int format, @NativeType("GLenum") int type, @NativeType("void *") long pixels) {
         GlTexture.getTexImage(tex, level, format, type, pixels);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glGetTexImage(@NativeType("GLenum") int tex, @NativeType("GLint") int level, @NativeType("GLenum") int format, @NativeType("GLenum") int type, @NativeType("void *") ByteBuffer pixels) {
+        GlTexture.getTexImage(tex, level, format, type, MemoryUtil.memAddress(pixels));
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glGetTexImage(@NativeType("GLenum") int tex, @NativeType("GLint") int level, @NativeType("GLenum") int format, @NativeType("GLenum") int type, @NativeType("void *") IntBuffer pixels) {
+        GlTexture.getTexImage(tex, level, format, type, MemoryUtil.memAddress(pixels));
     }
 
     /**

@@ -3,6 +3,8 @@ package net.vulkanmod.vulkan;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.PipelineState;
@@ -10,7 +12,10 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
+
+import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -21,6 +26,9 @@ public abstract class VRenderSystem {
     public static boolean depthTest = true;
     public static boolean depthMask = true;
     public static int depthFun = 515;
+    public static int topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    public static int polygonMode = VK_POLYGON_MODE_FILL;
+    public static boolean canSetLineWidth = false;
 
     public static int colorMask = PipelineState.ColorMask.getColorMask(true, true, true, true);
 
@@ -30,7 +38,7 @@ public abstract class VRenderSystem {
     public static int logicOpFun = 0;
 
     public static final float clearDepth = 1.0f;
-    public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
+    public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4);
 
     public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
     public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
@@ -161,6 +169,30 @@ public abstract class VRenderSystem {
 
     public static void depthMask(boolean b) {
         depthMask = b;
+    }
+
+    public static void setPrimitiveTopologyGL(final int mode) {
+        VRenderSystem.topology = switch (mode) {
+            case GL11.GL_LINES -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            case GL11.GL_LINE_STRIP, GL11.GL_TRIANGLE_FAN,
+                 GL11.GL_TRIANGLES, GL11.GL_TRIANGLE_STRIP -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            default -> throw new RuntimeException(String.format("Unknown GL primitive topology: %s", mode));
+        };
+    }
+
+    public static void setPolygonModeGL(final int mode) {
+        VRenderSystem.polygonMode = switch (mode) {
+            case GL11.GL_POINT -> VK_POLYGON_MODE_POINT;
+            case GL11.GL_LINE -> VK_POLYGON_MODE_LINE;
+            case GL11.GL_FILL -> VK_POLYGON_MODE_FILL;
+            default -> throw new RuntimeException(String.format("Unknown GL polygon mode: %s", mode));
+        };
+    }
+
+    public static void setLineWidth(final float width) {
+        if (canSetLineWidth) {
+            Renderer.setLineWidth(width);
+        }
     }
 
     public static void colorMask(boolean b, boolean b1, boolean b2, boolean b3) {

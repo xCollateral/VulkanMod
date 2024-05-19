@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.util.GsonHelper;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -180,11 +181,12 @@ public class ShaderInstanceM implements ShaderMixed {
 
     private void setUniformSuppliers(UBO ubo) {
 
-        for(Uniform v_uniform : ubo.getUniforms()) {
-            com.mojang.blaze3d.shaders.Uniform uniform = this.uniformMap.get(v_uniform.getName());
+        for(Uniform vUniform : ubo.getUniforms()) {
+            com.mojang.blaze3d.shaders.Uniform uniform = this.uniformMap.get(vUniform.getName());
 
             if(uniform == null) {
-                throw new NullPointerException(String.format("Field: %s not present in map: %s", v_uniform.getName(), this.uniformMap));
+                Initializer.LOGGER.error(String.format("Error: field %s not present in uniform map", vUniform.getName()));
+                continue;
             }
 
             Supplier<MappedBuffer> supplier;
@@ -201,9 +203,9 @@ public class ShaderInstanceM implements ShaderMixed {
 
             MappedBuffer mappedBuffer = MappedBuffer.createFromBuffer(byteBuffer);
             supplier = () -> mappedBuffer;
-            //TODO vec1
+            // TODO vec1
 
-            v_uniform.setSupplier(supplier);
+            vUniform.setSupplier(supplier);
         }
 
     }
@@ -214,21 +216,21 @@ public class ShaderInstanceM implements ShaderMixed {
 
             JsonObject jsonObject = GsonHelper.parse(reader);
 
-            String string2 = GsonHelper.getAsString(jsonObject, "vertex");
-            String string3 = GsonHelper.getAsString(jsonObject, "fragment");
+            String vshName = GsonHelper.getAsString(jsonObject, "vertex");
+            String fshName = GsonHelper.getAsString(jsonObject, "fragment");
 
-            String vertPath = "shaders/core/" + string2 + ".vsh";
+            String vertPath = "shaders/core/" + vshName + ".vsh";
             Resource resource = resourceProvider.getResourceOrThrow(new ResourceLocation(vertPath));
             InputStream inputStream = resource.open();
             String vshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
-            String fragPath = "shaders/core/" + string3 + ".fsh";
+            String fragPath = "shaders/core/" + fshName + ".fsh";
             resource = resourceProvider.getResourceOrThrow(new ResourceLocation(fragPath));
             inputStream = resource.open();
             String fshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
             GlslConverter converter = new GlslConverter();
-            Pipeline.Builder builder = new Pipeline.Builder(format);
+            Pipeline.Builder builder = new Pipeline.Builder(format, vshName);
 
             converter.process(vshSrc, fshSrc);
             UBO ubo = converter.getUBO();
@@ -240,8 +242,8 @@ public class ShaderInstanceM implements ShaderMixed {
             this.pipeline = builder.createGraphicsPipeline();
             this.isLegacy = true;
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            Initializer.LOGGER.error("Error on shader {} conversion/compilation", location.getPath());
         }
     }
 }
