@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.device;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.queue.*;
@@ -191,6 +192,11 @@ public abstract class DeviceManager {
                     .inlineUniformBlock(true)
                     .descriptorBindingInlineUniformBlockUpdateAfterBind(false); //TODO: Interestingly inlineUniformBlock has wider support for Update After bind than Uniform buffers
 
+            // Must not set line width to anything other than 1.0 if this is not supported
+            if (device.availableFeatures.features().wideLines()) {
+                deviceFeatures.features().wideLines(true);
+                VRenderSystem.canSetLineWidth = true;
+            }
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);

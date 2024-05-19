@@ -31,20 +31,21 @@ public class BufferUploaderM {
         BufferBuilder.DrawState parameters = buffer.drawState();
 
         Renderer renderer = Renderer.getInstance();
+
         if(parameters.vertexCount() <= 0) {
             return;
         }
 
         ShaderInstance shaderInstance = RenderSystem.getShader();
-        //Used to update legacy shader uniforms
-        //TODO it would be faster to allocate a buffer from stack and set all values
+        // Used to update legacy shader uniforms
+        // TODO it would be faster to allocate a buffer from stack and set all values
         shaderInstance.apply();
 
 
 
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
-        VRenderSystem.polygonMode(0, parameters.mode().asGLMode);
+        VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
         boolean b = renderer.bindGraphicsPipeline(pipeline);
 
         int textureID = pipeline.updateImageState();

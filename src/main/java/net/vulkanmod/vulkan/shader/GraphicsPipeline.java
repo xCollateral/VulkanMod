@@ -46,7 +46,7 @@ public class GraphicsPipeline extends Pipeline {
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
         this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
 
-        if(builder.renderPass != null)
+        if (builder.renderPass != null)
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
@@ -61,7 +61,7 @@ public class GraphicsPipeline extends Pipeline {
 
     private long createGraphicsPipeline(PipelineState state) {
 
-        try(MemoryStack stack = stackPush()) {
+        try (MemoryStack stack = stackPush()) {
 
             ByteBuffer entryPoint = stack.UTF8("main");
 
@@ -90,9 +90,11 @@ public class GraphicsPipeline extends Pipeline {
 
             // ===> ASSEMBLY STAGE <===
 
+            final int topology = PipelineState.AssemblyRasterState.decodeTopology(state.assemblyRasterState);
+
             VkPipelineInputAssemblyStateCreateInfo inputAssembly = VkPipelineInputAssemblyStateCreateInfo.calloc(stack);
             inputAssembly.sType(VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
-            inputAssembly.topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            inputAssembly.topology(topology);
             inputAssembly.primitiveRestartEnable(false);
 
             // ===> VIEWPORT & SCISSOR
@@ -105,15 +107,16 @@ public class GraphicsPipeline extends Pipeline {
 
             // ===> RASTERIZATION STAGE <===
 
+            final int polygonMode = PipelineState.AssemblyRasterState.decodePolygonMode(state.assemblyRasterState);
+            final int cullMode = PipelineState.AssemblyRasterState.decodeCullMode(state.assemblyRasterState);
+
             VkPipelineRasterizationStateCreateInfo rasterizer = VkPipelineRasterizationStateCreateInfo.calloc(stack);
             rasterizer.sType(VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
             rasterizer.depthClampEnable(false);
             rasterizer.rasterizerDiscardEnable(false);
-            rasterizer.polygonMode(VK_POLYGON_MODE_FILL);
+            rasterizer.polygonMode(polygonMode);
             rasterizer.lineWidth(1.0f);
-
-            rasterizer.cullMode(state.cullState ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE);
-
+            rasterizer.cullMode(cullMode);
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
             rasterizer.depthBiasEnable(true);
 
@@ -141,7 +144,7 @@ public class GraphicsPipeline extends Pipeline {
             VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.calloc(1, stack);
             colorBlendAttachment.colorWriteMask(state.colorMask_i);
 
-            if(PipelineState.BlendState.enable(state.blendState_i)) {
+            if (PipelineState.BlendState.enable(state.blendState_i)) {
                 colorBlendAttachment.blendEnable(true);
                 colorBlendAttachment.srcColorBlendFactor(PipelineState.BlendState.getSrcRgbFactor(state.blendState_i));
                 colorBlendAttachment.dstColorBlendFactor(PipelineState.BlendState.getDstRgbFactor(state.blendState_i));
@@ -149,8 +152,7 @@ public class GraphicsPipeline extends Pipeline {
                 colorBlendAttachment.srcAlphaBlendFactor(PipelineState.BlendState.getSrcAlphaFactor(state.blendState_i));
                 colorBlendAttachment.dstAlphaBlendFactor(PipelineState.BlendState.getDstAlphaFactor(state.blendState_i));
                 colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
-            }
-            else {
+            } else {
                 colorBlendAttachment.blendEnable(false);
             }
 
@@ -165,7 +167,11 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineDynamicStateCreateInfo dynamicStates = VkPipelineDynamicStateCreateInfo.calloc(stack);
             dynamicStates.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-            dynamicStates.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
+
+            if (topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST || polygonMode == VK_POLYGON_MODE_LINE)
+                dynamicStates.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH));
+            else
+                dynamicStates.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
 
             VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.calloc(1, stack);
             pipelineInfo.sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
@@ -197,7 +203,7 @@ public class GraphicsPipeline extends Pipeline {
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
-            if(vkCreateGraphicsPipelines(DeviceManager.vkDevice, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
+            if (vkCreateGraphicsPipelines(DeviceManager.vkDevice, PIPELINE_CACHE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create graphics pipeline");
             }
 
@@ -222,7 +228,7 @@ public class GraphicsPipeline extends Pipeline {
         ImmutableList<VertexFormatElement> elements = vertexFormat.getElements();
 
         int size = elements.size();
-        if(elements.stream().anyMatch(vertexFormatElement -> vertexFormatElement.getUsage() == VertexFormatElement.Usage.PADDING)) {
+        if (elements.stream().anyMatch(vertexFormatElement -> vertexFormatElement.getUsage() == VertexFormatElement.Usage.PADDING)) {
             size--;
         }
 
@@ -231,7 +237,7 @@ public class GraphicsPipeline extends Pipeline {
 
         int offset = 0;
 
-        for(int i = 0; i < size; ++i) {
+        for (int i = 0; i < size; ++i) {
             VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
             posDescription.binding(0);
             posDescription.location(i);
