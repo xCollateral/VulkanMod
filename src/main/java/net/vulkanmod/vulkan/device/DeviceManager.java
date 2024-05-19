@@ -192,11 +192,11 @@ public abstract class DeviceManager {
                     .inlineUniformBlock(true)
                     .descriptorBindingInlineUniformBlockUpdateAfterBind(false); //TODO: Interestingly inlineUniformBlock has wider support for Update After bind than Uniform buffers
 
-            // Must not set line width to anything other than 1.0 if this is not supported
+/*            // Must not set line width to anything other than 1.0 if this is not supported
             if (device.availableFeatures.features().wideLines()) {
-                deviceFeatures.features().wideLines(true);
-                VRenderSystem.canSetLineWidth = true;
-            }
+                deviceFeatures.features().wideLines(false);
+                VRenderSystem.canSetLineWidth = false;
+            }*/
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);

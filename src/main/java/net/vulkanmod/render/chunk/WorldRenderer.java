@@ -325,7 +325,7 @@ public class WorldRenderer {
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
             boolean b = renderer.bindGraphicsPipeline(pipeline);
             final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-            Renderer.getDrawer().bindAutoIndexBuffer(commandBuffer, 7);
+            Renderer.getDrawer().bindIndexBuffer(commandBuffer, Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer());
 
 
 

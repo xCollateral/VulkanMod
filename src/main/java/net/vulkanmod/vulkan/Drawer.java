@@ -76,7 +76,7 @@ public class Drawer {
         this.uniformBuffers[currentFrame].reset();
     }
 
-    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount) {
+    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount, int textureID) {
         AutoIndexBuffer autoIndexBuffer;
         int indexCount;
 

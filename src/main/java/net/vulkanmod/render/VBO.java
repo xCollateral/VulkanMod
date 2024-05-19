@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
@@ -125,13 +126,18 @@ public class VBO {
             VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
 
             Renderer renderer = Renderer.getInstance();
-            renderer.bindGraphicsPipeline(pipeline);
-            renderer.uploadAndBindUBOs(pipeline);
+            boolean b = renderer.bindGraphicsPipeline(pipeline);
 
-            if (this.indexBuffer != null)
-                Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
-            else
-                Renderer.getDrawer().draw(this.vertexBuffer, this.vertexCount);
+            if(Initializer.CONFIG.renderSky)
+            {
+                int textureID = pipeline.updateImageState();
+                if (textureID != -1) {
+                    if (indexBuffer != null)
+                        Renderer.getDrawer().drawIndexed(vertexBuffer, indexBuffer, indexCount, textureID);
+                    else
+                        Renderer.getDrawer().draw(vertexBuffer, vertexCount);
+                }
+            }
 
             VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
@@ -139,11 +145,11 @@ public class VBO {
     }
 
     public void drawChunkLayer() {
-        if (this.indexCount != 0) {
+       /* if (this.indexCount != 0) {
 
             RenderSystem.assertOnRenderThread();
             Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
-        }
+        }*/
     }
 
     public void close() {
