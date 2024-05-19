@@ -122,6 +122,8 @@ public class VBO {
 
             VRenderSystem.applyMVP(MV, P);
 
+            VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
+
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
