@@ -66,7 +66,7 @@ public class Device {
 
 
             this.drawIndirectSupported = availableFeatures.features().multiDrawIndirect() && availableFeatures11.shaderDrawParameters();
-            this.hasIndexedDescriptors = availableFeatures12.runtimeDescriptorArray() && availableFeatures12.descriptorBindingVariableDescriptorCount();
+            this.hasIndexedDescriptors = availableFeatures12.runtimeDescriptorArray() && availableFeatures12.descriptorBindingVariableDescriptorCount() && availableFeatures12.descriptorBindingPartiallyBound();
             this.hasSamplerAnisotropy = availableFeatures.features().samplerAnisotropy();
             this.hasLogicOp = availableFeatures.features().logicOp();
         }

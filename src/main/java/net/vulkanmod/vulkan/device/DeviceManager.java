@@ -177,7 +177,7 @@ public abstract class DeviceManager {
             VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
                     .sType$Default()
                     .runtimeDescriptorArray(hasIndexedDescriptors)
-//                    .descriptorBindingPartiallyBound(false)
+                    .descriptorBindingPartiallyBound(hasIndexedDescriptors)
 //
 //                    .descriptorBindingSampledImageUpdateAfterBind(false)
 //                    .descriptorBindingUniformBufferUpdateAfterBind(false)

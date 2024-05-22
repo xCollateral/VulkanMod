@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader.descriptor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogRenderer;
@@ -16,21 +17,16 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.config.option.Options;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
@@ -46,7 +42,7 @@ public class DescriptorSetArray {
     private static final int UNIFORM_POOLS = 1;
     private static final int VERT_SAMPLER_MAX_LIMIT = 4;
     private static final int SAMPLER_MAX_LIMIT_DEFAULT = 32;
-    private static final int MAX_POOL_SAMPLERS = 4096;
+    private static final int MAX_POOL_SAMPLERS = 4096; //Might change to UINT16T_MAX
     static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
     private static final int bindingsSize = 4;
 //    private Int2ObjectLinkedOpenHashMap<Descriptor> DescriptorTableHeap;
@@ -57,8 +53,8 @@ public class DescriptorSetArray {
 
     private final long descriptorSetLayout;
     private final long globalDescriptorPoolArrayPool;
-    private final LongBuffer descriptorSets;
-    private static final int MAX_SETS = 2;
+    private static final int MAX_SETS = 4;
+    private final long[] descriptorSets = new long[MAX_SETS];
 
     private static final int MISSING_TEX_ID = 24;
     private final boolean[] isUpdated = {false, false};
@@ -89,7 +85,9 @@ public class DescriptorSetArray {
     }
 
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
-    private int currentSamplerSize;
+    private int currentSamplerSize = SAMPLER_MAX_LIMIT_DEFAULT;
+    private int texturePool = 0;
+    private LongArrayFIFOQueue allocatedSets = new LongArrayFIFOQueue(8);
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -158,7 +156,7 @@ public class DescriptorSetArray {
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
-            bindingFlags.put(VERTEX_SAMPLER_ID, 0);
+            bindingFlags.put(VERTEX_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
 
 
             bindings.get(FRAG_SAMPLER_ID)
@@ -168,7 +166,7 @@ public class DescriptorSetArray {
                     .pImmutableSamplers(null)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            bindingFlags.put(FRAG_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT);
+            bindingFlags.put(FRAG_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK12.VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT);
 
 
             VkDescriptorSetLayoutBindingFlagsCreateInfo setLayoutBindingsFlags = VkDescriptorSetLayoutBindingFlagsCreateInfo.calloc(stack)
@@ -191,37 +189,37 @@ public class DescriptorSetArray {
 
             this.globalDescriptorPoolArrayPool = createGlobalDescriptorPool();
 
-            this.descriptorSets = allocateDescriptorSets(stack);
+            this.descriptorSets[0]= allocateDescriptorSet(stack, SAMPLER_MAX_LIMIT_DEFAULT);
+            this.descriptorSets[1]= allocateDescriptorSet(stack, SAMPLER_MAX_LIMIT_DEFAULT);
+
+            allocatedSets.enqueue(this.descriptorSets[0]);
+            allocatedSets.enqueue(this.descriptorSets[1]);
 
         }
     }
 
 
 
-    private LongBuffer allocateDescriptorSets(MemoryStack stack) {
+    private long allocateDescriptorSet(MemoryStack stack, int samplerMaxLimitDefault) {
 
-        final LongBuffer pSetLayouts = stack.callocLong(MAX_SETS);
-
-        for(int i = 0; i < MAX_SETS; i++)
-        {
-            pSetLayouts.put(i, this.descriptorSetLayout);
-        }
 
         VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo = VkDescriptorSetVariableDescriptorCountAllocateInfo.calloc(stack)
                 .sType$Default()
-                .pDescriptorCounts(stack.ints(SAMPLER_MAX_LIMIT_DEFAULT, SAMPLER_MAX_LIMIT_DEFAULT));
+                .pDescriptorCounts(stack.ints(samplerMaxLimitDefault));
 
 
         VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.calloc(stack);
         allocInfo.sType$Default();
         allocInfo.pNext(variableDescriptorCountAllocateInfo);
         allocInfo.descriptorPool(this.globalDescriptorPoolArrayPool);
-        allocInfo.pSetLayouts(pSetLayouts);
+        allocInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
 
-        LongBuffer dLongBuffer = MemoryUtil.memAllocLong(MAX_SETS);
+        texturePool+=samplerMaxLimitDefault;
+
+        LongBuffer dLongBuffer = stack.mallocLong(1);
 
         Vulkan.checkResult(vkAllocateDescriptorSets(DEVICE, allocInfo, dLongBuffer), "Failed to allocate descriptor sets");
-        return dLongBuffer;
+        return dLongBuffer.get(0);
     }
 
     public long createGlobalDescriptorPool()
@@ -248,7 +246,7 @@ public class DescriptorSetArray {
 
             VkDescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo = VkDescriptorPoolInlineUniformBlockCreateInfo.calloc(stack)
                     .sType$Default()
-                    .maxInlineUniformBlockBindings(2);
+                    .maxInlineUniformBlockBindings(MAX_SETS);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -271,20 +269,8 @@ public class DescriptorSetArray {
 
     //TODO: Confirm if pipeline Layers are still compatibr w. DescritprSets if Vertex Format changes
 
-    public long getDescriptorSet(int index) {
-        return descriptorSets.get(index);
-    }
-
     public long getDescriptorSetLayout(int bindingID) {
         return descriptorSetLayout;
-    }
-
-    public long getGlobalDescriptorPoolArrayPool() {
-        return globalDescriptorPoolArrayPool;
-    }
-
-    public LongBuffer getDescriptorSets() {
-        return descriptorSets;
     }
 
     public DescriptorAbstractionArray getInitialisedFragSamplers() {
@@ -321,7 +307,7 @@ public class DescriptorSetArray {
                 {
                     resizeSamplerArray(this.currentSamplerSize = initialisedFragSamplers.resize());
                 }
-                final long currentSet = descriptorSets.get(frame);
+                final long currentSet = descriptorSets[frame];
                 final int NUM_UBOs = 1;
                 final int NUM_INLINE_UBOs = uniformStates.length;
                 final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs + NUM_INLINE_UBOs;
@@ -358,7 +344,7 @@ public class DescriptorSetArray {
 
             //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getLayout(),
-                    0, stack.longs(descriptorSets.get(frame)), null);
+                    0, stack.longs(descriptorSets[frame]), null);
 
 //            vkCmdPushConstants(commandBuffer, Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, UniformState.Light0_Direction.buffer());
 //            vkCmdPushConstants(commandBuffer, Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 16, UniformState.Light1_Direction.buffer());
@@ -473,6 +459,66 @@ public class DescriptorSetArray {
     }
 
 
+    public void pushDescriptorSet(int frame, VkCommandBuffer commandBuffer)
+    {
+        if(this.allocatedSets.size()>=MAX_SETS) return;
+
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+
+            long allocateDescriptorSet = allocateDescriptorSet(stack, currentSamplerSize);
+
+            final long descriptorSet = this.descriptorSets[frame];
+
+            VkCopyDescriptorSet.Buffer vkCopyDescriptorSet = VkCopyDescriptorSet.calloc(4, stack);
+
+            VkCopyDescriptorSet uboCopy = vkCopyDescriptorSet.get(VERT_UBO_ID);
+            uboCopy.sType$Default();
+            uboCopy.srcSet(descriptorSet);
+            uboCopy.srcBinding(VERT_UBO_ID);
+            uboCopy.dstBinding(VERT_UBO_ID);
+            uboCopy.dstSet(allocateDescriptorSet);
+            uboCopy.descriptorCount(1);
+
+            VkCopyDescriptorSet uboCopy2 = vkCopyDescriptorSet.get(FRAG_UBO_ID);
+            uboCopy2.sType$Default();
+            uboCopy2.srcSet(descriptorSet);
+            uboCopy2.srcBinding(FRAG_UBO_ID);
+            uboCopy2.dstBinding(FRAG_UBO_ID);
+            uboCopy2.dstSet(allocateDescriptorSet);
+            uboCopy2.descriptorCount(INLINE_UNIFORM_SIZE);
+
+            VkCopyDescriptorSet vertSmplrCopy = vkCopyDescriptorSet.get(VERTEX_SAMPLER_ID);
+            vertSmplrCopy.sType$Default();
+            vertSmplrCopy.srcSet(descriptorSet);
+            vertSmplrCopy.srcBinding(VERTEX_SAMPLER_ID);
+            vertSmplrCopy.dstBinding(VERTEX_SAMPLER_ID);
+            vertSmplrCopy.dstSet(allocateDescriptorSet);
+            vertSmplrCopy.descriptorCount(VERT_SAMPLER_MAX_LIMIT);
+
+            VkCopyDescriptorSet fragSmplrCopy = vkCopyDescriptorSet.get(FRAG_SAMPLER_ID);
+            fragSmplrCopy.sType$Default();
+            fragSmplrCopy.srcSet(descriptorSet);
+            fragSmplrCopy.srcBinding(FRAG_SAMPLER_ID);
+            fragSmplrCopy.dstBinding(FRAG_SAMPLER_ID);
+            fragSmplrCopy.dstSet(allocateDescriptorSet);
+            fragSmplrCopy.descriptorCount(currentSamplerSize);
+
+
+            vkUpdateDescriptorSets(DEVICE, null, vkCopyDescriptorSet);
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.pipelineLayout, 0, stack.longs(allocateDescriptorSet), null);
+
+            if(this.allocatedSets.size()<MAX_SETS)
+                this.allocatedSets.enqueue(descriptorSet);
+
+
+
+        }
+
+    }
+
+
 
 
 
@@ -490,7 +536,7 @@ public class DescriptorSetArray {
         vkDestroyDescriptorSetLayout(DEVICE, this.descriptorSetLayout, null);
         vkDestroyDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, null);
 
-        MemoryUtil.memFree(descriptorSets);
+
     }
 
     //TODO: Peristent Tetxure: i.e. skip GUi tetxiures beign stored peristently withint the DescriptorArray
@@ -512,6 +558,9 @@ public class DescriptorSetArray {
     {
         Vulkan.waitIdle();
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
+        this.texturePool=0;
+
+        this.allocatedSets.clear();
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
             VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo = VkDescriptorSetVariableDescriptorCountAllocateInfo.calloc(stack)
@@ -526,6 +575,10 @@ public class DescriptorSetArray {
             allocInfo.pSetLayouts(stack.longs(this.descriptorSetLayout,this.descriptorSetLayout));
 
             Vulkan.checkResult(vkAllocateDescriptorSets(DEVICE, allocInfo, descriptorSets),"Failed Texture Array Resize!");
+
+            allocatedSets.enqueue(this.descriptorSets[0]);
+            allocatedSets.enqueue(this.descriptorSets[1]);
+            this.texturePool+=samplerLimit*2;
 
             Initializer.LOGGER.info("Resized to "+ samplerLimit);
 
@@ -547,6 +600,11 @@ public class DescriptorSetArray {
     //todo: Allow Reserving ranges in Descriptor Array, so a approx 2048 range can be reserved.allocated for AF/MSAA mode + to supply Indices to the VertexBuilder/BuildTask
     public String getDebugInfo()
     {
-        return"textures[Loaded="+this.initialisedFragSamplers.currentSize()+"Frag="+this.initialisedFragSamplers.currentLim()+"PoolRange="+ this.currentSamplerSize +"]";
+        return"TextureStats \n\n" +
+                "   Loaded: "+this.initialisedFragSamplers.currentSize()+
+                "\n"+"  Frag: "+this.initialisedFragSamplers.currentLim()+
+                "\n"+"  Allocated: "+this.currentSamplerSize +
+                "\n"+"  PoolRangeSetLimit: "+MAX_POOL_SAMPLERS/MAX_SETS+
+                "\n"+"  TexturePool: "+this.texturePool+"/"+MAX_POOL_SAMPLERS;
     }
 }
