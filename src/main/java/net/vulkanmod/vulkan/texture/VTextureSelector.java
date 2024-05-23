@@ -142,9 +142,9 @@ public abstract class VTextureSelector {
 
 //        GlTexture.bindIdToImage(bindingID, vulkanImage);
 
-        Initializer.LOGGER.info("Registered texture: " + lastTextureId + " <-> " + bindingID + " <-> " + vulkanImage + "! -> "+resourceLocation);
 
 
+        GlTexture.addImageResource(vulkanImage, resourceLocation);
 //        vulkanImage.readOnlyLayout();
 //
 //        boundTextures[bindingID]=vulkanImage;

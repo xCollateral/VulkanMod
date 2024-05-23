@@ -1,6 +1,9 @@
 package net.vulkanmod.gl;
 
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.texture.SamplerManager;
@@ -19,6 +22,8 @@ import static org.lwjgl.vulkan.VK10.*;
 public class GlTexture {
     private static int ID_COUNTER = 1;
     private static final Int2ReferenceOpenHashMap<GlTexture> map = new Int2ReferenceOpenHashMap<>();
+//    private static final Int2ReferenceOpenHashMap<ResourceLocation> TexIDtoResourceName = new Int2ReferenceOpenHashMap<>();
+//    private static final Int2IntOpenHashMap TexIDtoDescriptorIndex = new Int2IntOpenHashMap();
     private static int boundTextureId = 0;
     private static GlTexture boundTexture;
     private static int activeTexture = 0;
@@ -62,6 +67,7 @@ public class GlTexture {
             //TODO; disseminate between Sampler/Currently Bound textrues and etxure snot be utilised in the Descriptor Array
             MemoryManager.getInstance().addToFreeable(image);
         }
+//        removeImageResource(i);
         Renderer.getDescriptorSetArray().removeImage(i);
     }
 
@@ -186,6 +192,30 @@ public class GlTexture {
         this.id = id;
     }
 
+    public static boolean hasImage(int textureID) {
+        return map.get(textureID).getVulkanImage()!=null;
+    }
+    public static boolean hasImageResource(int textureID) {
+        return map.containsKey(textureID);
+    }
+
+    public static void addImageResource(int TextureID, ResourceLocation resourceLocation)
+    {
+        if(TextureID!=-1)
+        {
+            if(!map.containsKey(TextureID)) throw new RuntimeException();
+            Initializer.LOGGER.info("Registered texture: " + TextureID + " <-> " + "! -> "+resourceLocation);
+//            TexIDtoResourceName.put(TextureID, resourceLocation);
+        }
+    }
+/*    public static void removeImageResource(int TextureID)
+    {
+//        if(TextureID!=-1)
+//        {
+//            var a =  TexIDtoResourceName.remove(TextureID);
+//           if(a!=null) Initializer.LOGGER.info("UnRegistered texture: " + TextureID + " <-> " + "! -> "+a);
+//        }
+    }*/
     public int getId() {
         return id;
     }

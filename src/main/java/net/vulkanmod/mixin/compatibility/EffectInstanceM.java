@@ -94,7 +94,11 @@ public class EffectInstanceM {
         //TODO
 //        ProgramManager.releaseProgram(this);
     }
-
+    //TODO: Compile all required Uniforms and aggregate them into a singular Descriptorset that can cover all required ShaderStages
+    // Vertex Shader uis always constant _(i.e. Blit)_ editl its not: varies on Configred Program -> DescritorSet
+    // Alias Programs -> DescriptorSets
+    // Auto promote Uniforms to Inline Uniforms or PushConstants based on Size + required states+Updates e.g.
+    // Convert/UnRoll Smapler Hbdings into Arrays + constant indices
     private void createShaders(ResourceManager resourceManager, String vertexShader, String fragShader) {
 
         try {

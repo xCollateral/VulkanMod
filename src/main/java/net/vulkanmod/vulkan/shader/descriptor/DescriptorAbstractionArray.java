@@ -2,6 +2,8 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.util.VUtil;
 
@@ -18,6 +20,7 @@ public class DescriptorAbstractionArray {
     private int samplerRange;
     private final Int2IntOpenHashMap texID2DescIdx; //alignedIDs
     private final IntArrayFIFOQueue FreeIDs=new IntArrayFIFOQueue(32);
+    private final Object2IntOpenHashMap<ResourceLocation> ResourceIDs =new Object2IntOpenHashMap<>(32);
 
     /*Abstracts between OpenGl texture Bindings and and Initialised descrtior indicies for this particualr dEscriptir Binding*/
     public DescriptorAbstractionArray(int reserveTextureRange, int maxSize, int shaderStage, int descriptorType, int descriptorBinding) {
@@ -85,7 +88,19 @@ public class DescriptorAbstractionArray {
         return true;
 
     }
-    //Hardcode a texture to a fixed Sampler Index: Avoids the need to fallback to Non-Uniform Indexing
+
+    //Used to reserved a textureRange for Unstitched Atlases
+    public void reserveTextureRange(ResourceLocation baseResourceLocation, int baseSamplerIndex)
+    {
+
+    }
+
+    //does not require a TextureID
+    public void reserveImmutableTexture(ResourceLocation texID, int SamplerIndex) {
+
+    }
+
+        //Hardcode a texture to a fixed Sampler Index: Avoids the need to fallback to Non-Uniform Indexing
     public boolean registerImmutableTexture(int texID, int SamplerIndex) {
 
         if(samplerRange<=SamplerIndex) throw new RuntimeException();

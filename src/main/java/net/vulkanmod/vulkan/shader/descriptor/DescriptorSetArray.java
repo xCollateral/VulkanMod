@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -99,9 +98,20 @@ public class DescriptorSetArray {
         }
     }
 
-    public void registerTexture(int binding, int TextureID, VulkanImage vulkanImage)
+    public void registerTexture(int binding, int TextureID)
     {
-        //TODO:maybe make textureID table global, then asign Ids+SampelrIndicies to DescriptorSetsBindinss
+        //TODO: maybe make textureID table global, then asign Ids+SampelrIndicies to DescriptorSetsBindinss
+
+
+        //TODO; only register image if it has been loaded
+        // + use ResourceLocation for Identifictaion = texture Management e.g.
+        if(!GlTexture.hasImageResource(TextureID))
+        {
+            Initializer.LOGGER.error("SKipping Image: "+TextureID);
+            return;
+        }
+
+
         boolean needsUpdate = switch (binding) {
             case 0 -> this.initialisedFragSamplers.registerTexture(TextureID);
             default -> initialisedVertSamplers.registerTexture(TextureID);
@@ -116,7 +126,7 @@ public class DescriptorSetArray {
 
     public int getTexture(int binding, int TextureID)
     {
-        return binding == 0 ? initialisedFragSamplers.TextureID2SamplerIdx(TextureID) : initialisedVertSamplers.TextureID2SamplerIdx(TextureID);
+        return (binding == 0 ? initialisedFragSamplers : initialisedVertSamplers).TextureID2SamplerIdx(TextureID);
     }
 
     public DescriptorSetArray() {
@@ -279,6 +289,9 @@ public class DescriptorSetArray {
     {
         if(this.MissingTexID == -1)
         {
+            //TODO: make this handle Vanilla's Async texture Loader
+            // so images can be loaded and register asynchronously without risk of Undefined behaviour or Uninitialised descriptors
+            // + Reserving texture Slots must use resourceLocation as textureIDs are not Determinate due to the Async Texture Loading
             this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
 
 
@@ -310,18 +323,15 @@ public class DescriptorSetArray {
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 
                 int x = 0;
-                // 0 : reserved for constant Mat4s for Chunk Translations + PoV
-                //1 : Light_DIR_ vectors
-                //2: Inv Dir Vectors
-                //3: Global mob Rot + MAt4
 
 
-                // 8+ Scratch Spaces + Bump Linear Allocator w/ 256 byte chunks.sections .blocks (i..e PushDescriptors)
+                //TODO; validate Descriptor Array for Imvalid ImagViews
+                // i.e. draw without Update, + Null Immutable ImageViews e.g.
 
-                //Fog Parameters = ColorModulator -> PushConstants
-
-                //Move relagularly chnaging + hard to LLOCTe unifiorms to OPushConstant to help keep Unforms alloc mroe considtent + reduce Fragmenttaion + Variabels offsets e.g.
-
+                //TODO + Partial Selective Sampler Updates:
+                // only updating newly added/changed Image Samplers
+                // instead of thw whole Array each time
+                // In order to reduce exponential CPU overhead w/ progressively larger Texture Arrays e.g.
 
                 updateUBOs(uniformId, stack, x, descriptorWrites, currentSet);
                 updateInlineUniformBlocks(stack, descriptorWrites, currentSet, uniformStates);
@@ -430,7 +440,7 @@ public class DescriptorSetArray {
             final int texId1 = texId.getIntKey();
             final int samplerIndex = texId.getIntValue();
 
-            final VulkanImage image = getSamplerImage(texId1);
+            final VulkanImage image = getSamplerImage(texId1, samplerIndex);
             image.readOnlyLayout();
 
 
@@ -514,13 +524,15 @@ public class DescriptorSetArray {
 
 
 
-    private VulkanImage getSamplerImage(int texId1) {
-        final GlTexture vulkanImage = GlTexture.getTexture(texId1);
-        VulkanImage image = vulkanImage != null ? vulkanImage.getVulkanImage() : null; //TODO: Not aligned to SmaplerBindindSlot: unintuitive usage atm
-        if (image == null) {
-            image = GlTexture.getTexture(MissingTexID).getVulkanImage();
+    private VulkanImage getSamplerImage(int texId1, int samplerIndex) {
+
+        if (!GlTexture.hasImage(texId1))
+        {
+            Initializer.LOGGER.error("UnInitialised Image!: "+texId1 +"+"+samplerIndex+" Skipping...");
+
+            return GlTexture.getTexture(MissingTexID).getVulkanImage();
         }
-        return image;
+        return GlTexture.getTexture(texId1).getVulkanImage();
     }
     public void cleanup()
     {

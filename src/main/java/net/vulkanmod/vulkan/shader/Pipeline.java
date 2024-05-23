@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
@@ -22,7 +23,6 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.io.InputStream;
@@ -31,10 +31,8 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static net.vulkanmod.vulkan.shader.SPIRVUtils.*;
-import static net.vulkanmod.vulkan.shader.UniformState.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -163,11 +161,12 @@ public abstract class Pipeline {
 
               if(shaderTexture != 0)
               {
+                  //TODO: move Texture registration to GlTexture to allow Async texture updates + slightly reduced CPu overhead
 //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
-                  descriptorSetArray.registerTexture(state.imageIdx, shaderTexture, null);
+                  descriptorSetArray.registerTexture(state.imageIdx, shaderTexture);
                   currentTexture = descriptorSetArray.getTexture(state.imageIdx, shaderTexture);
-                  isNewTexture = descriptorSetArray.isTexUnInitialised(shaderTexture);
+                  isNewTexture = !GlTexture.hasImageResource(shaderTexture);
               }
 
 
