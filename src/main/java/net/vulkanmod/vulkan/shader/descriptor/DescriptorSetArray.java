@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.shader.descriptor;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -57,8 +58,8 @@ public class DescriptorSetArray {
 
     private static final int MISSING_TEX_ID = 24;
     private final boolean[] isUpdated = {false, false};
-    private static final UniformState[] uniformStates = {UniformState.FogStart, UniformState.FogEnd, UniformState.GameTime, UniformState.LineWidth, UniformState.FogColor};
-    private static final int INLINE_UNIFORM_SIZE = 4 + 4 + 4 + 4 + 16;
+    private static final InlineUniformBlock uniformStates = new InlineUniformBlock(FRAG_UBO_ID, UniformState.FogStart, UniformState.FogEnd, UniformState.GameTime, UniformState.LineWidth, UniformState.FogColor);
+    private static final int INLINE_UNIFORM_SIZE = uniformStates.size_t();
     private int MissingTexID = -1;
 
     static
@@ -304,7 +305,7 @@ public class DescriptorSetArray {
                 }
                 final long currentSet = descriptorSets[frame];
                 final int NUM_UBOs = 1;
-                final int NUM_INLINE_UBOs = uniformStates.length;
+                final int NUM_INLINE_UBOs = uniformStates.uniformState().length;
                 final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs + NUM_INLINE_UBOs;
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 
@@ -377,7 +378,7 @@ public class DescriptorSetArray {
         isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
     }
 
-    private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, UniformState... uniformStates) {
+    private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, InlineUniformBlock uniformStates) {
 
         int offset = 0;
         final Camera playerPos = Minecraft.getInstance().gameRenderer.getMainCamera();
@@ -388,10 +389,11 @@ public class DescriptorSetArray {
                 false,
                 1);
         //TODO: can't specify static offsets in shader without Spec constants/Stringify Macro Hacks
-        for(UniformState uniformState : uniformStates) {
-            final long ptr = switch (uniformState)
+        for(UniformState inlineUniform : uniformStates.uniformState()) {
+
+            final long ptr = switch (inlineUniform)
             {
-                default -> uniformState.getMappedBufferPtr().ptr;
+                default -> inlineUniform.getMappedBufferPtr().ptr;
                 case FogStart -> stack.nfloat(RenderSystem.getShaderFogStart());
                 case FogEnd -> stack.nfloat(RenderSystem.getShaderFogEnd());
                 case GameTime -> stack.nfloat(RenderSystem.getShaderGameTime());
@@ -402,7 +404,7 @@ public class DescriptorSetArray {
             VkWriteDescriptorSetInlineUniformBlock inlineUniformBlock = VkWriteDescriptorSetInlineUniformBlock.calloc(stack)
                     .sType$Default();
             memPutAddress(inlineUniformBlock.address() + VkWriteDescriptorSetInlineUniformBlock.PDATA, ptr);
-            VkWriteDescriptorSetInlineUniformBlock.ndataSize(inlineUniformBlock.address(), uniformState.size*4);
+            VkWriteDescriptorSetInlineUniformBlock.ndataSize(inlineUniformBlock.address(), inlineUniform.getByteSize());
 
             //TODO: used indexed UBOs to workaound biding for new ofstes + adding new pipeline Layouts: (as long as max bound UBO Limits is sufficient)
             VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get();
@@ -411,9 +413,9 @@ public class DescriptorSetArray {
             uboDescriptorWrite.dstBinding(FRAG_UBO_ID);
             uboDescriptorWrite.dstArrayElement(offset);
             uboDescriptorWrite.descriptorType(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
-            uboDescriptorWrite.descriptorCount(uniformState.size*4);
+            uboDescriptorWrite.descriptorCount(inlineUniform.getByteSize());
             uboDescriptorWrite.dstSet(currentSet);
-            offset += uniformState.size*4;
+            offset += inlineUniform.getByteSize();
         }
         }
 
