@@ -73,6 +73,7 @@ public abstract class DebugScreenOverlayM {
         strings.add("");
 
         Collections.addAll(strings, WorldRenderer.getInstance().getChunkAreaManager().getStats());
+        strings.add("");
         Collections.addAll(strings, Renderer.getDescriptorSetArray().getDebugInfo());
 
         return strings;

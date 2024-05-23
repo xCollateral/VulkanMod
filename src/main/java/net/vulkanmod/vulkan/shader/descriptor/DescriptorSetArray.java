@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan.shader.descriptor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogRenderer;
@@ -53,7 +52,7 @@ public class DescriptorSetArray {
 
     private final long descriptorSetLayout;
     private final long globalDescriptorPoolArrayPool;
-    private static final int MAX_SETS = 4;
+    private static final int MAX_SETS = 2;
     private final long[] descriptorSets = new long[MAX_SETS];
 
     private static final int MISSING_TEX_ID = 24;
@@ -87,7 +86,6 @@ public class DescriptorSetArray {
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
     private int currentSamplerSize = SAMPLER_MAX_LIMIT_DEFAULT;
     private int texturePool = 0;
-    private LongArrayFIFOQueue allocatedSets = new LongArrayFIFOQueue(8);
 
     public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
     {
@@ -191,9 +189,6 @@ public class DescriptorSetArray {
 
             this.descriptorSets[0]= allocateDescriptorSet(stack, SAMPLER_MAX_LIMIT_DEFAULT);
             this.descriptorSets[1]= allocateDescriptorSet(stack, SAMPLER_MAX_LIMIT_DEFAULT);
-
-            allocatedSets.enqueue(this.descriptorSets[0]);
-            allocatedSets.enqueue(this.descriptorSets[1]);
 
         }
     }
@@ -461,7 +456,6 @@ public class DescriptorSetArray {
 
     public void pushDescriptorSet(int frame, VkCommandBuffer commandBuffer)
     {
-        if(this.allocatedSets.size()>=MAX_SETS) return;
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
@@ -508,10 +502,6 @@ public class DescriptorSetArray {
             vkUpdateDescriptorSets(DEVICE, null, vkCopyDescriptorSet);
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.pipelineLayout, 0, stack.longs(allocateDescriptorSet), null);
-
-            if(this.allocatedSets.size()<MAX_SETS)
-                this.allocatedSets.enqueue(descriptorSet);
-
 
 
         }
@@ -560,25 +550,10 @@ public class DescriptorSetArray {
         vkResetDescriptorPool(DEVICE, this.globalDescriptorPoolArrayPool, 0);
         this.texturePool=0;
 
-        this.allocatedSets.clear();
         try(MemoryStack stack = MemoryStack.stackPush()) {
 
-            VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo = VkDescriptorSetVariableDescriptorCountAllocateInfo.calloc(stack)
-                    .sType$Default()
-                    .pDescriptorCounts(stack.ints(samplerLimit,samplerLimit));
-
-
-            VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.calloc(stack);
-            allocInfo.sType$Default();
-            allocInfo.pNext(variableDescriptorCountAllocateInfo);
-            allocInfo.descriptorPool(this.globalDescriptorPoolArrayPool);
-            allocInfo.pSetLayouts(stack.longs(this.descriptorSetLayout,this.descriptorSetLayout));
-
-            Vulkan.checkResult(vkAllocateDescriptorSets(DEVICE, allocInfo, descriptorSets),"Failed Texture Array Resize!");
-
-            allocatedSets.enqueue(this.descriptorSets[0]);
-            allocatedSets.enqueue(this.descriptorSets[1]);
-            this.texturePool+=samplerLimit*2;
+            this.descriptorSets[0]= allocateDescriptorSet(stack, samplerLimit);
+            this.descriptorSets[1]= allocateDescriptorSet(stack, samplerLimit);
 
             Initializer.LOGGER.info("Resized to "+ samplerLimit);
 
@@ -598,13 +573,15 @@ public class DescriptorSetArray {
     }
 
     //todo: Allow Reserving ranges in Descriptor Array, so a approx 2048 range can be reserved.allocated for AF/MSAA mode + to supply Indices to the VertexBuilder/BuildTask
-    public String getDebugInfo()
+
+    //TODO: Texture VRAM Usage
+    public String[] getDebugInfo()
     {
-        return"TextureStats \n\n" +
-                "   Loaded: "+this.initialisedFragSamplers.currentSize()+
-                "\n"+"  Frag: "+this.initialisedFragSamplers.currentLim()+
-                "\n"+"  Allocated: "+this.currentSamplerSize +
-                "\n"+"  PoolRangeSetLimit: "+MAX_POOL_SAMPLERS/MAX_SETS+
-                "\n"+"  TexturePool: "+this.texturePool+"/"+MAX_POOL_SAMPLERS;
+        return new String[]{"-=TextureArrayStats=-",
+                "Loaded:  "+this.initialisedFragSamplers.currentSize(),
+                "Frag:  "+this.initialisedFragSamplers.currentLim(),
+                "Allocated:  "+this.currentSamplerSize ,
+                "PoolRangeSetLimit:  "+MAX_POOL_SAMPLERS/MAX_SETS,
+                "TexturePool:  "+this.texturePool+"/"+MAX_POOL_SAMPLERS};
     }
 }

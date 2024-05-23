@@ -328,7 +328,7 @@ public class WorldRenderer {
             Renderer.getDrawer().bindIndexBuffer(commandBuffer, Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer());
 
 
-            Renderer.getDescriptorSetArray().pushDescriptorSet(currentFrame, commandBuffer);
+//            Renderer.getDescriptorSetArray().pushDescriptorSet(currentFrame, commandBuffer);
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
