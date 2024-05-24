@@ -46,7 +46,7 @@ public class BufferUploaderM {
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
         VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
-        boolean b = renderer.bindGraphicsPipeline(pipeline);
+        renderer.bindGraphicsPipeline(pipeline);
 
         int textureID = pipeline.updateImageState();
        if(textureID!=-1) Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount(), textureID);

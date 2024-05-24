@@ -20,7 +20,6 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
-import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -73,7 +72,6 @@ public abstract class Pipeline {
 
     protected List<UBO> buffers;
     protected List<ImageDescriptor> imageDescriptors;
-    protected PushConstants pushConstants;
 
 
     public Pipeline(String name) {
@@ -92,7 +90,6 @@ public abstract class Pipeline {
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
             pipelineLayoutInfo.pSetLayouts(stack.longs(x));
 
-            //TODO; PushConstants temp disabed to work aroudn compatiblity isues with DescriptorSet layouts
 
           {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(2, stack);
@@ -121,8 +118,6 @@ public abstract class Pipeline {
 
     public abstract void cleanUp();
 
-    public PushConstants getPushConstants() { return this.pushConstants; }
-
     public static long getLayout() { return pipelineLayout; }
 
     static long createShaderModule(ByteBuffer spirvCode) {
@@ -148,41 +143,37 @@ public abstract class Pipeline {
 
         public int updateImageState() {
 
+            //TODO: move Texture registration to VTextureSelector to allow Async texture updates + reduced CPu overhead during rendering
+            //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
             int currentTexture = 0;
             boolean isNewTexture = false;
-            for(ImageDescriptor state : imageDescriptors)
-            {
-                //TODO; Disseminate between Fragment and VERTEX Stage binding/reserve slots
-//                 VTextureSelector.getBoundId(state.imageIdx);
 
-//                 if(state.getStages()!=VK_SHADER_STAGE_VERTEX_BIT) VTextureSelector.assertImageState(state.imageIdx);
+            for (ImageDescriptor state : imageDescriptors) {
 
+                //get the currently atcive TextureIDs
                 final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
-              if(shaderTexture != 0)
-              {
-                  //TODO: move Texture registration to VTextureSelector to allow Async texture updates + slightly reduced CPu overhead
-//                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
+                if(shaderTexture != 0) {
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
+
+                  //Add texture to the DescriptorSet if its new.unique
                   descriptorSetArray.registerTexture(state.imageIdx, shaderTexture);
+
+                  //Convert TextureID to Sampler Index
+
                   currentTexture = descriptorSetArray.getTexture(state.imageIdx, shaderTexture);
                   isNewTexture = !GlTexture.hasImageResource(shaderTexture);
-              }
+                }
 
 
             }
+            //Skip rendering if the texture is new/updated (Can be fixed with Update after bind)
             return isNewTexture ? -1 : currentTexture;
 
         }
 
 
-        public void pushUniforms(UniformBuffer uniformBuffers, int frame, boolean shouldUpdate) {
-
-            //TODO: Use Hashtable for uniforms to reuse old values and reduce Uniform memory Usage: (Assuming Mojang Popsback Matrix stack to prior state and reused old Matrices)
-            // + PreComputed/dynamic uniform offset table: Automatically optimise/+remove redundant hashes+contents, and use Offsets w/ matching hashed instead of using linear bump allocation
-            // i..e interleaved Uniforms may also be possible via exploiting aliasing + recyling the overlapping offsets of prior uniforms
-            //
-            // TODO: e.g. fine the hash of the TOPMOSt uniform, them if the hash matches, overwrite the prior data w. the new non-aligned uniforms
+        public void pushUniforms(UniformBuffer uniformBuffers) {
 
 
             int msk = 0;
@@ -190,45 +181,12 @@ public abstract class Pipeline {
                 msk |= UniformState.valueOf(a.getName()).updateBank(uniformBuffers);
             }
 
-
-//                MemoryUtil.memCopy(UniformState.ModelViewMat.getMappedBufferPtr().ptr, uniformBuffers.getBasePointer() + 512, 64);
-
-
             Renderer.getDrawer().updateUniformOffset2(msk);
-//            Renderer.getDrawer().updateUniformOffset2((baseOffset/ baseAlignment));
 
 
 
 
         }
-
-    public void pushConstants(VkCommandBuffer commandBuffer) {
-        if (this.pushConstants != null && !this.name.contains("terrain")) {
-            try(MemoryStack stack = stackPush()) {
-            ByteBuffer byteBuffer = stack.malloc(24);
-
-
-
-                for(Uniform uniform : this.pushConstants.getUniforms())
-                {
-                    final UniformState uniformState = UniformState.valueOf(uniform.getName());
-                    if(uniformState.requiresUpdate())
-                    {
-                        MappedBuffer mappedBuffer = uniformState.getMappedBufferPtr();
-
-                        byteBuffer.putFloat(mappedBuffer.getFloat(0));
-                        byteBuffer.putFloat(mappedBuffer.getFloat(4));
-                        byteBuffer.putFloat(mappedBuffer.getFloat(8));
-                        uniformState.resetAndUpdate();
-                    }
-
-                }
-
-                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer.rewind());
-
-            }
-        }
-    }
 
 
     public static class Builder {

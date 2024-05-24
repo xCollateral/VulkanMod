@@ -8,7 +8,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
-
+//TODO; need to replace this with a less rigid system fpr Postprocess uniforms
 public enum UniformState {
     ModelViewMat("mat4",4, 16, 512, 256),
     ProjMat("mat4",4, 16, 0, 0),
@@ -75,10 +75,7 @@ public enum UniformState {
         if(isUniqueHash) {
             this.usedSize = usedSize % maxLimit;
             this.hashedUniformOffsetMap.put(this.newHash, this.usedSize);
-//            if(this.equals(MVP))
-            {
-                MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getBasePointer() + this.usedSize + this.bankOffset, getByteSize());
-            }
+            MemoryUtil.memCopy(this.getMappedBufferPtr().ptr, uniformBuffer.getBasePointer() + this.usedSize + this.bankOffset, getByteSize());
             this.usedSize+= getByteSize();
 
             this.needsUpdate=true;
@@ -93,18 +90,6 @@ public enum UniformState {
         return this.size * Float.BYTES;
     }
 
-    public boolean needsUpdate2(int srcHash)
-    {
-        //hash the Uniform contents, then stroe the current offset
-
-        //TODO: if need uodate then also update uniform offset/index
-        // or perhaps pushing uniforms here instead
-        this.newHash =srcHash;
-
-
-        return this.needsUpdate = this.newHash!=this.currentHash;
-    }
-
     public boolean needsUpdate(int srcHash)
     {
         //hash the Uniform contents, then stroe the current offset
@@ -116,20 +101,12 @@ public enum UniformState {
 
         return this.needsUpdate = !this.hashedUniformOffsetMap.containsKey(srcHash);
     }
-    public void needsUpdateOverride(boolean shouldOverride)
-    {
-        this.needsUpdate=shouldOverride;
-    }
 
     public boolean requiresUpdate() { return this.needsUpdate| this.currentHash!=this.newHash; }
 
     public void resetAndUpdate()
     {
         this.currentHash=newHash;
-        this.needsUpdate=false;
-    }
-    public void resetAndUpdateForced()
-    {
         this.needsUpdate=false;
     }
 

@@ -126,7 +126,7 @@ public class VBO {
             VRenderSystem.setPrimitiveTopologyGL(this.mode.asGLMode);
 
             Renderer renderer = Renderer.getInstance();
-            boolean b = renderer.bindGraphicsPipeline(pipeline);
+            renderer.bindGraphicsPipeline(pipeline);
 
             if(Initializer.CONFIG.renderSky)
             {

@@ -35,7 +35,7 @@ public class GraphicsPipeline extends Pipeline {
         this.buffers = builder.UBOs;
 //        this.manualUBO = builder.manualUBO;
         this.imageDescriptors = builder.imageDescriptors;
-        this.pushConstants = builder.pushConstants;
+
         this.vertexFormat = builder.vertexFormat;
 
 //        if(descriptorSetLayout==0)

@@ -61,55 +61,18 @@ public class DescriptorSetArray {
     private static final int INLINE_UNIFORM_SIZE = uniformStates.size_t();
     private int MissingTexID = -1;
 
-    static
-    {
-/*
-            [21:43:12] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> 4! -> minecraft:missing/0
-            [21:43:31] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/shulker_boxes.png
-            [21:43:37] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/blocks.png
-            [21:43:38] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/armor_trims.png
-            [21:43:39] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/signs.png
-            [21:43:40] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/chest.png
-            [21:43:41] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/banner_patterns.png
-            [21:43:44] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/shield_patterns.png
-            [21:43:44] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/beds.png
-            [21:43:48] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/decorated_pot.png
-            [21:45:16] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> 6! -> minecraft:dynamic/light_map_1
-            [21:45:48] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/particles.png
-            [21:45:55] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/paintings.png
-            [21:45:56] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/mob_effects.png
-            [21:45:56] [Render thread/INFO] (VulkanMod) Registered texture: 0 <-> -1 <-> -1! -> minecraft:textures/atlas/gui.png
-*/
-
-    }
-
     private final IntOpenHashSet newTex = new IntOpenHashSet(32);
     private int currentSamplerSize = SAMPLER_MAX_LIMIT_DEFAULT;
     private int texturePool = 0;
 
-    public void addTexture(int binding, ImageDescriptor vulkanImage, long sampler)
-    {
-        //Smaplers are not exclusively boudn to a [arotucla rimages: can be boud  to any image which allwos for abstration +smaplfictaion of Descriptor Slots/Sets.indicies e.g. e.tc i.e..elemes
-        final int stages = vulkanImage.getStages();
-        switch (stages)
-        {
-//            case VK_SHADER_STAGE_FRAGMENT_BIT -> this.initialisedFragSamplers.addSampler(vulkanImage);
-//            case VK_SHADER_STAGE_VERTEX_BIT -> initialisedVertSamplers.put(binding, vulkanImage);
-        }
-    }
-
     public void registerTexture(int binding, int TextureID)
     {
-        //TODO: maybe make textureID table global, then asign Ids+SampelrIndicies to DescriptorSetsBindinss
 
-
-        //TODO; only register image if it has been loaded
-        // + use ResourceLocation for Identifictaion = texture Management e.g.
-        if(!GlTexture.hasImageResource(TextureID))
-        {
-            Initializer.LOGGER.error("SKipping Image: "+TextureID);
-            return;
-        }
+//        if(!GlTexture.hasImageResource(TextureID))
+//        {
+//            Initializer.LOGGER.error("SKipping Image: "+TextureID);
+//            return;
+//        }
 
 
         boolean needsUpdate = switch (binding) {
@@ -180,7 +143,7 @@ public class DescriptorSetArray {
 
             VkDescriptorSetLayoutBindingFlagsCreateInfo setLayoutBindingsFlags = VkDescriptorSetLayoutBindingFlagsCreateInfo.calloc(stack)
                     .sType$Default()
-                    .bindingCount(4)
+                    .bindingCount(MAX_SETS)
                     .pBindingFlags(bindingFlags);
 
 
@@ -231,18 +194,14 @@ public class DescriptorSetArray {
     public long createGlobalDescriptorPool()
     {
         try(MemoryStack stack = stackPush()) {
-//            int size = DescriptorTableHeap.size();
-            //TODO: Separate descriptorSet for each type: allows for the ability to selectively update+bind DescriptorSets
             VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(3, stack);
 
 
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
-//                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.descriptorCount(MAX_SETS);
 
                 VkDescriptorPoolSize uniformBufferPoolSize2 = poolSizes.get(1);
-//                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize2.type(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
                 uniformBufferPoolSize2.descriptorCount(INLINE_UNIFORM_SIZE*MAX_SETS); //Byte Count/Size For Inline Uniform block
 
@@ -322,18 +281,13 @@ public class DescriptorSetArray {
                 final int capacity = this.initialisedVertSamplers.currentSize() + this.initialisedFragSamplers.currentSize() + NUM_UBOs + NUM_INLINE_UBOs;
                 VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(capacity, stack);
 
-                int x = 0;
-
-
-                //TODO; validate Descriptor Array for Imvalid ImagViews
-                // i.e. draw without Update, + Null Immutable ImageViews e.g.
 
                 //TODO + Partial Selective Sampler Updates:
                 // only updating newly added/changed Image Samplers
                 // instead of thw whole Array each time
                 // In order to reduce exponential CPU overhead w/ progressively larger Texture Arrays e.g.
 
-                updateUBOs(uniformId, stack, x, descriptorWrites, currentSet);
+                updateUBOs(uniformId, stack, 0, descriptorWrites, currentSet);
                 updateInlineUniformBlocks(stack, descriptorWrites, currentSet, uniformStates);
 
 
@@ -351,9 +305,6 @@ public class DescriptorSetArray {
             //            final LongBuffer descriptorSets = Renderer.getDescriptorSetArray().getDescriptorSets();
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.getLayout(),
                     0, stack.longs(descriptorSets[frame]), null);
-
-//            vkCmdPushConstants(commandBuffer, Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, UniformState.Light0_Direction.buffer());
-//            vkCmdPushConstants(commandBuffer, Pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 16, UniformState.Light1_Direction.buffer());
 
             //Reset Frag PushConstant range to default state
             //Set shaderColor to White first (Fixes Mojang splash visibility)
@@ -465,7 +416,10 @@ public class DescriptorSetArray {
         }
     }
 
-    //TODO: use this to handle Postprocess renderPasses + if UBOs/othwr Bidnling slots s
+    //TODO:
+    // Designed to mimic PushConstants by pushing a new stack, but for Descriptor sets instead
+    // A new DescriptorSet is allocated, allowing capacity to be expanded like PushConstants
+    // Intended to handle Postprocess renderPasses + if UBO slots exceed capacity
     public void pushDescriptorSet(int frame, VkCommandBuffer commandBuffer)
     {
 
@@ -506,7 +460,7 @@ public class DescriptorSetArray {
             fragSmplrCopy.sType$Default();
             fragSmplrCopy.srcSet(descriptorSet);
             fragSmplrCopy.srcBinding(FRAG_SAMPLER_ID);
-            fragSmplrCopy.dstBinding(FRAG_SAMPLER_ID);
+            fragSmplrCopy.dstBinding(FRAG_SAMPLER_ID); //Make this store Framebuffers instead when using PostProcess passes
             fragSmplrCopy.dstSet(allocateDescriptorSet);
             fragSmplrCopy.descriptorCount(currentSamplerSize);
 
@@ -543,10 +497,8 @@ public class DescriptorSetArray {
 
     }
 
-    //TODO: Peristent Tetxure: i.e. skip GUi tetxiures beign stored peristently withint the DescriptorArray
-    // Fix ImageView free during DescripotorSet usage
-    // VRAM Tetxure Usage
 
+    //TODO: Maybe add VRAM Tetxure Usage
 
     public void removeImage(int id) {
         if(this.initialisedFragSamplers.removeTexture(id))
@@ -574,28 +526,19 @@ public class DescriptorSetArray {
         }
     }
 
-
-
-    public boolean needsUpdate(int frame)
-    {
-        return !this.isUpdated[frame];
-    }
-
-    public boolean isTexUnInitialised(int textureID)
-    {
-        return this.newTex.contains(textureID);
-    }
-
-    //todo: Allow Reserving ranges in Descriptor Array, so a approx 2048 range can be reserved.allocated for AF/MSAA mode + to supply Indices to the VertexBuilder/BuildTask
+    //todo: MSAA. Anisotropic Filtering:
+    // Allow Reserving ranges in Descriptor Array, to store Unsitched Textures for AF/MSAA
+    // e.g. Block atlas needs a 2048 range to be reserved when using AF/MSAA mode
+    // + Sampler Indices need to be provided to the Vertex Buffer UVs when
 
     //TODO: Texture VRAM Usage
     public String[] getDebugInfo()
     {
         return new String[]{"-=TextureArrayStats=-",
-                "Loaded:  "+this.initialisedFragSamplers.currentSize(),
-                "Frag:  "+this.initialisedFragSamplers.currentLim(),
-                "Allocated:  "+this.currentSamplerSize ,
-                "PoolRangeSetLimit:  "+MAX_POOL_SAMPLERS/MAX_SETS,
+                "Loaded     :  "+this.initialisedFragSamplers.currentSize(),
+                "Frag       :  "+this.initialisedFragSamplers.currentLim(),
+                "Allocated  :  "+this.currentSamplerSize ,
+                "SetLimit   :  "+MAX_POOL_SAMPLERS/MAX_SETS,
                 "TexturePool:  "+this.texturePool+"/"+MAX_POOL_SAMPLERS};
     }
 }

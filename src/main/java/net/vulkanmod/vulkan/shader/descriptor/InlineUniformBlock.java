@@ -8,36 +8,24 @@ import java.util.Arrays;
 public class InlineUniformBlock {
     private final int binding;
     private final UniformState[] uniformState;
-//    private final int[] staticUniformOffsets;
-
     private final int size_t;
-    //Order of varGS dicated staticInlineUniformOffsets
+    //Order of varargs dictates the offset of each Constant Uniform
     public InlineUniformBlock(int binding, UniformState... uniformState) {
 
+        //todo: add missing Max Uniform Block size check
 
         this.binding = binding;
         this.uniformState = uniformState;
 
         this.size_t = Arrays.stream(uniformState).mapToInt(UniformState::getByteSize).sum();
 
-
-//        staticUniformOffsets = new Int2ObjectOpenHashMap<>(uniformState.length);
-//        int offset = 0;
-//        for(var a : uniformState)
-//        {
-//            staticUniformOffsets.put(offset, a);
-//            offset+=a.getByteSize();
-//        }
+        if(size_t>256) throw new RuntimeException("Uniform block too large: "+size_t);
 
     }
 
     public int binding() {
         return binding;
     }
-
-//    public Int2ObjectOpenHashMap<UniformState> getStaticUniformOffsets() {
-//        return staticUniformOffsets;
-//    }
 
     public UniformState[] uniformState() {
         return uniformState;

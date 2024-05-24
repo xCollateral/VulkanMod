@@ -323,7 +323,7 @@ public class WorldRenderer {
             VRenderSystem.depthMask(!isTranslucent); ////Disable Depth writes if Translucent
             Renderer renderer = Renderer.getInstance();
             GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
-            boolean b = renderer.bindGraphicsPipeline(pipeline);
+            renderer.bindGraphicsPipeline(pipeline);
             final VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
             Renderer.getDrawer().bindIndexBuffer(commandBuffer, Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer());
 

@@ -22,12 +22,10 @@ import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorSetArray;
-import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -498,48 +496,23 @@ public class Renderer {
         this.onResizeCallbacks.add(runnable);
     }
 
-    public boolean bindGraphicsPipeline(GraphicsPipeline pipeline) {
+    public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         final long handle = pipeline.getHandle(currentState);
-        this.checkUBOs(pipeline, boundPipeline!=handle);
+        this.checkUBOs(pipeline);
         if(boundPipeline==handle) {
-            return false;
+            return;
         }
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
         boundPipeline=handle;
-//        if(usedPipelines.contains(pipeline))
-//        {
-////            Initializer.LOGGER.warn("Double Bind: "+pipeline.name);
-//            return true;
-//        }
-
         addUsedPipeline(pipeline);
-        return true;
+        return;
     }
 
-    private void checkUBOs(Pipeline pipeline, boolean shouldUpdate) {
-       pipeline.pushUniforms(drawer.getUniformBuffer(), currentFrame, shouldUpdate);
-    }
-
-    private void checkPushConstantState(Pipeline pipeline, boolean shouldUpdate, VkCommandBuffer commandBuffer) {
-       if(shouldUpdate) pipeline.pushConstants(commandBuffer);
-    }
-
-    public void pushConstants(Pipeline pipeline) {
-        VkCommandBuffer commandBuffer = currentCmdBuffer;
-
-        PushConstants pushConstants = pipeline.getPushConstants();
-
-        try (MemoryStack stack = stackPush()) {
-            ByteBuffer buffer = stack.malloc(pushConstants.getSize());
-            long ptr = MemoryUtil.memAddress0(buffer);
-            pushConstants.update(ptr);
-
-            nvkCmdPushConstants(commandBuffer, Pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
-        }
-
+    private void checkUBOs(Pipeline pipeline) {
+       pipeline.pushUniforms(drawer.getUniformBuffer());
     }
 
     public static void setDepthBias(float units, float factor) {
