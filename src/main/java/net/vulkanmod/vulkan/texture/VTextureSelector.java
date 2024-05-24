@@ -7,7 +7,7 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 
 import java.nio.ByteBuffer;
-
+//TODO: Mode some Tetxure handlign code from DescroptorSetArry to here
 public abstract class VTextureSelector {
     public static final int SIZE = 8/*128*/;
 
@@ -130,7 +130,7 @@ public abstract class VTextureSelector {
     }
 
 
-    //TODO: Hanlde Atas registration: Atlas stitching is Async + other async Texture Loaders e.g.
+    //TODO: handle texture registratoj here instead to imrpove Async Functionality
     public static void registerTexture(int vulkanImage, int bindingID, ResourceLocation resourceLocation)
     {
 
@@ -143,9 +143,13 @@ public abstract class VTextureSelector {
 //        GlTexture.bindIdToImage(bindingID, vulkanImage);
 
 
+        if(vulkanImage !=-1)
+        {
 
-        GlTexture.addImageResource(vulkanImage, resourceLocation);
-//        vulkanImage.readOnlyLayout();
+            Initializer.LOGGER.info("Registered texture: " + vulkanImage + " <-> " + "! -> "+ resourceLocation);
+//            TexIDtoResourceName.put(TextureID, resourceLocation);
+        }
+        //        vulkanImage.readOnlyLayout();
 //
 //        boundTextures[bindingID]=vulkanImage;
 

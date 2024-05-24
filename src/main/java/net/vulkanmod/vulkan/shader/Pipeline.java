@@ -161,7 +161,7 @@ public abstract class Pipeline {
 
               if(shaderTexture != 0)
               {
-                  //TODO: move Texture registration to GlTexture to allow Async texture updates + slightly reduced CPu overhead
+                  //TODO: move Texture registration to VTextureSelector to allow Async texture updates + slightly reduced CPu overhead
 //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
                   final DescriptorSetArray descriptorSetArray = Renderer.getDescriptorSetArray();
                   descriptorSetArray.registerTexture(state.imageIdx, shaderTexture);

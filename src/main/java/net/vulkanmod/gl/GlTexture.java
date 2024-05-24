@@ -1,9 +1,7 @@
 package net.vulkanmod.gl;
 
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.minecraft.resources.ResourceLocation;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.texture.SamplerManager;
@@ -27,6 +25,9 @@ public class GlTexture {
     private static int boundTextureId = 0;
     private static GlTexture boundTexture;
     private static int activeTexture = 0;
+
+    //TODO Separate Framebuffer Images from textures
+    // to handle Pushing Descpritors when handling PostEffect renderPasses
 
     public static void bindIdToImage(int id, VulkanImage vulkanImage) {
         GlTexture texture = map.get(id);
@@ -199,16 +200,7 @@ public class GlTexture {
         return map.containsKey(textureID);
     }
 
-    public static void addImageResource(int TextureID, ResourceLocation resourceLocation)
-    {
-        if(TextureID!=-1)
-        {
-            if(!map.containsKey(TextureID)) throw new RuntimeException();
-            Initializer.LOGGER.info("Registered texture: " + TextureID + " <-> " + "! -> "+resourceLocation);
-//            TexIDtoResourceName.put(TextureID, resourceLocation);
-        }
-    }
-/*    public static void removeImageResource(int TextureID)
+    /*    public static void removeImageResource(int TextureID)
     {
 //        if(TextureID!=-1)
 //        {
