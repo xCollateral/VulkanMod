@@ -1,5 +1,6 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
 vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
     if (vertexDistance <= fogStart) {
         return inColor;
@@ -29,7 +30,8 @@ layout(location = 3) in float vertexDistance;
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec4 color = texture(Sampler0[baseInstance], texCoord0) * vertexColor;
+    const uint uniformBaseInstance = subgroupBroadcastFirst(baseInstance);
+    vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor;
     if (color.a < 0.1) {
         discard;
     }

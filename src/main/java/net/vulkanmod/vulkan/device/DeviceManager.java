@@ -109,7 +109,7 @@ public abstract class DeviceManager {
             physicalDevice = DeviceManager.device.physicalDevice;
             QueueFamilyIndices.findQueueFamilies(physicalDevice);
             // Get device properties
-            deviceProperties = device.properties;
+            deviceProperties = device.properties.properties();
 
             memoryProperties = VkPhysicalDeviceMemoryProperties.malloc();
             vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
@@ -128,7 +128,7 @@ public abstract class DeviceManager {
         for (Device device : suitableDevices) {
             currentDevice = device;
 
-            int deviceType = device.properties.deviceType();
+            int deviceType = device.properties.properties().deviceType();
             if (deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
                 flag = true;
                 break;
