@@ -1,0 +1,9 @@
+{
+  "vulkanmod.options.videoMode.tooltip" : "Funktioniert nur im Vollbildmodus",
+  "vulkanmod.options.windowedFullscreen" : "Fenstervollbild",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip" : "Benutze eine eigene Renderschicht für undurchsichtiges Terrain, um die Leistung zu erhöhen. Es verändert den Aspekt von einigen entfernten Blöcken.",
+  "vulkanmod.options.advCulling.tooltip" : "Benutze einen Filteralgorithmus, welcher die Leistung erhöhen kann, indem dieser die Zahl der gerenderten, nicht sichtbaren Chunks reduziert.",
+  "vulkanmod.options.entityCulling.tooltip" : "Aktiviert Filter für Entities in nicht sichtbaren Regionen.",
+  "vulkanmod.options.indirectDraw.tooltip" : "Reduziert CPU Overhead, erhöht aber GPU Overhead. Die Aktivierung kann bei CPU-limitierten Systemen helfen.",
+  "vulkanmod.options.frameQueue.tooltip" : "Höhere Werte können die Bildrate stabilisieren. Allerdings wird die Eingabeverzögerung erhöht."
+}
