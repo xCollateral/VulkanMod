@@ -526,6 +526,12 @@ public class DescriptorSetArray {
         }
     }
 
+    public boolean isTexUnInitialised(int textureID)
+    {
+        return this.newTex.contains(textureID);
+    }
+
+
     //todo: MSAA. Anisotropic Filtering:
     // Allow Reserving ranges in Descriptor Array, to store Unsitched Textures for AF/MSAA
     // e.g. Block atlas needs a 2048 range to be reserved when using AF/MSAA mode

@@ -162,7 +162,7 @@ public abstract class Pipeline {
                   //Convert TextureID to Sampler Index
 
                   currentTexture = descriptorSetArray.getTexture(state.imageIdx, shaderTexture);
-                  isNewTexture = !GlTexture.hasImageResource(shaderTexture);
+                  isNewTexture = descriptorSetArray.isTexUnInitialised(shaderTexture);
                 }
 
 
