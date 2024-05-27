@@ -1,4 +1,4 @@
-#version 450
+#version 460
 
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
@@ -8,13 +8,14 @@ layout(binding = 0) uniform readonly UniformBufferObject {
    mat4 MVP;
 };
 
-layout(location = 0) out vec4 vertexColor;
-layout(location = 1) out vec2 texCoord0;
-layout(location = 2) out float vertexDistance;
+layout(location = 0) out invariant flat uint baseInstance;
+layout(location = 1) out vec4 vertexColor;
+layout(location = 2) out vec2 texCoord0;
+layout(location = 3) out float vertexDistance;
 
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
-
+    baseInstance = gl_BaseInstance>>16;
 
     vertexColor = Color;
     texCoord0 = UV0;

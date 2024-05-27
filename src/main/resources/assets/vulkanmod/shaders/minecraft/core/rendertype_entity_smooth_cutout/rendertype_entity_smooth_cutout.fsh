@@ -26,7 +26,7 @@ void main() {
     const uint uniformBaseInstance = subgroupBroadcastFirst(baseInstance);
     vec4 color = texture(Sampler0[uniformBaseInstance], texCoord0) * vertexColor;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
-    //color *= lightMapColor;
+    color *= lightMapColor;
     fragColor = color;
 }
 

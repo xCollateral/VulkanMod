@@ -285,15 +285,12 @@ public class DescriptorSetArray {
                 //TODO + Partial Selective Sampler Updates:
                 // only updating newly added/changed Image Samplers
                 // instead of thw whole Array each time
-                // In order to reduce exponential CPU overhead w/ progressively larger Texture Arrays e.g.
 
                 updateUBOs(uniformId, stack, 0, descriptorWrites, currentSet);
                 updateInlineUniformBlocks(stack, descriptorWrites, currentSet, uniformStates);
-
-
-                //                final int[] texArray = {6, MissingTexID, BlocksID, BannerID, MissingTexID};
 //
-                updateImageSamplers(stack, descriptorWrites, currentSet);
+                updateImageSamplers(stack, descriptorWrites, currentSet, this.initialisedVertSamplers);
+                updateImageSamplers(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
 
                 descriptorWrites.rewind();
                 vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
@@ -335,8 +332,8 @@ public class DescriptorSetArray {
     }
 
     private void updateImageSamplers(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet) {
-        isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedVertSamplers);
-        isInvalidImages(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
+        updateImageSamplers(stack, descriptorWrites, currentSet, this.initialisedVertSamplers);
+        updateImageSamplers(stack, descriptorWrites, currentSet, this.initialisedFragSamplers);
     }
 
     private static void updateInlineUniformBlocks(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, InlineUniformBlock uniformStates) {
@@ -381,7 +378,7 @@ public class DescriptorSetArray {
         }
 
 
-    private void isInvalidImages(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, DescriptorAbstractionArray descriptorArray) {
+    private void updateImageSamplers(MemoryStack stack, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet, DescriptorAbstractionArray descriptorArray) {
         //TODO: Need DstArrayIdx, ImageView, or DstArrayIdx, TextureID to enumerate/initialise the DescriptorArray
         if(descriptorArray.currentSize()==0) return;
 
@@ -391,7 +388,8 @@ public class DescriptorSetArray {
             final int texId1 = texId.getIntKey();
             final int samplerIndex = texId.getIntValue();
 
-            final VulkanImage image = getSamplerImage(texId1, samplerIndex);
+            VulkanImage image = GlTexture.getTexture(!GlTexture.hasImage(texId1) ? MissingTexID : texId1).getVulkanImage();
+
             image.readOnlyLayout();
 
 

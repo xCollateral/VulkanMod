@@ -17,9 +17,19 @@ layout(push_constant) readonly uniform  PushConstant{
     layout(offset = 32) vec4 ColorModulator;
 };
 
+layout(binding = 1) uniform InlineUniforms
+{
+    layout(offset=0) float FogStart;
+    layout(offset=4) float FogEnd;
+    layout(offset=16) vec4 FogColor;
+};
+
+
 layout(location = 0) flat in uint baseInstance;
 layout(location = 1) in vec4 vertexColor;
-layout(location = 2) in vec2 texCoord0;
+layout(location = 2) in vec4 overlayColor;
+layout(location = 3) in vec2 texCoord0;
+layout(location = 4) in float vertexDistance;
 
 
 layout(location = 0) out vec4 fragColor;
@@ -30,7 +40,9 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    fragColor = color * vertexColor * ColorModulator;
+    color *= vertexColor * ColorModulator;
+    color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
+    fragColor = color * linear_fog_fade(vertexDistance, FogStart, FogEnd);
 }
 
     /*
