@@ -246,29 +246,11 @@ public class DescriptorSetArray {
 
     public void updateAndBind(int frame, long uniformId, VkCommandBuffer commandBuffer)
     {
-        if(this.MissingTexID == -1)
-        {
-            //TODO: make this handle Vanilla's Async texture Loader
-            // so images can be loaded and register asynchronously without risk of Undefined behaviour or Uninitialised descriptors
-            // + Reserving texture Slots must use resourceLocation as textureIDs are not Determinate due to the Async Texture Loading
-            this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
-
-
-//            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
-            final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-            this.initialisedFragSamplers.registerImmutableTexture(this.MissingTexID, 0);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId(), 1);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId(), 2);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 3);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId(), 4);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId(), 5);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId(), 6);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId(), 7);
-            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(new ResourceLocation("textures/environment/clouds.png")/*LevelRenderer.CLOUDS_LOCATION*/).getId(), 8);
-            this.initialisedVertSamplers.registerImmutableTexture(6, 0);
-            this.initialisedVertSamplers.registerImmutableTexture(VTextureSelector.getBoundId(1), 1);
+        if(this.MissingTexID == -1) {
+            setupHardcodedTextures();
         }
         try(MemoryStack stack = stackPush()) {
+            checkInlineUniformState(frame, stack);
             final boolean b = !this.isUpdated[frame];
             if(b){
                 if(initialisedFragSamplers.checkCapacity())
@@ -295,7 +277,7 @@ public class DescriptorSetArray {
                 descriptorWrites.rewind();
                 vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
                 this.isUpdated[frame] = true;
-                
+
                 this.newTex.clear();
             }
 
@@ -308,6 +290,45 @@ public class DescriptorSetArray {
             vkCmdPushConstants(commandBuffer, Pipeline.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 32, stack.floats(1,1,1,1));
 
         }
+    }
+
+    private void checkInlineUniformState(int frame, MemoryStack stack) {
+        if (UniformState.FogColor.requiresUpdate()) {
+
+            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.calloc(uniformStates.uniformState().length, stack);
+
+
+            updateInlineUniformBlocks(stack, descriptorWrites, this.descriptorSets[frame], uniformStates);
+//
+            descriptorWrites.rewind();
+            vkUpdateDescriptorSets(DEVICE, descriptorWrites, null);
+
+            UniformState.FogColor.setUpdateState(this.isUpdated[0] | this.isUpdated[1]);
+        }
+    }
+
+    private void setupHardcodedTextures() {
+
+            //TODO: make this handle Vanilla's Async texture Loader
+            // so images can be loaded and register asynchronously without risk of Undefined behaviour or Uninitialised descriptors
+            // + Reserving texture Slots must use resourceLocation as textureIDs are not Determinate due to the Async Texture Loading
+            this.MissingTexID = MissingTextureAtlasSprite.getTexture().getId();
+
+
+//            this.initialisedFragSamplers.registerTexture(this.MissingTexID);
+            final TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+            this.initialisedFragSamplers.registerImmutableTexture(this.MissingTexID, 0);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(Sheets.BANNER_SHEET).getId(), 1);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TextureAtlas.LOCATION_PARTICLES).getId(), 2);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).getId(), 3);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(BeaconRenderer.BEAM_LOCATION).getId(), 4);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_SKY_LOCATION).getId(), 5);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(TheEndPortalRenderer.END_PORTAL_LOCATION).getId(), 6);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(ItemRenderer.ENCHANTED_GLINT_ITEM).getId(), 7);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(new ResourceLocation("textures/environment/clouds.png")/*LevelRenderer.CLOUDS_LOCATION*/).getId(), 8);
+            this.initialisedFragSamplers.registerImmutableTexture(textureManager.getTexture(new ResourceLocation("textures/misc/shadow.png")/*EntityRenderDispatcher.SHADOW_RENDER_TYPE*/).getId(), 9);
+            this.initialisedVertSamplers.registerImmutableTexture(6, 0);
+            this.initialisedVertSamplers.registerImmutableTexture(VTextureSelector.getBoundId(1), 1);
     }
 
     private static void updateUBOs(long uniformId, MemoryStack stack, int x, VkWriteDescriptorSet.Buffer descriptorWrites, long currentSet) {
@@ -499,8 +520,8 @@ public class DescriptorSetArray {
     //TODO: Maybe add VRAM Tetxure Usage
 
     public void removeImage(int id) {
-        if(this.initialisedFragSamplers.removeTexture(id))
-            forceDescriptorUpdate();
+        this.initialisedFragSamplers.removeTexture(id);
+
     }
 
     public void forceDescriptorUpdate() {

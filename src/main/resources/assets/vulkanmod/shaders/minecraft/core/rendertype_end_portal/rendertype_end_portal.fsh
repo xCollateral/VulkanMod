@@ -10,7 +10,7 @@ mat2 mat2_rotate_z(float radians) {
 layout(location = 0) in vec4 texProj0;
 
 layout(binding = 1) uniform UniformBufferObject {
-   layout(offset = 24) float GameTime;
+   layout(offset = 12) float GameTime;
 };
 
 layout(binding = 3) uniform sampler2D Sampler0[];

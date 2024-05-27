@@ -126,6 +126,7 @@ public abstract class VRenderSystem {
     //TOOD: Schedule update when actually unique data has been provided
     public static void setShaderFogColor(float f1, float f2, float f3, float f4) {
         ColorUtil.setRGBA_Buffer(UniformState.FogColor.getMappedBufferPtr(), f1, f2, f3, f4);
+        UniformState.FogColor.setUpdateState(true);
     }
 
     public static MappedBuffer getShaderFogColor() {

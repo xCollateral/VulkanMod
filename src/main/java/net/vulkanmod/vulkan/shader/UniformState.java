@@ -152,4 +152,8 @@ public enum UniformState {
             Renderer.getDrawer().updateUniformOffset2((hashedUniformOffsetMap.get(this.newHash)/ baseAlignment));
         }
     }
+
+    public void setUpdateState(boolean b) {
+        this.needsUpdate=b;
+    }
 }
