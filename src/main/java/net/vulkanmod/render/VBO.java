@@ -128,7 +128,7 @@ public class VBO {
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);
 
-            if(Initializer.CONFIG.renderSky)
+            if(Initializer.CONFIG.shouldRenderSky)
             {
                 int textureID = pipeline.updateImageState();
                 if (textureID != -1) {

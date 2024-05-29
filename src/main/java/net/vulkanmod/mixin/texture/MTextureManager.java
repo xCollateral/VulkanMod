@@ -1,7 +1,6 @@
 package net.vulkanmod.mixin.texture;
 
 import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
 import net.minecraft.resources.ResourceLocation;
@@ -18,7 +17,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Set;
 
@@ -32,7 +30,7 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-        if (Renderer.skipRendering | !Initializer.CONFIG.animations)
+        if (Renderer.skipRendering | !Initializer.CONFIG.enableAnimations)
             return;
 
         //Debug D

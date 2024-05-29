@@ -24,10 +24,11 @@ public class Config {
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
     public int device = -1;
-    public boolean animations = false;
-    public boolean renderSky = false;
+    public boolean enableAnimations = true;
+    public boolean shouldRenderSky = true;
 
     public int ambientOcclusion = 1;
+    public boolean renderFog = true;
 
     public void write() {
 

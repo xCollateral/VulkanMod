@@ -220,11 +220,11 @@ public abstract class Options {
                                 },
                                 () -> minecraftOptions.biomeBlendRadius().get()),
                         new SwitchOption(Component.translatable("Animations"),
-                                (value) -> config.animations = value,
-                                () -> config.animations),
+                                (value) -> config.enableAnimations = value,
+                                () -> config.enableAnimations),
                         new SwitchOption(Component.translatable("RenderSky"),
-                                (value) -> config.renderSky = value,
-                                () -> config.renderSky)
+                                (value) -> config.shouldRenderSky = value,
+                                () -> config.shouldRenderSky)
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new SwitchOption(Component.translatable("Entity Shadows"),

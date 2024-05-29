@@ -1,7 +1,6 @@
 #version 460
 
 #include "light.glsl"
-#extension GL_KHR_shader_subgroup_ballot : enable
 
 layout (binding = 0) uniform UniformBufferObject {
     layout(offset = 0) mat4 MVP;
@@ -30,8 +29,8 @@ const float UV_INV = 1.0 / 32768.0;
 const vec3 POSITION_INV = vec3(1.0 / 1024.0);
 
 void main() {
-    const vec3 uniformBaseOffset = subgroupBroadcastFirst(bitfieldExtract(ivec3(gl_BaseInstance) >> ivec3(0, 16, 8), 0, 8)+ChunkOffset);
-    const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, uniformBaseOffset), 1.0);
+    const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
+    const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
     gl_Position = MVP * pos;
 
     vertexDistance = length((ModelViewMat * pos).xyz);
