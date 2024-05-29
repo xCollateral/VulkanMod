@@ -21,6 +21,7 @@ import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.UniformState;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -112,6 +113,7 @@ public class DescriptorSetArray {
 
             bindingFlags.put(VERT_UBO_ID, 0);
 
+            final long textureSampler = SamplerManager.getTextureSampler((byte) 0, (byte) 0);
             bindings.get(FRAG_UBO_ID)
                     .binding(FRAG_UBO_ID)
                     .descriptorCount(INLINE_UNIFORM_SIZE)
@@ -125,7 +127,7 @@ public class DescriptorSetArray {
                     .binding(VERTEX_SAMPLER_ID)
                     .descriptorCount(VERT_SAMPLER_MAX_LIMIT)
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                    .pImmutableSamplers(null)
+                    .pImmutableSamplers(stack.longs(textureSampler, textureSampler, textureSampler, textureSampler))
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
             bindingFlags.put(VERTEX_SAMPLER_ID, VK12.VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
