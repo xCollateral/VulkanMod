@@ -1,5 +1,5 @@
 #version 460
-
+layout (constant_id = 0) const bool USE_FOG = true;
 #include "light.glsl"
 
 layout(location = 0) in vec3 Position;
@@ -32,7 +32,7 @@ layout(location = 5) out float vertexDistance;
 void main() {
     gl_Position = MVP[gl_BaseInstance & 7] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = USE_FOG ? length((ModelViewMat * vec4(Position, 1.0)).xyz) : 0.0f;
     vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
     lightMapColor = texelFetch(Sampler2[0], UV2 / 16, 0);
     overlayColor = texelFetch(Sampler2[1], UV1, 0);

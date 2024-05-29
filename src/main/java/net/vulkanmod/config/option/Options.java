@@ -224,7 +224,13 @@ public abstract class Options {
                                 () -> config.enableAnimations),
                         new SwitchOption(Component.translatable("RenderSky"),
                                 (value) -> config.shouldRenderSky = value,
-                                () -> config.shouldRenderSky)
+                                () -> config.shouldRenderSky),
+                        new SwitchOption(Component.translatable("RenderFog"),
+                                (value) -> {
+                                    config.renderFog = value;
+                                    Renderer.recomp=true;
+                                },
+                                () -> config.renderFog)
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new SwitchOption(Component.translatable("Entity Shadows"),

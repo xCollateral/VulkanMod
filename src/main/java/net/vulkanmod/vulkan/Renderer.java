@@ -75,7 +75,7 @@ public class Renderer {
         return imageIndex;
     }
 
-    private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
+    private final Set<GraphicsPipeline> usedPipelines = new ObjectOpenHashSet<>();
 
     private Drawer drawer;
 
@@ -197,7 +197,15 @@ public class Renderer {
         p.pop();
         p.push("Frame_fence");
 
-        if (swapChainUpdate) {
+        if(recomp)
+        {
+            waitIdle();
+            usedPipelines.forEach(graphicsPipeline -> graphicsPipeline.updateSpecConstant(SPIRVUtils.SpecConstant.USE_FOG));
+            recomp=false;
+        }
+
+
+        if(swapChainUpdate) {
             recreateSwapChain();
             swapChainUpdate = false;
 
@@ -387,11 +395,11 @@ public class Renderer {
         UploadManager.INSTANCE.waitUploads();
     }
 
-    public void addUsedPipeline(Pipeline pipeline) {
+    public void addUsedPipeline(GraphicsPipeline pipeline) {
         usedPipelines.add(pipeline);
     }
 
-    public void removeUsedPipeline(Pipeline pipeline) {
+    public void removeUsedPipeline(GraphicsPipeline pipeline) {
         usedPipelines.remove(pipeline);
     }
 

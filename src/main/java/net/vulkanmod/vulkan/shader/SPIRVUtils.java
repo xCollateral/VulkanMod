@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.shader;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
@@ -62,7 +64,7 @@ public class SPIRVUtils {
         if(DEBUG)
             shaderc_compile_options_set_generate_debug_info(options);
 
-        shaderc_compile_options_set_target_env(options, shaderc_env_version_vulkan_1_2, VK13.VK_API_VERSION_1_3);
+        shaderc_compile_options_set_target_env(options, shaderc_env_version_vulkan_1_3, VK13.VK_API_VERSION_1_3);
         shaderc_compile_options_set_include_callbacks(options, SHADER_INCLUDER, SHADER_RELEASER, pUserData);
 
         includePaths = new ObjectArrayList<>();
@@ -117,6 +119,33 @@ public class SPIRVUtils {
         }
         throw new RuntimeException("unable to read inputStream");
     }
+
+
+
+    public enum SpecConstant
+    {
+        USE_FOG,
+        ALPHA_CUTOUT,
+        MAX_OFFSET_COUNT,
+        COMPUTE_SIZE_Y,
+        COMPUTE_SIZE_X;
+
+        //Ordinals are used to provide the Constant_ID for VkSpecializationMapEntry
+
+
+        //Vulkan spec mandates that VkBool32 must always be aligned to uint32_t, which is 4 Bytes
+        //As a result to simplify alignment, ints are used for all types, regardless if its a bool, float, int or uint
+        public int getValue()
+        {
+            return switch (this){
+                case USE_FOG -> Initializer.CONFIG.renderFog ? 1 : 0;
+                case ALPHA_CUTOUT -> Float.floatToRawIntBits(VRenderSystem.alphaCutout);
+                case MAX_OFFSET_COUNT -> 512;
+                case COMPUTE_SIZE_Y, COMPUTE_SIZE_X -> 32;
+            };
+        }
+    }
+
 
     public enum ShaderKind {
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
