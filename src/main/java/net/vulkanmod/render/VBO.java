@@ -144,12 +144,12 @@ public class VBO {
         }
     }
 
-    public void drawChunkLayer() {
-       /* if (this.indexCount != 0) {
+    public void drawPostEffect() {
+        if (this.indexCount != 0) {
 
             RenderSystem.assertOnRenderThread();
-            Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
-        }*/
+            Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount, 0);
+        }
     }
 
     public void close() {
