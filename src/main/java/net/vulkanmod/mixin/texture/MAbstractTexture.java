@@ -39,12 +39,10 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
      */
     @Overwrite
     public void releaseId() {
-        if(this.vulkanImage != null) {
+        if (this.vulkanImage != null) {
             this.vulkanImage.free();
             this.vulkanImage = null;
         }
-//        else
-//            System.out.println("trying to free null image");
 
         TextureUtil.releaseTextureId(this.id);
     }
@@ -58,11 +56,12 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
      */
     @Overwrite
     public void setFilter(boolean blur, boolean mipmap) {
-        if(blur != this.blur || mipmap != this.mipmap) {
+        if (blur != this.blur || mipmap != this.mipmap) {
             this.blur = blur;
             this.mipmap = mipmap;
 
-            vulkanImage.updateTextureSampler(this.blur, false, this.mipmap);
+            if (this.vulkanImage != null)
+                this.vulkanImage.updateTextureSampler(this.blur, false, this.mipmap);
         }
     }
 
@@ -70,26 +69,27 @@ public abstract class MAbstractTexture implements VAbstractTextureI {
     public void bindTexture() {
         GlTexture.bindTexture(this.id);
 
-        if (vulkanImage != null)
-            VTextureSelector.bindTexture(vulkanImage);
+        // TODO: probably not needed
+        if (this.vulkanImage != null)
+            VTextureSelector.bindTexture(this.vulkanImage);
     }
 
     public VulkanImage getVulkanImage() {
-        if(vulkanImage != null)
-            return vulkanImage;
+        if (this.vulkanImage != null)
+            return this.vulkanImage;
         else {
             final GlTexture glTexture = GlTexture.getTexture(this.id);
-            if(glTexture != null)
+            if (glTexture != null)
                 return glTexture.getVulkanImage();
             else
-                return ((VAbstractTextureI)MissingTextureAtlasSprite.getTexture()).getVulkanImage();
+                return ((VAbstractTextureI) MissingTextureAtlasSprite.getTexture()).getVulkanImage();
         }
     }
 
     public void setVulkanImage(VulkanImage image) {
         this.vulkanImage = image;
 
-        if(this.id == -1)
+        if (this.id == -1)
             this.getId();
         GlTexture.setVulkanImage(this.id, this.vulkanImage);
     }
