@@ -1,22 +1,19 @@
 package net.vulkanmod.render.chunk.build;
 
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.HalfTransparentBlock;
-import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -34,9 +31,6 @@ import org.joml.Vector3f;
 
 public class LiquidRenderer {
     private static final float MAX_FLUID_HEIGHT = 0.8888889F;
-    private final TextureAtlasSprite[] lavaIcons = new TextureAtlasSprite[2];
-    private final TextureAtlasSprite[] waterIcons = new TextureAtlasSprite[2];
-    private TextureAtlasSprite waterOverlay;
 
     private final BlockPos.MutableBlockPos mBlockPos = new BlockPos.MutableBlockPos();
 
@@ -52,14 +46,6 @@ public class LiquidRenderer {
 
     public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
         tessellate(blockState, fluidState, blockPos, vertexConsumer);
-    }
-
-    public void setupSprites() {
-        this.lavaIcons[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.LAVA.defaultBlockState()).getParticleIcon();
-        this.lavaIcons[1] = ModelBakery.LAVA_FLOW.sprite();
-        this.waterIcons[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.WATER.defaultBlockState()).getParticleIcon();
-        this.waterIcons[1] = ModelBakery.WATER_FLOW.sprite();
-        this.waterOverlay = ModelBakery.WATER_OVERLAY.sprite();
     }
 
     private boolean isFaceOccludedByState(BlockGetter blockGetter, float h, Direction direction, BlockPos blockPos, BlockState blockState) {
@@ -102,9 +88,11 @@ public class LiquidRenderer {
     public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
         BlockAndTintGetter region = this.resources.region;
 
-        boolean bl = fluidState.is(FluidTags.LAVA);
-        TextureAtlasSprite[] sprites = bl ? this.lavaIcons : this.waterIcons;
-        int color = bl ? 16777215 : BiomeColors.getAverageWaterColor(region, blockPos);
+        final FluidRenderHandler handler = getFluidRenderHandler(fluidState);
+        int color = handler.getFluidColor(region, blockPos, fluidState);
+
+        TextureAtlasSprite[] sprites = handler.getFluidSprites(region, blockPos, fluidState);
+
         float r = ColorUtil.ARGB.unpackR(color);
         float g = ColorUtil.ARGB.unpackG(color);
         float b = ColorUtil.ARGB.unpackB(color);
@@ -333,20 +321,21 @@ public class LiquidRenderer {
             if (isFaceOccludedByState(region, Math.max(h1, h2), direction, blockPos, adjState))
                 continue;
 
-            BlockPos blockPos2 = blockPos.relative(direction);
-            TextureAtlasSprite sprite2 = sprites[1];
-            if (!bl) {
-                Block block = region.getBlockState(blockPos2).getBlock();
-                if (block instanceof HalfTransparentBlock || block instanceof LeavesBlock) {
-                    sprite2 = this.waterOverlay;
+            TextureAtlasSprite sprite = sprites[1];
+            boolean isOverlay = false;
+
+            if (sprites.length > 2) {
+                if (FluidRenderHandlerRegistry.INSTANCE.isBlockTransparent(adjState.getBlock())) {
+                    sprite = sprites[2];
+                    isOverlay = true;
                 }
             }
 
-            float u0 = sprite2.getU(0.0F);
-            float u1 = sprite2.getU(0.5F);
-            float v0 = sprite2.getV((1.0F - h1) * 0.5F);
-            float v1 = sprite2.getV((1.0F - h2) * 0.5F);
-            float v2 = sprite2.getV(0.5F);
+            float u0 = sprite.getU(0.0F);
+            float u1 = sprite.getU(0.5F);
+            float v0 = sprite.getV((1.0F - h1) * 0.5F);
+            float v1 = sprite.getV((1.0F - h2) * 0.5F);
+            float v2 = sprite.getV(0.5F);
 
             float brightness = region.getShade(direction, true);
 
@@ -360,11 +349,22 @@ public class LiquidRenderer {
 
             putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
 
-            if (sprite2 != this.waterOverlay) {
+            if (!isOverlay) {
                 putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
             }
 
         }
+    }
+
+    private static FluidRenderHandler getFluidRenderHandler(FluidState fluidState) {
+        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getType());
+
+        // Fallback to water in case no handler was found
+        if (handler == null) {
+            handler = FluidRenderHandlerRegistry.INSTANCE.get(Fluids.WATER);
+        }
+
+        return handler;
     }
 
     private float calculateAverageHeight(BlockAndTintGetter blockAndTintGetter, Fluid fluid, float f, float g, float h, BlockPos blockPos) {
