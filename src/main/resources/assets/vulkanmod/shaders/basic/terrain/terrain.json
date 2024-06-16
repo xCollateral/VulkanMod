@@ -33,8 +33,7 @@
         { "type":  "fragment", "binding": 1, "fields": [
             { "name": "FogColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
             { "name": "FogStart", "type": "float", "count": 1, "values": [ 0.0 ] },
-            { "name": "FogEnd", "type": "float", "count": 1, "values": [ 1.0 ] },
-            { "name": "AlphaCutout", "type": "float", "count": 1, "values": [ 1.0 ] }
+            { "name": "FogEnd", "type": "float", "count": 1, "values": [ 1.0 ] }
         ] }
     ],
     "PushConstants": [
