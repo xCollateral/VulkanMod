@@ -28,26 +28,25 @@ public class BufferUploaderM {
     @Overwrite
     public static void drawWithShader(BufferBuilder.RenderedBuffer renderedBuffer) {
         RenderSystem.assertOnRenderThread();
-        renderedBuffer.release();
 
         BufferBuilder.DrawState parameters = renderedBuffer.drawState();
 
         Renderer renderer = Renderer.getInstance();
 
-        if (parameters.vertexCount() <= 0) {
-            return;
+        if (parameters.vertexCount() > 0) {
+            ShaderInstance shaderInstance = RenderSystem.getShader();
+            // Used to update legacy shader uniforms
+            // TODO it would be faster to allocate a buffer from stack and set all values
+            shaderInstance.apply();
+
+            GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
+            VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
+            renderer.bindGraphicsPipeline(pipeline);
+            renderer.uploadAndBindUBOs(pipeline);
+            Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
         }
 
-        ShaderInstance shaderInstance = RenderSystem.getShader();
-        // Used to update legacy shader uniforms
-        // TODO it would be faster to allocate a buffer from stack and set all values
-        shaderInstance.apply();
-
-        GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
-        VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
-        renderer.bindGraphicsPipeline(pipeline);
-        renderer.uploadAndBindUBOs(pipeline);
-        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
+        renderedBuffer.release();
     }
 
     /**
@@ -57,11 +56,11 @@ public class BufferUploaderM {
     public static void draw(BufferBuilder.RenderedBuffer renderedBuffer) {
         BufferBuilder.DrawState parameters = renderedBuffer.drawState();
 
-        if (parameters.vertexCount() <= 0) {
-            return;
+        if (parameters.vertexCount() > 0) {
+            Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
         }
 
-        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
+        renderedBuffer.release();
     }
 
 }
