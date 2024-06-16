@@ -25,7 +25,6 @@
     "compatibility.gl.GL15M",
     "compatibility.gl.GL30M",
 
-    "debug.ChunkBorderRendererM",
     "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",

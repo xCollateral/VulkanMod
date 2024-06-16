@@ -76,7 +76,7 @@ public class TintCache {
         Layer layer = layers[y];
 
         BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
-        int absY = (secY << 4) + y + level.getMinBuildHeight();
+        int absY = (secY << 4) + y;
 
         Biome tB = level.getBiome(blockPos.set(minX, absY, minZ)).value();
         boolean mixed = false;
