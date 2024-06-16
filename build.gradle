@@ -61,6 +61,7 @@ dependencies {
 		include(module)
 	}
 
+	includeModule("fabric-api-base")
 	includeModule("fabric-resource-loader-v0")
 	includeModule("fabric-rendering-fluids-v1")
 }
