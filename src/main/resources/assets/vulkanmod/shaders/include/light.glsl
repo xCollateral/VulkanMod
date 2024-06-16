@@ -25,7 +25,3 @@ vec4 sample_lightmap2(sampler2D lightMap, uint uv) {
     //    const ivec2 lm = ivec2(uv >> 12, (uv >> 4) & 0xF);
     return texelFetch(lightMap, lm, 0);
 }
-
-vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
-    return (vertexDistance <= fogStart) ? inColor : mix(inColor, fogColor, min(smoothstep(fogStart, fogEnd, vertexDistance), 1.0) * fogColor.a);
-}
