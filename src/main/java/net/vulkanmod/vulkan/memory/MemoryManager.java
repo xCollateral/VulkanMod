@@ -158,9 +158,9 @@ public class MemoryManager {
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
-//            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
-            //TODO
-            imageInfo.pQueueFamilyIndices(stack.ints(0,1));
+            imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            //Forcing Queue family to 0: which is always the Graphics Queue
+            imageInfo.pQueueFamilyIndices(stack.ints(0));
 
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
             //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
