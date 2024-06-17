@@ -68,7 +68,7 @@ public class ProfilerOverlay {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
-        for (int i = 0; i < list.size(); ++i) {
+        for(int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
             if (!Strings.isNullOrEmpty(string)) {
                 Objects.requireNonNull(this.font);
@@ -82,7 +82,7 @@ public class ProfilerOverlay {
         GuiBatchRenderer.endBatch();
         RenderSystem.disableBlend();
 
-        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
         for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
             if (!Strings.isNullOrEmpty(string)) {
@@ -95,7 +95,6 @@ public class ProfilerOverlay {
         }
 
         bufferSource.endBatch();
-
     }
 
     private List<String> buildInfo() {

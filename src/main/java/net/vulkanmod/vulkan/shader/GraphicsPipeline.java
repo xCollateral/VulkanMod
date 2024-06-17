@@ -14,6 +14,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.util.List;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -223,12 +224,9 @@ public class GraphicsPipeline extends Pipeline {
 
     private static VkVertexInputAttributeDescription.Buffer getAttributeDescriptions(VertexFormat vertexFormat) {
 
-        ImmutableList<VertexFormatElement> elements = vertexFormat.getElements();
+        List<VertexFormatElement> elements = vertexFormat.getElements();
 
         int size = elements.size();
-        if (elements.stream().anyMatch(vertexFormatElement -> vertexFormatElement.getUsage() == VertexFormatElement.Usage.PADDING)) {
-            size--;
-        }
 
         VkVertexInputAttributeDescription.Buffer attributeDescriptions =
                 VkVertexInputAttributeDescription.calloc(size, stackGet());
@@ -241,9 +239,9 @@ public class GraphicsPipeline extends Pipeline {
             posDescription.location(i);
 
             VertexFormatElement formatElement = elements.get(i);
-            VertexFormatElement.Usage usage = formatElement.getUsage();
-            VertexFormatElement.Type type = formatElement.getType();
-            int elementCount = formatElement.getCount();
+            VertexFormatElement.Usage usage = formatElement.usage();
+            VertexFormatElement.Type type = formatElement.type();
+            int elementCount = formatElement.count();
 
             switch (usage) {
                 case POSITION:
@@ -270,7 +268,6 @@ public class GraphicsPipeline extends Pipeline {
                     posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
                     posDescription.offset(offset);
 
-//                offset += 16;
                     offset += 4;
                     break;
 
@@ -298,10 +295,6 @@ public class GraphicsPipeline extends Pipeline {
                     posDescription.offset(offset);
 
                     offset += 4;
-                    break;
-
-                case PADDING:
-                    //Do nothing as padding format (VK_FORMAT_R8) is not supported everywhere
                     break;
 
                 case GENERIC:

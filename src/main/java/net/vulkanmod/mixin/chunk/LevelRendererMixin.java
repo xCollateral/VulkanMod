@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
@@ -14,6 +15,7 @@ import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
+import net.minecraft.world.TickRateManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -89,11 +91,11 @@ public abstract class LevelRendererMixin {
     }
 
     @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;checkPoseStack(Lcom/mojang/blaze3d/vertex/PoseStack;)V", ordinal = 1, shift = At.Shift.BEFORE))
-    private void renderBlockEntities(float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci) {
+    private void renderBlockEntities(DeltaTracker deltaTracker, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci) {
         Vec3 pos = camera.getPosition();
         PoseStack poseStack = new PoseStack();
 
-        this.worldRenderer.renderBlockEntities(poseStack, pos.x(), pos.y(), pos.z(), this.destructionProgress, f);
+        this.worldRenderer.renderBlockEntities(poseStack, pos.x(), pos.y(), pos.z(), this.destructionProgress, deltaTracker.getGameTimeDeltaPartialTick(false));
     }
 
     /**
@@ -210,13 +212,13 @@ public abstract class LevelRendererMixin {
      * @reason
      */
     @Overwrite
-    private void renderEntity(Entity entity, double d, double e, double f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource) {
+    private void renderEntity(Entity entity, double d, double e, double f, float partialTicks, PoseStack poseStack, MultiBufferSource multiBufferSource) {
         if (!Initializer.CONFIG.entityCulling) {
-            double h = Mth.lerp(g, entity.xOld, entity.getX());
-            double i = Mth.lerp(g, entity.yOld, entity.getY());
-            double j = Mth.lerp(g, entity.zOld, entity.getZ());
-            float k = Mth.lerp(g, entity.yRotO, entity.getYRot());
-            this.entityRenderDispatcher.render(entity, h - d, i - e, j - f, k, g, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, g));
+            double h = Mth.lerp(partialTicks, entity.xOld, entity.getX());
+            double i = Mth.lerp(partialTicks, entity.yOld, entity.getY());
+            double j = Mth.lerp(partialTicks, entity.zOld, entity.getZ());
+            float k = Mth.lerp(partialTicks, entity.yRotO, entity.getYRot());
+            this.entityRenderDispatcher.render(entity, h - d, i - e, j - f, k, partialTicks, poseStack, multiBufferSource, this.entityRenderDispatcher.getPackedLightCoords(entity, partialTicks));
             return;
         }
 
@@ -236,11 +238,12 @@ public abstract class LevelRendererMixin {
             target = "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;endLastBatch()V",
             shift = At.Shift.AFTER, ordinal = 0)
     )
-    private void renderEntities(float partialTicks, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f MV, Matrix4f P, CallbackInfo ci) {
+    private void renderEntities(DeltaTracker deltaTracker, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci) {
         if (!Initializer.CONFIG.entityCulling)
             return;
 
         Vec3 cameraPos = WorldRenderer.getCameraPos();
+        TickRateManager tickRateManager = this.minecraft.level.tickRateManager();
 
         PoseStack poseStack = new PoseStack();
 
@@ -248,6 +251,8 @@ public abstract class LevelRendererMixin {
             for (var pair : list) {
                 Entity entity = pair.first;
                 MultiBufferSource multiBufferSource = pair.second;
+
+                float partialTicks = deltaTracker.getGameTimeDeltaPartialTick(!tickRateManager.isEntityFrozen(entity));
 
                 double h = Mth.lerp(partialTicks, entity.xOld, entity.getX());
                 double i = Mth.lerp(partialTicks, entity.yOld, entity.getY());

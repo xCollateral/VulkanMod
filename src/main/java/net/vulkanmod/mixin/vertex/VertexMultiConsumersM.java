@@ -11,6 +11,7 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 public class VertexMultiConsumersM {
@@ -65,9 +66,11 @@ public class VertexMultiConsumersM {
             vector4f.rotateY(3.1415927F);
             vector4f.rotateX(-1.5707964F);
             vector4f.rotate(direction.getRotation());
+
             float f = -vector4f.x() * this.textureScale;
             float g = -vector4f.y() * this.textureScale;
-            this.delegate.vertex(x, y, z).color(1.0F, 1.0F, 1.0F, 1.0F).uv(f, g).uv2(light).normal(nx, ny, nz).endVertex();
+
+            this.delegate.addVertex(x, y, z).setColor(1.0F, 1.0F, 1.0F, 1.0F).setUv(f, g).setLight(light).setNormal(nx, ny, nz);
 
         }
     }

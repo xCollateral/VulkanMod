@@ -68,6 +68,10 @@ public class ColorUtil {
         public static float unpackB(int color) {
             return unpackColor(color, 8);
         }
+
+        public static int fromArgb32(int i) {
+            return i & 0xFF00FF00 | (i & 0xFF0000) >> 16 | (i & 0xFF) << 16;
+        }
     }
 
     public static int BGRAtoRGBA(int v) {
