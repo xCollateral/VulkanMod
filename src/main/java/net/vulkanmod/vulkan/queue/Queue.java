@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.lwjgl.PointerBuffer;
@@ -90,7 +91,6 @@ public abstract class Queue {
 
             IntBuffer presentSupport = stack.ints(VK_FALSE);
 
-//            for(int i = 0; i < queueFamilies.capacity() || !indices.isComplete();i++) {
             for (int i = 0; i < queueFamilies.capacity(); i++) {
                 int queueFlags = queueFamilies.get(i).queueFlags();
 
@@ -110,7 +110,7 @@ public abstract class Queue {
                     indices.transferFamily = i;
                 }
 
-                if (indices.presentFamily == null) {
+                if (indices.presentFamily == -1) {
                     vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
                     if (presentSupport.get(0) == VK_TRUE) {
@@ -118,10 +118,19 @@ public abstract class Queue {
                     }
                 }
 
-                if (indices.isComplete()) break;
+                if (indices.isComplete())
+                    break;
             }
 
-            if (indices.transferFamily == null) {
+            if (indices.presentFamily == -1) {
+                // Some drivers will not show present support even if some queue supports it
+                // Use compute queue as fallback
+
+                indices.presentFamily = indices.computeFamily;
+                Initializer.LOGGER.warn("Using compute queue as present fallback");
+            }
+
+            if (indices.transferFamily == -1) {
 
                 int fallback = -1;
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
@@ -147,7 +156,7 @@ public abstract class Queue {
                 }
             }
 
-            if (indices.computeFamily == null) {
+            if (indices.computeFamily == -1) {
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
@@ -158,11 +167,11 @@ public abstract class Queue {
                 }
             }
 
-            if (indices.graphicsFamily == null)
+            if (indices.graphicsFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (indices.presentFamily == null)
+            if (indices.presentFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with present support.");
-            if (indices.computeFamily == null)
+            if (indices.computeFamily == VK_QUEUE_FAMILY_IGNORED)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
             return indices;
@@ -170,19 +179,17 @@ public abstract class Queue {
     }
 
     public static class QueueFamilyIndices {
-
-        // We use Integer to use null as the empty value
-        public Integer graphicsFamily;
-        public Integer presentFamily;
-        public Integer transferFamily;
-        public Integer computeFamily;
+        public int graphicsFamily = VK_QUEUE_FAMILY_IGNORED;
+        public int presentFamily = VK_QUEUE_FAMILY_IGNORED;
+        public int transferFamily = VK_QUEUE_FAMILY_IGNORED;
+        public int computeFamily = VK_QUEUE_FAMILY_IGNORED;
 
         public boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null && transferFamily != null && computeFamily != null;
+            return graphicsFamily != -1 && presentFamily != -1 && transferFamily != -1 && computeFamily != -1;
         }
 
         public boolean isSuitable() {
-            return graphicsFamily != null && presentFamily != null;
+            return graphicsFamily != -1 && presentFamily != -1;
         }
 
         public int[] unique() {

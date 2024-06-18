@@ -114,7 +114,7 @@ public class SwapChain extends Framebuffer {
 
             Queue.QueueFamilyIndices indices = Queue.getQueueFamilies();
 
-            if (!indices.graphicsFamily.equals(indices.presentFamily)) {
+            if (indices.graphicsFamily != indices.presentFamily) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
                 createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
             } else {
