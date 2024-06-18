@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "vulkanmod",
-  "version": "0.4.1",
+  "version": "${version}",
 
   "name": "VulkanMod",
   "description": "Bring Vulkan to Minecraft!",
