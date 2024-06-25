@@ -17,5 +17,3 @@ void main() {
     vec4 color = vertexColor * ColorModulator;
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }
-
-

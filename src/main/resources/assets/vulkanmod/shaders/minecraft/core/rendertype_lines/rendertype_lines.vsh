@@ -1,5 +1,7 @@
 #version 450
 
+#include "fog.glsl"
+
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 layout(location = 2) in vec3 Normal;
@@ -42,7 +44,6 @@ void main() {
         gl_Position = vec4((ndc1 - vec3(lineOffset, 0.0)) * linePosStart.w, linePosStart.w);
     }
 
-    vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
+    vertexDistance = fog_distance(Position.xyz, 0);
     vertexColor = Color;
 }
-

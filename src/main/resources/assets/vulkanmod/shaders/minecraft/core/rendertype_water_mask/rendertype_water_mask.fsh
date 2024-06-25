@@ -9,12 +9,3 @@ layout(location = 0) out vec4 fragColor;
 void main() {
     fragColor = ColorModulator;
 }
-
-/*
-#version 150
-
-uniform vec4 ColorModulator;
-
-out vec4 fragColor;
-*/
-
