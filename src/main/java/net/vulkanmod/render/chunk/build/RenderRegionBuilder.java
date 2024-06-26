@@ -10,7 +10,6 @@ import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import org.jetbrains.annotations.Nullable;
 
 public class RenderRegionBuilder {
     private static final DataLayer DEFAULT_SKY_LIGHT_DATA_LAYER = new DataLayer(15);
@@ -24,7 +23,7 @@ public class RenderRegionBuilder {
         var sections = levelChunk.getSections();
         LevelChunkSection section = sections[level.getSectionIndexFromSectionY(secY)];
 
-        if(section == null || section.hasOnlyAir())
+        if (section == null || section.hasOnlyAir())
             return null;
 
         var entityMap = levelChunk.getBlockEntities();
@@ -41,12 +40,12 @@ public class RenderRegionBuilder {
         DataLayer[][] lightData = new DataLayer[RenderRegion.SIZE][2 /* Light types */];
 
         final int minHeightSec = level.getMinBuildHeight() >> 4;
-        for(int x = minSecX; x <= maxSecX; ++x) {
-            for(int z = minSecZ; z <= maxSecZ; ++z) {
+        for (int x = minSecX; x <= maxSecX; ++x) {
+            for (int z = minSecZ; z <= maxSecZ; ++z) {
                 LevelChunk levelChunk1 = getLevelChunk(level, x, z);
                 sections = levelChunk1.getSections();
 
-                for(int y = minSecY; y <= maxSecY; ++y) {
+                for (int y = minSecY; y <= maxSecY; ++y) {
                     int sectionIdx = y - minHeightSec;
                     section = sectionIdx >= 0 && sectionIdx < sections.length ? sections[sectionIdx] : null;
 
@@ -74,19 +73,18 @@ public class RenderRegionBuilder {
         DataLayer blockDataLayer;
         blockDataLayer = level.getLightEngine().getLayerListener(LightLayer.BLOCK).getDataLayerData(pos);
 
-        if(blockDataLayer == null)
+        if (blockDataLayer == null)
             blockDataLayer = DEFAULT_BLOCK_LIGHT_DATA_LAYER;
 
         dataLayers[LightLayer.BLOCK.ordinal()] = blockDataLayer;
 
         DataLayer skyDataLayer;
-        if(level.dimensionType().hasSkyLight()) {
+        if (level.dimensionType().hasSkyLight()) {
             skyDataLayer = level.getLightEngine().getLayerListener(LightLayer.SKY).getDataLayerData(pos);
 
-            if(skyDataLayer == null)
+            if (skyDataLayer == null)
                 skyDataLayer = DEFAULT_SKY_LIGHT_DATA_LAYER;
-        }
-        else
+        } else
             skyDataLayer = null;
 
         dataLayers[LightLayer.SKY.ordinal()] = skyDataLayer;
@@ -98,10 +96,10 @@ public class RenderRegionBuilder {
         long l = ChunkPos.asLong(x, z);
         LevelChunk chunk = this.levelChunkCache.getAndMoveToFirst(l);
 
-        if(chunk == null) {
+        if (chunk == null) {
             chunk = level.getChunk(x, z);
 
-            while(levelChunkCache.size() >= MAX_CACHE_ENTRIES) {
+            while (levelChunkCache.size() >= MAX_CACHE_ENTRIES) {
                 levelChunkCache.removeLast();
             }
 
@@ -109,6 +107,10 @@ public class RenderRegionBuilder {
         }
 
         return chunk;
+    }
+
+    public void remove(int x, int z) {
+        levelChunkCache.remove(ChunkPos.asLong(x, z));
     }
 
     public void clear() {

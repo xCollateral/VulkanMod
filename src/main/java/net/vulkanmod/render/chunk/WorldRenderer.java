@@ -436,6 +436,8 @@ public class WorldRenderer {
 
     public void setSectionDirty(int x, int y, int z, boolean flag) {
         this.sectionGrid.setDirty(x, y, z, flag);
+
+        this.renderRegionCache.remove(x, z);
     }
 
     public SectionGrid getSectionGrid() {
