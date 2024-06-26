@@ -13,13 +13,6 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(MipmapGenerator.class)
 public abstract class MipmapGeneratorM {
     private static final int ALPHA_CUTOFF = 50;
-    private static final int[] INV_POW22 = Util.make(new int[256], (fs) -> {
-        for(int i = 0; i < fs.length; ++i) {
-            //TODO
-            fs[i] = (int)(Math.pow((float)i / 255.0F, 0.45454545454545453) * 255.0f);
-        }
-
-    });
 
     @Shadow
     private static float getPow22(int i) {
@@ -28,8 +21,10 @@ public abstract class MipmapGeneratorM {
 
     /**
      * @author
-     * @reason
+     * @reason Add an average background color to texture that have transparent backgrounds
+     * to fix mipmaps artifacts
      */
+    @SuppressWarnings("UnreachableCode")
     @Overwrite
     public static NativeImage[] generateMipLevels(NativeImage[] nativeImages, int i) {
         if (i + 1 <= nativeImages.length) {
@@ -41,81 +36,55 @@ public abstract class MipmapGeneratorM {
             long srcPtr = ((NativeImageAccessor)(Object)nativeImages2[0]).getPixels();
             boolean bl = hasTransparentPixel(srcPtr, nativeImages2[0].getWidth(), nativeImages2[0].getHeight());
 
-            if(bl) {
+            if (bl) {
                 int avg = calculateAverage(nativeImages2[0]);
                 avg = avg & 0x00FFFFFF; //mask out alpha
 
-                for(int j = 1; j <= i; ++j) {
-                    if (j < nativeImages.length) {
-                        nativeImages2[j] = nativeImages[j];
-                    } else {
-                        NativeImage nativeImage = nativeImages2[j - 1];
-                        NativeImage nativeImage2 = new NativeImage(nativeImage.getWidth() >> 1, nativeImage.getHeight() >> 1, false);
-                        int width = nativeImage2.getWidth();
-                        int height = nativeImage2.getHeight();
+                NativeImage nativeImage = nativeImages2[0];
+                int width = nativeImage.getWidth();
+                int height = nativeImage.getHeight();
 
-                        srcPtr = ((NativeImageAccessor)(Object)nativeImage).getPixels();
-                        long dstPtr = ((NativeImageAccessor)(Object)nativeImage2).getPixels();
-                        final int width2 = width * 2;
+                for (int m = 0; m < width; ++m) {
+                    for (int n = 0; n < height; ++n) {
+                        int p0 = MemoryUtil.memGetInt(srcPtr + (m + ((long) n * width)) * 4L);
 
-                        for(int m = 0; m < width; ++m) {
-                            for(int n = 0; n < height; ++n) {
-                                int p0 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 0) + ((n * 2 + 0) * width2)) * 4L);
-                                int p1 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 1) + ((n * 2 + 0) * width2)) * 4L);
-                                int p2 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 0) + ((n * 2 + 1) * width2)) * 4L);
-                                int p3 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 1) + ((n * 2 + 1) * width2)) * 4L);
+                        boolean b0 = ((p0 >> 24) & 0xFF) >= ALPHA_CUTOFF;
 
-                                boolean b0 = ((p0 >> 24) & 0xFF) >= ALPHA_CUTOFF;
-                                boolean b1 = ((p1 >> 24) & 0xFF) >= ALPHA_CUTOFF;
-                                boolean b2 = ((p2 >> 24) & 0xFF) >= ALPHA_CUTOFF;
-                                boolean b3 = ((p3 >> 24) & 0xFF) >= ALPHA_CUTOFF;
+                        p0 = b0 ? p0 : (avg | p0 & 0xFF000000);
 
-//                                p0 = b0 ? p0 : avg;
-//                                p1 = b1 ? p1 : avg;
-//                                p2 = b2 ? p2 : avg;
-//                                p3 = b3 ? p3 : avg;
-
-                                p0 = b0 ? p0 : avg | p0 & 0xFF000000;
-                                p1 = b1 ? p1 : avg | p1 & 0xFF000000;
-                                p2 = b2 ? p2 : avg | p2 & 0xFF000000;
-                                p3 = b3 ? p3 : avg | p3 & 0xFF000000;
-
-                                int outColor = blend(p0, p1, p2, p3);
-                                MemoryUtil.memPutInt(dstPtr + (m + (long) n * width) * 4L, outColor);
-                            }
-                        }
-
-                        nativeImages2[j] = nativeImage2;
+                        int outColor = p0;
+                        MemoryUtil.memPutInt(srcPtr + (m + (long) n * width) * 4L, outColor);
                     }
                 }
-            } else {
-                for(int j = 1; j <= i; ++j) {
-                    if (j < nativeImages.length) {
-                        nativeImages2[j] = nativeImages[j];
-                    } else {
-                        NativeImage nativeImage = nativeImages2[j - 1];
-                        NativeImage nativeImage2 = new NativeImage(nativeImage.getWidth() >> 1, nativeImage.getHeight() >> 1, false);
-                        int width = nativeImage2.getWidth();
-                        int height = nativeImage2.getHeight();
 
-                        srcPtr = ((NativeImageAccessor)(Object)nativeImage).getPixels();
-                        long dstPtr = ((NativeImageAccessor)(Object)nativeImage2).getPixels();
-                        final int width2 = width * 2;
+            }
 
-                        for(int m = 0; m < width; ++m) {
-                            for(int n = 0; n < height; ++n) {
-                                int p0 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 0) + ((n * 2 + 0) * width2)) * 4L);
-                                int p1 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 1) + ((n * 2 + 0) * width2)) * 4L);
-                                int p2 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 0) + ((n * 2 + 1) * width2)) * 4L);
-                                int p3 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 1) + ((n * 2 + 1) * width2)) * 4L);
+            for(int j = 1; j <= i; ++j) {
+                if (j < nativeImages.length) {
+                    nativeImages2[j] = nativeImages[j];
+                } else {
+                    NativeImage nativeImage = nativeImages2[j - 1];
+                    NativeImage nativeImage2 = new NativeImage(nativeImage.getWidth() >> 1, nativeImage.getHeight() >> 1, false);
+                    int width = nativeImage2.getWidth();
+                    int height = nativeImage2.getHeight();
 
-                                int outColor = blend(p0, p1, p2, p3);
-                                MemoryUtil.memPutInt(dstPtr + (m + (long) n * width) * 4L, outColor);
-                            }
+                    srcPtr = ((NativeImageAccessor)(Object)nativeImage).getPixels();
+                    long dstPtr = ((NativeImageAccessor)(Object)nativeImage2).getPixels();
+                    final int width2 = width * 2;
+
+                    for(int m = 0; m < width; ++m) {
+                        for(int n = 0; n < height; ++n) {
+                            int p0 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 0) + ((n * 2 + 0) * width2)) * 4L);
+                            int p1 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 1) + ((n * 2 + 0) * width2)) * 4L);
+                            int p2 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 0) + ((n * 2 + 1) * width2)) * 4L);
+                            int p3 = MemoryUtil.memGetInt(srcPtr + ((m * 2 + 1) + ((n * 2 + 1) * width2)) * 4L);
+
+                            int outColor = blend(p0, p1, p2, p3);
+                            MemoryUtil.memPutInt(dstPtr + (m + (long) n * width) * 4L, outColor);
                         }
-
-                        nativeImages2[j] = nativeImage2;
                     }
+
+                    nativeImages2[j] = nativeImage2;
                 }
             }
 
@@ -161,6 +130,7 @@ public abstract class MipmapGeneratorM {
         return rgba >> 24;
     }
 
+    @SuppressWarnings("UnreachableCode")
     private static int calculateAverage(NativeImage nativeImage) {
         final int width = nativeImage.getWidth();
         final int height = nativeImage.getHeight();
