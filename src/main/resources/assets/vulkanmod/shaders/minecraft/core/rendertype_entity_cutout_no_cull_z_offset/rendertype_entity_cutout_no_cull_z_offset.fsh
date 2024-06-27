@@ -14,8 +14,7 @@ layout(location = 0) in vec4 vertexColor;
 layout(location = 1) in vec4 lightMapColor;
 layout(location = 2) in vec4 overlayColor;
 layout(location = 3) in vec2 texCoord0;
-layout(location = 4) in vec3 normal;
-layout(location = 5) in float vertexDistance;
+layout(location = 4) in float vertexDistance;
 
 layout(location = 0) out vec4 fragColor;
 
