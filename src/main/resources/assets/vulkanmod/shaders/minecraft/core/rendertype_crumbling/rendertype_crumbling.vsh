@@ -11,12 +11,10 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(location = 0) out vec4 vertexColor;
 layout(location = 1) out vec2 texCoord0;
-layout(location = 3) out vec3 normal;
 
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
 
     vertexColor = Color;
     texCoord0 = UV0;
-    normal = (MVP * vec4(Normal, 0.0)).xyz;
 }

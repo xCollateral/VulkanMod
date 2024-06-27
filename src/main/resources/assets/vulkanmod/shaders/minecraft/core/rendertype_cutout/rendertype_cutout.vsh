@@ -17,8 +17,7 @@ layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out float vertexDistance;
 layout(location = 1) out vec4 vertexColor;
-layout(location = 2) out vec3 normal;
-layout(location = 3) out vec2 texCoord0;
+layout(location = 2) out vec2 texCoord0;
 
 void main() {
     gl_Position = MVP * vec4(Position, 1.0);
@@ -26,5 +25,4 @@ void main() {
     vertexDistance = fog_distance(Position.xyz, 0);
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0;
-    normal = (MVP * vec4(Normal, 0.0)).xyz;
 }
