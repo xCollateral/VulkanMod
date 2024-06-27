@@ -5,6 +5,7 @@ import net.vulkanmod.render.chunk.ChunkArea;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
+import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
@@ -87,16 +88,19 @@ public class DrawBuffers {
         return yOffset1 << 16 | zOffset1 << 8 | xOffset1;
     }
 
+    // TODO: refactor
+    public static final float POS_OFFSET = PipelineManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN ? 4.0f : 0.0f;
+
     private void updateChunkAreaOrigin(VkCommandBuffer commandBuffer, Pipeline pipeline, double camX, double camY, double camZ, MemoryStack stack) {
-        float xOffset = (float) (camX - (this.origin.x));
-        float yOffset = (float) (camY - (this.origin.y));
-        float zOffset = (float) (camZ - (this.origin.z));
+        float xOffset = (float) ((this.origin.x) + POS_OFFSET - camX);
+        float yOffset = (float) ((this.origin.y) + POS_OFFSET - camY);
+        float zOffset = (float) ((this.origin.z) + POS_OFFSET - camZ);
 
         ByteBuffer byteBuffer = stack.malloc(12);
 
-        byteBuffer.putFloat(0, -xOffset);
-        byteBuffer.putFloat(4, -yOffset);
-        byteBuffer.putFloat(8, -zOffset);
+        byteBuffer.putFloat(0, xOffset);
+        byteBuffer.putFloat(4, yOffset);
+        byteBuffer.putFloat(8, zOffset);
 
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }

@@ -434,15 +434,16 @@ public class TerrainBufferBuilder {
     static class CompressedVertexBuilder implements VertexBuilder {
         private static final int VERTEX_SIZE = 20;
 
-        public static final float POS_CONV_MUL = 1024.0f;
-        public static final float POS_OFFSET = 1.0f - (0.00006f * POS_CONV_MUL);
+        public static final float POS_CONV_MUL = 2048.0f;
+        public static final float POS_OFFSET = -4.0f;
+        public static final float POS_OFFSET_CONV = POS_OFFSET * POS_CONV_MUL;
 
         public static final float UV_CONV_MUL = 32768.0f;
 
         public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
-            final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET);
-            final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET);
-            final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET);
+            final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET_CONV);
+            final short sY = (short) (y * POS_CONV_MUL + POS_OFFSET_CONV);
+            final short sZ = (short) (z * POS_CONV_MUL + POS_OFFSET_CONV);
 
             MemoryUtil.memPutShort(ptr + 0, sX);
             MemoryUtil.memPutShort(ptr + 2, sY);
