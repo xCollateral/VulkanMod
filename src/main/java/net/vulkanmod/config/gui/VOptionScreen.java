@@ -22,6 +22,7 @@ import java.util.List;
 
 public class VOptionScreen extends Screen {
     public final static int RED = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, 0.8f);
+    final ResourceLocation ICON = new ResourceLocation("vulkanmod", "vlogo_transparent.png");
 
     private final Screen parent;
 
@@ -155,7 +156,8 @@ public class VOptionScreen extends Screen {
         int rightMargin = 20;
         int buttonHeight = 20;
         int padding = 10;
-        int buttonWidth = minecraft.font.width(CommonComponents.GUI_DONE) + padding;
+        int buttonMargin = 5;
+        int buttonWidth = minecraft.font.width(CommonComponents.GUI_DONE) + 2 * padding;
         int x0 = (this.width - buttonWidth - rightMargin);
         int y0 = this.height - buttonHeight - 7;
 
@@ -166,8 +168,8 @@ public class VOptionScreen extends Screen {
                 button -> this.minecraft.setScreen(this.parent)
         );
 
-        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.apply")) + padding;
-        x0 -= (buttonWidth + padding / 2);
+        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.apply")) + 2 * padding;
+        x0 -= (buttonWidth + buttonMargin);
         this.applyButton = new VButtonWidget(
                 x0, y0,
                 buttonWidth, buttonHeight,
@@ -175,7 +177,7 @@ public class VOptionScreen extends Screen {
                 button -> this.applyOptions()
         );
 
-        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.kofi")) + padding;
+        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.kofi")) + 10;
         x0 = (this.width - buttonWidth - rightMargin);
         this.supportButton = new VButtonWidget(
                 x0, 6,
@@ -184,12 +186,13 @@ public class VOptionScreen extends Screen {
                 button -> Util.getPlatform().openUri("https://ko-fi.com/xcollateral")
         );
 
-        buttons.add(this.applyButton);
-        buttons.add(this.doneButton);
-        buttons.add(this.supportButton);
+        this.buttons.add(this.applyButton);
+        this.buttons.add(this.doneButton);
+        this.buttons.add(this.supportButton);
 
         this.addWidget(this.applyButton);
         this.addWidget(this.doneButton);
+        this.addWidget(this.supportButton);
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -243,10 +246,9 @@ public class VOptionScreen extends Screen {
 
         this.renderBackground(guiGraphics, 0, 0, 0);
 
-        ResourceLocation icon = new ResourceLocation("vulkanmod", "vlogo_transparent.png");
         int size = minecraft.font.lineHeight * 4;
 
-        guiGraphics.blit(icon, 30, 4, 0f, 0f, size, size, size, size);
+        guiGraphics.blit(ICON, 30, 4, 0f, 0f, size, size, size, size);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
         currentList.updateState(mouseX, mouseY);
