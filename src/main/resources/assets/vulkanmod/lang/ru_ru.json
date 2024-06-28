@@ -1,0 +1,43 @@
+{
+  "vulkanmod.options.unknown": "Неизвестно",
+
+  "vulkanmod.options.pages.video": "Экран",
+  "vulkanmod.options.pages.graphics": "Графика",
+  "vulkanmod.options.pages.optimizations": "Оптимизация",
+  "vulkanmod.options.pages.other": "Прочее",
+
+  "vulkanmod.options.buttons.apply": "Применить",
+  "vulkanmod.options.buttons.kofi": "Поддержать разработку",
+
+  "vulkanmod.options.advCulling": "Усечение чанков",
+  "vulkanmod.options.advCulling.aggressive": "Агрессивное",
+  "vulkanmod.options.advCulling.conservative": "Сниженное",
+  "vulkanmod.options.advCulling.normal": "Обычное",
+  "vulkanmod.options.advCulling.tooltip": "Алгоритм, улучшающий производительность за счёт отсечения невидимых субчанков.",
+
+  "vulkanmod.options.ao.subBlock": "Улучшенное",
+  "vulkanmod.options.ao.subBlock.tooltip": "Улучшенное: мягкое освещение на неполных блоках (экспериментально).",
+
+  "vulkanmod.options.deviceSelector": "Выбор устройства",
+  "vulkanmod.options.deviceSelector.auto": "Авто",
+  "vulkanmod.options.deviceSelector.tooltip": "Текущее устройство",
+
+  "vulkanmod.options.entityCulling": "Отбраковка сущностей",
+  "vulkanmod.options.entityCulling.tooltip": "Скрывать сущности в невидимых субчанках.",
+
+  "vulkanmod.options.frameQueue": "Очередь рендеринга",
+  "vulkanmod.options.frameQueue.tooltip": "Более высокие значения могут улучшить стабильность времени кадра, но увеличат задержку ввода.",
+
+  "vulkanmod.options.indirectDraw": "Непрямая отрисовка",
+  "vulkanmod.options.indirectDraw.tooltip": "Уменьшает нагрузку на ЦП, но увеличивает нагрузку на ГП. Может помочь в системах со слабым процессором.",
+
+  "vulkanmod.options.refreshRate": "Частота обновления",
+
+  "vulkanmod.options.uniqueOpaqueLayer": "Уникальный непрозрачный слой",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Использовать отдельный слой рендеринга непрозрачной местности для повышения производительности.",
+
+  "vulkanmod.options.windowedFullscreen": "Безрамочный режим",
+
+  "modmenu.summaryTranslation.vulkanmod": "Вулканизация Minecraft!",
+  "modmenu.descriptionTranslation.vulkanmod": "Замена графического OpenGL-движка Minecraft на более оптимизированный движок, использующий Vulkan."
+}
