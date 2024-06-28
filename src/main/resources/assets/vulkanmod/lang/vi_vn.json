@@ -1,0 +1,40 @@
+{
+  "vulkanmod.options.unknown": "Unknown",
+
+  "vulkanmod.options.pages.video": "Hình ảnh",
+  "vulkanmod.options.pages.graphics": "Đồ họa",
+  "vulkanmod.options.pages.optimizations": "Tối ưu",
+  "vulkanmod.options.pages.other": "Khác",
+
+  "vulkanmod.options.buttons.apply": "Áp dụng",
+  "vulkanmod.options.buttons.kofi": "Ủng hộ tôi",
+
+  "vulkanmod.options.advCulling": "Chọn lọc khối nâng cao",
+  "vulkanmod.options.advCulling.aggressive": "Mạnh",
+  "vulkanmod.options.advCulling.conservative": "Bảo thủ",
+  "vulkanmod.options.advCulling.normal": "Bình thường",
+  "vulkanmod.options.advCulling.tooltip": "Sử dụng thuật toán loại bỏ có thể cải thiện hiệu suất bằng cách giảm số lượng phần đoạn không hiển thị được hiển thị.",
+
+  "vulkanmod.options.ao.subBlock": "ON (Sub-block)",
+  "vulkanmod.options.ao.subBlock.tooltip": "ON (Sub-block): Cho phép chiếu sáng mượt mà cho khối không đầy đủ (đang thử nghiệm).",
+
+  "vulkanmod.options.deviceSelector": "Chọn thiết bị",
+  "vulkanmod.options.deviceSelector.auto": "Tự động",
+  "vulkanmod.options.deviceSelector.tooltip": "Thiết bị hiện tại",
+
+  "vulkanmod.options.entityCulling": "Chọn lọc thực thể",
+  "vulkanmod.options.entityCulling.tooltip": "Cho phép loại bỏ các thực thể trên các phần không hiển thị.",
+
+  "vulkanmod.options.frameQueue": "Hiển thị kích thước hàng đợi",
+  "vulkanmod.options.frameQueue.tooltip": "Giá trị cao hơn có thể giúp ổn định thời gian kết xuất khung hình nhưng sẽ làm tăng độ trễ đầu vào.",
+
+  "vulkanmod.options.indirectDraw": "Draw Gián tiếp",
+  "vulkanmod.options.indirectDraw.tooltip": "Giảm sử dụng CPU nhưng tăng sử dụng GPU. Kích hoạt nó có thể giúp ích trong các máy giới hạn CPU.",
+
+  "vulkanmod.options.refreshRate": "Tốc độ làm mới",
+
+  "vulkanmod.options.uniqueOpaqueLayer": "Lớp mờ đục độc đáo",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Sử dụng lớp kết xuất độc đáo cho địa hình mờ đục để cải thiện hiệu năng.",
+
+  "vulkanmod.options.windowedFullscreen": "Cửa sổ không viền"
+}
