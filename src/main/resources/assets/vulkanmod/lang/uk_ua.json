@@ -1,0 +1,40 @@
+{
+    "vulkanmod.options.unknown": "Невідомо",
+  
+    "vulkanmod.options.pages.video": "Відео",
+    "vulkanmod.options.pages.graphics": "Графіка",
+    "vulkanmod.options.pages.optimizations": "Оптимізації",
+    "vulkanmod.options.pages.other": "Інше",
+  
+    "vulkanmod.options.buttons.apply": "Застосувати",
+    "vulkanmod.options.buttons.kofi": "Підтримати розробника",
+  
+    "vulkanmod.options.advCulling": "Розширений відбір чанків",
+    "vulkanmod.options.advCulling.aggressive": "Агрессивний",
+    "vulkanmod.options.advCulling.conservative": "Консервативний",
+    "vulkanmod.options.advCulling.normal": "Звичайний",
+    "vulkanmod.options.advCulling.tooltip": "Використування алгоритму відбіру який може покращити продуктивність рендерингу за допомогою зменшення числа невидимих чанків.",
+  
+    "vulkanmod.options.ao.subBlock": "Ввімкнено (Суб-блок)",
+    "vulkanmod.options.ao.subBlock.tooltip": "Ввімкнено (Суб-блок): Вмикає гладке освітлення для неповних блоків (Експерементально).",
+  
+    "vulkanmod.options.deviceSelector": "Вибір пристрою",
+    "vulkanmod.options.deviceSelector.auto": "Авто",
+    "vulkanmod.options.deviceSelector.tooltip": "Поточний пристрій",
+  
+    "vulkanmod.options.entityCulling": "Відбір сутностей",
+    "vulkanmod.options.entityCulling.tooltip": "Вмикає відбір для сутностей на невидимих чанках.",
+  
+    "vulkanmod.options.frameQueue": "Розмір черги рендерингу",
+    "vulkanmod.options.frameQueue.tooltip": "Вищі значення можуть покращити стабільність фреймрейту але збільшити затримку вводу.",
+  
+    "vulkanmod.options.indirectDraw": "Непряме відмальовування",
+    "vulkanmod.options.indirectDraw.tooltip": "Зменшує навантаження на процесор, але збільшує навантаження на графічний процесор. Увімкнення може допомогти у системах зі слабшим процесором.",
+  
+    "vulkanmod.options.refreshRate": "Частота оновлення",
+  
+    "vulkanmod.options.uniqueOpaqueLayer": "Унікальний непрозорий шар",
+    "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Використовувати окремий непрозорий шар під час рендерингу непрозорої місцевості для підвищення продуктивності.",
+  
+    "vulkanmod.options.windowedFullscreen": "Безрамковий режим"
+  }
