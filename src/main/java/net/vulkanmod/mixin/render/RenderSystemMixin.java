@@ -163,6 +163,23 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
+    public static void clearColor(float r, float g, float b, float a) {
+        assertOnGameThreadOrInit();
+        VRenderSystem.setClearColor(r, g, b, a);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void clearDepth(double d) {
+        VRenderSystem.clearDepth(d);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
     public static void flipFrame(long window) {
         org.lwjgl.glfw.GLFW.glfwPollEvents();
         RenderSystem.replayQueue();
@@ -347,15 +364,6 @@ public abstract class RenderSystemMixin {
     public static void polygonOffset(float p_69864_, float p_69865_) {
         assertOnGameThread();
         VRenderSystem.polygonOffset(p_69864_, p_69865_);
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite(remap = false)
-    public static void clearColor(float p_69425_, float p_69426_, float p_69427_, float p_69428_) {
-        assertOnGameThreadOrInit();
-        VRenderSystem.clearColor(p_69425_, p_69426_, p_69427_, p_69428_);
     }
 
     /**
