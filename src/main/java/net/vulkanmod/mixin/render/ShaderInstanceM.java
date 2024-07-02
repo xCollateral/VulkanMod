@@ -1,6 +1,5 @@
 package net.vulkanmod.mixin.render;
 
-import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.shaders.Program;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -10,7 +9,6 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
-import net.minecraft.util.GsonHelper;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
@@ -30,11 +28,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -52,7 +47,6 @@ public class ShaderInstanceM implements ShaderMixed {
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform COLOR_MODULATOR;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform LINE_WIDTH;
 
-    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform INVERSE_VIEW_ROTATION_MATRIX;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform GLINT_ALPHA;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform FOG_START;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform FOG_END;
@@ -61,6 +55,10 @@ public class ShaderInstanceM implements ShaderMixed {
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform TEXTURE_MATRIX;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform GAME_TIME;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform SCREEN_SIZE;
+
+    private String vsPath;
+    private String fsName;
+
     private GraphicsPipeline pipeline;
     boolean isLegacy = false;
 
@@ -73,8 +71,8 @@ public class ShaderInstanceM implements ShaderMixed {
     private void create(ResourceProvider resourceProvider, String name, VertexFormat format, CallbackInfo ci) {
 
         try {
-            if(Pipeline.class.getResourceAsStream(String.format("/assets/vulkanmod/shaders/minecraft/core/%s/%s.json", name, name)) == null) {
-                createLegacyShader(resourceProvider, new ResourceLocation("shaders/core/" + name + ".json"), format);
+            if (Pipeline.class.getResourceAsStream(String.format("/assets/vulkanmod/shaders/minecraft/core/%s/%s.json", name, name)) == null) {
+                createLegacyShader(resourceProvider, format);
                 return;
             }
 
@@ -85,15 +83,24 @@ public class ShaderInstanceM implements ShaderMixed {
             this.pipeline = pipelineBuilder.createGraphicsPipeline();
         } catch (Exception e) {
             System.out.printf("Error on shader %s creation\n", name);
+            e.printStackTrace();
             throw e;
         }
-
     }
 
-    @Inject(method = "getOrCreate", at = @At("HEAD"), cancellable = true)
-    private static void loadProgram(ResourceProvider factory, Program.Type type, String name, CallbackInfoReturnable<Program> cir) {
-        cir.setReturnValue(null);
-        cir.cancel();
+    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShaderInstance;getOrCreate(Lnet/minecraft/server/packs/resources/ResourceProvider;Lcom/mojang/blaze3d/shaders/Program$Type;Ljava/lang/String;)Lcom/mojang/blaze3d/shaders/Program;"))
+    private Program loadNames(ResourceProvider resourceProvider, Program.Type type, String name) {
+        if (this.name.contains(String.valueOf(ResourceLocation.NAMESPACE_SEPARATOR))) {
+            ResourceLocation location = ResourceLocation.tryParse(name);
+            String path = location.withPath("shaders/core/%s".formatted(location.getPath())).toString();
+
+            switch (type) {
+                case VERTEX -> this.vsPath = path;
+                case FRAGMENT -> this.fsName = path;
+            }
+        }
+
+        return null;
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/shaders/Uniform;glBindAttribLocation(IILjava/lang/CharSequence;)V"))
@@ -104,7 +111,8 @@ public class ShaderInstanceM implements ShaderMixed {
      */
     @Overwrite
     public void close() {
-        pipeline.cleanUp();
+        if (this.pipeline != null)
+            this.pipeline.cleanUp();
     }
 
     /**
@@ -112,7 +120,7 @@ public class ShaderInstanceM implements ShaderMixed {
      */
     @Overwrite
     public void apply() {
-        if(!this.isLegacy)
+        if (!this.isLegacy)
             return;
 
         if (this.MODEL_VIEW_MATRIX != null) {
@@ -121,14 +129,6 @@ public class ShaderInstanceM implements ShaderMixed {
 
         if (this.PROJECTION_MATRIX != null) {
             this.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
-        }
-
-        if (this.COLOR_MODULATOR != null) {
-            this.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
-        }
-
-        if (this.INVERSE_VIEW_ROTATION_MATRIX != null) {
-            this.INVERSE_VIEW_ROTATION_MATRIX.set(RenderSystem.getInverseViewRotationMatrix());
         }
 
         if (this.COLOR_MODULATOR != null) {
@@ -203,34 +203,26 @@ public class ShaderInstanceM implements ShaderMixed {
 
             MappedBuffer mappedBuffer = MappedBuffer.createFromBuffer(byteBuffer);
             supplier = () -> mappedBuffer;
-            // TODO vec1
 
             vUniform.setSupplier(supplier);
         }
 
     }
 
-    private void createLegacyShader(ResourceProvider resourceProvider, ResourceLocation location, VertexFormat format) {
+    private void createLegacyShader(ResourceProvider resourceProvider, VertexFormat format) {
         try {
-            Reader reader = resourceProvider.openAsReader(location);
-
-            JsonObject jsonObject = GsonHelper.parse(reader);
-
-            String vshName = GsonHelper.getAsString(jsonObject, "vertex");
-            String fshName = GsonHelper.getAsString(jsonObject, "fragment");
-
-            String vertPath = "shaders/core/" + vshName + ".vsh";
-            Resource resource = resourceProvider.getResourceOrThrow(new ResourceLocation(vertPath));
+            String vertPath = this.vsPath + ".vsh";
+            Resource resource = resourceProvider.getResourceOrThrow(ResourceLocation.tryParse(vertPath));
             InputStream inputStream = resource.open();
             String vshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
-            String fragPath = "shaders/core/" + fshName + ".fsh";
-            resource = resourceProvider.getResourceOrThrow(new ResourceLocation(fragPath));
+            String fragPath = this.fsName + ".fsh";
+            resource = resourceProvider.getResourceOrThrow(ResourceLocation.tryParse(fragPath));
             inputStream = resource.open();
             String fshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
             GlslConverter converter = new GlslConverter();
-            Pipeline.Builder builder = new Pipeline.Builder(format, vshName);
+            Pipeline.Builder builder = new Pipeline.Builder(format, this.name);
 
             converter.process(vshSrc, fshSrc);
             UBO ubo = converter.getUBO();
@@ -243,7 +235,8 @@ public class ShaderInstanceM implements ShaderMixed {
             this.isLegacy = true;
 
         } catch (Exception e) {
-            Initializer.LOGGER.error("Error on shader {} conversion/compilation", location.getPath());
+            Initializer.LOGGER.error("Error on shader {} conversion/compilation", this.name);
+            e.printStackTrace();
         }
     }
 }
