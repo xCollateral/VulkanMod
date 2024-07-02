@@ -236,7 +236,7 @@ public class VulkanImage {
     public void updateTextureSampler(boolean blur, boolean clamp, boolean mipmaps) {
         byte flags = blur ? LINEAR_FILTERING_BIT : 0;
         flags |= clamp ? CLAMP_BIT : 0;
-        flags |= mipmaps ? USE_MIPMAPS_BIT : 0;
+        flags |= (byte) (mipmaps ? USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT : 0);
 
         this.updateTextureSampler(flags);
     }
@@ -448,7 +448,7 @@ public class VulkanImage {
             this.mipLevels = (byte) n;
 
             if (n > 1)
-                this.samplerFlags |= USE_MIPMAPS_BIT;
+                this.samplerFlags |= USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT;
 
             return this;
         }

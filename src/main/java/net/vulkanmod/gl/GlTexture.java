@@ -2,8 +2,8 @@ package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
@@ -38,21 +38,21 @@ public class GlTexture {
         boundTextureId = id;
         boundTexture = map.get(id);
 
-        if(id <= 0)
+        if (id <= 0)
             return;
 
-        if(boundTexture == null)
+        if (boundTexture == null)
             throw new NullPointerException("bound texture is null");
 
         VulkanImage vulkanImage = boundTexture.vulkanImage;
-        if(vulkanImage != null)
+        if (vulkanImage != null)
             VTextureSelector.bindTexture(activeTexture, vulkanImage);
     }
 
     public static void glDeleteTextures(int i) {
         GlTexture glTexture = map.remove(i);
         VulkanImage image = glTexture != null ? glTexture.vulkanImage : null;
-        if(image != null)
+        if (image != null)
             MemoryManager.getInstance().addToFreeable(image);
     }
 
@@ -66,45 +66,47 @@ public class GlTexture {
     public static void activeTexture(int i) {
         activeTexture = i - GL30.GL_TEXTURE0;
 
-        if(activeTexture < 0 || activeTexture > VTextureSelector.SIZE - 1)
+        if (activeTexture < 0 || activeTexture > VTextureSelector.SIZE - 1)
             throw new IllegalArgumentException("value: " + activeTexture);
     }
 
     public static void texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, @Nullable ByteBuffer pixels) {
-        if(width == 0 || height == 0)
+        if (width == 0 || height == 0)
             return;
 
         //TODO levels
-        if(level != 0)
-            throw new UnsupportedOperationException();
+        if (level != 0) {
+//            throw new UnsupportedOperationException();
+            return;
+        }
 
         boundTexture.internalFormat = internalFormat;
 
         boundTexture.allocateIfNeeded(width, height, format, type);
         VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage);
 
-        if(pixels != null)
+        if (pixels != null)
             boundTexture.uploadImage(pixels);
     }
 
     public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, long pixels) {
-        if(width == 0 || height == 0)
+        if (width == 0 || height == 0)
             return;
 
         var buffer = GlBuffer.getPixelUnpackBufferBound();
 
-        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, buffer.data);
+        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset, 0, 0, width, buffer.data);
     }
 
     public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
-        if(width == 0 || height == 0)
+        if (width == 0 || height == 0)
             return;
 
-        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset,0, 0, width, pixels);
+        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset, 0, 0, width, pixels);
     }
 
     public static void texParameteri(int target, int pName, int param) {
-        if(target != GL11.GL_TEXTURE_2D)
+        if (target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
 
         switch (pName) {
@@ -125,10 +127,10 @@ public class GlTexture {
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
-        if(target != GL11.GL_TEXTURE_2D)
+        if (target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
 
-        if(boundTexture == null)
+        if (boundTexture == null)
             return -1;
 
         return switch (pName) {
@@ -141,7 +143,7 @@ public class GlTexture {
     }
 
     public static void generateMipmap(int target) {
-        if(target != GL11.GL_TEXTURE_2D)
+        if (target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
 
         boundTexture.generateMipmaps();
@@ -184,7 +186,7 @@ public class GlTexture {
                 vulkanImage.width != width || vulkanImage.height != height ||
                 vkFormat != vulkanImage.format;
 
-        if(needsUpdate) {
+        if (needsUpdate) {
             allocateImage(width, height, vkFormat);
             updateSampler();
 
@@ -193,10 +195,10 @@ public class GlTexture {
     }
 
     void allocateImage(int width, int height, int vkFormat) {
-        if(this.vulkanImage != null)
+        if (this.vulkanImage != null)
             this.vulkanImage.free();
 
-        if(VulkanImage.isDepthFormat(vkFormat))
+        if (VulkanImage.isDepthFormat(vkFormat))
             this.vulkanImage = VulkanImage.createDepthImage(vkFormat,
                     width, height,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -210,13 +212,19 @@ public class GlTexture {
     }
 
     void updateSampler() {
-        if(vulkanImage == null)
+        if (vulkanImage == null)
             return;
 
-        byte samplerFlags = magFilter == GL11.GL_LINEAR ? SamplerManager.LINEAR_FILTERING_BIT : 0;
-        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
-        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
-        samplerFlags |= clamp ? SamplerManager.CLAMP_BIT : 0;
+        byte samplerFlags;
+        samplerFlags = clamp ? SamplerManager.CLAMP_BIT : 0;
+        samplerFlags |= magFilter == GL11.GL_LINEAR ? SamplerManager.LINEAR_FILTERING_BIT : 0;
+
+        samplerFlags |= switch (minFilter) {
+            case GL11.GL_LINEAR_MIPMAP_LINEAR -> SamplerManager.USE_MIPMAPS_BIT | SamplerManager.MIPMAP_LINEAR_FILTERING_BIT;
+            case GL11.GL_NEAREST_MIPMAP_NEAREST -> SamplerManager.USE_MIPMAPS_BIT;
+            default -> 0;
+        };
+
         vulkanImage.updateTextureSampler(maxLod, samplerFlags);
     }
 
@@ -224,7 +232,7 @@ public class GlTexture {
         int width = this.vulkanImage.width;
         int height = this.vulkanImage.height;
 
-        if(internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
+        if (internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
             ByteBuffer RGBA_buffer = GlUtil.RGBtoRGBA_buffer(pixels);
             this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
             MemoryUtil.memFree(RGBA_buffer);
@@ -239,20 +247,20 @@ public class GlTexture {
     }
 
     void setMaxLevel(int l) {
-        if(l < 0)
+        if (l < 0)
             throw new IllegalStateException("max level cannot be < 0.");
 
-        if(maxLevel != l) {
+        if (maxLevel != l) {
             maxLevel = l;
             needsUpdate = true;
         }
     }
 
     void setMaxLod(int l) {
-        if(l < 0)
+        if (l < 0)
             throw new IllegalStateException("max level cannot be < 0.");
 
-        if(maxLod != l) {
+        if (maxLod != l) {
             maxLod = l;
             updateSampler();
         }
@@ -260,8 +268,8 @@ public class GlTexture {
 
     void setMagFilter(int v) {
         switch (v) {
-            case GL11.GL_LINEAR, GL11.GL_NEAREST
-                    -> {}
+            case GL11.GL_LINEAR, GL11.GL_NEAREST -> {
+            }
 
             default -> throw new IllegalArgumentException("illegal mag filter value: " + v);
         }
@@ -274,13 +282,13 @@ public class GlTexture {
         switch (v) {
             case GL11.GL_LINEAR, GL11.GL_NEAREST,
                  GL11.GL_LINEAR_MIPMAP_LINEAR, GL11.GL_NEAREST_MIPMAP_LINEAR,
-                 GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST
-                    -> {}
+                 GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST -> {
+            }
 
             default -> throw new IllegalArgumentException("illegal min filter value: " + v);
         }
 
-        this.magFilter = v;
+        this.minFilter = v;
         updateSampler();
     }
 
