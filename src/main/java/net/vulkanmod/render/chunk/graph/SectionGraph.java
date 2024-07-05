@@ -19,7 +19,7 @@ import net.vulkanmod.render.chunk.build.RenderRegionBuilder;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
-import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.render.profiling.Profiler;
 import org.joml.FrustumIntersection;
 
 import java.util.List;
@@ -53,7 +53,7 @@ public class SectionGraph {
     }
 
     public void update(Camera camera, Frustum frustum, boolean spectator) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
+        Profiler profiler = Profiler.getMainProfiler();
 
         BlockPos blockpos = camera.getBlockPosition();
 

@@ -1,147 +1,246 @@
 package net.vulkanmod.render.profiling;
 
-import it.unimi.dsi.fastutil.objects.Object2FloatMap;
-import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
 
-import java.util.*;
+import java.util.List;
 
 public class Profiler {
-    private static Profiler defaultProfiler = new Profiler("default");
-    private static Profiler currentProfiler;
-    private static Map<String, Profiler> activeProfilers = new HashMap<>();
+    private static final boolean DEBUG = false;
+    private static final boolean FORCE_ACTIVE = false;
+
+    private static final int NANOS_IN_MS = 1000000;
+    private static final float CONVERSION = NANOS_IN_MS;
+    private static final float INV_CONVERSION = 1.0f / CONVERSION;
+    private static final int SAMPLE_COUNT = 200;
+
+    public static boolean ACTIVE = FORCE_ACTIVE;
+
+    private static final Profiler MAIN_PROFILER = new Profiler("Main");
+
+    public static Profiler getMainProfiler() {
+        return MAIN_PROFILER;
+    }
+
+    public static void setActive(boolean b) {
+        if (!FORCE_ACTIVE)
+            ACTIVE = b;
+
+    }
 
     private final String name;
-    private Entries entries =  new Entries();
-    private LinkedList<Entries> entriesStack = new LinkedList<>();
-    private static final float conversion = 1000.0f;
-    private static final float invConversion = 1 / conversion;
-    private long startTime;
-    private long endTime;
-    private boolean hasStarted = false;
 
-    static {
-        currentProfiler = defaultProfiler;
-    }
+    LongArrayList startTimes = new LongArrayList();
+    ObjectArrayList<Node> nodeStack = new ObjectArrayList<>();
+
+    ObjectArrayList<Node> nodes = new ObjectArrayList<>();
+    Object2ReferenceOpenHashMap<String, Node> nodeMap = new Object2ReferenceOpenHashMap<>();
+
+    Node mainNode;
+    Node selectedNode;
+    Node currentNode;
+
+    ProfilerResults profilerResults = new ProfilerResults();
 
     public Profiler(String s) {
         this.name = s;
-    }
-
-    public void start() {
-        if(this.hasStarted) this.round();
-        this.startTime = System.nanoTime();
-        this.hasStarted = true;
+        this.currentNode = this.selectedNode = this.mainNode = new Node(s);
     }
 
     public void push(String s) {
-        //long time = entries.get(entries.size() - 1).getB();
-        float time = convert(System.nanoTime() - startTime);
-        entries.values.add(new Entry(s, time));
+        if (!(ACTIVE))
+            return;
+
+        Node node = nodeMap.get(s);
+
+        if (node == null) {
+            node = new Node(s);
+            nodeMap.put(s, node);
+
+            currentNode.addChild(node);
+        }
+
+        node.setParent(currentNode);
+        node.children.clear();
+
+        if (node.parent == selectedNode)
+            nodes.add(node);
+
+        currentNode = node;
+
+        pushNodeStack(node);
     }
 
-    public void pushMilestone(String s) {
-        //long time = entries.get(entries.size() - 1).getB();
-        float time = convert(System.nanoTime() - startTime);
-        entries.milestones.add(new Entry(s, time));
+    private void pushNodeStack(Node node) {
+        long startTime = System.nanoTime();
+        startTimes.push(startTime);
+        nodeStack.push(node);
+    }
+
+    public void pop() {
+        if (!(ACTIVE))
+            return;
+
+        if (nodeStack.isEmpty()) {
+            if (DEBUG)
+                Initializer.LOGGER.error("Profiler %s: Pop called with no more nodes on the stack".formatted(name));
+
+            return;
+        }
+
+        int i = nodeStack.size() - 1;
+        Node node = nodeStack.remove(i);
+        long startTime = startTimes.removeLong(i);
+        long deltaMs = (System.nanoTime() - startTime);
+
+        node.push(deltaMs);
+
+        currentNode = currentNode.parent;
+    }
+
+    public void start() {
+        if (!(ACTIVE))
+            return;
+
+        if (!nodeStack.isEmpty()) {
+            if (DEBUG)
+                Initializer.LOGGER.error("Profiler %s: Node stack is not empty".formatted(name));
+
+            nodeStack.clear();
+            startTimes.clear();
+        }
+
+        currentNode = mainNode;
+        mainNode.children.clear();
+
+        pushNodeStack(mainNode);
+
+        nodes.clear();
     }
 
     public void end() {
-        Profiler.setCurrentProfiler(defaultProfiler);
-        this.hasStarted = false;
-        entries.values.clear();
-        entries.milestones.clear();
-    }
+        if (!(ACTIVE))
+            return;
 
-    public static Profiler getProfiler(String name) {
-        return activeProfilers.computeIfAbsent(name, Profiler::new);
+        if (DEBUG && currentNode != mainNode) {
+            Initializer.LOGGER.error("Profiler %s: current node is not the main node".formatted(name));
+        }
+
+        this.pop();
     }
 
     public void round() {
-        entries.setDelta();
-        entries.calculateValues();
-
-        if(entriesStack.size() > 100) entriesStack.pollLast();
-        entriesStack.push(entries);
-        entries = new Entries();
-        this.hasStarted = false;
+        this.end();
+        this.start();
     }
 
-    private static float convert(float v) {
-        return v * invConversion;
+    public ProfilerResults getProfilerResults() {
+        profilerResults.update(selectedNode, nodes);
+        return this.profilerResults;
     }
 
-    public static void Start() {
-        currentProfiler.start();
-    }
+    public static class ProfilerResults {
+        Result result;
+        ObjectArrayList<Result> partialResults = new ObjectArrayList<>();
 
-    public static void Push(String s) {
-        currentProfiler.push(s);
-    }
+        public void update(Node mainNode, List<Node> nodes) {
+            mainNode.updateResult();
+            result = mainNode.result;
 
-    public static void End() {
-        currentProfiler.end();
-    }
+            partialResults.clear();
 
-    public static void setCurrentProfiler(Profiler p) {
-        currentProfiler = p;
-    }
-
-    public static void testOwnProfilerTime() {}
-
-    private class Entries {
-        List<Entry> values = new ArrayList<>();
-        List<Entry> milestones = new ArrayList<>();
-        Object2FloatMap<String> valueMap;
-        float deltaTime;
-
-        public void calculateValues() {
-            if(this.values.size() == 0) return;
-
-            this.valueMap = new Object2FloatOpenHashMap<>();
-
-            this.valueMap.put(this.values.get(0).name, this.values.get(0).value);
-
-            for(int i = 1; i < this.values.size(); ++i) {
-                Entry entry = this.values.get(i);
-
-                if(valueMap.containsKey(entry.name)) {
-                    Entry prevEntry = this.values.get(i - 1);
-
-                    float delta = entry.value - prevEntry.value;
-                    this.valueMap.put(entry.name, delta + this.valueMap.getOrDefault(entry.name, 0.0f));
-                } else {
-                    this.valueMap.put(entry.name, entry.value);
-                }
+            for (Node node : nodes) {
+                node.updateResult();
+                partialResults.push(node.result);
             }
         }
 
-        public void setDelta() {
-            long endTime = System.nanoTime();
-            this.deltaTime = convert(endTime - startTime);
+        public Result getResult() {
+            return result;
         }
 
-        public String toString() {
-            String s = "total time: " + this.deltaTime + " | ";
-
-            for(Entry milestone : this.milestones) {
-                s += " " +  milestone.name + ": " + milestone.value;
-            }
-
-            return s;
+        public ObjectArrayList<Result> getPartialResults() {
+            return partialResults;
         }
     }
 
-    private static class Entry {
-        String name;
-        float value;
+    public static class Result {
+        public final String name;
+        public float value;
 
-        public Entry(String name, float value) {
+        public Result(String name) {
             this.name = name;
+        }
+
+        void setValue(float value) {
             this.value = value;
         }
+    }
+
+    public static class Node {
+        final String name;
+        Node parent;
+        List<Node> children = new ObjectArrayList<>();
+
+        long maxDuration;
+        long minDuration;
+
+        LongArrayFIFOQueue values = new LongArrayFIFOQueue(SAMPLE_COUNT);
+
+        long accumulatedDuration;
+
+        Result result;
+
+        Node(String name) {
+            this.name = name;
+
+            this.result = new Result(name);
+            this.reset();
+        }
+
+        void setParent(Node node) {
+            this.parent = node;
+            node.addChild(this);
+        }
+
+        void addChild(Node node) {
+            children.add(node);
+        }
+
+        void push(long duration) {
+            if (duration < minDuration) {
+                minDuration = duration;
+            }
+            if (duration > maxDuration) {
+                maxDuration = duration;
+            }
+
+            if (values.size() >= SAMPLE_COUNT) {
+                accumulatedDuration -= values.dequeueLong();
+            }
+
+            values.enqueue(duration);
+            accumulatedDuration += duration;
+        }
+
+        public void updateResult() {
+            this.result.setValue((float) this.accumulatedDuration / this.values.size() * INV_CONVERSION);
+        }
+
+        void reset() {
+            minDuration = Long.MAX_VALUE;
+            maxDuration = Long.MIN_VALUE;
+
+            accumulatedDuration = 0;
+        }
 
         public String toString() {
-            return this.name + ": " + this.value;
+            return this.name;
         }
+
     }
 }
+

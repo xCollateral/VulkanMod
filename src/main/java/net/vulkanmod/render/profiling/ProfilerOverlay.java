@@ -25,7 +25,7 @@ public class ProfilerOverlay {
     public static ProfilerOverlay INSTANCE;
     public static boolean shouldRender;
 
-    private static List<Profiler2.Result> lastResults;
+    private static Profiler.ProfilerResults lastResults;
     private static long lastPollTime;
     private static float frametime;
 
@@ -40,7 +40,7 @@ public class ProfilerOverlay {
     public static void toggle() {
         shouldRender = !shouldRender;
 
-        Profiler2.setActive(shouldRender);
+        Profiler.setActive(shouldRender);
     }
 
     public static void onKeyPress(int key) {
@@ -67,7 +67,7 @@ public class ProfilerOverlay {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
-        for(int i = 0; i < list.size(); ++i) {
+        for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
             if (!Strings.isNullOrEmpty(string)) {
                 Objects.requireNonNull(this.font);
@@ -82,14 +82,14 @@ public class ProfilerOverlay {
         RenderSystem.disableBlend();
 
         MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        for(int i = 0; i < list.size(); ++i) {
+        for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
             if (!Strings.isNullOrEmpty(string)) {
                 Objects.requireNonNull(this.font);
                 int j = 9;
                 int m = 2 + j * i;
 
-                GuiBatchRenderer.drawString(this.font, bufferSource, poseStack, string, 2.0f, (float)m, 0xE0E0E0);
+                GuiBatchRenderer.drawString(this.font, bufferSource, poseStack, string, 2.0f, (float) m, 0xE0E0E0);
             }
         }
 
@@ -104,56 +104,45 @@ public class ProfilerOverlay {
 
         updateResults();
 
-        if(lastResults == null)
+        if (lastResults == null)
             return list;
 
-        int fps = (int) (1000.0f / frametime);
+        int fps = Math.round(1000.0f / frametime);
 
         list.add(String.format("FPS: %d Frametime: %.3f", fps, frametime));
         list.add("");
 
-        for (int i = 0; i < lastResults.size(); i++) {
-            Profiler2.Result result = lastResults.get(i);
-            list.add(result.toString());
-//            list.add(String.format("[%d] %s", i, result.toString()));
+        var partialResults = lastResults.getPartialResults();
+        for (Profiler.Result result : partialResults) {
+            list.add(String.format("%s: %.3f", result.name, result.value));
         }
 
-        //Section build stats
+        // Section build stats
         list.add("");
         list.add("");
         list.add(String.format("Build time: %.0fms", BuildTimeProfiler.getDeltaTime()));
 
-        if(ChunkTask.BENCH)
+        if (ChunkTask.BENCH)
             list.add(buildStats);
 
         return list;
     }
 
     private void updateResults() {
-        if((System.nanoTime() - lastPollTime) < POLL_PERIOD && lastResults != null)
+        if ((System.nanoTime() - lastPollTime) < POLL_PERIOD && lastResults != null)
             return;
 
-        List<Profiler2.Result> results = Profiler2.getMainProfiler().getResults();
+        Profiler.ProfilerResults results = Profiler.getMainProfiler().getProfilerResults();
 
-        if(results == null)
+        if (results == null)
             return;
 
-        frametime = results.get(0).getValue();
+        frametime = results.getResult().value;
         lastResults = results;
-
-//        if(node >= 0) {
-//            lastResults = Profiler2.getMainProfiler().getResults(node);
-//            if(lastResults == null) {
-//                lastResults = results;
-//                node = -1;
-//            }
-//        }
-//        else
-//            lastResults = results;
 
         lastPollTime = System.nanoTime();
 
-        if(ChunkTask.BENCH)
+        if (ChunkTask.BENCH)
             buildStats = getBuildStats();
     }
 
@@ -161,7 +150,7 @@ public class ProfilerOverlay {
         var resourcesArray = WorldRenderer.getInstance().getTaskDispatcher().getResourcesArray();
 
         int totalTime = 0, buildCount = 0;
-        for(BuilderResources resources1 : resourcesArray) {
+        for (BuilderResources resources1 : resourcesArray) {
             totalTime += resources1.getTotalBuildTime();
             buildCount += resources1.getBuildCount();
         }
