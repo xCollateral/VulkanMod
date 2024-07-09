@@ -1,0 +1,40 @@
+{
+  "vulkanmod.options.unknown": "Bilinmiyor",
+
+  "vulkanmod.options.pages.video": "Video",
+  "vulkanmod.options.pages.graphics": "Grafik",
+  "vulkanmod.options.pages.optimizations": "Optimazyonlar",
+  "vulkanmod.options.pages.other": "Diğerleri",
+
+  "vulkanmod.options.buttons.apply": "Uygula",
+  "vulkanmod.options.buttons.kofi": "Destekle beni",
+
+  "vulkanmod.options.advCulling": "Gelişmiş Yığın İtlafı",
+  "vulkanmod.options.advCulling.aggressive": "Agresif",
+  "vulkanmod.options.advCulling.conservative": "Tutarlı",
+  "vulkanmod.options.advCulling.normal": "Normal",
+  "vulkanmod.options.advCulling.tooltip": "Oluşturulan görünür olmayan yığın bölümlerinin sayısını azaltarak performansı artırabilecek bir ayıklama algoritması kullanın.",
+
+  "vulkanmod.options.ao.subBlock": "AÇIK (Alt blok)",
+  "vulkanmod.options.ao.subBlock.tooltip": "AÇIK (Alt blok): Tam blok olmayanlar için yumuşak aydınlatmayı etkinleştirir (deneysel).",
+
+  "vulkanmod.options.deviceSelector": "Aygıt seçici",
+  "vulkanmod.options.deviceSelector.auto": "Otomatik",
+  "vulkanmod.options.deviceSelector.tooltip": "Şüanki aygıt",
+
+  "vulkanmod.options.entityCulling": "Varlık İtlafı",
+  "vulkanmod.options.entityCulling.tooltip": "Görünmeyen bölümlerdeki varlıklar için ayıklamayı etkinleştirir.",
+
+  "vulkanmod.options.frameQueue": "İşleme kuyruğu boyutu",
+  "vulkanmod.options.frameQueue.tooltip": "Daha yüksek değerler kare süresini dengelemeye yardımcı olabilir ancak giriş gecikmesini artıracaktır.",
+
+  "vulkanmod.options.indirectDraw": "Dolaylı Çizim",
+  "vulkanmod.options.indirectDraw.tooltip": "CPU ek yükünü azaltır ancak GPU ek yükünü artırır. Etkinleştirmek CPU sınırlı sistemlerde yardımcı olabilir.",
+
+  "vulkanmod.options.refreshRate": "Yenileme Hızı",
+
+  "vulkanmod.options.uniqueOpaqueLayer": "Benzersiz opak katman",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Performansı artırmak için opak arazi için benzersiz bir işleme katmanı kullanın.",
+
+  "vulkanmod.options.windowedFullscreen": "Pencereli Tam Ekran"
+}
