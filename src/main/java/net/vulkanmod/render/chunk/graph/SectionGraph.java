@@ -11,12 +11,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
-import net.vulkanmod.render.chunk.RenderSection;
-import net.vulkanmod.render.chunk.SectionGrid;
-import net.vulkanmod.render.chunk.VFrustum;
-import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.chunk.*;
 import net.vulkanmod.render.chunk.build.RenderRegionBuilder;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
+import net.vulkanmod.render.chunk.frustum.VFrustum;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.profiling.Profiler;
@@ -26,9 +24,10 @@ import java.util.List;
 
 public class SectionGraph {
     Minecraft minecraft;
-    private Level level;
+    private final Level level;
 
-    private SectionGrid sectionGrid;
+    private final SectionGrid sectionGrid;
+    private final ChunkAreaManager chunkAreaManager;
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>();
     private AreaSetQueue chunkAreaQueue;
@@ -45,6 +44,7 @@ public class SectionGraph {
     public SectionGraph(Level level, SectionGrid sectionGrid, TaskDispatcher taskDispatcher) {
         this.level = level;
         this.sectionGrid = sectionGrid;
+        this.chunkAreaManager = sectionGrid.getChunkAreaManager();
         this.taskDispatcher = taskDispatcher;
 
         this.chunkAreaQueue = new AreaSetQueue(sectionGrid.getChunkAreaManager().size);
@@ -201,9 +201,8 @@ public class SectionGraph {
         if (frustumRes > FrustumIntersection.INTERSECT) {
             return true;
         } else if (frustumRes == FrustumIntersection.INTERSECT) {
-            if (!frustum.testFrustum(renderSection.xOffset, renderSection.yOffset, renderSection.zOffset,
-                    renderSection.xOffset + 16, renderSection.yOffset + 16, renderSection.zOffset + 16))
-                return true;
+            return !frustum.testFrustum(renderSection.xOffset, renderSection.yOffset, renderSection.zOffset,
+                    renderSection.xOffset + 16, renderSection.yOffset + 16, renderSection.zOffset + 16);
         }
         return false;
     }
@@ -244,7 +243,8 @@ public class SectionGraph {
         while (this.sectionQueue.hasNext()) {
             RenderSection renderSection = this.sectionQueue.poll();
 
-            if (notInFrustum(renderSection)) continue;
+            if (notInFrustum(renderSection))
+                continue;
 
             if (!renderSection.isCompletelyEmpty()) {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);

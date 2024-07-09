@@ -1,4 +1,4 @@
-package net.vulkanmod.render.chunk;
+package net.vulkanmod.render.chunk.frustum;
 
 import net.minecraft.world.phys.AABB;
 import org.joml.FrustumIntersection;

@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.vulkanmod.render.chunk.frustum.VFrustum;
 import net.vulkanmod.render.chunk.graph.GraphDirections;
 import net.vulkanmod.render.chunk.util.CircularIntList;
 import org.jetbrains.annotations.Nullable;
