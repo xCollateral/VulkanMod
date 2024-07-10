@@ -387,7 +387,7 @@ public class WorldRenderer {
 
         MultiBufferSource bufferSource = this.renderBuffers.bufferSource();
 
-        for (RenderSection renderSection : this.sectionGraph.getSectionQueue()) {
+        for (RenderSection renderSection : this.sectionGraph.getBlockEntitiesSections()) {
             List<BlockEntity> list = renderSection.getCompiledSection().getBlockEntities();
             if (!list.isEmpty()) {
                 for (BlockEntity blockEntity : list) {

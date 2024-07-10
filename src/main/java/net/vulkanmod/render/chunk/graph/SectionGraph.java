@@ -33,7 +33,8 @@ public class SectionGraph {
     private AreaSetQueue chunkAreaQueue;
     private short lastFrame = 0;
 
-    private ResettableQueue<RenderSection> rebuildQueue = new ResettableQueue<>();
+    private final ResettableQueue<RenderSection> blockEntitiesSections = new ResettableQueue<>();
+    private final ResettableQueue<RenderSection> rebuildQueue = new ResettableQueue<>();
 
     private VFrustum frustum;
 
@@ -154,6 +155,7 @@ public class SectionGraph {
         this.chunkAreaQueue.clear();
         this.sectionGrid.getChunkAreaManager().resetQueues();
         this.sectionQueue.clear();
+        this.blockEntitiesSections.clear();
         this.rebuildQueue.clear();
     }
 
@@ -173,6 +175,11 @@ public class SectionGraph {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
+            }
+
+            if (renderSection.containsBlockEntities()) {
+                this.blockEntitiesSections.ensureCapacity(1);
+                this.blockEntitiesSections.add(renderSection);
             }
 
             if (renderSection.isDirty()) {
@@ -292,6 +299,10 @@ public class SectionGraph {
 
     public ResettableQueue<RenderSection> getSectionQueue() {
         return this.sectionQueue;
+    }
+
+    public ResettableQueue<RenderSection> getBlockEntitiesSections() {
+        return this.blockEntitiesSections;
     }
 
     public short getLastFrame() {
