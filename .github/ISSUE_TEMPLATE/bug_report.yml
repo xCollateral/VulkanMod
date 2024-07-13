@@ -2,7 +2,7 @@ name: Bug Report
 description: File a bug report
 body:
   - type: markdown
-      attributes:
+    attributes:
         value: >-
           # PLEASE READ THIS BEFORE CONTINUING!
           
@@ -31,7 +31,7 @@ body:
     attributes:
       label: Log files
       description: Provide related logs and/or crash-reports. 
-        >- If you don't know where to look for it, normally you can find the latest log in the minecraft instance folder in the path `/logs/latest.log`
+        If you don't know where to look for it, normally you can find the latest log in the minecraft instance folder in the path `/logs/latest.log`
       placeholder: Drag and drop the files in this box.
     validations:
       required: true
