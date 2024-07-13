@@ -1,0 +1,37 @@
+name: Bug Report
+description: File a bug report
+body:
+  - type: markdown
+      attributes:
+        value: >-
+          # PLEASE READ THIS BEFORE CONTINUING!
+          
+          - Write the report in english, otherwise other people won't be able understand.
+          
+          - Check if the issue you are trying to report already exists.
+          
+          - Check if you are using any of the incompatible mods listed in .
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is. Attach screenshots if needed or you feel it could be useful.
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Make a clear description of the steps needed to reproduce the behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log files
+      description: Provide related logs and/or crash-reports. 
+        >- If you don't know where to look for it, normally you can find the latest log in the minecraft instance folder in the path `/logs/latest.log`
+      placeholder: Drag and drop the files in this box.
+    validations:
+      required: true
