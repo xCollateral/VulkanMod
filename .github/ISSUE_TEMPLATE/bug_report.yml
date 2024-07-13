@@ -6,11 +6,11 @@ body:
         value: >-
           # PLEASE READ THIS BEFORE CONTINUING!
           
-          - Write the report in english, otherwise other people won't be able understand.
+          - **Write the report in english, otherwise other people won't be able to understand.**
           
-          - Check if the issue you are trying to report already exists.
+          - **Check if the issue you are trying to report already exists.**
           
-          - Check if you are using any of the incompatible mods listed in .
+          - **Check if you are using any of the incompatible mods listed in [incompatible-mods](https://github.com/xCollateral/VulkanMod/wiki/Incompatible-mods).**
 
   - type: textarea
     id: description
@@ -24,6 +24,10 @@ body:
     attributes:
       label: Steps to reproduce
       description: Make a clear description of the steps needed to reproduce the behavior.
+      placeholder: >-
+        1. ...
+        2. ...
+        ...
     validations:
       required: true
   - type: textarea
