@@ -4,9 +4,13 @@ import net.vulkanmod.Initializer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 public class AutoIndexBuffer {
+    public static final int U16_MAX_INDEX_COUNT = 65536;
+    public static final int QUAD_U16_MAX_VERTEX_COUNT = U16_MAX_INDEX_COUNT * 2 / 3;
+
     int vertexCount;
     DrawType drawType;
     IndexBuffer indexBuffer;
@@ -21,8 +25,17 @@ public class AutoIndexBuffer {
         this.vertexCount = vertexCount;
         ByteBuffer buffer;
 
+        IndexBuffer.IndexType indexType = IndexBuffer.IndexType.SHORT;
+
         switch (this.drawType) {
-            case QUADS -> buffer = genQuadIndices(vertexCount);
+            case QUADS -> {
+                if (vertexCount < QUAD_U16_MAX_VERTEX_COUNT)
+                    buffer = genQuadIndices(vertexCount);
+                else {
+                    indexType = IndexBuffer.IndexType.INT;
+                    buffer = genIntQuadIndices(vertexCount);
+                }
+            }
             case TRIANGLE_FAN -> buffer = genTriangleFanIndices(vertexCount);
             case TRIANGLE_STRIP -> buffer = genTriangleStripIndices(vertexCount);
             case LINES -> buffer = genLinesIndices(vertexCount);
@@ -31,7 +44,7 @@ public class AutoIndexBuffer {
         }
 
         int size = buffer.capacity();
-        this.indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM);
+        this.indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM, indexType);
         this.indexBuffer.copyBuffer(buffer);
 
         MemoryUtil.memFree(buffer);
@@ -56,12 +69,34 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for(int i = 0; i < vertexCount; i += 4) {
-            idxs.put(j, (short) (i));
+            idxs.put(j + 0, (short) (i));
             idxs.put(j + 1, (short) (i + 1));
             idxs.put(j + 2, (short) (i + 2));
             idxs.put(j + 3, (short) (i));
             idxs.put(j + 4, (short) (i + 2));
             idxs.put(j + 5, (short) (i + 3));
+
+            j += 6;
+        }
+
+        return buffer;
+    }
+
+    public static ByteBuffer genIntQuadIndices(int vertexCount) {
+        int indexCount = vertexCount * 3 / 2;
+        indexCount = roundUpToDivisible(indexCount, 6);
+
+        ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Integer.BYTES);
+        IntBuffer idxs = buffer.asIntBuffer();
+
+        int j = 0;
+        for(int i = 0; i < vertexCount; i += 4) {
+            idxs.put(j + 0, (i));
+            idxs.put(j + 1, (i + 1));
+            idxs.put(j + 2, (i + 2));
+            idxs.put(j + 3, (i));
+            idxs.put(j + 4, (i + 2));
+            idxs.put(j + 5, (i + 3));
 
             j += 6;
         }
@@ -78,7 +113,7 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for(int i = 0; i < vertexCount; i += 4) {
-            idxs.put(j, (short) (i));
+            idxs.put(j + 0, (short) (i));
             idxs.put(j + 1, (short) (i + 1));
             idxs.put(j + 2, (short) (i + 2));
             idxs.put(j + 3, (short) (i + 3));
@@ -98,7 +133,7 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for (int i = 0; i < vertexCount - 2; ++i) {
-            idxs.put(j, (short) 0);
+            idxs.put(j + 0, (short) 0);
             idxs.put(j + 1, (short) (i + 1));
             idxs.put(j + 2, (short) (i + 2));
 
@@ -116,7 +151,7 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for (int i = 0; i < vertexCount - 2; ++i) {
-            idxs.put(j, (short) i);
+            idxs.put(j + 0, (short) i);
             idxs.put(j + 1, (short) (i + 1));
             idxs.put(j + 2, (short) (i + 2));
 
@@ -134,7 +169,7 @@ public class AutoIndexBuffer {
 
         int j = 0;
         for (int i = 0; i < vertexCount - 1; ++i) {
-            idxs.put(j, (short) i);
+            idxs.put(j + 0, (short) i);
             idxs.put(j + 1, (short) (i + 1));
 
             j += 2;
