@@ -4,13 +4,16 @@ body:
   - type: markdown
     attributes:
         value: >-
-          # PLEASE READ THIS BEFORE CONTINUING!
-          
-          - **Write the report in english, otherwise other people won't be able to understand.**
-          
-          - **Check if the issue you are trying to report already exists.**
-          
-          - **Check if you are using any of the incompatible mods listed in [incompatible-mods](https://github.com/xCollateral/VulkanMod/wiki/Incompatible-mods).**
+          # PLEASE READ THE FOLLOWING POINTS BEFORE CONTINUING!
+
+          ## Please only submit proper bugs or issues of VulkanMod. This is not the place for troubleshooting crashes or asking for support, if you need support asking help on our [Discord server](https://discord.com/invite/FVXg7AYR2Q) is the better option.
+          <br>
+
+          - ### Write the report in _ENGLISH_, otherwise other people won't be able to understand what you are writing.
+
+          - ### Check if the issue you are trying to report already exists in the [issue list](https://github.com/xCollateral/VulkanMod/issues).
+
+          - ### Check if you are using any of the incompatible mods listed in [incompatible-mods](https://github.com/xCollateral/VulkanMod/wiki/Incompatible-mods).
 
   - type: textarea
     id: description
