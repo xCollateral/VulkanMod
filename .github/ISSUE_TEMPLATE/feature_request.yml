@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest an idea for this project
+body:
+  - type: markdown
+    attributes:
+      value: >-        
+        - **Check if another similar request has already been made before creating a new one.**
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the request
+      description: A clear and concise description of what the issue is and what the suggestion is supposed to solve.
+    validations:
+      required: true
