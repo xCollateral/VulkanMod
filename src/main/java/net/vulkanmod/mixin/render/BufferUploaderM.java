@@ -35,6 +35,13 @@ public class BufferUploaderM {
 
         if (parameters.vertexCount() > 0) {
             ShaderInstance shaderInstance = RenderSystem.getShader();
+
+            // Prevent drawing if formats don't match to avoid disturbing visual bugs
+            if (shaderInstance.getVertexFormat() != renderedBuffer.drawState().format()) {
+                renderedBuffer.release();
+                return;
+            }
+
             // Used to update legacy shader uniforms
             // TODO it would be faster to allocate a buffer from stack and set all values
             shaderInstance.apply();
