@@ -90,7 +90,7 @@ public class UniformParser {
         this.imageDescriptors = createSamplerList();
 
         for(ImageDescriptor imageDescriptor : this.imageDescriptors) {
-            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", imageDescriptor.getBinding(), imageDescriptor.qualifier, imageDescriptor.name));
+            builder.append(String.format("layout(binding = %d) uniform %s %s;\n", shaderStage== GlslConverter.ShaderStage.Vertex ? 2 : 3, imageDescriptor.qualifier, imageDescriptor.name));
         }
         builder.append("\n");
 

@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 0) uniform sampler2D DiffuseSampler;
+layout(binding = 3) uniform sampler2D DiffuseSampler;
 
 layout(location = 0) in vec2 texCoord;
 

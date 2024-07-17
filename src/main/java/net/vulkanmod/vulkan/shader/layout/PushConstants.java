@@ -4,8 +4,15 @@ import java.util.List;
 
 public class PushConstants extends AlignedStruct {
 
-    protected PushConstants(List<Uniform.Info> infoList, int size) {
+    private final int stage;
+
+    protected PushConstants(List<Uniform.Info> infoList, int size, int stage) {
         super(infoList, size);
+        this.stage = stage;
+    }
+
+    public int getStage() {
+        return stage;
     }
 
 }

@@ -16,7 +16,7 @@ public enum UniformState {
 //    EndPortalLayers("int",1,1, 0, 0),
 //    FogStart("float",1,1, 0, 0),
 //    FogEnd("float",1,1, 0, 0),
-//    LineWidth("float",1,1, 0, 0),
+LineWidth("float", 1, 1),
 //    GameTime("float",1,1, 0, 0),
 //    AlphaCutout("float",1,1, 0, 0),
     ScreenSize("vec2",2,2),

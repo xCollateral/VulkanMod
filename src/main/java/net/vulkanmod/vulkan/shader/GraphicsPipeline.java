@@ -34,7 +34,8 @@ public class GraphicsPipeline extends Pipeline {
         super(builder.shaderPath);
         this.buffers = builder.UBOs;
         this.manualUBO = builder.manualUBO;
-        this.imageDescriptors = builder.imageDescriptors;
+        this.vertImageDescriptors = builder.vertImageDescriptors;
+        this.fragImageDescriptors = builder.fragImageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 

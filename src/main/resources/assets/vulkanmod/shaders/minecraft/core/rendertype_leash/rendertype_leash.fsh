@@ -1,7 +1,7 @@
 #version 450
 #include "fog.glsl"
 
-layout(binding = 1) uniform UBO{
+layout(binding = 1) readonly uniform UBO{
     vec4 FogColor;
     float FogStart;
     float FogEnd;
