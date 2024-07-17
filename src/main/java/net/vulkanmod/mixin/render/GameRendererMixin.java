@@ -121,9 +121,9 @@ public abstract class GameRendererMixin {
             shaders.add(Pair.of(new ShaderInstance(provider, "position_color_tex", DefaultVertexFormat.POSITION_COLOR_TEX), (shaderInstance) -> {
                 positionColorTexShader = shaderInstance;
             }));
-//            shaders.add(Pair.of(new ShaderInstance(provider, "position_color_tex_lightmap", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
-//               positionColorTexLightmapShader = shaderInstance;
-//            }));
+            shaders.add(Pair.of(new ShaderInstance(provider, "position_color_tex_lightmap", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
+               positionColorTexLightmapShader = shaderInstance;
+            }));
             shaders.add(Pair.of(new ShaderInstance(provider, "position_tex", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
                 positionTexShader = shaderInstance;
             }));
