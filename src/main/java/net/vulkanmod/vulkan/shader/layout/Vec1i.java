@@ -1,8 +1,7 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import net.vulkanmod.vulkan.shader.Uniforms;
+import net.vulkanmod.vulkan.shader.ScalarUniforms;
 import net.vulkanmod.vulkan.util.MappedBuffer;
-import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.function.Supplier;
@@ -15,7 +14,7 @@ public class Vec1i extends Uniform {
     }
 
     void setSupplier() {
-        this.intSupplier = Uniforms.vec1i_uniformMap.get(this.info.name);
+        this.intSupplier = ScalarUniforms.vec1i_uniformMap.get(this.info.name);
     }
 
     @Override
