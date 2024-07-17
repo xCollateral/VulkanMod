@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.memory;
 
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.shader.UniformState;
+import org.lwjgl.system.MemoryUtil;
 
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -35,5 +37,13 @@ public class UniformBuffer extends Buffer {
 
     public long getPointer() {
         return this.data.get(0) + usedBytes;
+    }
+    public long getBasePointer() {
+        return this.data.get(0);
+    }
+
+    public void upload(UniformState uniformState) {
+
+        MemoryUtil.memCopy(uniformState.getMappedBufferPtr().ptr, this.getPointer(), uniformState.size*4);
     }
 }

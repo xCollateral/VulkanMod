@@ -1,13 +1,15 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import net.vulkanmod.vulkan.shader.Uniforms;
+import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.lwjgl.system.MemoryUtil;
 
+import java.util.EnumSet;
 import java.util.function.Supplier;
 
 public class Uniform {
     protected Supplier<MappedBuffer> values;
+    private static final EnumSet<UniformState> StaticUniforms = EnumSet.allOf(UniformState.class);
 
     Info info;
     protected long offset;
@@ -21,14 +23,9 @@ public class Uniform {
     }
 
     void setSupplier() {
-        this.values = switch (info.type) {
-            case "mat4" -> Uniforms.mat4f_uniformMap.get(info.name);
-            case "vec4" -> Uniforms.vec4f_uniformMap.get(info.name);
-            case "vec3" -> Uniforms.vec3f_uniformMap.get(info.name);
-            case "vec2" -> Uniforms.vec2f_uniformMap.get(info.name);
-
-            default -> null;
-        };
+        //?TODO: Possible bug; Some PostEffect Uniforms (e.g. INSize and OutSize) are not parsed correctly due to being absent from UniformsMaps
+        UniformState contains = StaticUniforms.stream().filter(uniformState -> uniformState.name().equals(info.name)).findFirst().orElse(null);
+        this.values = contains!=null ? contains::getMappedBufferPtr : null;
     }
 
     public void setSupplier(Supplier<MappedBuffer> supplier) {
@@ -43,6 +40,10 @@ public class Uniform {
         MappedBuffer src = values.get();
 
         MemoryUtil.memCopy(src.ptr, ptr + this.offset, this.size);
+    }
+
+    public boolean isPostEffectUniform() {
+        return this.values==null;
     }
 
     public static Uniform createField(Info info) {

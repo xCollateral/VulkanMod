@@ -14,6 +14,7 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
@@ -374,13 +375,13 @@ public abstract class RenderSystemMixin {
         shaderLightDirections[0] = p_157174_;
         shaderLightDirections[1] = p_157175_;
 
-        VRenderSystem.lightDirection0.buffer.putFloat(0, p_157174_.x());
-        VRenderSystem.lightDirection0.buffer.putFloat(4, p_157174_.y());
-        VRenderSystem.lightDirection0.buffer.putFloat(8, p_157174_.z());
+        UniformState.Light0_Direction.buffer().putFloat(0, p_157174_.x());
+        UniformState.Light0_Direction.buffer().putFloat(4, p_157174_.y());
+        UniformState.Light0_Direction.buffer().putFloat(8, p_157174_.z());
 
-        VRenderSystem.lightDirection1.buffer.putFloat(0, p_157175_.x());
-        VRenderSystem.lightDirection1.buffer.putFloat(4, p_157175_.y());
-        VRenderSystem.lightDirection1.buffer.putFloat(8, p_157175_.z());
+        UniformState.Light1_Direction.buffer().putFloat(0, p_157175_.x());
+        UniformState.Light1_Direction.buffer().putFloat(4, p_157175_.y());
+        UniformState.Light1_Direction.buffer().putFloat(8, p_157175_.z());
     }
 
     /**

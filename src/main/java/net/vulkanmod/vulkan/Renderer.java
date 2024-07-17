@@ -19,7 +19,7 @@ import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
-import net.vulkanmod.vulkan.shader.Uniforms;
+import net.vulkanmod.vulkan.shader.ScalarUniforms;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -118,7 +118,7 @@ public class Renderer {
         drawer = new Drawer();
         drawer.createResources(framesNum);
 
-        Uniforms.setupDefaultUniforms();
+        ScalarUniforms.setupDefaultUniforms();
         PipelineManager.init();
         UploadManager.createInstance();
 
