@@ -136,19 +136,21 @@ public abstract class GameRendererMixin {
 //            shaders.add(Pair.of(new ShaderInstance(provider, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (shaderInstance) -> {
 //               positionTexLightmapColorShader = shaderInstance;
 //            }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            //TODO: only used for Falling Blocks,
+            final ShaderInstance rendertypeSolid = new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK);
+            shaders.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeSolidShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout_mipped", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeCutoutMippedShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeCutoutShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTranslucentMovingBlockShader = shaderInstance;
             }));
             shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
@@ -206,7 +208,8 @@ public abstract class GameRendererMixin {
             shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_eyes", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeEyesShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            ShaderInstance energySwirl = new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY);
+            shaders.add(Pair.of(energySwirl, (shaderInstance) -> {
                 rendertypeEnergySwirlShader = shaderInstance;
             }));
             shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_leash", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
@@ -218,25 +221,27 @@ public abstract class GameRendererMixin {
             shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_outline", DefaultVertexFormat.POSITION_COLOR_TEX), (shaderInstance) -> {
                 rendertypeOutlineShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_glint", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            //Added performance Overhead from using alpha testing for all glint effects should be negligible (Very little geometry)
+            final ShaderInstance rendertypeGlintTranslucent = new ShaderInstance(provider, "rendertype_glint_translucent", DefaultVertexFormat.POSITION_TEX);
+            shaders.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeArmorGlintShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_armor_entity_glint", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeArmorEntityGlintShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_glint_translucent", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeGlintTranslucentShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_glint", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeGlintShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_glint_direct", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeGlintDirectShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_glint", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeEntityGlintShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_glint_direct", DefaultVertexFormat.POSITION_TEX), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeGlintTranslucent, (shaderInstance) -> {
                 rendertypeEntityGlintDirectShader = shaderInstance;
             }));
 
@@ -263,7 +268,7 @@ public abstract class GameRendererMixin {
             shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_lightning", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
                 rendertypeLightningShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+            shaders.add(Pair.of(rendertypeSolid, (shaderInstance) -> {
                 rendertypeTripwireShader = shaderInstance;
             }));
             ShaderInstance endPortalShader = new ShaderInstance(provider, "rendertype_end_portal", DefaultVertexFormat.POSITION);
@@ -292,7 +297,7 @@ public abstract class GameRendererMixin {
             shaders.add(Pair.of(positionColor, (shaderInstance) -> {
                 rendertypeGuiGhostRecipeOverlayShader = shaderInstance;
             }));
-            shaders.add(Pair.of(new ShaderInstance(provider, "rendertype_energy_swirl", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
+            shaders.add(Pair.of(energySwirl, (shaderInstance) -> {
                 rendertypeBreezeWindShader = shaderInstance;
             }));
         } catch (IOException ioexception) {
