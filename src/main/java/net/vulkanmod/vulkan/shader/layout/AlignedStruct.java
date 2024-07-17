@@ -63,9 +63,9 @@ public abstract class AlignedStruct {
             return new UBO(binding, stages, this.currentOffset * 4, this.uniformsInfo);
         }
 
-        public PushConstants buildPushConstant() {
+        public PushConstants buildPushConstant(int stage) {
             if(this.uniformsInfo.isEmpty()) return null;
-            return new PushConstants(this.uniformsInfo, this.currentOffset * 4);
+            return new PushConstants(this.uniformsInfo, this.currentOffset * 4, stage);
         }
 
     }

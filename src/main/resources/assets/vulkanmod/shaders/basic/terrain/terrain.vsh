@@ -4,14 +4,14 @@
 #include "fog.glsl"
 
 layout (binding = 0) uniform UniformBufferObject {
-    mat4 MVP;
+    mat4 MVP[32];
 };
 
 layout (push_constant) uniform pushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 3) uniform sampler2D Sampler2;
+layout (binding = 2) uniform sampler2D Sampler2;
 
 
 layout (location = 0) out float vertexDistance;
@@ -31,7 +31,7 @@ const vec3 POSITION_OFFSET = vec3(4.0);
 void main() {
     const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
     const vec4 pos = vec4(fma(Position.xyz, POSITION_INV, ChunkOffset + baseOffset), 1.0);
-    gl_Position = MVP * pos;
+    gl_Position = MVP[gl_BaseInstance>>24] * pos;
 
     vertexDistance = fog_distance(pos.xyz, 0);
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
@@ -48,7 +48,7 @@ void main() {
 //void main() {
 //    const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
 //    const vec4 pos = vec4(Position.xyz + baseOffset, 1.0);
-//    gl_Position = MVP * pos;
+//    gl_Position = MVP[gl_BaseInstance & 31] * pos;
 //
 //    vertexDistance = length((ModelViewMat * pos).xyz);
 //    vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);

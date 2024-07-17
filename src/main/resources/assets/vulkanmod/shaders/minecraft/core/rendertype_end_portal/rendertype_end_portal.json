@@ -8,8 +8,7 @@
     "fragment": "rendertype_end_portal",
     "attributes": [],
     "samplers": [
-        { "name": "Sampler0" },
-        { "name": "Sampler1" }
+        { "name": "Sampler0" }
     ],
     "uniforms": [
         { "name": "GameTime", "type": "float", "count": 1, "values": [ 0.0 ] },

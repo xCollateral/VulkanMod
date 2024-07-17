@@ -16,16 +16,11 @@ import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
-import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.PipelineState;
-import net.vulkanmod.vulkan.shader.ScalarUniforms;
-import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.shader.*;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -403,6 +398,9 @@ public class Renderer {
 
         usedPipelines.clear();
         boundPipeline=0;
+
+        UniformState.resetAll();
+        Pipeline.reset();
     }
 
     void waitForSwapChain() {
@@ -450,7 +448,7 @@ public class Renderer {
         }
 
         createSyncObjects();
-
+        VRenderSystem.getScreenSize();
         this.onResizeCallbacks.forEach(Runnable::run);
         ((WindowAccessor) (Object) Minecraft.getInstance().getWindow()).getEventHandler().resizeDisplay();
 
@@ -517,21 +515,7 @@ public class Renderer {
     public void uploadAndBindUBOs(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
         pipeline.bindDescriptorSets(commandBuffer, currentFrame);
-    }
-
-    public void pushConstants(Pipeline pipeline) {
-        VkCommandBuffer commandBuffer = currentCmdBuffer;
-
-        PushConstants pushConstants = pipeline.getPushConstants();
-
-        try (MemoryStack stack = stackPush()) {
-            ByteBuffer buffer = stack.malloc(pushConstants.getSize());
-            long ptr = MemoryUtil.memAddress0(buffer);
-            pushConstants.update(ptr);
-
-            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
-        }
-
+        pipeline.pushConstants(commandBuffer);
     }
 
     public static void setDepthBias(float units, float factor) {

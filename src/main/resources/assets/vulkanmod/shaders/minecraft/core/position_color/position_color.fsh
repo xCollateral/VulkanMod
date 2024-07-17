@@ -2,8 +2,8 @@
 
 layout(location = 0) in vec4 vertexColor;
 
-layout(binding = 1) uniform UBO{
-    vec4 ColorModulator;
+layout(push_constant) readonly uniform pushConstant{
+    layout(offset = 32) vec4 ColorModulator;
 };
 
 layout(location = 0) out vec4 fragColor;

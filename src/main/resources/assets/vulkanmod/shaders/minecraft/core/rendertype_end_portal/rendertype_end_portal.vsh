@@ -1,4 +1,4 @@
-#version 450
+#version 460
 
 //projection.glsl
 vec4 projection_from_position(vec4 position) {
@@ -10,14 +10,14 @@ vec4 projection_from_position(vec4 position) {
 
 layout(location = 0) in vec3 Position;
 
-layout(binding = 0) uniform UniformBufferObject {
-   mat4 MVP;
+layout(binding = 0) uniform readonly UniformBufferObject {
+   mat4 MVP[32];
 };
 
 layout(location = 0) out vec4 texProj0;
 
 void main() {
-    gl_Position = MVP * vec4(Position, 1.0);
+    gl_Position = MVP[gl_BaseInstance & 31] * vec4(Position, 1.0);
 
     texProj0 = projection_from_position(gl_Position);
 }

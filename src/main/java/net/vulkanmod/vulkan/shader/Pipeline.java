@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.shader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.Renderer;
@@ -11,8 +12,7 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
-import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
-import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
+import net.vulkanmod.vulkan.shader.SPIRVUtils.*;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
@@ -21,6 +21,7 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -73,6 +74,8 @@ public abstract class Pipeline {
 
     public final String name;
 
+    private static int lastPushConstantState;
+
     protected long descriptorSetLayout;
     protected long pipelineLayout;
 
@@ -80,10 +83,14 @@ public abstract class Pipeline {
     protected List<UBO> buffers;
     protected ManualUBO manualUBO;
     protected List<ImageDescriptor> imageDescriptors;
-    protected PushConstants pushConstants;
+    protected List<PushConstants> pushConstants;
 
     public Pipeline(String name) {
         this.name = name;
+    }
+
+    public static void reset() {
+        lastPushConstantState = 0;
     }
 
     protected void createDescriptorSetLayout() {
@@ -91,23 +98,25 @@ public abstract class Pipeline {
             int bindingsSize = this.buffers.size() + imageDescriptors.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
-
+            int i = 0;
             for (UBO ubo : this.buffers) {
-                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(ubo.getBinding());
+                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(i);
                 uboLayoutBinding.binding(ubo.getBinding());
                 uboLayoutBinding.descriptorCount(1);
                 uboLayoutBinding.descriptorType(ubo.getType());
                 uboLayoutBinding.pImmutableSamplers(null);
                 uboLayoutBinding.stageFlags(ubo.getStages());
+                i++;
             }
 
             for (ImageDescriptor imageDescriptor : this.imageDescriptors) {
-                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
+                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(i);
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
                 samplerLayoutBinding.pImmutableSamplers(null);
                 samplerLayoutBinding.stageFlags(imageDescriptor.getStages());
+                i++;
             }
 
             VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.calloc(stack);
@@ -121,33 +130,6 @@ public abstract class Pipeline {
             }
 
             this.descriptorSetLayout = pDescriptorSetLayout.get(0);
-        }
-    }
-
-    protected void createPipelineLayout() {
-        try (MemoryStack stack = stackPush()) {
-            // ===> PIPELINE LAYOUT CREATION <===
-
-            VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
-            pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-            pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
-
-            if (this.pushConstants != null) {
-                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(1, stack);
-                pushConstantRange.size(this.pushConstants.getSize());
-                pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
-
-                pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
-            }
-
-            LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
-
-            if (vkCreatePipelineLayout(DEVICE, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create pipeline layout");
-            }
-
-            pipelineLayout = pPipelineLayout.get(0);
         }
     }
 
@@ -182,9 +164,9 @@ public abstract class Pipeline {
 
     }
 
-    public PushConstants getPushConstants() {
-        return this.pushConstants;
-    }
+//    public PushConstants getPushConstants() {
+//        return this.pushConstants;
+//    }
 
     public long getLayout() {
         return pipelineLayout;
@@ -221,6 +203,79 @@ public abstract class Pipeline {
             return pShaderModule.get(0);
         }
     }
+
+    protected void createPipelineLayout() {
+        try (MemoryStack stack = stackPush()) {
+            // ===> PIPELINE LAYOUT CREATION <===
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
+            pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+            pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
+
+            if (this.pushConstants != null) {
+                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(2, stack);
+                VkPushConstantRange pushConstantVertRange = pushConstantRange.get(0);
+                pushConstantVertRange.size(32);
+                pushConstantVertRange.offset(0);
+                pushConstantVertRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+
+                VkPushConstantRange pushConstantFragRange = pushConstantRange.get(1);
+                pushConstantFragRange.size(16);
+                pushConstantFragRange.offset(32);
+                pushConstantFragRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+
+                pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
+            }
+
+            LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
+
+            if (vkCreatePipelineLayout(DEVICE, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create pipeline layout");
+            }
+
+            pipelineLayout = pPipelineLayout.get(0);
+        }
+    }
+
+    public void pushConstants(VkCommandBuffer commandBuffer) {
+
+        if (this.pushConstants != null) {
+            int currentAggregateHash = getCurrentAggregateHash(); //Skip calling PushConstant if hash is the same (reduces constant memory spilling + CPU usage)
+            if (currentAggregateHash != lastPushConstantState) {
+                for (PushConstants pushConstant : pushConstants) {
+                    int stage = pushConstant.getStage();
+                    int offset = stage == VK_SHADER_STAGE_VERTEX_BIT ? 0 : 32;
+                    for (Uniform uniform : pushConstant.getUniforms()) {
+                        UniformState uniformState = UniformState.valueOf(uniform.getName());
+
+                        final long ptr = uniformState.ptr();
+                        switch (uniformState) {
+                            case USE_FOG ->
+                                    VUtil.UNSAFE.putInt(ptr, RenderSystem.getShaderFogStart() == Float.MAX_VALUE ? 0 : 1);
+                            case LineWidth -> VUtil.UNSAFE.putFloat(ptr, RenderSystem.getShaderLineWidth());
+                        }
+                        nvkCmdPushConstants(commandBuffer, this.pipelineLayout, stage, offset, uniformState.getByteSize(), ptr);
+                        offset += uniformState.getByteSize();
+                    }
+
+                }
+                lastPushConstantState = currentAggregateHash;
+            }
+        }
+    }
+
+
+    private int getCurrentAggregateHash() {
+        int aggregatePushConstantHash = 0;
+        for (PushConstants pushConstant : this.pushConstants) {
+            for (Uniform uniform : pushConstant.getUniforms()) {
+                aggregatePushConstantHash += UniformState.valueOf(uniform.getName()).getCurrentHash();
+            }
+        }
+        return aggregatePushConstantHash;
+    }
+
+
 
     protected static class DescriptorSets {
         private final Pipeline pipeline;
@@ -492,7 +547,7 @@ public abstract class Pipeline {
         final String shaderPath;
         List<UBO> UBOs;
         ManualUBO manualUBO;
-        PushConstants pushConstants;
+        List<PushConstants> pushConstants;
         List<ImageDescriptor> imageDescriptors;
         int nextBinding;
 
@@ -548,6 +603,7 @@ public abstract class Pipeline {
 
             this.UBOs = new ArrayList<>();
             this.imageDescriptors = new ArrayList<>();
+            this.pushConstants = new ArrayList<>();
 
             JsonObject jsonObject;
 
@@ -582,7 +638,9 @@ public abstract class Pipeline {
             }
 
             if (jsonPushConstants != null) {
-                this.parsePushConstantNode(jsonPushConstants);
+                for (JsonElement jsonelement : jsonPushConstants) {
+                    this.parsePushConstantNode(jsonelement);
+                }
             }
             if(jsonSpecConstants != null) {
                 this.parseSpecConstantNode(jsonSpecConstants);
@@ -651,11 +709,14 @@ public abstract class Pipeline {
             this.nextBinding++;
         }
 
-        private void parsePushConstantNode(JsonArray jsonArray) {
+        private void parsePushConstantNode(JsonElement jsonelement) {
             AlignedStruct.Builder builder = new AlignedStruct.Builder();
+            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "PC");
+            int stage = getStageFromString(GsonHelper.getAsString(jsonobject, "type"));
+            JsonArray fields = GsonHelper.getAsJsonArray(jsonobject, "fields");
 
-            for (JsonElement jsonelement : jsonArray) {
-                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
+            for (JsonElement ConstantUniform : fields) {
+                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(ConstantUniform, "ConstantUniform");
 
                 String name = GsonHelper.getAsString(jsonobject2, "name");
                 String type2 = GsonHelper.getAsString(jsonobject2, "type");
@@ -664,14 +725,14 @@ public abstract class Pipeline {
                 builder.addUniformInfo(type2, name, j);
             }
 
-            this.pushConstants = builder.buildPushConstant();
+            this.pushConstants.add(builder.buildPushConstant(stage));
         }
 
         public static int getStageFromString(String s) {
             return switch (s) {
                 case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
                 case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+                case "all" -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; //VK_SHADER_STAGE_ALL_GRAPHICS includes tessellation/geometry stages, which are unused
                 case "compute" -> VK_SHADER_STAGE_COMPUTE_BIT;
 
                 default -> throw new RuntimeException("cannot identify type..");

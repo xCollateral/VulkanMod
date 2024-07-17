@@ -1,5 +1,5 @@
 #version 450
-
+//TODO; Check binding
 layout(binding = 1) uniform sampler2D DiffuseSampler;
 
 layout(location = 0) in vec2 texCoord;
