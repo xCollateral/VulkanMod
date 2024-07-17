@@ -27,7 +27,7 @@ public class DrawUtil {
 
         BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
 
-        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount());
+        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount(), 0);
 
     }
 
@@ -42,7 +42,7 @@ public class DrawUtil {
 
         BufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
 
-        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount());
+        Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), VertexFormat.Mode.QUADS, renderedBuffer.drawState().format(), renderedBuffer.drawState().vertexCount(), 0);
 
     }
 
@@ -60,7 +60,7 @@ public class DrawUtil {
         RenderSystem.applyModelViewMatrix();
         posestack.popPose();
 
-        Renderer.getInstance().uploadAndBindUBOs(pipeline);
+
 
         blitQuad(0.0D, 0.0D, 1.0D, 1.0D);
     }

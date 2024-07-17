@@ -10,8 +10,8 @@ layout(push_constant) readonly uniform  PushConstant{
 };
 
 layout(binding = 1) uniform UBO{
-    float FogStart;
-    float FogEnd;
+    layout(offset = 16) float FogStart;
+    layout(offset = 20) float FogEnd;
 };
 
 

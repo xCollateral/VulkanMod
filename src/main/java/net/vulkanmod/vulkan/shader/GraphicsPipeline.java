@@ -9,12 +9,15 @@ import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -30,16 +33,16 @@ public class GraphicsPipeline extends Pipeline {
     private final long vertShaderModule;
     private final long fragShaderModule;
 
-    GraphicsPipeline(Builder builder) {
-        super(builder.shaderPath);
+    GraphicsPipeline(Builder builder, boolean bindless) {
+        super(builder.shaderPath, bindless);
         this.buffers = builder.UBOs;
         this.manualUBO = builder.manualUBO;
         this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
-        createDescriptorSetLayout();
-        createPipelineLayout();
+        descriptorSetLayout = this.isBindless() ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
+        pipelineLayout = this.isBindless() ? Renderer.getLayout() : createPipelineLayout();
 
         this.specConstants = builder.specConstants;
         this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
@@ -49,7 +52,7 @@ public class GraphicsPipeline extends Pipeline {
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
-        createDescriptorSets(Renderer.getFramesNum());
+        if(!this.isBindless()) createDescriptorSets(Renderer.getFramesNum());
 
         PIPELINES.add(this);
     }
@@ -365,15 +368,17 @@ public class GraphicsPipeline extends Pipeline {
         vkDestroyShaderModule(DeviceManager.vkDevice, vertShaderModule, null);
         vkDestroyShaderModule(DeviceManager.vkDevice, fragShaderModule, null);
 
-        destroyDescriptorSets();
+        if(!isBindless()) destroyDescriptorSets();
 
         graphicsPipelines.forEach((state, pipeline) -> {
             vkDestroyPipeline(DeviceManager.vkDevice, pipeline, null);
         });
         graphicsPipelines.clear();
 
-        vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
-        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+        if(!isBindless()) {
+            vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
+            vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+        }
 
         PIPELINES.remove(this);
         Renderer.getInstance().removeUsedPipeline(this);

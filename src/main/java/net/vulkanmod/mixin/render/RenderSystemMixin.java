@@ -24,6 +24,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.function.Consumer;
 
@@ -39,7 +40,7 @@ public abstract class RenderSystemMixin {
     @Shadow private static Matrix4f textureMatrix;
     @Shadow @Final private static int[] shaderTextures;
     @Shadow @Final private static float[] shaderColor;
-    @Shadow @Final private static Vector3f[] shaderLightDirections;
+    @Shadow @Final private static final Vector3f[] shaderLightDirections = {new Vector3f(), new Vector3f()};
 
     @Shadow
     public static void assertOnGameThreadOrInit() {
@@ -49,17 +50,22 @@ public abstract class RenderSystemMixin {
 
     @Shadow private static @Nullable Thread renderThread;
 
+    @Shadow private static float shaderFogStart;
+    @Shadow private static float shaderFogEnd;
+
     /**
      * @author
      */
+    //TODO: May have potential for texture selection...
     @Overwrite
     public static void _setShaderTexture(int i, ResourceLocation location) {
         if (i >= 0 && i < shaderTextures.length) {
+            //TODO: Replace w/ DescriptorAbstraction Array for Faster lookups
             TextureManager textureManager = Minecraft.getInstance().getTextureManager();
             AbstractTexture abstractTexture = textureManager.getTexture(location);
             VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).getVulkanImage());
 
-            //shaderTextures[i] = abstractTexture.getId();
+            shaderTextures[i] = abstractTexture.getId();
         }
 
     }
@@ -76,7 +82,9 @@ public abstract class RenderSystemMixin {
             if(vulkanImage == null)
                 return;
 
+            final int id1 = glTexture.getId();
             VTextureSelector.bindTexture(i, vulkanImage);
+            shaderTextures[i] = id1;
         }
 
     }
@@ -104,6 +112,37 @@ public abstract class RenderSystemMixin {
     public static void enableColorLogicOp() {
         assertOnGameThread();
         VRenderSystem.enableColorLogicOp();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    private static void _setShaderFogStart(float f) {
+
+        if(f!=Float.MAX_VALUE && shaderFogStart != f)
+        {
+
+            UniformState.FogStart.getMappedBufferPtr().putFloat(0, f);
+            UniformState.FogStart.setUpdateState(true);
+        }
+        shaderFogStart = f;
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    private static void _setShaderFogEnd(float f) {
+
+        if(f!=Float.MAX_VALUE && shaderFogEnd != f)
+        {
+            UniformState.FogEnd.getMappedBufferPtr().putFloat(0, f);
+            UniformState.FogEnd.setUpdateState(true);
+        }
+        shaderFogEnd = f;
     }
 
     /**
@@ -372,16 +411,25 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void _setShaderLights(Vector3f p_157174_, Vector3f p_157175_) {
-        shaderLightDirections[0] = p_157174_;
-        shaderLightDirections[1] = p_157175_;
 
-        UniformState.Light0_Direction.buffer().putFloat(0, p_157174_.x());
-        UniformState.Light0_Direction.buffer().putFloat(4, p_157174_.y());
-        UniformState.Light0_Direction.buffer().putFloat(8, p_157174_.z());
+        if(shaderLightDirections[0].hashCode() != p_157174_.hashCode() && shaderLightDirections[1].hashCode() != p_157175_.hashCode())
+        {
 
-        UniformState.Light1_Direction.buffer().putFloat(0, p_157175_.x());
-        UniformState.Light1_Direction.buffer().putFloat(4, p_157175_.y());
-        UniformState.Light1_Direction.buffer().putFloat(8, p_157175_.z());
+//            try(MemoryStack stack = stackPush()) {
+//                ByteBuffer byteBuffer = stack.malloc(32);
+//
+//                p_157174_.get(0, byteBuffer);
+//                p_157175_.get(16, byteBuffer);
+//
+//                vkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
+//
+//            }
+            (shaderLightDirections[0] = p_157174_).getToAddress(UniformState.Light0_Direction.ptr());
+            (shaderLightDirections[1] = p_157175_).getToAddress(UniformState.Light1_Direction.ptr());
+            UniformState.Light0_Direction.needsUpdate(p_157174_.hashCode());
+            UniformState.Light1_Direction.needsUpdate(p_157175_.hashCode());
+        }
+
     }
 
     /**
@@ -389,12 +437,16 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     private static void _setShaderColor(float r, float g, float b, float a) {
-        shaderColor[0] = r;
-        shaderColor[1] = g;
-        shaderColor[2] = b;
-        shaderColor[3] = a;
+        if(extracted(shaderColor, r, g, b, a))
+        {
+            shaderColor[0] = r;
+            shaderColor[1] = g;
+            shaderColor[2] = b;
+            shaderColor[3] = a;
 
-        VRenderSystem.setShaderColor(r, g, b, a);
+            VRenderSystem.setShaderColor(r, g, b, a);
+        }
+
     }
 
     /**
@@ -402,12 +454,19 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     private static void _setShaderFogColor(float f, float g, float h, float i) {
-        shaderFogColor[0] = f;
-        shaderFogColor[1] = g;
-        shaderFogColor[2] = h;
-        shaderFogColor[3] = i;
+        if(extracted(shaderFogColor, f, g, h, i))
+        {
+            shaderFogColor[0] = f;
+            shaderFogColor[1] = g;
+            shaderFogColor[2] = h;
+            shaderFogColor[3] = i;
+            VRenderSystem.setShaderFogColor(f, g, h, i);
+        }
+    }
 
-        VRenderSystem.setShaderFogColor(f, g, h, i);
+    @Unique
+    private static boolean extracted(float[] shaderFogColor, float f, float g, float h, float i) {
+       return shaderFogColor[0] != f || shaderFogColor[1] != g || shaderFogColor[2] != h || shaderFogColor[3] != i;
     }
 
     /**

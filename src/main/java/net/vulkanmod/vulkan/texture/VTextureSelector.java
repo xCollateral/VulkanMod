@@ -8,6 +8,7 @@ public abstract class VTextureSelector {
     public static final int SIZE = 8;
 
     private static final VulkanImage[] boundTextures = new VulkanImage[SIZE];
+    private static final int[] DescriptorIndices = new int[SIZE];
 
     private static final int[] levels = new int[SIZE];
 
@@ -85,4 +86,12 @@ public abstract class VTextureSelector {
     public static VulkanImage getBoundTexture(int i) { return boundTextures[i]; }
 
     public static VulkanImage getWhiteTexture() { return whiteTexture; }
+
+    public static void setSamplerIndex(int imageIdx, int texture) {
+        DescriptorIndices[imageIdx]=texture;
+    }
+
+    public static int getSamplerIndex(int i) {
+        return DescriptorIndices[i];
+    }
 }

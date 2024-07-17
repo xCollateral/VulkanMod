@@ -122,7 +122,7 @@ public class EffectInstanceM {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createGraphicsPipeline();
+            this.pipeline = builder.createGraphicsPipeline(false);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
