@@ -321,6 +321,7 @@ public class WorldRenderer {
             Renderer.getDrawer().bindIndexBuffer(commandBuffer, indexBuffer);
 
             renderer.uploadAndBindUBOs(pipeline);
+            final int MVPIndex =  Renderer.getDrawer().getCurrentUniformOffset() << 24;
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
                 ChunkArea chunkArea = iterator.next();
@@ -332,9 +333,9 @@ public class WorldRenderer {
                     drawBuffers.bindBuffers(commandBuffer, pipeline, terrainRenderType, camX, camY, camZ);
 
                     if (indirectDraw)
-                        drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType, MVPIndex);
                     else
-                        drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType, MVPIndex);
                 }
             }
         }
