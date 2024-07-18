@@ -90,9 +90,9 @@ public class DescriptorAbstractionArray {
     public int currentSize() {
         return this.texID2DescIdx.size();//this.samplerRange;
     }
-/*    public int currentLim() {
-        return this.samplerRange;
-    }*/
+    public int currentLim() {
+        return this.descriptorIndices.size();
+    }
 
     public int getStage() {
         return this.shaderStage;

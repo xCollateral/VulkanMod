@@ -1,5 +1,7 @@
 package net.vulkanmod.vulkan.util;
 
+import org.lwjgl.vulkan.VK11;
+
 public class VkResult {
     public static final int VK_SUCCESS = 0;
     public static final int VK_NOT_READY = 1;
@@ -41,6 +43,7 @@ public class VkResult {
             case VK_ERROR_TOO_MANY_OBJECTS -> "VK_ERROR_TOO_MANY_OBJECTS";
             case VK_ERROR_FORMAT_NOT_SUPPORTED -> "VK_ERROR_FORMAT_NOT_SUPPORTED";
             case VK_ERROR_FRAGMENTED_POOL -> "VK_ERROR_FRAGMENTED_POOL";
+            case VK11.VK_ERROR_OUT_OF_POOL_MEMORY -> "VK_ERROR_OUT_OF_POOL_MEMORY";
             case VK_ERROR_UNKNOWN -> "VK_ERROR_UNKNOWN";
 
             default -> Integer.toString(result);

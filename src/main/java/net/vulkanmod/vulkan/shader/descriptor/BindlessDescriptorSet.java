@@ -431,4 +431,12 @@ public class BindlessDescriptorSet {
         }
 
     }
+
+    public int getLoadedTextures() {
+        return this.initialisedFragSamplers.currentSize();
+    }
+
+    public int getReservedTextures() {
+        return this.initialisedFragSamplers.currentLim();
+    }
 }

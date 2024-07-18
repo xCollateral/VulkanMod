@@ -13,6 +13,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.stream.Stream;
 
 import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -50,6 +51,7 @@ public class DescriptorManager {
 
         Initializer.LOGGER.info("Setting Rendering Mode: Bindless mode: {}", semiBindless ? "Semi-Bindless" : "Fully-Bindless");
         Initializer.LOGGER.info("Max Per Stage Samplers: {}", maxPerStageSamplers);
+        Initializer.LOGGER.info("Sets: {}", semiBindless ? MAX_SETS : TOTAL_SETS);
         try (MemoryStack stack = stackPush()) {
 
 
@@ -148,11 +150,12 @@ public class DescriptorManager {
     {
         try(MemoryStack stack = stackPush()) {
             VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(3, stack);
-
+                //4 Sets on Bindless, 64 on semi-Bindless
+                final int maxSets = (semiBindless ? TOTAL_SETS : MAX_SETS) * PER_SET_ALLOCS;
 
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uniformBufferPoolSize.descriptorCount(1);
+                uniformBufferPoolSize.descriptorCount(maxSets);
 
                 VkDescriptorPoolSize uniformBufferPoolSize2 = poolSizes.get(1);
                 uniformBufferPoolSize2.type(VK13.VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
@@ -160,17 +163,17 @@ public class DescriptorManager {
 
                 VkDescriptorPoolSize textureSamplerPoolSize = poolSizes.get(2);
                 textureSamplerPoolSize.type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                textureSamplerPoolSize.descriptorCount(MAX_POOL_SAMPLERS);
+                textureSamplerPoolSize.descriptorCount(semiBindless ? maxPerStageSamplers * PER_SET_ALLOCS * maxSets : MAX_POOL_SAMPLERS);
 
             VkDescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo = VkDescriptorPoolInlineUniformBlockCreateInfo.calloc(stack)
                     .sType$Default()
-                    .maxInlineUniformBlockBindings(1);
+                    .maxInlineUniformBlockBindings(maxSets);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
             poolInfo.pNext(inlineUniformBlockCreateInfo);
             poolInfo.pPoolSizes(poolSizes);
-            poolInfo.maxSets(MAX_SETS * (semiBindless ? TOTAL_SETS : PER_SET_ALLOCS)); //The real descriptor pool size is pPoolSizes * maxSets: not the individual descriptorPool sizes
+            poolInfo.maxSets(maxSets);
 
             LongBuffer pDescriptorPool = stack.mallocLong(1);
 
@@ -234,7 +237,14 @@ public class DescriptorManager {
     //TODO: Texture VRAM Usage
     public static String[] getDebugInfo()
     {
-        return new String[]{""};
+
+
+        int loaded = sets.get(0).getLoadedTextures();
+        int reserved = sets.get(0).getReservedTextures();
+
+
+        return new String[]{"-=== Texture Stats ===-", "Loaded: "+loaded, "Reserved: "+reserved, "Max: "+MAX_POOL_SAMPLERS/MAX_SETS};
+
     }
 
 
