@@ -414,18 +414,14 @@ public abstract class RenderSystemMixin {
 
         if(shaderLightDirections[0].hashCode() != p_157174_.hashCode() && shaderLightDirections[1].hashCode() != p_157175_.hashCode())
         {
+            UniformState.Light0_Direction.buffer().putFloat(0, p_157174_.x());
+            UniformState.Light0_Direction.buffer().putFloat(4, p_157174_.y());
+            UniformState.Light0_Direction.buffer().putFloat(8, p_157174_.z());
 
-//            try(MemoryStack stack = stackPush()) {
-//                ByteBuffer byteBuffer = stack.malloc(32);
-//
-//                p_157174_.get(0, byteBuffer);
-//                p_157175_.get(16, byteBuffer);
-//
-//                vkCmdPushConstants(Renderer.getCommandBuffer(), Renderer.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
-//
-//            }
-            (shaderLightDirections[0] = p_157174_).getToAddress(UniformState.Light0_Direction.ptr());
-            (shaderLightDirections[1] = p_157175_).getToAddress(UniformState.Light1_Direction.ptr());
+            UniformState.Light1_Direction.buffer().putFloat(0, p_157175_.x());
+            UniformState.Light1_Direction.buffer().putFloat(4, p_157175_.y());
+            UniformState.Light1_Direction.buffer().putFloat(8, p_157175_.z());
+
             UniformState.Light0_Direction.needsUpdate(p_157174_.hashCode());
             UniformState.Light1_Direction.needsUpdate(p_157175_.hashCode());
         }
