@@ -46,6 +46,7 @@ public class DescriptorManager {
             IntBuffer bindingFlags = stack.callocInt(bindingsSize);
 
 
+
             bindings.get(VERT_UBO_ID)
                     .binding(VERT_UBO_ID)
                     .descriptorCount(1)
@@ -109,6 +110,7 @@ public class DescriptorManager {
     }
 
 
+
     static long allocateDescriptorSet(MemoryStack stack, int samplerMaxLimitDefault) {
 
         if (texturePool + samplerMaxLimitDefault > MAX_POOL_SAMPLERS) throw new RuntimeException();
@@ -134,7 +136,8 @@ public class DescriptorManager {
     public static long createGlobalDescriptorPool() {
         try (MemoryStack stack = stackPush()) {
             VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(3, stack);
-
+            //4 Sets on Bindless, 64 on semi-Bindless
+            final int maxSets = (semiBindless ? TOTAL_SETS : MAX_SETS) * PER_SET_ALLOCS;
 
             VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(0);
             uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -150,13 +153,13 @@ public class DescriptorManager {
 
             VkDescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo = VkDescriptorPoolInlineUniformBlockCreateInfo.calloc(stack)
                     .sType$Default()
-                    .maxInlineUniformBlockBindings(1);
+                    .maxInlineUniformBlockBindings(maxSets);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
             poolInfo.pNext(inlineUniformBlockCreateInfo);
             poolInfo.pPoolSizes(poolSizes);
-            poolInfo.maxSets(MAX_SETS * (semiBindless ? TOTAL_SETS : PER_SET_ALLOCS)); //The real descriptor pool size is pPoolSizes * maxSets: not the individual descriptorPool sizes
+            poolInfo.maxSets(maxSets);
 
             LongBuffer pDescriptorPool = stack.mallocLong(1);
 
