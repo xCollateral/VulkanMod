@@ -1,0 +1,40 @@
+{
+  "vulkanmod.options.unknown": "未知",
+
+  "vulkanmod.options.pages.video": "影像設定",
+  "vulkanmod.options.pages.graphics": "圖形設定",
+  "vulkanmod.options.pages.optimizations": "效能最佳化",
+  "vulkanmod.options.pages.other": "其他",
+
+  "vulkanmod.options.buttons.apply": "套用",
+  "vulkanmod.options.buttons.kofi": "支持我",
+
+  "vulkanmod.options.advCulling": "進階區塊剔除",
+  "vulkanmod.options.advCulling.aggressive": "積極",
+  "vulkanmod.options.advCulling.conservative": "保守",
+  "vulkanmod.options.advCulling.normal": "一般",
+  "vulkanmod.options.advCulling.tooltip": "使用一種剔除演算法，透過減少非可見區塊區段的繪製數量來提高效能。",
+
+  "vulkanmod.options.ao.subBlock": "開啟（子方塊）",
+  "vulkanmod.options.ao.subBlock.tooltip": "開啟（子方塊）：為非完整方塊啟用平滑光照（實驗性）。",
+
+  "vulkanmod.options.deviceSelector": "裝置選擇器",
+  "vulkanmod.options.deviceSelector.auto": "自動",
+  "vulkanmod.options.deviceSelector.tooltip": "目前的裝置",
+
+  "vulkanmod.options.entityCulling": "實體剔除",
+  "vulkanmod.options.entityCulling.tooltip": "為不在可見區段的實體啟用剔除。",
+
+  "vulkanmod.options.frameQueue": "繪製佇列大小",
+  "vulkanmod.options.frameQueue.tooltip": "較高的值可能有助於穩定影格時間，但會增加輸入延遲。",
+
+  "vulkanmod.options.indirectDraw": "間接繪製",
+  "vulkanmod.options.indirectDraw.tooltip": "減少 CPU 負擔，但會增加 GPU 負擔。在 CPU 效能受限的系統上啟用它可能會有幫助。",
+
+  "vulkanmod.options.refreshRate": "更新頻率",
+
+  "vulkanmod.options.uniqueOpaqueLayer": "單一不透明圖層",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "使用單一繪製圖層來處理不透明地形以提升效能。",
+
+  "vulkanmod.options.windowedFullscreen": "視窗化全螢幕"
+}
