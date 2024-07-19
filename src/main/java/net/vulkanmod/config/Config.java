@@ -21,6 +21,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
 
+    public int cloudHeight = 192;
     public boolean vignette = true;
 
     public boolean uniqueOpaqueLayer = true;

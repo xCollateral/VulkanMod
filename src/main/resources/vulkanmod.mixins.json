@@ -18,6 +18,8 @@
     "chunk.ClientPacketListenerM",
     "chunk.ClientChunkCacheM",
 
+    "cloud.CloudMixin",
+
     "compatibility.EffectInstanceM",
     "compatibility.ProgramM",
     "compatibility.UniformM",

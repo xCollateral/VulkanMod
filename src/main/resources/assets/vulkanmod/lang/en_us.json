@@ -18,6 +18,8 @@
   "vulkanmod.options.ao.subBlock": "ON (Sub-block)",
   "vulkanmod.options.ao.subBlock.tooltip": "ON (Sub-block): Enables smooth lighting for non full block (experimental).",
 
+  "vulkanmod.options.cloudHeight": "Cloud height",
+
   "vulkanmod.options.vignette": "Vignette",
 
   "vulkanmod.options.deviceSelector": "Device selector",

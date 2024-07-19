@@ -208,6 +208,11 @@ public abstract class Options {
                                     minecraft.levelRenderer.allChanged();
                                 },
                                 () -> minecraftOptions.biomeBlendRadius().get()),
+                        new RangeOption(Component.translatable("vulkanmod.options.cloudHeight"),
+                                -64, 319, 1,
+                                value -> Component.nullToEmpty(String.valueOf(value)),
+                                (value) -> config.cloudHeight = value,
+                                () -> config.cloudHeight),
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new SwitchOption(Component.translatable("vulkanmod.options.vignette"),
