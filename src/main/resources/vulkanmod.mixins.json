@@ -29,6 +29,8 @@
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
 
+    "gui.VignetteMixin",
+
     "matrix.Matrix4fM",
 
     "profiling.GuiMixin",

@@ -210,6 +210,9 @@ public abstract class Options {
                                 () -> minecraftOptions.biomeBlendRadius().get()),
                 }),
                 new OptionBlock("", new Option<?>[]{
+                        new SwitchOption(Component.translatable("vulkanmod.options.vignette"),
+                                value -> config.vignette = value,
+                                () -> config.vignette),
                         new SwitchOption(Component.translatable("options.entityShadows"),
                                 value -> minecraftOptions.entityShadows().set(value),
                                 () -> minecraftOptions.entityShadows().get()),
