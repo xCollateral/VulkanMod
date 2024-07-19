@@ -58,6 +58,9 @@
     "render.vertex.VertexFormatMixin",
 
     "screen.OptionsScreenM",
+    "settings.cloud.DimensionSpecialEffectsMixin",
+    "settings.fog.FogRendererMixin",
+    "settings.vignette.GuiMixin",
 
     "texture.mip.MipmapGeneratorM",
     "texture.image.MNativeImage",
