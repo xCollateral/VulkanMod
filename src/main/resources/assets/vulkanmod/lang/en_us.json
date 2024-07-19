@@ -18,18 +18,20 @@
   "vulkanmod.options.ao.subBlock": "ON (Sub-block)",
   "vulkanmod.options.ao.subBlock.tooltip": "ON (Sub-block): Enables smooth lighting for non full block (experimental).",
 
-  "vulkanmod.options.cloudHeight": "Cloud height",
+  "vulkanmod.options.cloudHeight": "Cloud Height",
+
+  "vulkanmod.options.fogDistance": "Fog Distance",
+  "vulkanmod.options.fogStart": "Fog Start Multiplier",
 
   "vulkanmod.options.vignette": "Vignette",
 
-  "vulkanmod.options.deviceSelector": "Device selector",
-  "vulkanmod.options.deviceSelector.auto": "Auto",
+  "vulkanmod.options.deviceSelector": "Device Selector",
   "vulkanmod.options.deviceSelector.tooltip": "Current device",
 
   "vulkanmod.options.entityCulling": "Entity Culling",
   "vulkanmod.options.entityCulling.tooltip": "Enables culling for entities on not visible sections.",
 
-  "vulkanmod.options.frameQueue": "Render queue size",
+  "vulkanmod.options.frameQueue": "Render Queue Size",
   "vulkanmod.options.frameQueue.tooltip": "Higher values might help stabilize frametime but will increase input lag.",
 
   "vulkanmod.options.indirectDraw": "Indirect Draw",
@@ -37,7 +39,7 @@
 
   "vulkanmod.options.refreshRate": "Refresh Rate",
 
-  "vulkanmod.options.uniqueOpaqueLayer": "Unique opaque layer",
+  "vulkanmod.options.uniqueOpaqueLayer": "Unique Opaque Layer",
   "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Use a unique render layer for opaque terrain to improve performance.",
 
   "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen"

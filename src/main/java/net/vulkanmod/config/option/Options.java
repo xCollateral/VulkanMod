@@ -210,9 +210,24 @@ public abstract class Options {
                                 () -> minecraftOptions.biomeBlendRadius().get()),
                         new RangeOption(Component.translatable("vulkanmod.options.cloudHeight"),
                                 -64, 319, 1,
-                                value -> Component.nullToEmpty(String.valueOf(value)),
                                 (value) -> config.cloudHeight = value,
                                 () -> config.cloudHeight),
+                }),
+                new OptionBlock("", new Option<?>[]{
+                        new RangeOption(Component.translatable("vulkanmod.options.fogDistance"),
+                                0, 33, 1,
+                                value ->  Component.translatable(switch (value) {
+                                            case 0 -> "options.guiScale.auto";
+                                            case 33 -> "options.off";
+                                            default -> String.valueOf(value);
+                                        }),
+                                (value) -> config.fogDistance = value,
+                                () -> config.fogDistance),
+                        new RangeOption(Component.translatable("vulkanmod.options.fogStart"),
+                                20, 100, 1,
+                                value -> Component.nullToEmpty("%d%%".formatted(value)),
+                                (value) -> config.fogStart = value,
+                                () -> config.fogStart)
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new SwitchOption(Component.translatable("vulkanmod.options.vignette"),
@@ -223,6 +238,7 @@ public abstract class Options {
                                 () -> minecraftOptions.entityShadows().get()),
                         new RangeOption(Component.translatable("options.entityDistanceScaling"),
                                 50, 500, 25,
+                                value -> Component.nullToEmpty("%d%%".formatted(value)),
                                 value -> minecraftOptions.entityDistanceScaling().set(value * 0.01),
                                 () -> minecraftOptions.entityDistanceScaling().get().intValue() * 100),
                         new CyclingOption<>(Component.translatable("options.mipmapLevels"),
@@ -288,7 +304,7 @@ public abstract class Options {
                                 value -> config.device = value,
                                 () -> config.device)
                                 .setTranslator(value -> Component.translatable((value == -1)
-                                        ? "vulkanmod.options.deviceSelector.auto"
+                                        ? "options.guiScale.auto"
                                         : DeviceManager.suitableDevices.get(value).deviceName)
                                 )
                                 .setTooltip(Component.nullToEmpty("%s: %s".formatted(

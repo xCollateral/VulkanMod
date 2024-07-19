@@ -21,6 +21,8 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
 
+    public int fogDistance = 0;
+    public int fogStart = 100;
     public int cloudHeight = 192;
     public boolean vignette = true;
 
