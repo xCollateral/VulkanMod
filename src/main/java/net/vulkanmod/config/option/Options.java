@@ -208,19 +208,15 @@ public abstract class Options {
                                     minecraft.levelRenderer.allChanged();
                                 },
                                 () -> minecraftOptions.biomeBlendRadius().get()),
-                        new RangeOption(Component.translatable("vulkanmod.options.cloudHeight"),
-                                -64, 319, 1,
-                                (value) -> config.cloudHeight = value,
-                                () -> config.cloudHeight),
                 }),
                 new OptionBlock("", new Option<?>[]{
                         new RangeOption(Component.translatable("vulkanmod.options.fogDistance"),
                                 0, 33, 1,
-                                value ->  Component.translatable(switch (value) {
-                                            case 0 -> "options.guiScale.auto";
-                                            case 33 -> "options.off";
-                                            default -> String.valueOf(value);
-                                        }),
+                                value -> Component.translatable(switch (value) {
+                                    case 0 -> "options.guiScale.auto";
+                                    case 33 -> "options.off";
+                                    default -> String.valueOf(value);
+                                }),
                                 (value) -> config.fogDistance = value,
                                 () -> config.fogDistance),
                         new RangeOption(Component.translatable("vulkanmod.options.fogStart"),
@@ -230,9 +226,6 @@ public abstract class Options {
                                 () -> config.fogStart)
                 }),
                 new OptionBlock("", new Option<?>[]{
-                        new SwitchOption(Component.translatable("vulkanmod.options.vignette"),
-                                value -> config.vignette = value,
-                                () -> config.vignette),
                         new SwitchOption(Component.translatable("options.entityShadows"),
                                 value -> minecraftOptions.entityShadows().set(value),
                                 () -> minecraftOptions.entityShadows().get()),
@@ -241,6 +234,21 @@ public abstract class Options {
                                 value -> Component.nullToEmpty("%d%%".formatted(value)),
                                 value -> minecraftOptions.entityDistanceScaling().set(value * 0.01),
                                 () -> minecraftOptions.entityDistanceScaling().get().intValue() * 100),
+                        new RangeOption(Component.translatable("vulkanmod.options.cloudHeight"),
+                                -64, 319, 1,
+                                (value) -> config.cloudHeight = value,
+                                () -> config.cloudHeight),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.vignette"),
+                                new Integer[]{-1, 0, 1},
+                                value -> config.vignette = value,
+                                () -> config.vignette)
+                                .setTranslator(value -> Component.translatable(switch (value) {
+                                    case -1 -> "options.off";
+                                    case 0 -> "options.gamma.default";
+                                    case 1 -> "options.on";
+                                    default -> "vulkanmod.options.unknown";
+                                })
+                        ),
                         new CyclingOption<>(Component.translatable("options.mipmapLevels"),
                                 new Integer[]{0, 1, 2, 3, 4},
                                 value -> {

@@ -24,7 +24,7 @@ public class Config {
     public int fogDistance = 0;
     public int fogStart = 100;
     public int cloudHeight = 192;
-    public boolean vignette = true;
+    public int vignette = 0;
 
     public boolean uniqueOpaqueLayer = true;
     public boolean entityCulling = true;
