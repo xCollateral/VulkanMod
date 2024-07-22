@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.memory;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.vulkan.VkMemoryHeap;
 import org.lwjgl.vulkan.VkMemoryType;
 
 import java.nio.ByteBuffer;
@@ -17,42 +18,49 @@ public class MemoryTypes {
 
         for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
+            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
 
             //GPU only Memory
             if (memoryType.propertyFlags() == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-                GPU_MEM = new DeviceLocalMemory();
-                //TODO type inside own class
-                GPU_MEM.type = MemoryType.Type.DEVICE_LOCAL;
+                GPU_MEM = new DeviceLocalMemory(memoryType, heap);
+
             }
 
             if (memoryType.propertyFlags() == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) {
-                HOST_MEM = new HostLocalCachedMemory();
+                HOST_MEM = new HostLocalCachedMemory(memoryType, heap);
             }
         }
 
-        if (GPU_MEM != null && HOST_MEM != null) return;
+        if (GPU_MEM != null && HOST_MEM != null)
+            return;
 
-        //Could not find 1 or more MemoryTypes, need to use fallback
-        if (HOST_MEM == null) {
-            HOST_MEM = new HostLocalFallbackMemory();
-            if (GPU_MEM != null) return;
-        }
-
+        // Could not find 1 or more MemoryTypes, need to use fallback
         for (int i = 0; i < DeviceManager.memoryProperties.memoryTypeCount(); ++i) {
             VkMemoryType memoryType = DeviceManager.memoryProperties.memoryTypes(i);
+            VkMemoryHeap heap = DeviceManager.memoryProperties.memoryHeaps(memoryType.heapIndex());
 
-            //gpu-cpu shared memory
-            if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) != 0) {
-                GPU_MEM = new HostDeviceSharedMemory();
-                return;
+            // GPU mappable memory
+            if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
+                GPU_MEM = new DeviceMappableMemory(memoryType, heap);
             }
+
+            if ((memoryType.propertyFlags() & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                HOST_MEM = new HostLocalFallbackMemory(memoryType, heap);
+            }
+
+            if (GPU_MEM != null && HOST_MEM != null)
+                return;
         }
 
-        //Could not find device memory, fallback to host memory
+        // Could not find device memory, fallback to host memory
         GPU_MEM = HOST_MEM;
     }
 
     public static class DeviceLocalMemory extends MemoryType {
+
+        DeviceLocalMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap);
+        }
 
         @Override
         void createBuffer(Buffer buffer, int size) {
@@ -71,7 +79,7 @@ public class MemoryTypes {
 
         @Override
         void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
-
+            // TODO
         }
 
         public long copyBuffer(Buffer src, Buffer dst) {
@@ -83,22 +91,17 @@ public class MemoryTypes {
         }
 
         @Override
-        void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
-            int bufferSize = byteBuffer.remaining();
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-            stagingBuffer.copyBuffer(bufferSize, byteBuffer);
-
-            DeviceManager.getTransferQueue().copyBufferCmd(stagingBuffer.id, stagingBuffer.offset, buffer.getId(), 0, bufferSize);
-
-        }
-
-        @Override
         boolean mappable() {
             return false;
         }
     }
 
     static abstract class MappableMemory extends MemoryType {
+
+        MappableMemory(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+            super(type, vkMemoryType, vkMemoryHeap);
+        }
+
         @Override
         void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer) {
             VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, (int) buffer.bufferSize), (int) bufferSize, buffer.getUsedBytes());
@@ -110,17 +113,17 @@ public class MemoryTypes {
         }
 
         @Override
-        void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer) {
-            VUtil.memcpy(byteBuffer, buffer.data.getByteBuffer(0, (int) buffer.bufferSize), byteBuffer.remaining(), 0);
-        }
-
-        @Override
         boolean mappable() {
             return true;
         }
     }
 
     static class HostLocalCachedMemory extends MappableMemory {
+
+        HostLocalCachedMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
+        }
+
         @Override
         void createBuffer(Buffer buffer, int size) {
 
@@ -142,6 +145,11 @@ public class MemoryTypes {
     }
 
     static class HostLocalFallbackMemory extends MappableMemory {
+
+        HostLocalFallbackMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+            super(Type.HOST_LOCAL, vkMemoryType, vkMemoryHeap);
+        }
+
         @Override
         void createBuffer(Buffer buffer, int size) {
             MemoryManager.getInstance().createBuffer(buffer, size,
@@ -150,7 +158,12 @@ public class MemoryTypes {
         }
     }
 
-    static class HostDeviceSharedMemory extends MappableMemory {
+    static class DeviceMappableMemory extends MappableMemory {
+
+        DeviceMappableMemory(VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+            super(Type.DEVICE_LOCAL, vkMemoryType, vkMemoryHeap);
+        }
+
         @Override
         void createBuffer(Buffer buffer, int size) {
             MemoryManager.getInstance().createBuffer(buffer, size,

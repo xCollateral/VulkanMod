@@ -58,8 +58,8 @@ public abstract class DebugScreenOverlayM {
         strings.add(String.format("Mem: % 2d%% %03d/%03dMB", usedMemory * 100L / maxMemory, bytesToMegabytes(usedMemory), bytesToMegabytes(maxMemory)));
         strings.add(String.format("Allocated: % 2d%% %03dMB", totalMemory * 100L / maxMemory, bytesToMegabytes(totalMemory)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
-        strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
-        strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
+        strings.add("NativeMemory: %dMB".formatted(MemoryManager.getInstance().getNativeMemoryMB()));
+        strings.add("DeviceMemory: %dMB".formatted(MemoryManager.getInstance().getAllocatedDeviceMemoryMB()));
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + SystemInfo.cpuInfo);

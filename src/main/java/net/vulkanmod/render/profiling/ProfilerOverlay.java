@@ -14,6 +14,7 @@ import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
+import net.vulkanmod.vulkan.memory.MemoryManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -116,6 +117,9 @@ public class ProfilerOverlay {
         for (Profiler.Result result : partialResults) {
             list.add(String.format("%s: %.3f", result.name, result.value));
         }
+
+        list.add("");
+        list.add(MemoryManager.getInstance().getHeapStats());
 
         // Section build stats
         list.add("");
