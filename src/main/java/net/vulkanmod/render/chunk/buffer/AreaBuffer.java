@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk.buffer;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.vulkan.memory.*;
@@ -20,8 +19,6 @@ public class AreaBuffer {
 
     private final Int2ReferenceOpenHashMap<Segment> usedSegments = new Int2ReferenceOpenHashMap<>();
 
-    private final Reference2ReferenceOpenHashMap<Segment, DrawBuffers.DrawParameters> parametersMap = new Reference2ReferenceOpenHashMap<>();
-
     Segment first, last;
 
     private Buffer buffer;
@@ -29,35 +26,32 @@ public class AreaBuffer {
     int size, used = 0;
     int segments = 0;
 
-    public AreaBuffer(Usage usage, int size, int elementSize) {
-
-        this.usage = usage.index;
+    public AreaBuffer(Usage usage, int elementCount, int elementSize) {
+        this.usage = usage.usage;
         this.elementSize = elementSize;
 
-        this.buffer = this.allocateBuffer(size);
-        this.size = size;
+        this.size = elementCount * elementSize;
+        this.buffer = this.allocateBuffer();
 
-        Segment s = new Segment(0, size);
+        Segment s = new Segment(0, elementCount);
 
         segments++;
         last = first = s;
     }
 
-    private Buffer allocateBuffer(int size) {
-        int bufferSize = size;
-
+    private Buffer allocateBuffer() {
         Buffer buffer;
-        if(this.usage == Usage.VERTEX.index) {
-            buffer = new VertexBuffer(bufferSize, MEMORY_TYPE);
+        if (this.usage == Usage.VERTEX.usage) {
+            buffer = new VertexBuffer(this.size, MEMORY_TYPE);
         } else {
-            buffer = new IndexBuffer(bufferSize, MEMORY_TYPE);
+            buffer = new IndexBuffer(this.size, MEMORY_TYPE);
         }
         return buffer;
     }
 
     public Segment upload(ByteBuffer byteBuffer, int oldOffset, DrawBuffers.DrawParameters drawParameters) {
         // Free old segment
-        if(oldOffset != -1) {
+        if (oldOffset != -1) {
             // Need to delay segment freeing since it might be still used by prev frames in flight
 //            this.setSegmentFree(oldOffset);
             MemoryManager.getInstance().addToFreeSegment(this, oldOffset);
@@ -65,19 +59,18 @@ public class AreaBuffer {
 
         int size = byteBuffer.remaining();
 
-        if(size % elementSize != 0)
-            throw new RuntimeException("unaligned byteBuffer");
+        if (DEBUG && size % elementSize != 0)
+            throw new RuntimeException("Unaligned buffer");
 
         Segment segment = findSegment(size);
 
-        if(segment.size - size > 0) {
+        if (segment.size - size > 0) {
             Segment s1 = new Segment(segment.offset + size, segment.size - size);
             segments++;
 
-            if(segment.next != null) {
+            if (segment.next != null) {
                 s1.bindNext(segment.next);
-            }
-            else
+            } else
                 this.last = s1;
 
             segment.bindNext(s1);
@@ -88,10 +81,10 @@ public class AreaBuffer {
         segment.free = false;
         this.usedSegments.put(segment.offset, segment);
 
-        this.parametersMap.put(segment, drawParameters);
+        segment.drawParameters = drawParameters;
 
         Buffer dst = this.buffer;
-        UploadManager.INSTANCE.recordUpload(dst.getId(), segment.offset, size, byteBuffer);
+        UploadManager.INSTANCE.recordUpload(dst, segment.offset, size, byteBuffer);
 
         this.used += size;
 
@@ -102,18 +95,16 @@ public class AreaBuffer {
         Segment segment = null;
 
         Segment segment1 = this.first;
-        while(segment1 != null) {
-
-            if(segment1.isFree() && segment1.size >= size) {
-
-                if(segment == null || segment1.size < segment.size)
+        while (segment1 != null) {
+            if (segment1.isFree() && segment1.size >= size) {
+                if (segment == null || segment1.size < segment.size)
                     segment = segment1;
             }
 
             segment1 = segment1.next;
         }
 
-        if(segment == null || segment.size < size) {
+        if (segment == null || segment.size < size) {
             return this.reallocate(size);
         }
 
@@ -122,112 +113,126 @@ public class AreaBuffer {
 
     public Segment reallocate(int uploadSize) {
         int oldSize = this.size;
-        int increment = this.size >> 1;
 
-        //Try to increase size up to 8 times
-        for(int i = 0; i < 8 && increment <= uploadSize; ++i) {
-            increment *= 2;
-        }
+        int minIncrement = this.size >> 3;
+        minIncrement = Util.align(minIncrement, this.elementSize);
 
-        if(increment < uploadSize)
+        int increment = Math.max(minIncrement, uploadSize << 1);
+
+        if (increment < uploadSize)
             throw new RuntimeException(String.format("Size increment %d < %d (Upload size)", increment, uploadSize));
 
         int newSize = oldSize + increment;
 
-        Buffer dst = this.allocateBuffer(newSize);
+        this.size = newSize;
+        Buffer dst = this.allocateBuffer();
 
-        UploadManager.INSTANCE.copyBuffer(this.buffer, dst);
-
-        // TODO
-//        defrag(dst);
-
-        if(DEBUG)
-            checkSegments();
+        moveUsedSegments(dst);
 
         this.buffer.freeBuffer();
         this.buffer = dst;
 
-        this.size = newSize;
-
-        int offset = Util.align(oldSize, elementSize);
-
-        if(last.isFree())
+        if (last.isFree()) {
             last.size += increment;
+        }
         else {
-            Segment segment = new Segment(offset, increment);
+            int offset = last.offset + last.size;
+            Segment segment = new Segment(offset, newSize - offset);
             segments++;
 
             last.bindNext(segment);
 
             last = segment;
         }
+
+        if (DEBUG)
+            checkSegments();
+
         return last;
     }
 
-    void defrag(Buffer dst) {
-        int srcOffset, dstOffset, size = 0;
+    void moveUsedSegments(Buffer dst) {
+        int srcOffset, dstOffset, uploadSize;
+        int usedCount = 0;
 
-        Segment s = this.first;
-        while(s != null) {
-            if(!s.isFree()) {
-                s = s.next;
-                continue;
+        dstOffset = 0;
+        int currOffset = dstOffset;
+
+        Segment segment = this.first;
+        Segment prevUsed = null;
+
+        srcOffset = -1;
+        uploadSize = 0;
+
+        while (segment != null) {
+            if (!segment.isFree()) {
+                usedCount++;
+
+                if (segment.offset != srcOffset + uploadSize) {
+
+                    if (srcOffset == -1) {
+                        dstOffset = 0;
+                        this.first = segment;
+                        segment.prev = null;
+                    } else {
+                        UploadManager.INSTANCE.copyBuffer(this.buffer, srcOffset, dst, dstOffset, uploadSize);
+
+                        dstOffset += uploadSize;
+                    }
+
+                    srcOffset = segment.offset;
+                    uploadSize = segment.size;
+
+                } else {
+                    uploadSize += segment.size;
+                }
+
+                this.usedSegments.remove(segment.offset);
+                segment.offset = currOffset;
+                currOffset += segment.size;
+                updateDrawParams(segment);
+                this.usedSegments.put(segment.offset, segment);
+
+                if (prevUsed != null) {
+                    prevUsed.bindNext(segment);
+                }
+
+                prevUsed = segment;
             }
 
-            mergeFreeSubsequent(s);
-
-            Segment src = s.next;
-
-            if(src == null) {
-                return;
-            }
-
-            dstOffset = s.offset;
-            srcOffset = src.offset;
-
-            while(src != null && !src.isFree()) {
-                //Swap segments
-                if(s.prev != null)
-                    s.prev.bindNext(src);
-                if(src.next != null)
-                    s.bindNext(src.next);
-
-                src.bindNext(s);
-
-                src.offset = s.offset;
-                s.offset += src.size;
-
-                //Update draw parameters
-                updateDrawParams(src);
-
-                size += src.size;
-                src = s.next;
-            }
-
-            UploadManager.INSTANCE.copyBuffer(this.buffer, srcOffset, dst, dstOffset, size);
-
+            segment = segment.next;
         }
 
+        if (uploadSize > 0) {
+            UploadManager.INSTANCE.copyBuffer(this.buffer, srcOffset, dst, dstOffset, uploadSize);
+        }
+
+        if (prevUsed != null) {
+            prevUsed.next = null;
+            this.last = prevUsed;
+
+            this.segments = usedCount;
+        }
     }
 
     public void setSegmentFree(int offset) {
         Segment segment = usedSegments.remove(offset * elementSize);
 
-        if(segment == null)
+        if (segment == null)
             return;
 
         this.used -= segment.size;
 
         segment.free = true;
-        parametersMap.remove(segment);
+        segment.drawParameters = null;
 
         Segment next = segment.next;
-        if(next != null && next.isFree()) {
+        if (next != null && next.isFree()) {
             mergeSegments(segment, next);
         }
 
         Segment prev = segment.prev;
-        if(prev != null && prev.isFree()) {
+        if (prev != null && prev.isFree()) {
             mergeSegments(prev, segment);
         }
     }
@@ -235,10 +240,9 @@ public class AreaBuffer {
     private void mergeSegments(Segment segment, Segment next) {
         segment.size += next.size;
 
-        if(next.next != null) {
+        if (next.next != null) {
             next.next.prev = segment;
-        }
-        else {
+        } else {
             this.last = segment;
         }
 
@@ -246,23 +250,13 @@ public class AreaBuffer {
         this.segments--;
     }
 
-    private void mergeFreeSubsequent(Segment segment) {
-        Segment next = segment.next;
-        while(next != null && next.isFree()) {
-            mergeSegments(segment, next);
-
-            next = segment.next;
-        }
-    }
-
     private void updateDrawParams(Segment segment) {
-        var params = this.parametersMap.get(segment);
+        DrawBuffers.DrawParameters params = segment.drawParameters;
 
         int elementOffset = segment.offset / elementSize;
-        if(this.usage == Usage.VERTEX.index) {
+        if (this.usage == Usage.VERTEX.usage) {
             params.vertexOffset = elementOffset;
-        }
-        else {
+        } else {
             params.firstIndex = elementOffset;
         }
     }
@@ -281,27 +275,62 @@ public class AreaBuffer {
 
     public void checkSegments() {
         Segment segment = first;
+        Segment prev = null;
         int i = 0;
+        int usedSegments = 0;
 
-        while(segment != null) {
+        if (segment.offset != 0)
+            LOGGER.error(String.format("expected first offset 0 but got %d", segment.offset));
+
+        while (segment != null) {
+            if (i >= this.segments) {
+                LOGGER.error("Count is greater than segments");
+                break;
+            }
+
+            if (segment.prev != prev) {
+                LOGGER.error(String.format("expected previous segment not matching (segment %d)", i));
+            }
+
+            if (!segment.isFree()) {
+                usedSegments++;
+            }
+
+            if (segment.offset % elementSize != 0) {
+                LOGGER.error(String.format("offset %d misaligned (segment %d)", segment.offset, i));
+            }
+
             Segment next = segment.next;
 
-            if(next != null) {
+            if (next != null) {
                 int offset = segment.offset + segment.size;
                 if (offset != next.offset)
                     LOGGER.error(String.format("expected offset %d but got %d (segment %d)", offset, next.offset, i));
 
-                if(next.prev != segment)
+                if (next.prev != segment)
                     LOGGER.error(String.format("segment pointer not correct (segment %d)", i));
-            }
-            else {
-                if(segment != this.last)
+
+            } else {
+                if (segment != this.last)
                     LOGGER.error(String.format("segment has no next pointer and it's not last (segment %d)", i));
+                else {
+                    int segmentEnd = segment.offset + segment.size;
+                    if (segment.offset + segment.size != this.size)
+                        LOGGER.error(String.format("last segment end (%d) does not match buffer size (%d)", segmentEnd, this.size));
+                }
+
             }
 
+            prev = segment;
             segment = next;
             i++;
         }
+
+        if (i != this.segments)
+            LOGGER.error("Count do not match segments");
+
+        if (usedSegments != this.usedSegments.size())
+            LOGGER.error("Counted used segment do not match used segments map size");
     }
 
     public int getSize() {
@@ -315,17 +344,13 @@ public class AreaBuffer {
     public static class Segment {
         int offset, size;
         boolean free = true;
+        DrawBuffers.DrawParameters drawParameters;
 
         Segment next, prev;
 
         private Segment(int offset, int size) {
             this.offset = offset;
             this.size = size;
-        }
-
-        public void reset() {
-            this.offset = -1;
-            this.size = -1;
         }
 
         public int getOffset() {
@@ -349,27 +374,16 @@ public class AreaBuffer {
             s.prev = this;
         }
 
-        public void merge() {
-            Segment next = this.next;
-
-            this.size += next.size;
-
-            if(next.next != null) {
-                next.next.prev = this;
-            }
-
-            this.next = next.next;
-        }
     }
 
     public enum Usage {
         VERTEX(0),
         INDEX(1);
 
-        final int index;
+        final int usage;
 
         Usage(int i) {
-            index = i;
+            usage = i;
         }
     }
 
