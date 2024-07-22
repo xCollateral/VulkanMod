@@ -210,8 +210,14 @@ public class WorldRenderer {
         Profiler profiler = Profiler.getMainProfiler();
         profiler.push("Uploads");
 
-        if (this.taskDispatcher.updateSections())
-            this.graphNeedsUpdate = true;
+        try {
+            if (this.taskDispatcher.updateSections())
+                this.graphNeedsUpdate = true;
+        } catch (Exception e) {
+            Initializer.LOGGER.error(e.getMessage());
+            allChanged();
+        }
+
         profiler.pop();
 
         this.minecraft.getProfiler().pop();
