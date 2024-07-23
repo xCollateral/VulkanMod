@@ -2,6 +2,7 @@ package net.vulkanmod.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.vulkanmod.config.video.VideoModeManager;
 import net.vulkanmod.config.video.VideoModeSet;
 
@@ -23,7 +24,7 @@ public class Config {
 
     public int fogDistance = 0;
     public int fogStart = 100;
-    public int cloudHeight = 192;
+    public int cloudHeight = DimensionSpecialEffects.OverworldEffects.CLOUD_LEVEL;
     public int vignette = 0;
 
     public boolean uniqueOpaqueLayer = true;
