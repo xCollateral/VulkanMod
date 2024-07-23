@@ -11,6 +11,7 @@ layout(push_constant) readonly uniform  PushConstant{
 
 layout(binding = 1) uniform InlineUniforms
 {
+    vec4 FogColor;
     float FogStart;
     float FogEnd;
 };

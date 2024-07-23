@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -13,8 +14,8 @@ import java.util.Arrays;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
-    private static final int INITIAL_VB_SIZE = 2000000;
-    private static final int INITIAL_UB_SIZE = 200000;
+    private static final int INITIAL_VB_SIZE = 2097152;
+    public static final int INITIAL_UB_SIZE = 2048;
 
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
@@ -30,8 +31,11 @@ public class Drawer {
     private final AutoIndexBuffer triangleFanIndexBuffer;
     private final AutoIndexBuffer triangleStripIndexBuffer;
     private UniformBuffer[] uniformBuffers;
+    private UniformBuffer[] auxUniformBuffers;
 
     private int currentFrame;
+
+    private int currentUniformOffset;
 
     public Drawer() {
         // Index buffers
@@ -45,6 +49,7 @@ public class Drawer {
 
     public void setCurrentFrame(int currentFrame) {
         this.currentFrame = currentFrame;
+        this.currentUniformOffset = 0;
     }
 
     public void createResources(int framesNum) {
@@ -65,6 +70,9 @@ public class Drawer {
         }
         this.uniformBuffers = new UniformBuffer[framesNum];
         Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
+
+        this.auxUniformBuffers = new UniformBuffer[framesNum];
+        Arrays.setAll(this.auxUniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
     }
 
     public void resetBuffers(int currentFrame) {
@@ -72,7 +80,7 @@ public class Drawer {
         this.uniformBuffers[currentFrame].reset();
     }
 
-    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount) {
+    public void draw(ByteBuffer buffer, VertexFormat.Mode mode, VertexFormat vertexFormat, int vertexCount, int textureID) {
         AutoIndexBuffer autoIndexBuffer;
         int indexCount;
 
@@ -112,14 +120,21 @@ public class Drawer {
         if (indexCount > 0) {
             autoIndexBuffer.checkCapacity(vertexCount);
 
-            drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
+            drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount, textureID);
         } else {
             draw(vertexBuffer, vertexCount);
         }
 
     }
 
-    public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount) {
+    public void updateUniformOffset(int currentUniformOffset1) {
+
+        if (currentUniformOffset1 < 0) return;
+
+        currentUniformOffset = currentUniformOffset1;
+    }
+
+    public void drawIndexed(VertexBuffer vertexBuffer, IndexBuffer indexBuffer, int indexCount, int textureID) {
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
         VUtil.UNSAFE.putLong(pBuffers, vertexBuffer.getId());
@@ -127,7 +142,8 @@ public class Drawer {
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
         bindIndexBuffer(commandBuffer, indexBuffer);
-        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+        final int baseInstance = textureID << 16 | currentUniformOffset;
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, baseInstance);
     }
 
     public void draw(VertexBuffer vertexBuffer, int vertexCount) {
@@ -137,7 +153,7 @@ public class Drawer {
         VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
-        vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+        vkCmdDraw(commandBuffer, vertexCount, 1, 0, currentUniformOffset);
     }
 
     public void bindIndexBuffer(VkCommandBuffer commandBuffer, IndexBuffer indexBuffer) {
@@ -153,11 +169,16 @@ public class Drawer {
             buffer = this.uniformBuffers[i];
             MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
 
+            buffer = this.auxUniformBuffers[i];
+            MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
+
         }
 
         this.quadsIndexBuffer.freeBuffer();
+        this.quadsIntIndexBuffer.freeBuffer();
         this.linesIndexBuffer.freeBuffer();
         this.triangleFanIndexBuffer.freeBuffer();
+        this.triangleStripIndexBuffer.freeBuffer();
         this.debugLineStripIndexBuffer.freeBuffer();
     }
 
@@ -185,4 +206,11 @@ public class Drawer {
         return this.uniformBuffers[this.currentFrame];
     }
 
+    public UniformBuffer getAuxUniformBuffer() {
+        return this.auxUniformBuffers[this.currentFrame];
+    }
+
+    public int getCurrentUniformOffset() {
+        return currentUniformOffset;
+    }
 }

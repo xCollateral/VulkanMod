@@ -54,7 +54,7 @@ public abstract class PipelineManager {
         SPIRVUtils.SPIRV fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", shaderPath, pathF), SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
         pipelineBuilder.setSPIRVs(vertShaderSPIRV, fragShaderSPIRV);
 
-        return pipelineBuilder.createGraphicsPipeline();
+        return pipelineBuilder.createGraphicsPipeline(true);
     }
 
     public static GraphicsPipeline getTerrainShader(TerrainRenderType renderType) {

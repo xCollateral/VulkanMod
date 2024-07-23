@@ -3,9 +3,10 @@ layout (constant_id = 0) const float ALPHA_CUTOUT = 0.0f;
 #include "light.glsl"
 #include "fog.glsl"
 
-layout(binding = 3) uniform sampler2D Sampler0;
+layout(binding = 3, set = 1) uniform sampler2D Sampler0;
 
-layout(binding = 1) uniform UBO {
+
+layout(binding = 1, set = 1) uniform UBO {
     vec4 FogColor;
     float FogStart;
     float FogEnd;
@@ -19,7 +20,7 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec4 color = texture(Sampler0, texCoord0);
-    //Use a constexpr value to bypass a uniform load + improve alpha test performance + reduce memory access latency
+    //Use a constexpr value to bypass a uniform load + reduce memory access latency
     if (color.a < ALPHA_CUTOUT) {
         discard;
     }

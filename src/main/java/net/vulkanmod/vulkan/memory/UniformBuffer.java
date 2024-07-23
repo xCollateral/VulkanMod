@@ -20,14 +20,17 @@ public class UniformBuffer extends Buffer {
         this.createBuffer(size);
     }
 
-    public void checkCapacity(int size) {
-        if (size > this.bufferSize - this.usedBytes) {
+    public boolean checkCapacity(int size) {
+        final boolean b = size > this.bufferSize - this.usedBytes;
+        if (b) {
             resizeBuffer((this.bufferSize + size) * 2);
         }
+        return b;
     }
 
     public void updateOffset(int alignedSize) {
         usedBytes += alignedSize;
+        usedBytes %= bufferSize;
     }
 
     private void resizeBuffer(int newSize) {
@@ -45,5 +48,10 @@ public class UniformBuffer extends Buffer {
     public void upload(UniformState uniformState) {
 
         MemoryUtil.memCopy(uniformState.getMappedBufferPtr().ptr, this.getPointer(), uniformState.size*4);
+    }
+
+    public int getBlockOffset() {
+
+        return usedBytes;
     }
 }

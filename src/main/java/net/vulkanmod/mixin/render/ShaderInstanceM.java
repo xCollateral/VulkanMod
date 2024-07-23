@@ -13,8 +13,8 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.shader.parser.GlslConverter;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
@@ -80,7 +80,7 @@ public class ShaderInstanceM implements ShaderMixed {
             Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
             pipelineBuilder.parseBindingsJSON();
             pipelineBuilder.compileShaders();
-            this.pipeline = pipelineBuilder.createGraphicsPipeline();
+            this.pipeline = pipelineBuilder.createGraphicsPipeline(true);
         } catch (Exception e) {
             System.out.printf("Error on shader %s creation\n", name);
             e.printStackTrace();
@@ -231,7 +231,7 @@ public class ShaderInstanceM implements ShaderMixed {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(this.name, converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createGraphicsPipeline();
+            this.pipeline = builder.createGraphicsPipeline(false);
             this.isLegacy = true;
 
         } catch (Exception e) {

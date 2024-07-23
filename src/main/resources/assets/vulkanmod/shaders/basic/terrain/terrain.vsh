@@ -3,16 +3,15 @@
 #include "light.glsl"
 #include "fog.glsl"
 
-layout (binding = 0) uniform UniformBufferObject {
-    mat4 MatrixStack[32];
+layout (binding = 0, set = 1) uniform UniformBufferObject {
+    mat4 MatrixStack[8]; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
 };
 
-layout (push_constant) uniform pushConstant {
+layout (push_constant) readonly uniform  PushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 2) uniform sampler2D Sampler2;
-
+layout (binding = 2, set = 1) uniform sampler2D Sampler2;
 
 layout (location = 0) out float vertexDistance;
 layout (location = 1) out vec4 vertexColor;
@@ -48,10 +47,10 @@ void main() {
 //void main() {
 //    const vec3 baseOffset = bitfieldExtract(ivec3(gl_InstanceIndex) >> ivec3(0, 16, 8), 0, 8);
 //    const vec4 pos = vec4(Position.xyz + baseOffset, 1.0);
-//    gl_Position = MatrixStack[gl_BaseInstance & 31] * pos;
+//    gl_Position = MVP[gl_BaseInstance & 31] * pos;
 //
 //    vertexDistance = length((ModelViewMat * pos).xyz);
 //    vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
 //    texCoord0 = UV0;
-//    //    normal = MatrixStack * vec4(Normal, 0.0);
+//    //    normal = MVP * vec4(Normal, 0.0);
 //}

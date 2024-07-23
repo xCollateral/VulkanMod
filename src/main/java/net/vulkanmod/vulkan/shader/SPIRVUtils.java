@@ -125,6 +125,7 @@ public class SPIRVUtils {
     {
 //        USE_FOG,
         ALPHA_CUTOUT,
+        SET_ID,
         MAX_OFFSET_COUNT,
         COMPUTE_SIZE_Y,
         COMPUTE_SIZE_X;
@@ -138,6 +139,7 @@ public class SPIRVUtils {
         {
             return switch (this){
 //                case USE_FOG -> Initializer.CONFIG.renderFog ? 1 : 0;
+                case SET_ID -> 1;
                 case ALPHA_CUTOUT -> Float.floatToRawIntBits(VRenderSystem.alphaCutout);
                 case MAX_OFFSET_COUNT -> 512;
                 case COMPUTE_SIZE_Y, COMPUTE_SIZE_X -> 32;

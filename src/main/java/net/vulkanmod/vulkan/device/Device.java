@@ -29,7 +29,7 @@ public class Device {
 
 
     private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasInlineUniforms, hasLogicOp, hasWideLines;
-
+    private final boolean hasBindless;
     public Device(VkPhysicalDevice device) {
 
         //Using memory stack to avoid the off-heap becoming cluttered w/ unused DeviceProperties
@@ -37,8 +37,9 @@ public class Device {
             this.physicalDevice = device;
 
             VkPhysicalDeviceSubgroupProperties subgroupProperties = VkPhysicalDeviceSubgroupProperties.malloc(stack).sType$Default();
+            VkPhysicalDeviceVulkan12Properties vk12Properties = VkPhysicalDeviceVulkan12Properties.malloc(stack).sType$Default();
 
-            properties = VkPhysicalDeviceProperties2.calloc().sType$Default().pNext(subgroupProperties);
+            properties = VkPhysicalDeviceProperties2.calloc().sType$Default().pNext(subgroupProperties).pNext(vk12Properties);
             VK11.vkGetPhysicalDeviceProperties2(physicalDevice, properties);
 
             this.vendorId = properties.properties().vendorID();
@@ -67,6 +68,8 @@ public class Device {
             this.hasInlineUniforms = inlineUniformBlockFeaturesEXT.inlineUniformBlock();
             this.hasLogicOp = availableFeatures.features().logicOp();
             this.hasWideLines = availableFeatures.features().wideLines();
+
+            this.hasBindless = vk12Properties.maxPerStageDescriptorUpdateAfterBindSamplers() > 65536 || properties.properties().limits().maxPerStageDescriptorSamplers() > 65536;
 
 
             final int subGroupStages = subgroupProperties.supportedStages();
@@ -197,5 +200,9 @@ public class Device {
 
     public boolean isHasInlineUniforms() {
         return hasInlineUniforms;
+    }
+
+    public boolean isHasBindless() {
+        return hasBindless;
     }
 }

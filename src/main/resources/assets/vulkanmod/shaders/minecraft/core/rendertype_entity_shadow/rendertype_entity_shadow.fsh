@@ -16,7 +16,7 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     const uint uniformBaseInstance = subgroupBroadcastFirst(baseInstance);
-    vec4 color = texture(Sampler0[uniformBaseInstance], clamp(texCoord0, 0.0, 1.0))
+    vec4 color = texture(Sampler0[uniformBaseInstance], clamp(texCoord0, 0.0, 1.0));
     color *= vertexColor * ColorModulator;
     fragColor = color;
 }
