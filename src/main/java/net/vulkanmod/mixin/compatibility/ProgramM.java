@@ -37,7 +37,7 @@ public class ProgramM {
 
             //TODO maybe not needed?
             glslPreprocessor.process(string3);
-            SPIRVUtils.compileShader(string2 + ":" + string, string3, GlUtil.extToShaderKind(type.getExtension()));
+            SPIRVUtils.compileShader(string2 + ":" + string, string3, GlUtil.extToShaderKind(type.getExtension()), -1);
         }
         return 0;
     }

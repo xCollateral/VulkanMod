@@ -25,17 +25,23 @@ public class ImageDescriptor implements Descriptor {
     }
 
     public ImageDescriptor(int binding, String type, String name, int imageIdx, boolean isStorageImage) {
-        this.binding = binding;
+        final int stage1 = switch (name) {
+            case "Sampler0", "DiffuseSampler", "SamplerProj" -> VK_SHADER_STAGE_FRAGMENT_BIT;
+            case "Sampler1", "Sampler2" -> VK_SHADER_STAGE_VERTEX_BIT;
+            default -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        };
+
+        this.binding = switch (stage1) {
+            case VK_SHADER_STAGE_FRAGMENT_BIT -> DescriptorManager.FRAG_SAMPLER_ID;
+            case VK_SHADER_STAGE_VERTEX_BIT -> DescriptorManager.VERTEX_SAMPLER_ID;
+            default -> binding;
+        };
         this.qualifier = type;
         this.name = name;
         this.isStorageImage = isStorageImage;
         this.useSampler = !isStorageImage;
         this.imageIdx = imageIdx;
-        this.stage = switch (name) {
-            case "Sampler0", "DiffuseSampler", "SamplerProj" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-            case "Sampler1", "Sampler2" -> VK_SHADER_STAGE_VERTEX_BIT;
-            default -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        };
+        this.stage = stage1;
 
         descriptorType = isStorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         setLayout(isStorageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

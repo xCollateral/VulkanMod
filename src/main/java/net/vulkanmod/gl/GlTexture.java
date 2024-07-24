@@ -1,6 +1,7 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
@@ -22,6 +23,7 @@ public class GlTexture {
     private static int boundTextureId = 0;
     private static GlTexture boundTexture;
     private static int activeTexture = 0;
+    private static final boolean hasBindless = DeviceManager.device.hasBindless();
 
     public static void bindIdToImage(int id, VulkanImage vulkanImage) {
         GlTexture texture = map.get(id);
@@ -57,7 +59,7 @@ public class GlTexture {
             MemoryManager.getInstance().addToFreeable(image);
         }
 //        removeImageResource(i);
-        DescriptorManager.removeImage(0, i);
+       if(hasBindless) DescriptorManager.removeImage(0, i);
     }
 
     public static GlTexture getTexture(int id) {

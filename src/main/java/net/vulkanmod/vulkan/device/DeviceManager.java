@@ -181,7 +181,7 @@ public abstract class DeviceManager {
             final boolean hasIndexedDescriptors = device.isHasIndexedDescriptors();
             VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures.calloc(stack)
                     .sType$Default()
-                    .runtimeDescriptorArray(hasIndexedDescriptors)
+                    .runtimeDescriptorArray(device.isHasRuntimeArray())
                     .descriptorBindingPartiallyBound(hasIndexedDescriptors)
                     .descriptorBindingVariableDescriptorCount(hasIndexedDescriptors);
 

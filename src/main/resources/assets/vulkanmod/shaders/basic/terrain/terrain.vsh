@@ -3,7 +3,7 @@
 #include "light.glsl"
 #include "fog.glsl"
 
-layout (binding = 0, set = 1) uniform UniformBufferObject {
+layout (binding = 0, set = SET_ID) uniform UniformBufferObject {
     mat4 MatrixStack[8]; //Not using Uniform indices in case hardcoded offsets have perf advantages/benefits
 };
 
@@ -11,7 +11,7 @@ layout (push_constant) readonly uniform  PushConstant {
     vec3 ChunkOffset;
 };
 
-layout (binding = 2, set = 1) uniform sampler2D Sampler2;
+layout (binding = 2, set = SET_ID) uniform sampler2D Sampler2;
 
 layout (location = 0) out float vertexDistance;
 layout (location = 1) out vec4 vertexColor;

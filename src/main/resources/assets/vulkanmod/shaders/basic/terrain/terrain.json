@@ -33,5 +33,6 @@
     ],
     "SpecConstants": [
         { "name":  "ALPHA_CUTOUT", "type": "float" }
-    ]
+    ],
+    "SetOverride" : 1
 }

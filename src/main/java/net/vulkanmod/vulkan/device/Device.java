@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.device;
 
-import org.lwjgl.PointerBuffer;
+import net.vulkanmod.Initializer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import oshi.SystemInfo;
@@ -28,7 +28,7 @@ public class Device {
     public final String vkVersion;
 
 
-    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasInlineUniforms, hasLogicOp, hasWideLines;
+    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasInlineUniforms, hasLogicOp, hasWideLines, hasRuntimeArray;
     private final boolean hasBindless;
     public Device(VkPhysicalDevice device) {
 
@@ -63,13 +63,19 @@ public class Device {
 
 
             this.drawIndirectSupported = availableFeatures.features().multiDrawIndirect() && availableFeatures11.shaderDrawParameters();
-            this.hasIndexedDescriptors = availableFeatures12.runtimeDescriptorArray() && availableFeatures12.descriptorBindingVariableDescriptorCount() && availableFeatures12.descriptorBindingPartiallyBound() && availableFeatures12.shaderSampledImageArrayNonUniformIndexing();
+            this.hasIndexedDescriptors = availableFeatures12.descriptorBindingVariableDescriptorCount() && availableFeatures12.descriptorBindingPartiallyBound() && availableFeatures12.shaderSampledImageArrayNonUniformIndexing();
+            this.hasRuntimeArray = availableFeatures12.runtimeDescriptorArray();
             this.hasSamplerAnisotropy = availableFeatures.features().samplerAnisotropy();
             this.hasInlineUniforms = inlineUniformBlockFeaturesEXT.inlineUniformBlock();
             this.hasLogicOp = availableFeatures.features().logicOp();
             this.hasWideLines = availableFeatures.features().wideLines();
 
-            this.hasBindless = vk12Properties.maxPerStageDescriptorUpdateAfterBindSamplers() > 65536 || properties.properties().limits().maxPerStageDescriptorSamplers() > 65536;
+            if(!hasIndexedDescriptors) {
+                Initializer.LOGGER.error("Descriptor indexing (Bindless Rendering) not available!: Disabling Bindless mode");
+            }
+
+
+            this.hasBindless = hasIndexedDescriptors & (vk12Properties.maxPerStageDescriptorUpdateAfterBindSamplers() > 65536 || properties.properties().limits().maxPerStageDescriptorSamplers() > 65536);
 
 
             final int subGroupStages = subgroupProperties.supportedStages();
@@ -83,10 +89,8 @@ public class Device {
             if(!hasInlineUniforms)
                 throw new RuntimeException("Inline Uniform Block not available!");
 
-            if(!hasIndexedDescriptors)
-                throw new RuntimeException("Descriptor indexing (Bindless Textures) not available!");
-
-
+            if(!hasRuntimeArray)
+                throw new RuntimeException("runtimeDescriptorArray not available!");
         }
 
     }
@@ -172,6 +176,10 @@ public class Device {
         return hasIndexedDescriptors;
     }
 
+    public boolean isHasRuntimeArray() {
+        return hasRuntimeArray;
+    }
+
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:
     // (e.g. such as in case we encounter a vendor specific driver bug)
     public boolean isAMD() {
@@ -202,7 +210,7 @@ public class Device {
         return hasInlineUniforms;
     }
 
-    public boolean isHasBindless() {
+    public boolean hasBindless() {
         return hasBindless;
     }
 }

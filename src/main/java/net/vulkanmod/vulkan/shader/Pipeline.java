@@ -6,16 +6,13 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.util.GsonHelper;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.device.Device;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.UniformBuffer;
-import net.vulkanmod.vulkan.shader.SPIRVUtils.*;
 import net.vulkanmod.vulkan.shader.descriptor.*;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
@@ -45,7 +42,7 @@ public abstract class Pipeline {
     private static final VkDevice DEVICE = Vulkan.getVkDevice();
     protected static final long PIPELINE_CACHE = createPipelineCache();
     protected static final List<Pipeline> PIPELINES = new LinkedList<>();
-    private static final boolean hasBindless = DeviceManager.device.isHasBindless();
+    private static final boolean hasBindless = DeviceManager.device.hasBindless();
     private static final Int2IntOpenHashMap UniformBaseOffsetMap = new Int2IntOpenHashMap(32);
     final int setID;
 
@@ -132,7 +129,7 @@ public abstract class Pipeline {
 
             if(!vertImageDescriptors.isEmpty()) {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get();
-                samplerLayoutBinding.binding(2);
+                samplerLayoutBinding.binding(DescriptorManager.VERTEX_SAMPLER_ID);
                 samplerLayoutBinding.descriptorCount(vertImageDescriptors.size());
                 samplerLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); //TODO: Fix storage images
                 samplerLayoutBinding.pImmutableSamplers(null);
@@ -140,7 +137,7 @@ public abstract class Pipeline {
             }
             if(!fragImageDescriptors.isEmpty()) {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get();
-                samplerLayoutBinding.binding(3);
+                samplerLayoutBinding.binding(DescriptorManager.FRAG_SAMPLER_ID);
                 samplerLayoutBinding.descriptorCount(fragImageDescriptors.size());
                 samplerLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); //TODO: Fix storage images
                 samplerLayoutBinding.pImmutableSamplers(null);
@@ -169,7 +166,20 @@ public abstract class Pipeline {
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
             pipelineLayoutInfo.pSetLayouts(stack.longs(this.descriptorSetLayout));
             //Mod + PostEffect Shaders do not use PushConstants
+            if(pushConstants!=null) {
+                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(2, stack);
+                VkPushConstantRange pushConstantVertRange = pushConstantRange.get(0);
+                pushConstantVertRange.size(32);
+                pushConstantVertRange.offset(0);
+                pushConstantVertRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
+                VkPushConstantRange pushConstantFragRange = pushConstantRange.get(1);
+                pushConstantFragRange.size(16);
+                pushConstantFragRange.offset(32);
+                pushConstantFragRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+
+                pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
+            }
             LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
 
             if (vkCreatePipelineLayout(DEVICE, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
@@ -219,9 +229,9 @@ public abstract class Pipeline {
 
     }
 
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
-        UniformBuffer uniformBuffer = Renderer.getDrawer().getAuxUniformBuffer();
-        this.bindfulDescriptorSets[frame].bindSets(commandBuffer, uniformBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame, UniformBuffer uniformBuffer) {
+        if(bindless) pushUniforms(uniformBuffer);
+        else this.bindfulDescriptorSets[frame].bindSets(commandBuffer, uniformBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
     static long createShaderModule(ByteBuffer spirvCode) {
@@ -241,10 +251,6 @@ public abstract class Pipeline {
 
             return pShaderModule.get(0);
         }
-    }
-
-    public void bindDescriptorSets(VkCommandBuffer commandBuffer, UniformBuffer uniformBuffer, int frame) {
-        this.bindfulDescriptorSets[frame].bindSets(commandBuffer, uniformBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
     public int updateImageState() {
@@ -442,7 +448,7 @@ public abstract class Pipeline {
             }
             return false;
         }
-
+        //TODO: Remove per pipeline pools + boilerplate and replace with Global descriptor pool from Descriptor Manager
         private void checkPoolSize(MemoryStack stack) {
             if (this.currentIdx >= this.poolSize) {
                 this.poolSize *= 2;
@@ -632,6 +638,7 @@ public abstract class Pipeline {
         List<ImageDescriptor> vertImageDescriptors;
         List<ImageDescriptor> fragImageDescriptors;
         int nextBinding;
+        int setID;
 
         SPIRV vertShaderSPIRV;
         SPIRV fragShaderSPIRV;
@@ -673,13 +680,13 @@ public abstract class Pipeline {
         public void compileShaders() {
             String resourcePath = SPIRVUtils.class.getResource("/assets/vulkanmod/shaders/").toExternalForm();
 
-            this.vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", resourcePath, this.shaderPath), ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", resourcePath, this.shaderPath), ShaderKind.FRAGMENT_SHADER);
+            this.vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", resourcePath, this.shaderPath), ShaderKind.VERTEX_SHADER, -1);
+            this.fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", resourcePath, this.shaderPath), ShaderKind.FRAGMENT_SHADER, -1);
         }
 
         public void compileShaders(String name, String vsh, String fsh) {
-            this.vertShaderSPIRV = compileShader(String.format("%s.vsh", name), vsh, ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = compileShader(String.format("%s.fsh", name), fsh, ShaderKind.FRAGMENT_SHADER);
+            this.vertShaderSPIRV = compileShader(String.format("%s.vsh", name), vsh, ShaderKind.VERTEX_SHADER, -1);
+            this.fragShaderSPIRV = compileShader(String.format("%s.fsh", name), fsh, ShaderKind.FRAGMENT_SHADER, -1);
         }
 
         public void parseBindingsJSON() {
@@ -705,6 +712,7 @@ public abstract class Pipeline {
             JsonArray jsonSamplers = GsonHelper.getAsJsonArray(jsonObject, "samplers", null);
             JsonArray jsonPushConstants = GsonHelper.getAsJsonArray(jsonObject, "PushConstants", null);
             JsonArray jsonSpecConstants = GsonHelper.getAsJsonArray(jsonObject, "SpecConstants", null);
+            int jsonSetIDOverride = jsonObject.has("SetOverride") ? GsonHelper.getAsInt(jsonObject, "SetOverride") : -1;
 
             if (jsonUbos != null) {
                 for (JsonElement jsonelement : jsonUbos) {
@@ -730,6 +738,7 @@ public abstract class Pipeline {
             if(jsonSpecConstants != null) {
                 this.parseSpecConstantNode(jsonSpecConstants);
             }
+            setID = hasBindless ? jsonSetIDOverride : 0; //set to 0 when in Non-Bindless Mode, -1 if no setOverride is specified
         }
 
         private void parseSpecConstantNode(JsonArray jsonSpecConstants) {
@@ -823,6 +832,10 @@ public abstract class Pipeline {
 
                 default -> throw new RuntimeException("cannot identify type..");
             };
+        }
+
+        public int getSetID() {
+            return setID;
         }
     }
 }

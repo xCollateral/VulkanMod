@@ -1,11 +1,12 @@
 #version 450
+
 layout(early_fragment_tests) in;
 #include "light.glsl"
 #include "fog.glsl"
 
-layout(binding = 3, set = 1) uniform sampler2D Sampler0;
+layout(binding = 3, set = SET_ID) uniform sampler2D Sampler0;
 
-layout(binding = 1, set = 1) uniform UBO {
+layout(binding = 1, set = SET_ID) uniform UBO {
     vec4 FogColor;
     float FogStart;
     float FogEnd;

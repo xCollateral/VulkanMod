@@ -77,18 +77,24 @@ public class SPIRVUtils {
             includePaths.add(url.toExternalForm());
     }
 
-    public static SPIRV compileShaderAbsoluteFile(String shaderFile, ShaderKind shaderKind) {
+    public static SPIRV compileShaderAbsoluteFile(String shaderFile, ShaderKind shaderKind, int setBinding) {
         try {
             String source = new String(Files.readAllBytes(Paths.get(new URI(shaderFile))));
-            return compileShader(shaderFile, source, shaderKind);
+            return compileShader(shaderFile, source, shaderKind, setBinding);
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public static SPIRV compileShader(String filename, String source, ShaderKind shaderKind) {
+    public static SPIRV compileShader(String filename, String source, ShaderKind shaderKind, int SetBinding) {
         long startTime = System.nanoTime();
+        //Used to set Descriptor Set IDs when in bindless mode (only used for terrain currently)
+        //Is otherwise ignored when in Bindful/Non-Bindless mode
+        if(SetBinding!=-1)
+        {
+            shaderc_compile_options_add_macro_definition(options, "SET_ID", Integer.toString(SetBinding));
+        }
 
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 

@@ -15,7 +15,8 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
     private static final int INITIAL_VB_SIZE = 2097152;
-    public static final int INITIAL_UB_SIZE = 2048;
+    private static final boolean hasBindless = DeviceManager.device.hasBindless();
+    public static final int INITIAL_UB_SIZE = hasBindless ? 2048 : 200000;
 
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
@@ -31,7 +32,7 @@ public class Drawer {
     private final AutoIndexBuffer triangleFanIndexBuffer;
     private final AutoIndexBuffer triangleStripIndexBuffer;
     private UniformBuffer[] uniformBuffers;
-    private UniformBuffer[] auxUniformBuffers;
+    private UniformBuffer[] postEffectUniformBuffers;
 
     private int currentFrame;
 
@@ -71,8 +72,10 @@ public class Drawer {
         this.uniformBuffers = new UniformBuffer[framesNum];
         Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
 
-        this.auxUniformBuffers = new UniformBuffer[framesNum];
-        Arrays.setAll(this.auxUniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
+       if (hasBindless) {
+           this.postEffectUniformBuffers = new UniformBuffer[framesNum];
+           Arrays.setAll(this.postEffectUniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
+       }
     }
 
     public void resetBuffers(int currentFrame) {
@@ -169,8 +172,10 @@ public class Drawer {
             buffer = this.uniformBuffers[i];
             MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
 
-            buffer = this.auxUniformBuffers[i];
-            MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
+            if (hasBindless) {
+                buffer = this.postEffectUniformBuffers[i];
+                MemoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
+            }
 
         }
 
@@ -205,9 +210,9 @@ public class Drawer {
     public UniformBuffer getUniformBuffer() {
         return this.uniformBuffers[this.currentFrame];
     }
-
-    public UniformBuffer getAuxUniformBuffer() {
-        return this.auxUniformBuffers[this.currentFrame];
+    //Only used in bindless mode when handling PostEffect Shaders like Glowing
+    public UniformBuffer getPostEffectUniformBuffers() {
+        return this.postEffectUniformBuffers[this.currentFrame];
     }
 
     public int getCurrentUniformOffset() {

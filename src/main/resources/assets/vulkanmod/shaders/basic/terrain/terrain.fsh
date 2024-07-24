@@ -1,12 +1,13 @@
 #version 450
+
 layout (constant_id = 0) const float ALPHA_CUTOUT = 0.0f;
 #include "light.glsl"
 #include "fog.glsl"
 
-layout(binding = 3, set = 1) uniform sampler2D Sampler0;
+layout(binding = 3, set = SET_ID) uniform sampler2D Sampler0;
 
 
-layout(binding = 1, set = 1) uniform UBO {
+layout(binding = 1, set = SET_ID) uniform UBO {
     vec4 FogColor;
     float FogStart;
     float FogEnd;

@@ -20,9 +20,9 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DescriptorManager {
     static final int VERT_SAMPLER_MAX_LIMIT = 4;
     static final int MAX_POOL_SAMPLERS = 16384; //MoltenVk Bug: https://github.com/KhronosGroup/MoltenVK/issues/2227
-    static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
+    public static final int VERT_UBO_ID = 0, FRAG_UBO_ID = 1, VERTEX_SAMPLER_ID = 2, FRAG_SAMPLER_ID = 3;
     static final int maxPerStageSamplers = DeviceManager.deviceProperties.limits().maxPerStageDescriptorSamplers();
-    private static final VkDevice DEVICE = Vulkan.getVkDevice();
+    private static final VkDevice DEVICE;
     private static final int bindingsSize = 4;
     private static final long descriptorSetLayout;
     private static final long globalDescriptorPoolArrayPool;
@@ -36,12 +36,22 @@ public class DescriptorManager {
     private static int texturePool = 0;
 
     static {
-
-        Initializer.LOGGER.info("Setting Rendering Mode: Bindless mode: {}", semiBindless ? "Semi-Bindless" : "Fully-Bindless");
         Initializer.LOGGER.info("Max Per Stage Samplers: {}", maxPerStageSamplers);
+        //Don't load the global descriptor set resources if bindless is unsupported
+        if(DeviceManager.device.hasBindless()) {
+            DEVICE = Vulkan.getVkDevice();
+            descriptorSetLayout = getGlobalDescriptorLayout();
+            globalDescriptorPoolArrayPool = createGlobalDescriptorPool();
+
+        }
+        else {
+            DEVICE = null;
+            descriptorSetLayout = globalDescriptorPoolArrayPool = VK_NULL_HANDLE;
+        }
+    }
+
+    private static long getGlobalDescriptorLayout() {
         try (MemoryStack stack = stackPush()) {
-
-
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
             IntBuffer bindingFlags = stack.callocInt(bindingsSize);
 
@@ -100,12 +110,7 @@ public class DescriptorManager {
             LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 
             Vulkan.checkResult(vkCreateDescriptorSetLayout(DEVICE, vkDescriptorSetLayoutCreateInfo, null, pDescriptorSetLayout), "Failed to create descriptor set layout");
-
-            descriptorSetLayout = pDescriptorSetLayout.get(0);
-
-            globalDescriptorPoolArrayPool = createGlobalDescriptorPool();
-
-
+            return pDescriptorSetLayout.get(0);
         }
     }
 

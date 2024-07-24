@@ -14,6 +14,7 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
 import net.vulkanmod.vulkan.shader.*;
@@ -52,6 +53,7 @@ public class Renderer {
 
 
     private final long pipelineLayout0;
+    private static final boolean hasBindless = DeviceManager.device.hasBindless();
     private long boundPipelineLayout;
 
     public static void initRenderer() {
@@ -105,20 +107,24 @@ public class Renderer {
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
 
+        //Might merge Bindful descriptors into DescriptorManager to allow removing this ugly bindless conditional code
+        if(hasBindless) {
+            //Can accept duplicate/Same DescriptorSets
+            //w/ One Set for each dedicated Sampler Array
+            DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16)); //Default Set for all Core shaders
+            DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
 
-        //Can accept duplicate/Same DescriptorSets
-        //w/ One Set for each dedicated Sampler Array
-        DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16)); //Default Set for all Core shaders
-        DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
+            final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
 
-        final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
-
-        //TODO: move these to Descriptor manager so they can ge selected per SetID
-        // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s), unnecessarily exposing set 1 to other pipelines as well
-        pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout);
+            // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s), unnecessarily exposing set 1 to other pipelines as well
+            pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout);
 
 
-        boundPipelineLayout = pipelineLayout0;
+            boundPipelineLayout = pipelineLayout0;
+        }
+        else pipelineLayout0=0;
+
+        Initializer.LOGGER.info("Setting Rendering Mode: {}", hasBindless ? "Bindless" : "Non-Bindless (Bindful)");
 
     }
 
@@ -317,7 +323,7 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            DescriptorManager.updateAndBindAllSets(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
+            if(hasBindless) DescriptorManager.updateAndBindAllSets(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 
@@ -449,7 +455,7 @@ public class Renderer {
 
         WorldRenderer.getInstance().uploadSections();
         UploadManager.INSTANCE.submitUploads();
-        UploadManager.INSTANCE.waitUploads();
+        UploadManager.INSTANCE.syncUploads();
     }
 
     public void addUsedPipeline(Pipeline pipeline) {
@@ -504,7 +510,7 @@ public class Renderer {
 
         if (framesNum != newFramesNum) {
             UploadManager.INSTANCE.submitUploads();
-            UploadManager.INSTANCE.waitUploads();
+            UploadManager.INSTANCE.syncUploads();
 
             framesNum = newFramesNum;
             MemoryManager.createInstance(newFramesNum);
@@ -528,11 +534,15 @@ public class Renderer {
         destroySyncObjects();
 
         drawer.cleanUpResources();
-        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
+        if(hasBindless)
+        {
+            DescriptorManager.cleanup();
+            vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
+        }
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
         SamplerManager.cleanUp();
-        DescriptorManager.cleanup();
+
     }
 
     private void destroySyncObjects() {
@@ -585,24 +595,19 @@ public class Renderer {
 
     public void uploadAndBindUBOs(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        if (pipeline.isBindless()) {
-            pipeline.pushUniforms(drawer.getUniformBuffer());
-            pipeline.pushConstants(commandBuffer);
-            if (boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
-        } else {
-            pipeline.bindDescriptorSets(commandBuffer, currentFrame);
-        }
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame, hasBindless ? pipeline.isBindless() ? drawer.getUniformBuffer() : drawer.getPostEffectUniformBuffers() : drawer.getUniformBuffer());
+        pipeline.pushConstants(commandBuffer);
+
+        if (boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
 
     }
 
     public void BindCurrentSets(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        if (pipeline.isBindless()) {
-            if (boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
-        } else {
-            pipeline.bindDescriptorSets(commandBuffer, currentFrame);
-        }
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame, hasBindless ? pipeline.isBindless() ? drawer.getUniformBuffer() : drawer.getPostEffectUniformBuffers() : drawer.getUniformBuffer());
+
+        if (boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
     }
 

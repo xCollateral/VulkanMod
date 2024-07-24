@@ -50,8 +50,8 @@ public abstract class PipelineManager {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(vertexFormat, pathB);
         pipelineBuilder.parseBindingsJSON();
 
-        SPIRVUtils.SPIRV vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", shaderPath, pathV), SPIRVUtils.ShaderKind.VERTEX_SHADER);
-        SPIRVUtils.SPIRV fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", shaderPath, pathF), SPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+        SPIRVUtils.SPIRV vertShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.vsh", shaderPath, pathV), SPIRVUtils.ShaderKind.VERTEX_SHADER, pipelineBuilder.getSetID());
+        SPIRVUtils.SPIRV fragShaderSPIRV = compileShaderAbsoluteFile(String.format("%s%s.fsh", shaderPath, pathF), SPIRVUtils.ShaderKind.FRAGMENT_SHADER, pipelineBuilder.getSetID());
         pipelineBuilder.setSPIRVs(vertShaderSPIRV, fragShaderSPIRV);
 
         return pipelineBuilder.createGraphicsPipeline(true);
