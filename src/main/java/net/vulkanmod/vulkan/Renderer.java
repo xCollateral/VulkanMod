@@ -598,7 +598,7 @@ public class Renderer {
         pipeline.bindDescriptorSets(commandBuffer, currentFrame, hasBindless ? pipeline.isBindless() ? drawer.getUniformBuffer() : drawer.getPostEffectUniformBuffers() : drawer.getUniformBuffer());
         pipeline.pushConstants(commandBuffer);
 
-        if (boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
+        if (hasBindless && boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
         this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
 
     }
