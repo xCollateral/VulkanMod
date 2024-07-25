@@ -58,8 +58,7 @@
     "render.vertex.VertexFormatMixin",
 
     "screen.OptionsScreenM",
-
-    "settings.cloud.OverworldEffectsMixin",
+    "settings.cloud.DimensionSpecialEffectsMixin",
     "settings.fog.FogRendererMixin",
     "settings.vignette.GuiMixin",
 
