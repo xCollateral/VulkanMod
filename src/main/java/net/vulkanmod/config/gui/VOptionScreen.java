@@ -5,7 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.Util;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
@@ -19,6 +18,7 @@ import net.vulkanmod.config.gui.widget.VAbstractWidget;
 import net.vulkanmod.config.gui.widget.VButtonWidget;
 import net.vulkanmod.config.option.OptionPage;
 import net.vulkanmod.config.option.Options;
+import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
 import java.util.ArrayList;
@@ -284,7 +284,7 @@ public class VOptionScreen extends Screen {
             boxY -= boxYLimit - this.height;
         }
 
-        int color = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.6f);
+        int color = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.7f);
         GuiRenderer.fill(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, color);
         color = RED;
         GuiRenderer.renderBorder(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, 1, color);
@@ -296,7 +296,7 @@ public class VOptionScreen extends Screen {
         poseStack.translate(0, 0, 1);
 
         for (int i = 0; i < tooltip.size(); i++) {
-            font.drawInBatch(tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), -1, true, poseStack.last().pose(), bufferSource, Font.DisplayMode.NORMAL, 0, 15728880);
+            GuiBatchRenderer.drawTextShadowed(font, bufferSource, poseStack, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), -1);
         }
 
         bufferSource.endBatch();
