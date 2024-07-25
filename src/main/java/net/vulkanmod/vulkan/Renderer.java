@@ -23,6 +23,7 @@ import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
+import net.vulkanmod.vulkan.util.VkResult;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -356,7 +357,6 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
-
             int vkResult;
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
@@ -375,7 +375,8 @@ public class Renderer {
             Synchronization.INSTANCE.waitFences();
 
             if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
+                vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
+                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
             }
 
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
@@ -455,7 +456,6 @@ public class Renderer {
 
         WorldRenderer.getInstance().uploadSections();
         UploadManager.INSTANCE.submitUploads();
-        UploadManager.INSTANCE.syncUploads();
     }
 
     public void addUsedPipeline(Pipeline pipeline) {
@@ -510,7 +510,6 @@ public class Renderer {
 
         if (framesNum != newFramesNum) {
             UploadManager.INSTANCE.submitUploads();
-            UploadManager.INSTANCE.syncUploads();
 
             framesNum = newFramesNum;
             MemoryManager.createInstance(newFramesNum);

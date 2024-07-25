@@ -33,7 +33,7 @@ public class AreaBuffer {
         this.size = elementCount * elementSize;
         this.buffer = this.allocateBuffer();
 
-        Segment s = new Segment(0, elementCount);
+        Segment s = new Segment(0, this.size);
 
         segments++;
         last = first = s;

@@ -69,9 +69,8 @@ public class DrawBuffers {
         this.allocated = true;
 
         int initialSize = switch (renderType) {
-            case SOLID -> 30000;
-            case CUTOUT -> 100000;
-            case CUTOUT_MIPPED -> 300000;
+            case SOLID, CUTOUT -> 100000;
+            case CUTOUT_MIPPED -> 250000;
             case TRANSLUCENT, TRIPWIRE -> 60000;
         };
 

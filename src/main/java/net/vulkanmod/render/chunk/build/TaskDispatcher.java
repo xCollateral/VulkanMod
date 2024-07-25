@@ -2,8 +2,9 @@ package net.vulkanmod.render.chunk.build;
 
 import com.google.common.collect.Queues;
 import net.vulkanmod.render.chunk.ChunkArea;
+import net.vulkanmod.render.chunk.ChunkAreaManager;
 import net.vulkanmod.render.chunk.RenderSection;
-import net.vulkanmod.render.chunk.buffer.UploadManager;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.build.task.CompileResult;
@@ -12,8 +13,7 @@ import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import org.jetbrains.annotations.Nullable;
-import java.util.Arrays;
-import java.util.EnumMap;
+
 import java.util.Queue;
 
 public class TaskDispatcher {
@@ -152,6 +152,11 @@ public class TaskDispatcher {
         RenderSection section = compileResult.renderSection;
         ChunkArea renderArea = section.getChunkArea();
         DrawBuffers drawBuffers = renderArea.getDrawBuffers();
+
+        // Check if area has been dismissed before uploading
+        ChunkAreaManager chunkAreaManager = WorldRenderer.getInstance().getChunkAreaManager();
+        if (chunkAreaManager.getChunkArea(renderArea.index) != renderArea)
+            return;
 
         if(compileResult.fullUpdate) {
             var renderLayers = compileResult.renderedLayers;
