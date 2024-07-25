@@ -2,10 +2,14 @@ package net.vulkanmod.config.gui;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.Util;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -30,9 +34,7 @@ public class VOptionScreen extends Screen {
 
     private int currentListIdx = 0;
 
-    private int tooltipX;
-    private int tooltipY;
-    private int tooltipWidth;
+    private final int tooltipBoxWidth = 200;
 
     private VButtonWidget supportButton;
 
@@ -82,7 +84,7 @@ public class VOptionScreen extends Screen {
         this.addPages();
 
         int top = 40;
-        int bottom = 60;
+        int bottom = 40;
         int itemHeight = 20;
 
         int leftMargin = 100;
@@ -102,10 +104,6 @@ public class VOptionScreen extends Screen {
             width = listWidth;
             y = this.height - bottom + 10;
         }
-
-        this.tooltipX = x;
-        this.tooltipY = y;
-        this.tooltipWidth = width;
 
         buildPage();
 
@@ -248,7 +246,6 @@ public class VOptionScreen extends Screen {
         RenderSystem.enableBlend();
 
         int size = minecraft.font.lineHeight * 4;
-
         guiGraphics.blit(ICON, 30, 4, 0f, 0f, size, size, size, size);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
@@ -256,9 +253,9 @@ public class VOptionScreen extends Screen {
         currentList.renderWidget(mouseX, mouseY);
         renderButtons(mouseX, mouseY);
 
-        List<FormattedCharSequence> list = getHoveredButtonTooltip(currentList, mouseX, mouseY);
-        if (list != null) {
-            this.renderTooltip(list, this.tooltipX, this.tooltipY);
+        List<FormattedCharSequence> tooltip = getHoveredButtonTooltip(currentList, mouseX, mouseY);
+        if (tooltip != null) {
+            this.renderTooltip(tooltip, mouseX, mouseY);
         }
     }
 
@@ -268,25 +265,43 @@ public class VOptionScreen extends Screen {
         }
     }
 
-    private void renderTooltip(List<FormattedCharSequence> list, int x, int y) {
-        int padding = 3;
-        int width = GuiRenderer.getMaxTextWidth(this.font, list);
-        int height = list.size() * 10;
-        float intensity = 0.05f;
-        int color = ColorUtil.ARGB.pack(intensity, intensity, intensity, 0.6f);
-        GuiRenderer.fill(x - padding, y - padding, x + width + padding, y + height + padding, color);
+    private void renderTooltip(List<FormattedCharSequence> tooltip, int mouseX, int mouseY) {
+        int textPadding = 3;
+        int boxPadding = 3;
 
-//        intensity = 0.4f;
-//        color = ColorUtil.ARGB.pack(intensity, intensity, intensity, 0.9f);
-        color = RED;
-        GuiRenderer.renderBorder(x - padding, y - padding, x + width + padding, y + height + padding, 1, color);
+        int boxX = mouseX + 10;
+        int boxY = mouseY + 10;
 
-        int yOffset = 0;
-        for (var text : list) {
-            GuiRenderer.drawString(this.font, text, x, y + yOffset, 0xffffffff);
-            yOffset += 10;
+        int tooltipBoxHeight = (tooltip.size() * 12) + boxPadding;
+
+        int boxXLimit = boxX + this.tooltipBoxWidth;
+        if (boxXLimit > this.width) {
+            boxX -= boxXLimit - this.width;
         }
+
+        int boxYLimit = boxY + tooltipBoxHeight;
+        if (boxYLimit > this.height) {
+            boxY -= boxYLimit - this.height;
+        }
+
+        int color = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.6f);
+        GuiRenderer.fill(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, color);
+        color = RED;
+        GuiRenderer.renderBorder(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, 1, color);
+
+        RenderSystem.enableBlend();
+        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+
+        PoseStack poseStack = new PoseStack();
+        poseStack.translate(0, 0, 1);
+
+        for (int i = 0; i < tooltip.size(); i++) {
+            font.drawInBatch(tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), -1, true, poseStack.last().pose(), bufferSource, Font.DisplayMode.NORMAL, 0, 15728880);
+        }
+
+        bufferSource.endBatch();
     }
+
 
     private List<FormattedCharSequence> getHoveredButtonTooltip(VOptionList buttonList, int mouseX, int mouseY) {
         VAbstractWidget widget = buttonList.getHoveredWidget(mouseX, mouseY);
@@ -295,7 +310,7 @@ public class VOptionScreen extends Screen {
             if (tooltip == null)
                 return null;
 
-            return this.font.split(tooltip, this.tooltipWidth);
+            return this.font.split(tooltip, this.tooltipBoxWidth);
         }
         return null;
     }
