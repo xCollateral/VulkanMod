@@ -51,6 +51,13 @@ public abstract class VRenderSystem {
         RenderSystem.assertInInitPhase();
 
         Vulkan.initVulkan(window);
+
+        //Fix splash screen in Non-Bindless mode
+
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(0,1);
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(4, 1);
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(8, 1);
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(12, 1);
     }
 
     public static MappedBuffer getScreenSize() {
