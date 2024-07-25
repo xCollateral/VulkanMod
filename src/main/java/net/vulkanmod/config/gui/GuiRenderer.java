@@ -21,7 +21,7 @@ public abstract class GuiRenderer {
     public static Font font;
 
     public static PoseStack pose;
-    
+
     public static void setPoseStack(PoseStack poseStack) {
         pose = poseStack;
     }
@@ -52,11 +52,11 @@ public abstract class GuiRenderer {
     public static void fill(float x0, float y0, float x1, float y1, float z, int color) {
         Matrix4f matrix4f = pose.last().pose();
 
-        float a = (float)FastColor.ARGB32.alpha(color) / 255.0F;
-        float r = (float)FastColor.ARGB32.red(color) / 255.0F;
-        float g = (float)FastColor.ARGB32.green(color) / 255.0F;
-        float b = (float)FastColor.ARGB32.blue(color) / 255.0F;
-        
+        float a = (float) FastColor.ARGB32.alpha(color) / 255.0F;
+        float r = (float) FastColor.ARGB32.red(color) / 255.0F;
+        float g = (float) FastColor.ARGB32.green(color) / 255.0F;
+        float b = (float) FastColor.ARGB32.blue(color) / 255.0F;
+
         BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
@@ -79,19 +79,27 @@ public abstract class GuiRenderer {
         GuiRenderer.fill(x1 - width, y0 + width, x1, y1 - width, color);
     }
 
+    public static void renderBorder(float x0, float y0, float x1, float y1, float z, float width, int color) {
+        GuiRenderer.fill(x0, y0, x1, y0 + width, z, color);
+        GuiRenderer.fill(x0, y1 - width, x1, y1, z, color);
+
+        GuiRenderer.fill(x0, y0 + width, x0 + width, y1 - width, z, color);
+        GuiRenderer.fill(x1 - width, y0 + width, x1, y1 - width, z, color);
+    }
+
     public static void fillGradient(float x0, float y0, float x1, float y1, int color1, int color2) {
         fillGradient(x0, y0, x1, y1, 0, color1, color2);
     }
 
     public static void fillGradient(float x0, float y0, float x1, float y1, float z, int color1, int color2) {
-        float a1 = (float)FastColor.ARGB32.alpha(color1) / 255.0F;
-        float r1 = (float)FastColor.ARGB32.red(color1) / 255.0F;
-        float g1 = (float)FastColor.ARGB32.green(color1) / 255.0F;
-        float b1 = (float)FastColor.ARGB32.blue(color1) / 255.0F;
-        float a2 = (float)FastColor.ARGB32.alpha(color2) / 255.0F;
-        float r2 = (float)FastColor.ARGB32.red(color2) / 255.0F;
-        float g2 = (float)FastColor.ARGB32.green(color2) / 255.0F;
-        float b2 = (float)FastColor.ARGB32.blue(color2) / 255.0F;
+        float a1 = (float) FastColor.ARGB32.alpha(color1) / 255.0F;
+        float r1 = (float) FastColor.ARGB32.red(color1) / 255.0F;
+        float g1 = (float) FastColor.ARGB32.green(color1) / 255.0F;
+        float b1 = (float) FastColor.ARGB32.blue(color1) / 255.0F;
+        float a2 = (float) FastColor.ARGB32.alpha(color2) / 255.0F;
+        float r2 = (float) FastColor.ARGB32.red(color2) / 255.0F;
+        float g2 = (float) FastColor.ARGB32.green(color2) / 255.0F;
+        float b2 = (float) FastColor.ARGB32.blue(color2) / 255.0F;
 
         Matrix4f matrix4f = pose.last().pose();
 
@@ -120,7 +128,7 @@ public abstract class GuiRenderer {
 
     public static int getMaxTextWidth(Font font, List<FormattedCharSequence> list) {
         int maxWidth = 0;
-        for(var text : list) {
+        for (var text : list) {
             int width = font.width(text);
             if (width > maxWidth) {
                 maxWidth = width;
