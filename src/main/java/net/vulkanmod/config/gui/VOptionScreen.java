@@ -245,7 +245,7 @@ public class VOptionScreen extends Screen {
 
         RenderSystem.enableBlend();
 
-        int size = minecraft.font.lineHeight * 4;
+        int size = font.lineHeight * 4;
         guiGraphics.blit(ICON, 30, 4, 0f, 0f, size, size, size, size);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
@@ -298,6 +298,7 @@ public class VOptionScreen extends Screen {
 
         int color = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.7f);
         GuiRenderer.fill(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, color);
+
         color = RED;
         GuiRenderer.renderBorder(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, 1, color);
 
@@ -308,7 +309,7 @@ public class VOptionScreen extends Screen {
         poseStack.translate(0, 0, 1);
 
         for (int i = 0; i < tooltip.size(); i++) {
-            GuiBatchRenderer.drawTextShadowed(font, bufferSource, poseStack, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), -1);
+            GuiBatchRenderer.drawTextShadowed(font, bufferSource, poseStack, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), 0xFFFFFF);
         }
 
         bufferSource.endBatch();
