@@ -269,19 +269,31 @@ public class VOptionScreen extends Screen {
         int textPadding = 3;
         int boxPadding = 3;
 
-        int boxX = mouseX + 10;
-        int boxY = mouseY + 10;
+        int mouseCursorMargin = 10;
+
+        int boxX = mouseX + mouseCursorMargin;
+        int boxY = mouseY + mouseCursorMargin;
 
         int tooltipBoxHeight = (tooltip.size() * 12) + boxPadding;
 
-        int boxXLimit = boxX + this.tooltipBoxWidth;
-        if (boxXLimit > this.width) {
-            boxX -= boxXLimit - this.width;
+        // Flip the tooltip horizontally if it goes off the right edge
+        if (boxX + tooltipBoxWidth > this.width) {
+            boxX = mouseX - mouseCursorMargin - tooltipBoxWidth;
         }
 
-        int boxYLimit = boxY + tooltipBoxHeight;
-        if (boxYLimit > this.height) {
-            boxY -= boxYLimit - this.height;
+        // Flip the tooltip vertically if it goes off the bottom edge
+        if (boxY + tooltipBoxHeight > this.height) {
+            boxY = mouseY - mouseCursorMargin - tooltipBoxHeight;
+        }
+
+        // Ensure the tooltip doesn't go off the left edge (in case settings layout changes)
+        if (boxX < 0) {
+            boxX = Math.max(0, mouseX - mouseCursorMargin - tooltipBoxWidth);
+        }
+
+        // Ensure the tooltip doesn't go off the top edge
+        if (boxY < 0) {
+            boxY = Math.max(0, mouseY - mouseCursorMargin - tooltipBoxHeight);
         }
 
         int color = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.7f);
