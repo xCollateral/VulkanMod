@@ -1,20 +1,22 @@
 package net.vulkanmod.render.profiling;
 
 import com.google.common.base.Strings;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
+import net.vulkanmod.config.gui.GuiRenderer;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
-import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.util.ColorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,41 +64,45 @@ public class ProfilerOverlay {
     }
 
     protected void drawProfilerInfo(PoseStack poseStack) {
-        List<String> list = buildInfo();
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (!Strings.isNullOrEmpty(string)) {
-                Objects.requireNonNull(this.font);
-                int j = 9;
-                int k = this.font.width(string);
-                int m = 2 + j * i;
-                GuiBatchRenderer.fill(poseStack, 1, m - 1, 2 + k + 1, m + j - 1, -1873784752);
-
-            }
-        }
-        GuiBatchRenderer.endBatch();
-        RenderSystem.disableBlend();
+        List<String> infoList = buildInfo();
 
         MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        for (int i = 0; i < list.size(); ++i) {
-            String string = list.get(i);
-            if (!Strings.isNullOrEmpty(string)) {
-                Objects.requireNonNull(this.font);
-                int j = 9;
-                int m = 2 + j * i;
+        GuiRenderer.guiGraphics = new GuiGraphics(Minecraft.getInstance(), bufferSource);
+        GuiRenderer.setPoseStack(poseStack);
 
-                GuiBatchRenderer.drawString(this.font, bufferSource, poseStack, string, 2.0f, (float) m, 0xE0E0E0);
+        final int lineHeight = 9;
+        final int xOffset = 2;
+        final int backgroundColor = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.3f);
+        final int textColor = ColorUtil.WHITE;
+
+        Objects.requireNonNull(this.font);
+
+        RenderSystem.enableBlend();
+
+        for (int i = 0; i < infoList.size(); ++i) {
+            String line = infoList.get(i);
+            if (Strings.isNullOrEmpty(line)) {
+                continue;
             }
+
+            int textWidth = this.font.width(line);
+            int yPosition = xOffset + lineHeight * i;
+
+            GuiRenderer.fill(1, yPosition - 1, xOffset + textWidth + 1, yPosition + lineHeight - 1, backgroundColor);
         }
 
         bufferSource.endBatch();
+        RenderSystem.disableBlend();
 
+        for (int i = 0; i < infoList.size(); ++i) {
+            String line = infoList.get(i);
+            if (!Strings.isNullOrEmpty(line)) {
+                int yPosition = xOffset + lineHeight * i;
+                GuiRenderer.drawString(this.font, Component.literal(line), xOffset, yPosition, textColor);
+            }
+        }
     }
+
 
     private List<String> buildInfo() {
         List<String> list = new ArrayList<>();

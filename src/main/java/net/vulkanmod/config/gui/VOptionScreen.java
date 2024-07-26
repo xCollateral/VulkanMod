@@ -2,7 +2,6 @@ package net.vulkanmod.config.gui;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,14 +17,12 @@ import net.vulkanmod.config.gui.widget.VAbstractWidget;
 import net.vulkanmod.config.gui.widget.VButtonWidget;
 import net.vulkanmod.config.option.OptionPage;
 import net.vulkanmod.config.option.Options;
-import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.util.ColorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class VOptionScreen extends Screen {
-    public final static int RED = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, 0.8f);
     final ResourceLocation ICON = new ResourceLocation("vulkanmod", "vlogo_transparent.png");
 
     private final Screen parent;
@@ -245,7 +242,7 @@ public class VOptionScreen extends Screen {
 
         RenderSystem.enableBlend();
 
-        int size = minecraft.font.lineHeight * 4;
+        int size = font.lineHeight * 4;
         guiGraphics.blit(ICON, 30, 4, 0f, 0f, size, size, size, size);
 
         VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
@@ -276,6 +273,10 @@ public class VOptionScreen extends Screen {
 
         int tooltipBoxHeight = (tooltip.size() * 12) + boxPadding;
 
+        int backgroundColor = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.7f);
+        int borderColor = ColorUtil.RED;
+        int textColor = ColorUtil.WHITE;
+
         // Flip the tooltip horizontally if it goes off the right edge
         if (boxX + tooltipBoxWidth > this.width) {
             boxX = mouseX - mouseCursorMargin - tooltipBoxWidth;
@@ -296,19 +297,12 @@ public class VOptionScreen extends Screen {
             boxY = Math.max(0, mouseY - mouseCursorMargin - tooltipBoxHeight);
         }
 
-        int color = ColorUtil.ARGB.pack(0.05f, 0.05f, 0.05f, 0.7f);
-        GuiRenderer.fill(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, color);
-        color = RED;
-        GuiRenderer.renderBorder(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, 1, color);
+        GuiRenderer.fill(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, backgroundColor);
+        GuiRenderer.renderBorder(boxX, boxY, boxX + this.tooltipBoxWidth, boxY + tooltipBoxHeight, 1, 1, borderColor);
 
-        RenderSystem.enableBlend();
         MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-
-        PoseStack poseStack = new PoseStack();
-        poseStack.translate(0, 0, 1);
-
         for (int i = 0; i < tooltip.size(); i++) {
-            GuiBatchRenderer.drawTextShadowed(font, bufferSource, poseStack, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), -1);
+            GuiRenderer.drawString(this.font, tooltip.get(i), bufferSource, boxX + textPadding, boxY + textPadding + (i * 12), 1, textColor);
         }
 
         bufferSource.endBatch();

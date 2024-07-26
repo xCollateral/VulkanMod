@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.FormattedCharSequence;
@@ -119,6 +120,14 @@ public abstract class GuiRenderer {
 
     public static void drawString(Font font, FormattedCharSequence formattedCharSequence, int x, int y, int color) {
         guiGraphics.drawString(font, formattedCharSequence, x, y, color);
+    }
+
+    public static void drawString(Font font, FormattedCharSequence formattedCharSequence, MultiBufferSource.BufferSource bufferSource, int x, int y, int z, int color) {
+        pose.translate(0, 0, z);
+
+        font.drawInBatch(formattedCharSequence, x, y, color, true, pose.last().pose(), bufferSource, Font.DisplayMode.NORMAL, 0, 15728880);
+
+        pose.translate(0, 0, 0);
     }
 
     public static void drawCenteredString(Font font, Component component, int x, int y, int color) {

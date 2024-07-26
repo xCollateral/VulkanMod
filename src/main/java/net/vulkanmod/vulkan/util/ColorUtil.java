@@ -6,6 +6,9 @@ import java.nio.FloatBuffer;
 public class ColorUtil {
     private static final float COLOR_INV = 1.0f / 255.0f;
 
+    public static final int WHITE = ARGB.pack(1f, 1f, 1f, 1f);
+    public static final int RED = ARGB.pack(0.3f, 0.0f, 0.0f, 0.8f);
+
     static ColorConsumer colorConsumer = new DefaultColorConsumer();
 
     public static void useGammaCorrection(boolean b) {
