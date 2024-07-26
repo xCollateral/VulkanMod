@@ -20,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.function.Consumer;
 
@@ -213,14 +215,8 @@ public abstract class RenderSystemMixin {
         VRenderSystem.clearDepth(d);
     }
 
-    /**
-     * @author
-     */
-    @Overwrite(remap = false)
-    public static void flipFrame(long window) {
-        org.lwjgl.glfw.GLFW.glfwPollEvents();
-        RenderSystem.replayQueue();
-        Tesselator.getInstance().getBuilder().clear();
+    @Redirect(method = "flipFrame", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSwapBuffers(J)V"), remap = false)
+    private static void removeSwapBuffers(long window) {
     }
 
     /**
