@@ -49,7 +49,8 @@ public class MinecraftMixin {
     //Main target (framebuffer) ops
     @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
     private void beginRender(int i, boolean bl) {
-        RenderSystem.clear(i, bl);
+        //Manual Clear replaced with Load Op clear: According to the spec Load Op Clear can be faster than Attachment Clears
+        //RenderSystem.clear(i, bl);
         Renderer.getInstance().beginFrame();
     }
 

@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.io.IOException;
@@ -26,6 +27,14 @@ public abstract class LevelRendererMixin {
     @Shadow @Nullable private RenderTarget entityTarget;
 
     @Shadow @Final private static Logger LOGGER;
+
+
+    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void removeClear(int i, boolean bl) {}
+
+    @Redirect(method = "renderLevel", at=@At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;clear(Z)V"))
+    private void removeClear2(RenderTarget instance, boolean bl) {}
+
 
 //    /**
 //     * @author

@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.pass;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -37,10 +38,15 @@ public class DefaultMainPass implements MainPass {
     }
 
     private void createRenderPasses() {
+
+        final boolean hasJourneyMap = FabricLoader.getInstance().isModLoaded("journeymap");
+        final int vkAttachmentLoadOpClear = hasJourneyMap ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_CLEAR;
+        //Restore Default LoadOp behaviour if journeymap is present
+
         RenderPass.Builder builder = RenderPass.builder(this.mainFramebuffer);
         builder.getColorAttachmentInfo().setFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        builder.getColorAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
-        builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
+        builder.getColorAttachmentInfo().setOps(vkAttachmentLoadOpClear, VK_ATTACHMENT_STORE_OP_STORE);
+        builder.getDepthAttachmentInfo().setOps(vkAttachmentLoadOpClear, VK_ATTACHMENT_STORE_OP_STORE);
 
         this.mainRenderPass = builder.build();
 
