@@ -222,8 +222,19 @@ public class DescriptorManager {
 
 
     //TODO: Texture VRAM Usage
-    public static String[] getDebugInfo() {
-        return new String[]{""};
+    public static String[] getDebugInfo()
+    {
+
+        if(descriptorSetLayout!=VK_NULL_HANDLE)
+        {
+            int loaded = sets.get(0).getLoadedTextures();
+            int reserved = sets.get(0).getReservedTextures();
+
+
+            return new String[]{"-=== Texture Stats ===-", "Loaded: "+loaded, "Reserved: "+reserved, "Max: "+MAX_POOL_SAMPLERS/MAX_SETS};
+        }
+        else return new String[]{"-=== Texture Stats ===-", "Bindless Unsupported"};
+
     }
 
 
