@@ -14,8 +14,6 @@ import org.lwjgl.glfw.GLFW;
 public class RangeOptionWidget extends OptionWidget<RangeOption> {
     protected double value;
 
-    private boolean focused;
-
     public RangeOptionWidget(RangeOption option, int x, int y, int width, int height, Component name) {
         super(x, y, width, height, name);
         this.setOption(option);
@@ -82,16 +80,6 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
         }
 
         return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public void setFocused(boolean bl) {
-        this.focused = bl;
-    }
-
-    @Override
-    public boolean isFocused() {
-        return this.focused;
     }
 
     private void setValueFromMouse(double mouseX) {

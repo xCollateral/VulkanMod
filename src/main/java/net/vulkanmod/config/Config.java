@@ -19,7 +19,7 @@ public class Config {
     public VideoModeSet.VideoMode videoMode = VideoModeManager.getFirstAvailable().getVideoMode();
     public boolean windowedFullscreen = false;
 
-    public int advCulling = 2;
+    public int chunkCulling = 2;
     public boolean indirectDraw = false;
 
     public int fogDistance = 0;

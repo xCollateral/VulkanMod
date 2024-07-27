@@ -265,18 +265,18 @@ public abstract class Options {
     public static OptionBlock[] getOptimizationOpts() {
         return new OptionBlock[]{
                 new OptionBlock("", new Option[]{
-                        new CyclingOption<>(Component.translatable("vulkanmod.options.advCulling"),
+                        new CyclingOption<>(Component.translatable("vulkanmod.options.chunkCulling"),
                                 new Integer[]{1, 2, 3, 10},
-                                value -> config.advCulling = value,
-                                () -> config.advCulling)
+                                value -> config.chunkCulling = value,
+                                () -> config.chunkCulling)
                                 .setTranslator(value -> Component.translatable(switch (value) {
-                                    case 1 -> "vulkanmod.options.advCulling.aggressive";
-                                    case 2 -> "vulkanmod.options.advCulling.normal";
-                                    case 3 -> "vulkanmod.options.advCulling.conservative";
+                                    case 1 -> "vulkanmod.options.chunkCulling.aggressive";
+                                    case 2 -> "vulkanmod.options.chunkCulling.normal";
+                                    case 3 -> "vulkanmod.options.chunkCulling.conservative";
                                     case 10 -> "options.off";
                                     default -> "vulkanmod.options.unknown";
                                 }))
-                                .setTooltip(Component.translatable("vulkanmod.options.advCulling.tooltip")),
+                                .setTooltip(Component.translatable("vulkanmod.options.chunkCulling.tooltip")),
                         new SwitchOption(Component.translatable("vulkanmod.options.entityCulling"),
                                 value -> config.entityCulling = value,
                                 () -> config.entityCulling)

@@ -1,14 +1,12 @@
 package net.vulkanmod.render.profiling;
 
 import com.google.common.base.Strings;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.config.gui.GuiRenderer;
@@ -31,10 +29,16 @@ public class ProfilerOverlay {
     private static Profiler.ProfilerResults lastResults;
     private static long lastPollTime;
     private static float frametime;
-
     private static String buildStats;
+//    private static int node = -1;
 
-    private static int node = -1;
+    private final Minecraft minecraft;
+    private final Font font;
+
+    public ProfilerOverlay(Minecraft minecraft) {
+        this.minecraft = minecraft;
+        this.font = minecraft.font;
+    }
 
     public static void createInstance(Minecraft minecraft) {
         INSTANCE = new ProfilerOverlay(minecraft);
@@ -42,7 +46,6 @@ public class ProfilerOverlay {
 
     public static void toggle() {
         shouldRender = !shouldRender;
-
         Profiler.setActive(shouldRender);
     }
 
@@ -51,23 +54,15 @@ public class ProfilerOverlay {
 //        node = v >= 0 && v <= 15 ? v-1 : node;
     }
 
-    Minecraft minecraft;
-    Font font;
-
-    public ProfilerOverlay(Minecraft minecraft) {
-        this.minecraft = minecraft;
-        this.font = minecraft.font;
-    }
-
     public void render(PoseStack poseStack) {
-        this.drawProfilerInfo(poseStack);
+        drawProfilerInfo(poseStack);
     }
 
-    protected void drawProfilerInfo(PoseStack poseStack) {
+    private void drawProfilerInfo(PoseStack poseStack) {
         List<String> infoList = buildInfo();
 
         MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        GuiRenderer.guiGraphics = new GuiGraphics(Minecraft.getInstance(), bufferSource);
+        GuiRenderer.guiGraphics = new GuiGraphics(this.minecraft, bufferSource);
         GuiRenderer.setPoseStack(poseStack);
 
         final int lineHeight = 9;
@@ -81,17 +76,13 @@ public class ProfilerOverlay {
 
         for (int i = 0; i < infoList.size(); ++i) {
             String line = infoList.get(i);
-            if (Strings.isNullOrEmpty(line)) {
-                continue;
+            if (!Strings.isNullOrEmpty(line)) {
+                int textWidth = this.font.width(line);
+                int yPosition = xOffset + lineHeight * i;
+                GuiRenderer.fill(1, yPosition - 1, xOffset + textWidth + 1, yPosition + lineHeight - 1, backgroundColor);
             }
-
-            int textWidth = this.font.width(line);
-            int yPosition = xOffset + lineHeight * i;
-
-            GuiRenderer.fill(1, yPosition - 1, xOffset + textWidth + 1, yPosition + lineHeight - 1, backgroundColor);
         }
 
-        bufferSource.endBatch();
         RenderSystem.disableBlend();
 
         for (int i = 0; i < infoList.size(); ++i) {
@@ -101,33 +92,28 @@ public class ProfilerOverlay {
                 GuiRenderer.drawString(this.font, Component.literal(line), xOffset, yPosition, textColor);
             }
         }
-    }
 
+        bufferSource.endBatch();
+    }
 
     private List<String> buildInfo() {
         List<String> list = new ArrayList<>();
         list.add("");
         list.add("Profiler");
-
         updateResults();
 
-        if (lastResults == null)
-            return list;
+        if (lastResults == null) return list;
 
         int fps = Math.round(1000.0f / frametime);
-
         list.add(String.format("FPS: %d Frametime: %.3f", fps, frametime));
         list.add("");
 
-        var partialResults = lastResults.getPartialResults();
-        for (Profiler.Result result : partialResults) {
+        for (Profiler.Result result : lastResults.getPartialResults()) {
             list.add(String.format("%s: %.3f", result.name, result.value));
         }
 
         list.add("");
         list.add(MemoryManager.getInstance().getHeapStats());
-
-        // Section build stats
         list.add("");
         list.add("");
         list.add(String.format("Build time: %.0fms", BuildTimeProfiler.getDeltaTime()));
@@ -143,13 +129,11 @@ public class ProfilerOverlay {
             return;
 
         Profiler.ProfilerResults results = Profiler.getMainProfiler().getProfilerResults();
-
         if (results == null)
             return;
 
         frametime = results.getResult().value;
         lastResults = results;
-
         lastPollTime = System.nanoTime();
 
         if (ChunkTask.BENCH)
@@ -157,12 +141,13 @@ public class ProfilerOverlay {
     }
 
     private String getBuildStats() {
-        var resourcesArray = WorldRenderer.getInstance().getTaskDispatcher().getResourcesArray();
+        BuilderResources[] resourcesArray = WorldRenderer.getInstance().getTaskDispatcher().getResourcesArray();
+        int totalTime = 0;
+        int buildCount = 0;
 
-        int totalTime = 0, buildCount = 0;
-        for (BuilderResources resources1 : resourcesArray) {
-            totalTime += resources1.getTotalBuildTime();
-            buildCount += resources1.getBuildCount();
+        for (BuilderResources resources : resourcesArray) {
+            totalTime += resources.getTotalBuildTime();
+            buildCount += resources.getBuildCount();
         }
 
         return String.format("Builders time: %dms avg %dms (%d builds)",

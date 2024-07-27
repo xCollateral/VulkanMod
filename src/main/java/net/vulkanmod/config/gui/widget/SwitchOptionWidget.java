@@ -9,8 +9,6 @@ import net.vulkanmod.vulkan.util.ColorUtil;
 import org.lwjgl.glfw.GLFW;
 
 public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
-    private boolean focused;
-
     public SwitchOptionWidget(SwitchOption option, int x, int y, int width, int height, Component name) {
         super(x, y, width, height, name);
         this.option = option;
@@ -99,15 +97,4 @@ public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
                 ? Component.translatable("options.on")
                 : Component.translatable("options.off");
     }
-
-    @Override
-    public void setFocused(boolean bl) {
-        this.focused = bl;
-    }
-
-    @Override
-    public boolean isFocused() {
-        return this.focused;
-    }
-
 }

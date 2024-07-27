@@ -13,7 +13,7 @@ public class SwitchOption extends Option<Boolean> {
     }
 
     @Override
-    public OptionWidget createOptionWidget(int x, int y, int width, int height) {
+    public OptionWidget<?> createOptionWidget(int x, int y, int width, int height) {
         return new SwitchOptionWidget(this, x, y, width, height, this.name);
     }
 

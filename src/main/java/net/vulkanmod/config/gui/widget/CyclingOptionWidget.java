@@ -13,10 +13,8 @@ import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
-    private Button leftButton;
-    private Button rightButton;
-
-    private boolean focused;
+    private final Button leftButton;
+    private final Button rightButton;
 
     public CyclingOptionWidget(CyclingOption<?> option, int x, int y, int width, int height, Component name) {
         super(x, y, width, height, name);
@@ -108,16 +106,6 @@ public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
 
     }
 
-    @Override
-    public void setFocused(boolean bl) {
-        this.focused = bl;
-    }
-
-    @Override
-    public boolean isFocused() {
-        return this.focused;
-    }
-
     class Button {
         int x;
         int width;
@@ -161,18 +149,17 @@ public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
 
             bufferBuilder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION);
 
-            float h = f;
             float w = f - 1.0f;
             float yC = y + height * 0.5f;
             float xC = x + width * 0.5f;
             if (this.direction == Direction.LEFT) {
                 bufferBuilder.vertex(matrix4f, xC - w, yC, 0).endVertex();
-                bufferBuilder.vertex(matrix4f, xC + w, yC + h, 0).endVertex();
-                bufferBuilder.vertex(matrix4f, xC + w, yC - h, 0).endVertex();
+                bufferBuilder.vertex(matrix4f, xC + w, yC + f, 0).endVertex();
+                bufferBuilder.vertex(matrix4f, xC + w, yC - f, 0).endVertex();
             } else {
                 bufferBuilder.vertex(matrix4f, xC + w, yC, 0).endVertex();
-                bufferBuilder.vertex(matrix4f, xC - w, yC - h, 0).endVertex();
-                bufferBuilder.vertex(matrix4f, xC - w, yC + h, 0).endVertex();
+                bufferBuilder.vertex(matrix4f, xC - w, yC - f, 0).endVertex();
+                bufferBuilder.vertex(matrix4f, xC - w, yC + f, 0).endVertex();
             }
 
             tesselator.end();

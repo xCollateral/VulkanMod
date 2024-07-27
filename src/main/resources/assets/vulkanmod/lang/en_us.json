@@ -9,11 +9,11 @@
   "vulkanmod.options.buttons.apply": "Apply",
   "vulkanmod.options.buttons.kofi": "Support me",
 
-  "vulkanmod.options.advCulling": "Advanced Chunk Culling",
-  "vulkanmod.options.advCulling.aggressive": "Aggressive",
-  "vulkanmod.options.advCulling.conservative": "Conservative",
-  "vulkanmod.options.advCulling.normal": "Normal",
-  "vulkanmod.options.advCulling.tooltip": "Use a culling algorithm that might improve performance by reducing the number of non visible chunk sections rendered.",
+  "vulkanmod.options.chunkCulling": "Advanced Chunk Culling",
+  "vulkanmod.options.chunkCulling.aggressive": "Aggressive",
+  "vulkanmod.options.chunkCulling.conservative": "Conservative",
+  "vulkanmod.options.chunkCulling.normal": "Normal",
+  "vulkanmod.options.chunkCulling.tooltip": "Use a culling algorithm that might improve performance by reducing the number of non visible chunk sections rendered.",
 
   "vulkanmod.options.ao.subBlock": "ON (Sub-block)",
   "vulkanmod.options.ao.subBlock.tooltip": "ON (Sub-block): Enables smooth lighting for non full block (experimental).",
