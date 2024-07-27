@@ -7,6 +7,7 @@ import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.VideoSettingsScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -18,6 +19,7 @@ import net.vulkanmod.config.gui.widget.VButtonWidget;
 import net.vulkanmod.config.option.OptionPage;
 import net.vulkanmod.config.option.Options;
 import net.vulkanmod.vulkan.util.ColorUtil;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +42,9 @@ public class VOptionScreen extends Screen {
 
     private final List<VButtonWidget> pageButtons = Lists.newArrayList();
     private final List<VButtonWidget> buttons = Lists.newArrayList();
+    
+    private double lastMouseX;
+    private double lastMouseY;
 
     public VOptionScreen(Component title, Screen parent) {
         super(title);
@@ -152,7 +157,7 @@ public class VOptionScreen extends Screen {
         int buttonHeight = 20;
         int padding = 10;
         int buttonMargin = 5;
-        int buttonWidth = minecraft.font.width(CommonComponents.GUI_DONE) + 2 * padding;
+        int buttonWidth = this.minecraft.font.width(CommonComponents.GUI_DONE) + 2 * padding;
         int x0 = (this.width - buttonWidth - rightMargin);
         int y0 = this.height - buttonHeight - 7;
 
@@ -163,7 +168,7 @@ public class VOptionScreen extends Screen {
                 button -> this.minecraft.setScreen(this.parent)
         );
 
-        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.apply")) + 2 * padding;
+        buttonWidth = this.minecraft.font.width(Component.translatable("vulkanmod.options.buttons.apply")) + 2 * padding;
         x0 -= (buttonWidth + buttonMargin);
         this.applyButton = new VButtonWidget(
                 x0, y0,
@@ -172,7 +177,7 @@ public class VOptionScreen extends Screen {
                 button -> this.applyOptions()
         );
 
-        buttonWidth = minecraft.font.width(Component.translatable("vulkanmod.options.buttons.kofi")) + 10;
+        buttonWidth = this.minecraft.font.width(Component.translatable("vulkanmod.options.buttons.kofi")) + 10;
         x0 = (this.width - buttonWidth - rightMargin);
         this.supportButton = new VButtonWidget(
                 x0, 6,
@@ -207,12 +212,40 @@ public class VOptionScreen extends Screen {
     }
 
     @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_P && modifiers == GLFW.GLFW_MOD_SHIFT) {
+            this.minecraft.setScreen(new VideoSettingsScreen(this.parent, this.minecraft.options));
+
+            return true;
+        }
+
+        if (keyCode != GLFW.GLFW_KEY_ESCAPE) {
+            VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
+            VAbstractWidget hoveredWidget =  currentList.getHoveredWidget(lastMouseX, lastMouseY);
+
+            if (hoveredWidget != null) {
+                return hoveredWidget.keyPressed(keyCode, scanCode, modifiers);
+            }
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         this.setDragging(false);
         this.updateState();
         return this.getChildAt(mouseX, mouseY)
                 .filter(guiEventListener -> guiEventListener.mouseReleased(mouseX, mouseY, button))
                 .isPresent();
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        this.lastMouseX = mouseX;
+        this.lastMouseY = mouseY;
+
+        super.mouseMoved(mouseX, mouseY);
     }
 
     @Override

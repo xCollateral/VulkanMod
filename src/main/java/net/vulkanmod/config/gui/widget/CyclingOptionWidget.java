@@ -10,6 +10,7 @@ import net.vulkanmod.config.gui.GuiRenderer;
 import net.vulkanmod.config.option.CyclingOption;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.glfw.GLFW;
 
 public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
     private Button leftButton;
@@ -70,6 +71,21 @@ public class CyclingOptionWidget extends OptionWidget<CyclingOption<?>> {
             int c = i == current ? activeColor : color;
             GuiRenderer.fill(x0, y0, x0 + barWidth, y0 + 1.5f, c);
         }
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_RIGHT) {
+            option.nextValue();
+            return true;
+        }
+
+        if (keyCode == GLFW.GLFW_KEY_LEFT) {
+            option.prevValue();
+            return true;
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

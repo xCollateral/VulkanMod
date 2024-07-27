@@ -76,10 +76,12 @@ public class RangeOptionWidget extends OptionWidget<RangeOption> {
 
         if (isLeft || isRight) {
             float direction = isLeft ? -1.0f : 1.0f;
-            this.setValue(this.value + (double) (direction / (float) (this.width - 8)));
+            double stepSize = (double) option.getStep() / (option.getMax() - option.getMin());
+
+            this.setValue(this.value + direction * stepSize);
         }
 
-        return false;
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

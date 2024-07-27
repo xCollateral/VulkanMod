@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.vulkanmod.config.gui.GuiRenderer;
 import net.vulkanmod.config.option.SwitchOption;
 import net.vulkanmod.vulkan.util.ColorUtil;
+import org.lwjgl.glfw.GLFW;
 
 public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
     private boolean focused;
@@ -41,7 +42,7 @@ public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
         }
 
         color = ColorUtil.ARGB.pack(0.6f, 0.6f, 0.6f, 1.0f);
-        GuiRenderer.renderBoxBorder(x0, y0, halfWidth * 2, height, 1,  color);
+        GuiRenderer.renderBoxBorder(x0, y0, halfWidth * 2, height, 1, color);
 
         color = this.active ? 0xFFFFFF : 0xA0A0A0;
         Font textRenderer = Minecraft.getInstance().font;
@@ -53,6 +54,29 @@ public class SwitchOptionWidget extends OptionWidget<SwitchOption> {
         int x = this.controlX + this.controlWidth / 2 - (int) (halfWidth * 1.5f) - 4 - margin;
         int y = this.y + (this.height - 8) / 2;
         GuiRenderer.drawCenteredString(textRenderer, this.getDisplayedValue(), x, y, color);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        switch (keyCode) {
+            case GLFW.GLFW_KEY_SPACE, GLFW.GLFW_KEY_ENTER -> {
+                this.option.setNewValue(!this.option.getNewValue());
+                updateDisplayedValue();
+                return true;
+            }
+            case GLFW.GLFW_KEY_RIGHT -> {
+                this.option.setNewValue(true);
+                updateDisplayedValue();
+                return true;
+            }
+            case GLFW.GLFW_KEY_LEFT -> {
+                this.option.setNewValue(false);
+                updateDisplayedValue();
+                return true;
+            }
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     public void onClick(double mouseX, double mouseY) {

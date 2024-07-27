@@ -46,4 +46,16 @@ public class RangeOption extends Option<Integer> {
 
         this.setNewValue((int) n);
     }
+
+    public int getStep() {
+        return step;
+    }
+
+    public int getMin() {
+        return min;
+    }
+
+    public int getMax() {
+        return max;
+    }
 }
