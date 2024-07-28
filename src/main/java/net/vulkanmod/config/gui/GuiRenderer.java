@@ -113,6 +113,14 @@ public abstract class GuiRenderer {
         guiGraphics.drawString(font, formattedCharSequence, x, y, color);
     }
 
+    public static void drawString(Font font, Component component, int x, int y, int color, boolean shadow) {
+        drawString(font, component.getVisualOrderText(), x, y, color, shadow);
+    }
+
+    public static void drawString(Font font, FormattedCharSequence formattedCharSequence, int x, int y, int color, boolean shadow) {
+        guiGraphics.drawString(font, formattedCharSequence, x, y, color, shadow);
+    }
+
     public static void drawCenteredString(Font font, Component component, int x, int y, int color) {
         FormattedCharSequence formattedCharSequence = component.getVisualOrderText();
         guiGraphics.drawString(font, formattedCharSequence, x - font.width(formattedCharSequence) / 2, y, color);
