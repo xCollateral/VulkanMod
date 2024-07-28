@@ -39,8 +39,8 @@ This is a fabric mod that introduces a brand new **Vulkan** based voxel renderin
     </tr>
   <tr>
     <td style="text-align:center"> 
-        <a href="https://discord.gg/FVXg7AYR2Q"> 
-            <img alt="Discord" align="top" src="https://img.shields.io/discord/963180553547419670?style=flat-square&logo=discord&logoColor=%23FFFFFF&label=Vulkanmod%20official%20discord%20server&labelColor=%235865F2&color=%235865F2">
+        <a href="https://discord.com/invite/FNw998EA"> 
+            <img alt="Discord" align="top" src="https://img.shields.io/discord/963180553547419670?style=flat-square&logo=discord&logoColor=%23FFFFFF&label=Vulkanmod%20Unofficial%20discord%20server&labelColor=%235865F2&color=%235865F2">
         </a>
      </td>
     <td>
