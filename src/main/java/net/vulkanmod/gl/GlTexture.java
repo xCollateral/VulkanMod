@@ -225,7 +225,7 @@ public class GlTexture {
             default -> 0;
         };
 
-        vulkanImage.updateTextureSampler(maxLod, samplerFlags);
+        vulkanImage.updateTextureSampler(samplerFlags);
     }
 
     private void uploadImage(ByteBuffer pixels) {
