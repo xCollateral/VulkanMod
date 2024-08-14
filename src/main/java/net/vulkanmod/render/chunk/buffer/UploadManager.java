@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk.buffer;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
@@ -27,6 +28,8 @@ public class UploadManager {
     Queue queue = DeviceManager.getTransferQueue();
     CommandPool.CommandBuffer commandBuffer;
 
+    LongOpenHashSet dstBuffers = new LongOpenHashSet();
+
     public void submitUploads() {
         if (this.commandBuffer == null)
             return;
@@ -36,6 +39,7 @@ public class UploadManager {
         Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
 
         this.commandBuffer = null;
+        this.dstBuffers.clear();
     }
 
     public void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
@@ -45,6 +49,24 @@ public class UploadManager {
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
         stagingBuffer.copyBuffer((int) bufferSize, src);
+
+        if (!this.dstBuffers.add(buffer.getId())) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
+                barrier.sType$Default();
+                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+
+                vkCmdPipelineBarrier(commandBuffer,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                        0,
+                        barrier,
+                        null,
+                        null);
+            }
+
+            this.dstBuffers.clear();
+        }
 
         TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.getId(), stagingBuffer.getOffset(), buffer.getId(), dstOffset, bufferSize);
     }
@@ -77,6 +99,8 @@ public class UploadManager {
                     bufferMemoryBarriers,
                     null);
         }
+
+        this.dstBuffers.add(dst.getId());
 
         TransferQueue.uploadBufferCmd(commandBuffer, src.getId(), srcOffset, dst.getId(), dstOffset, size);
     }

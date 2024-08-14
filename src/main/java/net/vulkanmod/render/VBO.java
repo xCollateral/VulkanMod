@@ -14,6 +14,7 @@ import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
@@ -128,7 +129,7 @@ public class VBO {
             renderer.bindGraphicsPipeline(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
 
-            int textureID = pipeline.updateImageState();
+            int textureID = VTextureSelector.bindShaderTextures(pipeline);
             if (textureID != -1) {
                 if (this.indexBuffer != null)
                     Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount, textureID);

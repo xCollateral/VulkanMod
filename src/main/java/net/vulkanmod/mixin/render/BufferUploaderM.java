@@ -4,10 +4,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -48,7 +50,7 @@ public class BufferUploaderM {
             VRenderSystem.setPrimitiveTopologyGL(parameters.mode().asGLMode);
             renderer.bindGraphicsPipeline(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
-            final int textureID = pipeline.updateImageState();
+            final int textureID = VTextureSelector.bindShaderTextures(pipeline);
             if (textureID != -1)
                 Renderer.getDrawer().draw(renderedBuffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount(), textureID);
         }

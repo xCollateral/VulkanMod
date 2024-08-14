@@ -44,6 +44,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform MODEL_VIEW_MATRIX;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform PROJECTION_MATRIX;
+    @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform INVERSE_VIEW_ROTATION_MATRIX;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform COLOR_MODULATOR;
     @Shadow @Final @Nullable public com.mojang.blaze3d.shaders.Uniform LINE_WIDTH;
 
@@ -129,6 +130,10 @@ public class ShaderInstanceM implements ShaderMixed {
 
         if (this.PROJECTION_MATRIX != null) {
             this.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
+        }
+
+        if (this.INVERSE_VIEW_ROTATION_MATRIX != null) {
+            this.INVERSE_VIEW_ROTATION_MATRIX.set(RenderSystem.getInverseViewRotationMatrix());
         }
 
         if (this.COLOR_MODULATOR != null) {

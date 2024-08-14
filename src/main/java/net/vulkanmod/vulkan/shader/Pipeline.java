@@ -222,6 +222,10 @@ public abstract class Pipeline {
     public long getLayout() {
         return pipelineLayout;
     }
+    //TODO: Will cause issues if mods need to update/use custom vertex textures
+    public List<ImageDescriptor> getFragImageDescriptors() {
+        return fragImageDescriptors;
+    }
 
     public void resetDescriptorPool(int i) {
         if (this.bindfulDescriptorSets != null)
@@ -253,35 +257,7 @@ public abstract class Pipeline {
         }
     }
 
-    public int updateImageState() {
-        if (!bindless) return 0;
-        //TODO: move Texture registration to VTextureSelector to allow Async texture updates + reduced CPu overhead during rendering
-        //                  VulkanImage vulkanImage = VTextureSelector.getBoundTexture(state.imageIdx);
-        boolean isNewTexture = false;
-        //TODO:!
-        for (ImageDescriptor state : fragImageDescriptors) {
 
-            //get the currently atcive TextureIDs
-            final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
-
-            if (shaderTexture != 0) {
-
-                //TODO: maybe map >0 ShaderTextre indicies/slots diertcly (w. no Tetxure IDs needed)_ to VretOnlySMapler Slots (i.e. more Immutable fiendly)
-                //Add texture to the DescriptorSet if its new.unique
-                DescriptorManager.registerTexture(setID, state.imageIdx, shaderTexture);
-
-                //Convert TextureID to Sampler Index
-
-                VTextureSelector.setSamplerIndex(state.imageIdx, DescriptorManager.getTexture(setID, state.imageIdx, shaderTexture));
-                isNewTexture |= DescriptorManager.isTexUnInitialised(setID, shaderTexture);
-            }
-
-
-        }
-        //Skip rendering if the texture is new/updated (Can be fixed with Update after bind)
-        return isNewTexture ? -1 : VTextureSelector.getSamplerIndex(0);
-
-    }
 
     public void pushUniforms(UniformBuffer uniformBuffers) {
 

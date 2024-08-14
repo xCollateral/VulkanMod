@@ -53,8 +53,8 @@ public class AreaBuffer {
         // Free old segment
         if (oldOffset != -1) {
             // Need to delay segment freeing since it might be still used by prev frames in flight
-//            this.setSegmentFree(oldOffset);
-            MemoryManager.getInstance().addToFreeSegment(this, oldOffset);
+            this.setSegmentFree(oldOffset);
+//            MemoryManager.getInstance().addToFreeSegment(this, oldOffset);
         }
 
         int size = byteBuffer.remaining();
@@ -127,7 +127,10 @@ public class AreaBuffer {
         this.size = newSize;
         Buffer dst = this.allocateBuffer();
 
-        moveUsedSegments(dst);
+        UploadManager.INSTANCE.copyBuffer(this.buffer, dst);
+
+        // TODO: moving only used segments causes corruption
+//        moveUsedSegments(dst);
 
         this.buffer.freeBuffer();
         this.buffer = dst;
@@ -317,6 +320,10 @@ public class AreaBuffer {
                     int segmentEnd = segment.offset + segment.size;
                     if (segment.offset + segment.size != this.size)
                         LOGGER.error(String.format("last segment end (%d) does not match buffer size (%d)", segmentEnd, this.size));
+
+                    // Check segmentation
+                    if (segment.offset != this.used)
+                        LOGGER.error(String.format("last segment offset (%d) does not match buffer used size (%d)", segmentEnd, this.size));
                 }
 
             }
