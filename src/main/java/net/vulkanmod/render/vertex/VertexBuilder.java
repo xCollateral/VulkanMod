@@ -33,13 +33,13 @@ public interface VertexBuilder {
     }
 
     class CompressedVertexBuilder implements VertexBuilder {
-        private static final int VERTEX_SIZE = 20;
+        private static final int VERTEX_SIZE = 16;
 
         public static final float POS_CONV_MUL = 2048.0f;
         public static final float POS_OFFSET = -4.0f;
         public static final float POS_OFFSET_CONV = POS_OFFSET * POS_CONV_MUL;
 
-        public static final float UV_CONV_MUL = 32768.0f;
+        public static final float UV_CONV_MUL = 65536.f;
 
         public void vertex(long ptr, float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
             final short sX = (short) (x * POS_CONV_MUL + POS_OFFSET_CONV);
