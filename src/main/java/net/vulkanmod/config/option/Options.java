@@ -2,6 +2,7 @@ package net.vulkanmod.config.option;
 
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
@@ -249,13 +250,14 @@ public abstract class Options {
                                 value -> config.entityCulling = value,
                                 () -> config.entityCulling)
                                 .setTooltip(Component.translatable("vulkanmod.options.entityCulling.tooltip")),
-                        new SwitchOption(Component.translatable("vulkanmod.options.uniqueOpaqueLayer"),
+                        new SwitchOption(Component.translatable("vulkanmod.options.earlyZ"),
                                 value -> {
-                                    config.uniqueOpaqueLayer = value;
+                                    config.earlyZ = value;
+//                                    ItemBlockRenderTypes.setFancy(!value);
                                     minecraft.levelRenderer.allChanged();
                                 },
-                                () -> config.uniqueOpaqueLayer)
-                                .setTooltip(Component.translatable("vulkanmod.options.uniqueOpaqueLayer.tooltip")),
+                                () -> config.earlyZ)
+                                .setTooltip(Component.translatable("vulkanmod.options.earlyZ.tooltip")),
                         new SwitchOption(Component.translatable("vulkanmod.options.indirectDraw"),
                                 value -> config.indirectDraw = value,
                                 () -> config.indirectDraw)

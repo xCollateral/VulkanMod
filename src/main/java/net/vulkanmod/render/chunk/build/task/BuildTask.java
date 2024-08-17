@@ -173,15 +173,15 @@ public class BuildTask extends ChunkTask {
     }
 
     private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
-        if (Initializer.CONFIG.uniqueOpaqueLayer) {
+        if (Initializer.CONFIG.earlyZ) {
             renderType = switch (renderType) {
-                case SOLID, CUTOUT, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
+                case SOLID, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
+                case CUTOUT -> TerrainRenderType.CUTOUT;
                 case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
             };
         } else {
             renderType = switch (renderType) {
-                case SOLID, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
-                case CUTOUT -> TerrainRenderType.CUTOUT;
+                case SOLID, CUTOUT, CUTOUT_MIPPED -> TerrainRenderType.CUTOUT_MIPPED;
                 case TRANSLUCENT, TRIPWIRE -> TerrainRenderType.TRANSLUCENT;
             };
         }

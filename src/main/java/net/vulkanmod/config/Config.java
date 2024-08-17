@@ -21,7 +21,7 @@ public class Config {
     public int advCulling = 2;
     public boolean indirectDraw = false;
 
-    public boolean uniqueOpaqueLayer = true;
+    public boolean earlyZ = false;
     public boolean entityCulling = true;
     public int device = -1;
 

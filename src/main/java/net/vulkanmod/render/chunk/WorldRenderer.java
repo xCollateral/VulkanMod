@@ -48,6 +48,9 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.*;
 
+import static org.lwjgl.opengl.GL11C.GL_LEQUAL;
+import static org.lwjgl.opengl.GL11C.GL_LESS;
+
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
@@ -307,11 +310,12 @@ public class WorldRenderer {
         this.minecraft.getProfiler().popPush(() -> "render_" + renderType);
 
         final boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
+        final boolean earlyZ = Initializer.CONFIG.earlyZ;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
         VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
-
+        VRenderSystem.depthFunc(earlyZ ? GL_LESS : GL_LEQUAL);
         Renderer renderer = Renderer.getInstance();
         GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
         renderer.bindGraphicsPipeline(pipeline);
@@ -322,8 +326,9 @@ public class WorldRenderer {
         Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer);
 
         int currentFrame = Renderer.getCurrentFrame();
-        Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? TerrainRenderType.COMPACT_RENDER_TYPES : TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
+        Set<TerrainRenderType> allowedRenderTypes = Initializer.CONFIG.earlyZ ? TerrainRenderType.SEMI_COMPACT_RENDER_TYPES : TerrainRenderType.COMPACT_RENDER_TYPES;
         if (allowedRenderTypes.contains(terrainRenderType)) {
+
             terrainRenderType.setCutoutUniform();
 
             for (Iterator<ChunkArea> iterator = this.sectionGraph.getChunkAreaQueue().iterator(isTranslucent); iterator.hasNext(); ) {
