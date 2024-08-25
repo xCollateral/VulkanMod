@@ -24,17 +24,15 @@ layout(binding = 2) uniform sampler2D Sampler2[];
 
 layout(location = 0) invariant flat out uint baseInstance;
 layout(location = 1) out vec4 vertexColor;
-layout(location = 2) out vec4 lightMapColor;
-layout(location = 3) out vec4 overlayColor;
-layout(location = 4) out vec2 texCoord0;
-layout(location = 5) out float vertexDistance;
+layout(location = 2) out vec4 overlayColor;
+layout(location = 3) out vec2 texCoord0;
+layout(location = 4) out float vertexDistance;
 
 void main() {
     gl_Position = MatrixStack[gl_BaseInstance & 31] * vec4(Position, 1.0);
     baseInstance = gl_BaseInstance >> 16;
     vertexDistance = fog_distance(Position.xyz, 0);
-    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
-    lightMapColor = texelFetch(Sampler2[0], UV2 / 16, 0);
+    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * texelFetch(Sampler2[0], UV2 / 16, 0);
     overlayColor = texelFetch(Sampler2[1], UV1, 0);
     texCoord0 = UV0;
 }
