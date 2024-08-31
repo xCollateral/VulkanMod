@@ -2,12 +2,9 @@ package net.vulkanmod.render.profiling;
 
 import com.google.common.base.Strings;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.config.gui.GuiRenderer;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -54,12 +51,11 @@ public class ProfilerOverlay {
 //        node = v >= 0 && v <= 15 ? v-1 : node;
     }
 
-    public void render(PoseStack poseStack) {
-        List<String> infoList = this.buildInfo();
+    public void render(GuiGraphics guiGraphics) {
+        GuiRenderer.guiGraphics = guiGraphics;
+        GuiRenderer.pose = guiGraphics.pose();
 
-        MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        GuiRenderer.guiGraphics = new GuiGraphics(this.minecraft, bufferSource);
-        GuiRenderer.setPoseStack(poseStack);
+        List<String> infoList = this.buildInfo();
 
         final int lineHeight = 9;
         final int xOffset = 2;
@@ -88,15 +84,13 @@ public class ProfilerOverlay {
                 GuiRenderer.drawString(this.font, Component.literal(line), xOffset, yPosition, textColor, false);
             }
         }
-
-        bufferSource.endBatch();
     }
 
     private List<String> buildInfo() {
         List<String> list = new ArrayList<>();
         list.add("");
         list.add("Profiler");
-        
+
         this.updateResults();
 
         if (lastResults == null)
