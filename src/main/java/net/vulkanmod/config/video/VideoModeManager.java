@@ -1,96 +1,66 @@
 package net.vulkanmod.config.video;
 
-import net.vulkanmod.Initializer;
+import com.mojang.blaze3d.platform.VideoMode;
+import com.mojang.blaze3d.platform.Window;
+import net.minecraft.client.Minecraft;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-
-import static org.lwjgl.glfw.GLFW.*;
+import java.util.Optional;
 
 public abstract class VideoModeManager {
-    private static VideoModeSet.VideoMode osVideoMode;
-    private static VideoModeSet[] videoModeSets;
+    private static final Window window = Minecraft.getInstance().getWindow();
+    private static final List<VideoMode> videoModes = populateVideoModes(GLFW.glfwGetPrimaryMonitor());
+    private static final VideoMode osVideoMode = getCurrentVideoMode(GLFW.glfwGetPrimaryMonitor());
 
-    public static VideoModeSet.VideoMode selectedVideoMode;
-
-    public static void init() {
-        long monitor = glfwGetPrimaryMonitor();
-        osVideoMode = getCurrentVideoMode(monitor);
-        videoModeSets = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
+    public static VideoMode getSelectedVideoMode() {
+        return window.getPreferredFullscreenVideoMode().orElse(getOsVideoMode());
     }
 
-    public static void applySelectedVideoMode() {
-        Initializer.CONFIG.videoMode = selectedVideoMode;
+    public static void setSelectedVideoMode(VideoMode videoMode) {
+        window.setPreferredFullscreenVideoMode(Optional.of(videoMode));
     }
 
-    public static VideoModeSet[] getVideoResolutions() {
-        return videoModeSets;
+    public static List<VideoMode> getVideoModes() {
+        return videoModes;
     }
 
-    public static VideoModeSet getFirstAvailable() {
-        if(videoModeSets != null)
-            return videoModeSets[videoModeSets.length - 1];
-        else
-            return VideoModeSet.getDummy();
+    public static VideoMode getFirstAvailable() {
+        return videoModes.getLast();
     }
 
-    public static VideoModeSet.VideoMode getOsVideoMode() {
+    public static VideoMode getOsVideoMode() {
         return osVideoMode;
     }
 
-    public static VideoModeSet.VideoMode getCurrentVideoMode(long monitor){
+    public static @NotNull VideoMode getCurrentVideoMode(long monitor) {
         GLFWVidMode vidMode = GLFW.glfwGetVideoMode(monitor);
 
         if (vidMode == null)
-            throw new NullPointerException("Unable to get current video mode");
-
-        return new VideoModeSet.VideoMode(vidMode.width(), vidMode.height(), vidMode.redBits(), vidMode.refreshRate());
+            throw new NullPointerException("Unable to get current VideoMode");
+        int retinaScale = Minecraft.ON_OSX ? 2 : 1;
+        return new VideoMode(
+                vidMode.width() * retinaScale,
+                vidMode.height() * retinaScale,
+                vidMode.redBits(),
+                vidMode.greenBits(),
+                vidMode.blueBits(),
+                vidMode.refreshRate());
     }
 
-    public static VideoModeSet[] populateVideoResolutions(long monitor) {
-        GLFWVidMode.Buffer buffer = GLFW.glfwGetVideoModes(monitor);
+    public static @NotNull List<VideoMode> populateVideoModes(long monitor) {
+        GLFWVidMode.Buffer videoModes = GLFW.glfwGetVideoModes(monitor);
+        if (videoModes == null) return Collections.emptyList();
 
-        List<VideoModeSet> videoModeSets = new ArrayList<>();
-
-        int currWidth = 0, currHeight = 0, currBitDepth = 0;
-        VideoModeSet videoModeSet = null;
-
-        for (int i = 0; i < buffer.limit(); i++) {
-            buffer.position(i);
-            int bitDepth = buffer.redBits();
-            if (buffer.redBits() < 8 || buffer.greenBits() != bitDepth || buffer.blueBits() != bitDepth)
-                continue;
-
-            int width = buffer.width();
-            int height = buffer.height();
-            int refreshRate = buffer.refreshRate();
-
-            if (currWidth != width || currHeight != height || currBitDepth != bitDepth) {
-                currWidth = width;
-                currHeight = height;
-                currBitDepth = bitDepth;
-
-                videoModeSet = new VideoModeSet(currWidth, currHeight, currBitDepth);
-                videoModeSets.add(videoModeSet);
-            }
-
-            videoModeSet.addRefreshRate(refreshRate);
-        }
-
-        VideoModeSet[] arr = new VideoModeSet[videoModeSets.size()];
-        videoModeSets.toArray(arr);
-
-        return arr;
-    }
-
-    public static VideoModeSet getFromVideoMode(VideoModeSet.VideoMode videoMode) {
-        for (var set : videoModeSets) {
-            if (set.width == videoMode.width && set.height == videoMode.height)
-                return set;
-        }
-
-        return null;
+        return videoModes.stream()
+                .filter(mode -> {
+                    int bitDepth = mode.redBits();
+                    return bitDepth >= 8 && mode.greenBits() == bitDepth && mode.blueBits() == bitDepth;
+                })
+                .map(VideoMode::new)
+                .toList();
     }
 }
