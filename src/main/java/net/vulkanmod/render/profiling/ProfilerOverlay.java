@@ -2,6 +2,8 @@ package net.vulkanmod.render.profiling;
 
 import com.google.common.base.Strings;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -65,23 +67,31 @@ public class ProfilerOverlay {
         Objects.requireNonNull(this.font);
 
         RenderSystem.enableBlend();
+        GuiRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         for (int i = 0; i < infoList.size(); ++i) {
             String line = infoList.get(i);
             if (!Strings.isNullOrEmpty(line)) {
                 int textWidth = this.font.width(line);
                 int yPosition = xOffset + lineHeight * i;
-                GuiRenderer.fill(1, yPosition - 1, xOffset + textWidth + 1, yPosition + lineHeight - 1, backgroundColor);
+                GuiRenderer.fill(
+                        1, yPosition - 1,
+                        xOffset + textWidth + 1, yPosition + lineHeight - 1,
+                        0, backgroundColor);
             }
         }
 
+        GuiRenderer.endBatch();
         RenderSystem.disableBlend();
 
         for (int i = 0; i < infoList.size(); ++i) {
             String line = infoList.get(i);
             if (!Strings.isNullOrEmpty(line)) {
                 int yPosition = xOffset + lineHeight * i;
-                GuiRenderer.drawString(this.font, Component.literal(line), xOffset, yPosition, textColor, false);
+                GuiRenderer.drawString(
+                        this.font, Component.literal(line),
+                        xOffset, yPosition,
+                        textColor, false);
             }
         }
     }
