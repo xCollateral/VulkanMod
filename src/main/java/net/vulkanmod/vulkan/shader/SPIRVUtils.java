@@ -60,7 +60,7 @@ public class SPIRVUtils {
         }
         //Use the optimal most performant vertex format based on architecture: 4 byte alignment if on AMD GCN, otherwise defaults to 2 Bytes (including Nvidia)
         if(use4ByteAlignFormat)
-            shaderc_compile_options_add_macro_definition(options, "USE_ALT_FORMAT", null);
+            shaderc_compile_options_add_macro_definition(options, "GCN_FIX", null);
 
         if(OPTIMIZATIONS)
             shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);

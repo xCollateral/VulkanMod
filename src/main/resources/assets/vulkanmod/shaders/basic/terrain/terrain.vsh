@@ -19,7 +19,7 @@ layout (location = 1) out vec4 vertexColor;
 layout (location = 2) out vec2 texCoord0;
 
 //Compressed Vertex
-#ifndef USE_ALT_FORMAT
+#ifndef GCN_FIX
     layout (location = 0) in ivec4 Position;
     layout (location = 1) in vec4 Color;
     layout (location = 2) in uvec2 UV0;
@@ -43,7 +43,7 @@ void main() {
     vertexDistance = fog_distance(pos.xyz, 0);
     vertexColor = Color * sample_lightmap2(Sampler2, Position.a);
 
-    #ifndef USE_ALT_FORMAT
+    #ifndef GCN_FIX
         texCoord0 = UV0 * UV_INV;
     #else
         texCoord0 = unpackUnorm2x16(UV0);
