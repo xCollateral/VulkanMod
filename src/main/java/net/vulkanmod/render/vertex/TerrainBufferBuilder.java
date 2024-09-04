@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
-import net.vulkanmod.render.chunk.util.BufferUtil;
 import net.vulkanmod.render.util.SortUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +19,7 @@ public class TerrainBufferBuilder {
     private int capacity;
     protected long bufferPtr;
     protected int nextElementByte;
-    private int vertices;
+    private int vertexCount;
 
     private int renderedBufferCount;
     private int renderedBufferPointer;
@@ -29,10 +28,9 @@ public class TerrainBufferBuilder {
 
     private boolean building;
 
-    private Vector3f[] sortingPoints;
-    private float sortX = Float.NaN;
-    private float sortY = Float.NaN;
-    private float sortZ = Float.NaN;
+    private final QuadSorter quadSorter = new QuadSorter();
+
+    private boolean needsSorting;
     private boolean indexOnly;
 
     protected VertexBuilder vertexBuilder;
@@ -68,28 +66,25 @@ public class TerrainBufferBuilder {
         }
     }
 
-    public void setQuadSortOrigin(float f, float g, float h) {
-        if (this.sortX != f || this.sortY != g || this.sortZ != h) {
-            this.sortX = f;
-            this.sortY = g;
-            this.sortZ = h;
-            if (this.sortingPoints == null) {
-                this.sortingPoints = this.makeQuadSortingPoints();
-            }
-        }
+    public void setupQuadSorting(float x, float y, float z) {
+        this.quadSorter.setQuadSortOrigin(x, y, z);
+        this.needsSorting = true;
     }
 
-    public SortState getSortState() {
-        return new SortState(VertexFormat.Mode.QUADS, this.vertices, this.sortingPoints, this.sortX, this.sortY, this.sortZ);
+    public QuadSorter.SortState getSortState() {
+        return this.quadSorter.getSortState();
     }
 
-    public void restoreSortState(SortState sortState) {
-        this.vertices = sortState.vertices;
+    public void restoreSortState(QuadSorter.SortState sortState) {
+        this.vertexCount = sortState.vertexCount;
         this.nextElementByte = this.renderedBufferPointer;
-        this.sortingPoints = sortState.sortingPoints;
-        this.sortX = sortState.sortX;
-        this.sortY = sortState.sortY;
-        this.sortZ = sortState.sortZ;
+
+        this.quadSorter.restoreSortState(sortState);
+
+        this.indexOnly = true;
+    }
+
+    public void setIndexOnly() {
         this.indexOnly = true;
     }
 
@@ -101,93 +96,12 @@ public class TerrainBufferBuilder {
         }
     }
 
-    private Vector3f[] makeQuadSortingPoints() {
-        int pointsNum = this.vertices / 4;
-        Vector3f[] sortingPoints = new Vector3f[pointsNum];
-
-        int stride = this.format.getVertexSize() * 4;
-        int vertexSize = this.format.getVertexSize();
-        int offset = vertexSize * 2;
-
-        if (this.format == CustomVertexFormat.COMPRESSED_TERRAIN) {
-            final float invConv = 1.0f / VertexBuilder.CompressedVertexBuilder.POS_CONV_MUL;
-
-            for (int m = 0; m < pointsNum; ++m) {
-                long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
-
-                short x0 = MemoryUtil.memGetShort(ptr + 0);
-                short y0 = MemoryUtil.memGetShort(ptr + 2);
-                short z0 = MemoryUtil.memGetShort(ptr + 4);
-                short x2 = MemoryUtil.memGetShort(ptr + offset + 0);
-                short y2 = MemoryUtil.memGetShort(ptr + offset + 2);
-                short z2 = MemoryUtil.memGetShort(ptr + offset + 4);
-
-                float xa = (x0 + x2) * invConv * 0.5f;
-                float ya = (y0 + y2) * invConv * 0.5f;
-                float za = (z0 + z2) * invConv * 0.5f;
-                sortingPoints[m] = new Vector3f(xa, ya, za);
-            }
-        } else {
-            for (int m = 0; m < pointsNum; ++m) {
-                long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
-
-                float x0 = MemoryUtil.memGetFloat(ptr + 0);
-                float y0 = MemoryUtil.memGetFloat(ptr + 4);
-                float z0 = MemoryUtil.memGetFloat(ptr + 8);
-                float x2 = MemoryUtil.memGetFloat(ptr + offset + 0);
-                float y2 = MemoryUtil.memGetFloat(ptr + offset + 4);
-                float z2 = MemoryUtil.memGetFloat(ptr + offset + 8);
-
-                float q = (x0 + x2) * 0.5f;
-                float r = (y0 + y2) * 0.5f;
-                float s = (z0 + z2) * 0.5f;
-                sortingPoints[m] = new Vector3f(q, r, s);
-            }
-        }
-
-        return sortingPoints;
-    }
-
-    private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
-        float[] distances = new float[this.sortingPoints.length];
-        int[] sortingPoints = new int[this.sortingPoints.length];
-
-        for (int i = 0; i < this.sortingPoints.length; sortingPoints[i] = i++) {
-            float dx = this.sortingPoints[i].x() - this.sortX;
-            float dy = this.sortingPoints[i].y() - this.sortY;
-            float dz = this.sortingPoints[i].z() - this.sortZ;
-            distances[i] = dx * dx + dy * dy + dz * dz;
-        }
-
-        SortUtil.mergeSort(sortingPoints, distances);
-
-        long ptr = this.bufferPtr + this.nextElementByte;
-
-        final int size = getIndexSize(indexType);
-        final int stride = 4; // 4 vertices in a quad
-        for (int i = 0; i < sortingPoints.length; ++i) {
-            int quadIndex = sortingPoints[i];
-
-            MemoryUtil.memPutInt(ptr + (size * 0L), quadIndex * stride + 0);
-            MemoryUtil.memPutInt(ptr + (size * 1L), quadIndex * stride + 1);
-            MemoryUtil.memPutInt(ptr + (size * 2L), quadIndex * stride + 2);
-            MemoryUtil.memPutInt(ptr + (size * 3L), quadIndex * stride + 2);
-            MemoryUtil.memPutInt(ptr + (size * 4L), quadIndex * stride + 3);
-            MemoryUtil.memPutInt(ptr + (size * 5L), quadIndex * stride + 0);
-
-            ptr += size * 6L;
-        }
-    }
-
-    private static int getIndexSize(VertexFormat.IndexType indexType) {
-        return switch (indexType) {
-            case SHORT -> 2;
-            case INT -> 4;
-        };
+    public void setupQuadSortingPoints() {
+        this.quadSorter.setupQuadSortingPoints(this.bufferPtr + this.renderedBufferPointer, this.vertexCount, this.format);
     }
 
     public boolean isCurrentBatchEmpty() {
-        return this.vertices == 0;
+        return this.vertexCount == 0;
     }
 
     @Nullable
@@ -210,16 +124,19 @@ public class TerrainBufferBuilder {
     }
 
     private RenderedBuffer storeRenderedBuffer() {
-        int indexCount = this.vertices / 4 * 6;
-        int vertexBufferSize = !this.indexOnly ? this.vertices * this.format.getVertexSize() : 0;
+        int indexCount = this.vertexCount / 4 * 6;
+        int vertexBufferSize = !this.indexOnly ? this.vertexCount * this.format.getVertexSize() : 0;
         VertexFormat.IndexType indexType = VertexFormat.IndexType.least(indexCount);
+
         boolean sequentialIndexing;
         int size;
 
-        if (this.sortingPoints != null) {
+        if (this.needsSorting) {
             int indexBufferSize = indexCount * indexType.bytes;
             this.ensureCapacity(indexBufferSize);
-            this.putSortedQuadIndices(indexType);
+
+            this.quadSorter.putSortedQuadIndices(this, indexType);
+
             sequentialIndexing = false;
             this.nextElementByte += indexBufferSize;
             size = vertexBufferSize + indexBufferSize;
@@ -232,19 +149,16 @@ public class TerrainBufferBuilder {
         this.renderedBufferPointer += size;
         ++this.renderedBufferCount;
 
-        DrawState drawState = new DrawState(this.format.getVertexSize(), this.vertices, indexCount, indexType, this.indexOnly, sequentialIndexing);
+        DrawState drawState = new DrawState(this.format.getVertexSize(), this.vertexCount, indexCount, indexType, this.indexOnly, sequentialIndexing);
         return new RenderedBuffer(ptr, drawState);
     }
 
     public void reset() {
         this.building = false;
-        this.vertices = 0;
+        this.vertexCount = 0;
 
-        this.sortingPoints = null;
-        this.sortX = Float.NaN;
-        this.sortY = Float.NaN;
-        this.sortZ = Float.NaN;
         this.indexOnly = false;
+        this.needsSorting = false;
     }
 
     void releaseRenderedBuffer() {
@@ -274,7 +188,7 @@ public class TerrainBufferBuilder {
 
     public void endVertex() {
         this.nextElementByte += this.vertexBuilder.getStride();
-        ++this.vertices;
+        ++this.vertexCount;
     }
 
     public void vertex(float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
@@ -290,23 +204,8 @@ public class TerrainBufferBuilder {
         return this.bufferPtr + this.nextElementByte;
     }
 
-    public static class SortState {
-        final VertexFormat.Mode mode;
-        final int vertices;
-        @Nullable
-        final Vector3f[] sortingPoints;
-        final float sortX;
-        final float sortY;
-        final float sortZ;
-
-        SortState(VertexFormat.Mode mode, int i, @Nullable Vector3f[] vector3fs, float f, float g, float h) {
-            this.mode = mode;
-            this.vertices = i;
-            this.sortingPoints = vector3fs;
-            this.sortX = f;
-            this.sortY = g;
-            this.sortZ = h;
-        }
+    public int getVertexCount() {
+        return vertexCount;
     }
 
     public class RenderedBuffer {
