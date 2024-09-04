@@ -1,4 +1,4 @@
-package net.vulkanmod.mixin.render.model;
+package net.vulkanmod.mixin.render.entity.model;
 
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.Direction;
