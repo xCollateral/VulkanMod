@@ -215,8 +215,8 @@ public abstract class Options {
                                 () -> minecraftOptions.entityShadows().get()),
                         new RangeOption(Component.translatable("options.entityDistanceScaling"),
                                 50, 500, 25,
-                                value -> minecraftOptions.entityDistanceScaling().set(value * 0.01),
-                                () -> minecraftOptions.entityDistanceScaling().get().intValue() * 100),
+                                value -> minecraftOptions.entityDistanceScaling().set(value / 100.0),
+                                () -> (int)(minecraftOptions.entityDistanceScaling().get() * 100)),
                         new CyclingOption<>(Component.translatable("options.mipmapLevels"),
                                 new Integer[]{0, 1, 2, 3, 4},
                                 value -> {
