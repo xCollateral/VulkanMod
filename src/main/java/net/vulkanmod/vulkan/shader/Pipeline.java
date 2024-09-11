@@ -18,6 +18,7 @@ import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
@@ -100,12 +101,13 @@ public abstract class Pipeline {
                 uboLayoutBinding.stageFlags(ubo.getStages());
             }
 
+            final LongBuffer immutableSampler = stack.longs(SamplerManager.getTextureSampler((byte) 0)); //vertex stage samplers always use nearest Sampling
             for (ImageDescriptor imageDescriptor : this.imageDescriptors) {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
-                samplerLayoutBinding.pImmutableSamplers(null);
+                samplerLayoutBinding.pImmutableSamplers(imageDescriptor.getStages()==VK_SHADER_STAGE_VERTEX_BIT ? immutableSampler : null);
                 samplerLayoutBinding.stageFlags(imageDescriptor.getStages());
             }
 
@@ -670,7 +672,7 @@ public abstract class Pipeline {
             return switch (s) {
                 case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
                 case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+                case "all" -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; //VK_SHADER_STAGE_ALL_GRAPHICS includes tessellation/geometry stages, which are unused
                 case "compute" -> VK_SHADER_STAGE_COMPUTE_BIT;
 
                 default -> throw new RuntimeException("cannot identify type..");
