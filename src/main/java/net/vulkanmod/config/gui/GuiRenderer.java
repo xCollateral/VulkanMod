@@ -15,13 +15,12 @@ import org.joml.Matrix4f;
 import java.util.List;
 
 public abstract class GuiRenderer {
-
-    public static Minecraft minecraft;
-    public static GuiGraphics guiGraphics;
     public static Font font;
-
+    public static GuiGraphics guiGraphics;
     public static PoseStack pose;
-    
+    public static BufferBuilder bufferBuilder;
+    public static boolean batching = false;
+
     public static void setPoseStack(PoseStack poseStack) {
         pose = poseStack;
     }
@@ -51,14 +50,16 @@ public abstract class GuiRenderer {
 
     public static void fill(float x0, float y0, float x1, float y1, float z, int color) {
         Matrix4f matrix4f = pose.last().pose();
-        
-        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+
+        if (!batching)
+            bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         bufferBuilder.addVertex(matrix4f, x0, y0, z).setColor(color);
         bufferBuilder.addVertex(matrix4f, x0, y1, z).setColor(color);
         bufferBuilder.addVertex(matrix4f, x1, y1, z).setColor(color);
         bufferBuilder.addVertex(matrix4f, x1, y0, z).setColor(color);
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        if (!batching)
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
     }
 
     public static void renderBoxBorder(float x0, float y0, float width, float height, float borderWidth, int color) {
@@ -78,24 +79,26 @@ public abstract class GuiRenderer {
     }
 
     public static void fillGradient(float x0, float y0, float x1, float y1, float z, int color1, int color2) {
-        float a1 = (float)FastColor.ARGB32.alpha(color1) / 255.0F;
-        float r1 = (float)FastColor.ARGB32.red(color1) / 255.0F;
-        float g1 = (float)FastColor.ARGB32.green(color1) / 255.0F;
-        float b1 = (float)FastColor.ARGB32.blue(color1) / 255.0F;
-        float a2 = (float)FastColor.ARGB32.alpha(color2) / 255.0F;
-        float r2 = (float)FastColor.ARGB32.red(color2) / 255.0F;
-        float g2 = (float)FastColor.ARGB32.green(color2) / 255.0F;
-        float b2 = (float)FastColor.ARGB32.blue(color2) / 255.0F;
+        float a1 = (float) FastColor.ARGB32.alpha(color1) / 255.0F;
+        float r1 = (float) FastColor.ARGB32.red(color1) / 255.0F;
+        float g1 = (float) FastColor.ARGB32.green(color1) / 255.0F;
+        float b1 = (float) FastColor.ARGB32.blue(color1) / 255.0F;
+        float a2 = (float) FastColor.ARGB32.alpha(color2) / 255.0F;
+        float r2 = (float) FastColor.ARGB32.red(color2) / 255.0F;
+        float g2 = (float) FastColor.ARGB32.green(color2) / 255.0F;
+        float b2 = (float) FastColor.ARGB32.blue(color2) / 255.0F;
 
         Matrix4f matrix4f = pose.last().pose();
 
-        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        if (!batching)
+            bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         bufferBuilder.addVertex(matrix4f, x0, y0, z).setColor(r1, g1, b1, a1);
         bufferBuilder.addVertex(matrix4f, x0, y1, z).setColor(r2, g2, b2, a2);
         bufferBuilder.addVertex(matrix4f, x1, y1, z).setColor(r2, g2, b2, a2);
         bufferBuilder.addVertex(matrix4f, x1, y0, z).setColor(r1, g1, b1, a1);
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        if (!batching)
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
     }
 
     public static void drawString(Font font, Component component, int x, int y, int color) {
@@ -106,6 +109,14 @@ public abstract class GuiRenderer {
         guiGraphics.drawString(font, formattedCharSequence, x, y, color);
     }
 
+    public static void drawString(Font font, Component component, int x, int y, int color, boolean shadow) {
+        drawString(font, component.getVisualOrderText(), x, y, color, shadow);
+    }
+
+    public static void drawString(Font font, FormattedCharSequence formattedCharSequence, int x, int y, int color, boolean shadow) {
+        guiGraphics.drawString(font, formattedCharSequence, x, y, color, shadow);
+    }
+
     public static void drawCenteredString(Font font, Component component, int x, int y, int color) {
         FormattedCharSequence formattedCharSequence = component.getVisualOrderText();
         guiGraphics.drawString(font, formattedCharSequence, x - font.width(formattedCharSequence) / 2, y, color);
@@ -113,12 +124,22 @@ public abstract class GuiRenderer {
 
     public static int getMaxTextWidth(Font font, List<FormattedCharSequence> list) {
         int maxWidth = 0;
-        for(var text : list) {
+        for (var text : list) {
             int width = font.width(text);
             if (width > maxWidth) {
                 maxWidth = width;
             }
         }
         return maxWidth;
+    }
+
+    public static void beginBatch(VertexFormat.Mode mode, VertexFormat format) {
+        bufferBuilder = Tesselator.getInstance().begin(mode, format);
+        batching = true;
+    }
+
+    public static void endBatch() {
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        batching = false;
     }
 }
