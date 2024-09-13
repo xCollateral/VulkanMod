@@ -14,19 +14,18 @@ import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.memory.UniformBuffer;
 import net.vulkanmod.vulkan.pass.DefaultMainPass;
 import net.vulkanmod.vulkan.pass.MainPass;
-import net.vulkanmod.vulkan.shader.GraphicsPipeline;
-import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.PipelineState;
-import net.vulkanmod.vulkan.shader.Uniforms;
-import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.shader.*;
+import net.vulkanmod.vulkan.shader.descriptor.BindlessDescriptorSet;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import net.vulkanmod.vulkan.util.VkResult;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -51,6 +50,11 @@ public class Renderer {
 
     private static boolean swapChainUpdate = false;
     public static boolean skipRendering = false;
+
+
+    private final long pipelineLayout0;
+    private static final boolean hasBindless = DeviceManager.device.hasBindless();
+    private long boundPipelineLayout;
 
     public static void initRenderer() {
         INSTANCE = new Renderer();
@@ -102,6 +106,71 @@ public class Renderer {
         device = Vulkan.getVkDevice();
         framesNum = Initializer.CONFIG.frameQueueSize;
         imagesNum = getSwapChain().getImagesNum();
+
+        //Might merge Bindful descriptors into DescriptorManager to allow removing this ugly bindless conditional code
+        if(hasBindless) {
+            //Can accept duplicate/Same DescriptorSets
+            //w/ One Set for each dedicated Sampler Array
+            DescriptorManager.addDescriptorSet(0, new BindlessDescriptorSet(0, 4, 16)); //Default Set for all Core shaders
+            DescriptorManager.addDescriptorSet(1, new BindlessDescriptorSet(1, 1, 1)); //Special set reserved for terrain/Blocks only
+
+            final long descriptorSetLayout = DescriptorManager.getDescriptorSetLayout();
+
+            // PipelineLayout is unoptimized as set 1 is only used for terrain pipeline(s), unnecessarily exposing set 1 to other pipelines as well
+            pipelineLayout0 = createPipelineLayout(descriptorSetLayout, descriptorSetLayout);
+
+
+            boundPipelineLayout = pipelineLayout0;
+        }
+        else pipelineLayout0=0;
+
+        Initializer.LOGGER.info("Setting Rendering Mode: {}", hasBindless ? "Bindless" : "Non-Bindless (Bindful)");
+
+    }
+
+    public static long getLayout() {
+        return INSTANCE.pipelineLayout0;
+    }
+
+    private long createPipelineLayout(long... descriptorSetLayouts) {
+        try (MemoryStack stack = stackPush()) {
+            // ===> PIPELINE LAYOUT CREATION <===
+
+
+            final LongBuffer longs = stack.mallocLong(descriptorSetLayouts.length);
+
+            for (long x : descriptorSetLayouts) {
+                longs.put(x);
+            }
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc(stack);
+            pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+            pipelineLayoutInfo.pSetLayouts(longs.rewind());
+
+
+            {
+                VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.calloc(2, stack);
+                VkPushConstantRange pushConstantVertRange = pushConstantRange.get(0);
+                pushConstantVertRange.size(32);
+                pushConstantVertRange.offset(0);
+                pushConstantVertRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+
+                VkPushConstantRange pushConstantFragRange = pushConstantRange.get(1);
+                pushConstantFragRange.size(16);
+                pushConstantFragRange.offset(32);
+                pushConstantFragRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+
+                pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
+            }
+
+            LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
+
+            if (vkCreatePipelineLayout(DeviceManager.vkDevice, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create pipeline layout");
+            }
+
+            return pPipelineLayout.get(0);
+        }
     }
 
     public static void setLineWidth(float width) {
@@ -118,7 +187,7 @@ public class Renderer {
         drawer = new Drawer();
         drawer.createResources(framesNum);
 
-        Uniforms.setupDefaultUniforms();
+        ScalarUniforms.setupDefaultUniforms();
         PipelineManager.init();
         UploadManager.createInstance();
 
@@ -255,6 +324,8 @@ public class Renderer {
                 throw new RuntimeException("Failed to begin recording command buffer: %s".formatted(VkResult.decode(vkResult)));
             }
             recordingCmds = true;
+
+            if(hasBindless) DescriptorManager.updateAndBindAllSets(currentFrame, drawer.getUniformBuffer().getId(), commandBuffer);
 
             mainPass.begin(commandBuffer, stack);
 
@@ -403,6 +474,9 @@ public class Renderer {
 
         usedPipelines.clear();
         boundPipeline=0;
+
+        UniformState.resetAll();
+        Pipeline.reset();
     }
 
     void waitForSwapChain() {
@@ -450,7 +524,7 @@ public class Renderer {
         }
 
         createSyncObjects();
-
+        VRenderSystem.getScreenSize();
         this.onResizeCallbacks.forEach(Runnable::run);
         ((WindowAccessor) (Object) Minecraft.getInstance().getWindow()).getEventHandler().resizeDisplay();
 
@@ -461,9 +535,15 @@ public class Renderer {
         destroySyncObjects();
 
         drawer.cleanUpResources();
-
+        if(hasBindless)
+        {
+            DescriptorManager.cleanup();
+            vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout0, null);
+        }
         PipelineManager.destroyPipelines();
         VTextureSelector.getWhiteTexture().free();
+        SamplerManager.cleanUp();
+
     }
 
     private void destroySyncObjects() {
@@ -516,22 +596,20 @@ public class Renderer {
 
     public void uploadAndBindUBOs(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
-        pipeline.bindDescriptorSets(commandBuffer, currentFrame);
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame, hasBindless ? pipeline.isBindless() ? drawer.getUniformBuffer() : drawer.getPostEffectUniformBuffers() : drawer.getUniformBuffer());
+        pipeline.pushConstants(commandBuffer);
+
+        if (hasBindless && boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
+        this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
+
     }
 
-    public void pushConstants(Pipeline pipeline) {
+    public void BindCurrentSets(Pipeline pipeline) {
         VkCommandBuffer commandBuffer = currentCmdBuffer;
+        pipeline.bindDescriptorSets(commandBuffer, currentFrame, hasBindless ? pipeline.isBindless() ? drawer.getUniformBuffer() : drawer.getPostEffectUniformBuffers() : drawer.getUniformBuffer());
 
-        PushConstants pushConstants = pipeline.getPushConstants();
-
-        try (MemoryStack stack = stackPush()) {
-            ByteBuffer buffer = stack.malloc(pushConstants.getSize());
-            long ptr = MemoryUtil.memAddress0(buffer);
-            pushConstants.update(ptr);
-
-            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
-        }
-
+        if (boundPipelineLayout != pipelineLayout0) DescriptorManager.BindAllSets(currentFrame, commandBuffer);
+        this.boundPipelineLayout = pipeline.isBindless() ? this.pipelineLayout0 : pipeline.getLayout();
     }
 
     public static void setDepthBias(float units, float factor) {

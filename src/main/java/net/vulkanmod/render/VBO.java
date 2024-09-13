@@ -127,13 +127,15 @@ public class VBO {
 
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);
-            VTextureSelector.bindShaderTextures(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
 
-            if (this.indexBuffer != null)
-                Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
-            else
-                Renderer.getDrawer().draw(this.vertexBuffer, this.vertexCount);
+            int textureID = VTextureSelector.bindShaderTextures(pipeline);
+            if (textureID != -1) {
+                if (this.indexBuffer != null)
+                    Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount, textureID);
+                else
+                    Renderer.getDrawer().draw(this.vertexBuffer, this.vertexCount);
+            }
 
             VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
@@ -144,7 +146,7 @@ public class VBO {
         if (this.indexCount != 0) {
 
             RenderSystem.assertOnRenderThread();
-            Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
+            Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount, 0);
         }
     }
 

@@ -7,18 +7,20 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.PipelineState;
+import net.vulkanmod.vulkan.shader.UniformState;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import net.vulkanmod.vulkan.util.MappedBuffer;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import static net.vulkanmod.vulkan.shader.UniformState.*;
 import static org.lwjgl.vulkan.VK10.*;
 
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
+import static net.vulkanmod.vulkan.shader.UniformState.MVP;
+import static net.vulkanmod.vulkan.shader.UniformState.TextureMat;
 public abstract class VRenderSystem {
     private static final float DEFAULT_DEPTH_VALUE = 1.0f;
 
@@ -41,20 +43,6 @@ public abstract class VRenderSystem {
     public static float clearDepthValue = DEFAULT_DEPTH_VALUE;
     public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4);
 
-    public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer projectionMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer TextureMatrix = new MappedBuffer(16 * 4);
-    public static MappedBuffer MVP = new MappedBuffer(16 * 4);
-
-    public static MappedBuffer ChunkOffset = new MappedBuffer(3 * 4);
-    public static MappedBuffer lightDirection0 = new MappedBuffer(3 * 4);
-    public static MappedBuffer lightDirection1 = new MappedBuffer(3 * 4);
-
-    public static MappedBuffer shaderColor = new MappedBuffer(4 * 4);
-    public static MappedBuffer shaderFogColor = new MappedBuffer(4 * 4);
-
-    public static MappedBuffer screenSize = new MappedBuffer(2 * 4);
-
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
@@ -63,26 +51,32 @@ public abstract class VRenderSystem {
         RenderSystem.assertInInitPhase();
 
         Vulkan.initVulkan(window);
+
+        //Fix splash screen in Non-Bindless mode
+
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(0,1);
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(4, 1);
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(8, 1);
+        UniformState.ColorModulator.getMappedBufferPtr().putFloat(12, 1);
     }
 
     public static MappedBuffer getScreenSize() {
         updateScreenSize();
-        return screenSize;
+        return UniformState.ScreenSize.getMappedBufferPtr();
     }
 
     public static void updateScreenSize() {
         Window window = Minecraft.getInstance().getWindow();
 
-        screenSize.putFloat(0, (float) window.getWidth());
-        screenSize.putFloat(4, (float) window.getHeight());
+        final int width = window.getWidth();
+        final int height = window.getHeight();
+        UniformState.ScreenSize.getMappedBufferPtr().putFloat(0, width);
+        UniformState.ScreenSize.getMappedBufferPtr().putFloat(4, height);
+        UniformState.ScreenSize.needsUpdate(Float.floatToRawIntBits(width)+Float.floatToRawIntBits(height));
     }
 
     public static void setWindow(long window) {
         VRenderSystem.window = window;
-    }
-
-    public static ByteBuffer getChunkOffset() {
-        return ChunkOffset.buffer;
     }
 
     public static int maxSupportedTextureSize() {
@@ -90,68 +84,58 @@ public abstract class VRenderSystem {
     }
 
     public static void applyMVP(Matrix4f MV, Matrix4f P) {
-        applyModelViewMatrix(MV);
-        applyProjectionMatrix(P);
+        MV.get(UniformState.ModelViewMat.buffer().asFloatBuffer());//MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
+        P.get(UniformState.ProjMat.buffer().asFloatBuffer());
+        ModelViewMat.needsUpdate(MV.hashCode());
+        UniformState.ProjMat.needsUpdate(P.hashCode());
         calculateMVP();
     }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
-        mat.get(modelViewMatrix.buffer.asFloatBuffer());
+        mat.get(UniformState.ModelViewMat.buffer().asFloatBuffer());
+
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
-
+    //TODO: SKip if Hashcode Matches
     public static void applyProjectionMatrix(Matrix4f mat) {
-        mat.get(projectionMatrix.buffer.asFloatBuffer());
+        mat.get(UniformState.ProjMat.buffer().asFloatBuffer());
     }
 
     public static void calculateMVP() {
-        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
-        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
+        Matrix4f MV = new Matrix4f(UniformState.ModelViewMat.buffer().asFloatBuffer());
+        Matrix4f P = new Matrix4f(UniformState.ProjMat.buffer().asFloatBuffer());
 
-        P.mul(MV).get(MVP.buffer);
+        final Matrix4f mul = P.mul(MV);
+        mul.get(MVP.buffer());
+        MVP.needsUpdate(mul.hashCode());
     }
 
     public static void setTextureMatrix(Matrix4f mat) {
-        mat.get(TextureMatrix.buffer.asFloatBuffer());
-    }
 
-    public static MappedBuffer getTextureMatrix() {
-        return TextureMatrix;
-    }
 
-    public static MappedBuffer getModelViewMatrix() {
-        return modelViewMatrix;
-    }
-
-    public static MappedBuffer getProjectionMatrix() {
-        return projectionMatrix;
-    }
-
-    public static MappedBuffer getMVP() {
-        return MVP;
-    }
-
-    public static void setChunkOffset(float f1, float f2, float f3) {
-        long ptr = ChunkOffset.ptr;
-        VUtil.UNSAFE.putFloat(ptr, f1);
-        VUtil.UNSAFE.putFloat(ptr + 4, f2);
-        VUtil.UNSAFE.putFloat(ptr + 8, f3);
+        mat.get(TextureMat.buffer());
+        TextureMat.needsUpdate(mat.hashCode());
+//
+//        if(!UniformState.TextureMat.hasUniqueHash())
+//        {
+//            UniformState.TextureMat.updateBank(Renderer.getDrawer().getUniformBuffer());
+//        }
     }
 
     public static void setShaderColor(float f1, float f2, float f3, float f4) {
-        ColorUtil.setRGBA_Buffer(shaderColor, f1, f2, f3, f4);
+        ColorUtil.setRGBA_Buffer(UniformState.ColorModulator.getMappedBufferPtr(), f1, f2, f3, f4);
+        int hash = Float.floatToRawIntBits(f1) + Float.floatToRawIntBits(f2) + Float.floatToRawIntBits(f3) + Float.floatToRawIntBits(f4);
+        UniformState.ColorModulator.needsUpdate(hash);
     }
-
+    //TOOD: Schedule update when actually unique data has been provided
     public static void setShaderFogColor(float f1, float f2, float f3, float f4) {
-        ColorUtil.setRGBA_Buffer(shaderFogColor, f1, f2, f3, f4);
-    }
-
-    public static MappedBuffer getShaderColor() {
-        return shaderColor;
+        ColorUtil.setRGBA_Buffer(UniformState.FogColor.getMappedBufferPtr(), f1, f2, f3, f4);
+        int hash = Float.floatToRawIntBits(f1) + Float.floatToRawIntBits(f2) + Float.floatToRawIntBits(f3) + Float.floatToRawIntBits(f4);
+        UniformState.FogColor.needsUpdate(hash);
     }
 
     public static MappedBuffer getShaderFogColor() {
-        return shaderFogColor;
+        return UniformState.FogColor.getMappedBufferPtr();
     }
 
     public static void setClearColor(float f1, float f2, float f3, float f4) {

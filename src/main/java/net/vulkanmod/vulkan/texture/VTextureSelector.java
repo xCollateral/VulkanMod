@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 
 import java.nio.ByteBuffer;
@@ -12,6 +13,7 @@ public abstract class VTextureSelector {
     public static final int SIZE = 12;
 
     private static final VulkanImage[] boundTextures = new VulkanImage[SIZE];
+    private static final int[] DescriptorIndices = new int[SIZE];
 
     private static final int[] levels = new int[SIZE];
 
@@ -55,7 +57,7 @@ public abstract class VTextureSelector {
     public static int getTextureIdx(String name) {
         return switch (name) {
             case "Sampler0", "DiffuseSampler" -> 0;
-            case "Sampler1" -> 1;
+            case "Sampler1", "SamplerProj" -> 1;
             case "Sampler2" -> 2;
             case "Sampler3" -> 3;
             case "Sampler4" -> 4;
@@ -66,18 +68,30 @@ public abstract class VTextureSelector {
         };
     }
 
-    public static void bindShaderTextures(Pipeline pipeline) {
-        var imageDescriptors = pipeline.getImageDescriptors();
+    public static int bindShaderTextures(Pipeline pipeline) {
+        boolean isNewTexture = false;
+        final boolean bindless = pipeline.isBindless();
+        final int setID = pipeline.getSetID();
 
-        for (ImageDescriptor state : imageDescriptors) {
+        for (ImageDescriptor state : pipeline.getFragImageDescriptors()) {
             final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
-            final GlTexture texture = GlTexture.getTexture(shaderTexture);
+            if(bindless) {
+                //Add texture to the DescriptorSet if its new.unique
+                DescriptorManager.registerTexture(setID, state.imageIdx, shaderTexture);
 
-            if (texture != null) {
-                VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
+                //Convert TextureID to Sampler Index
+                VTextureSelector.setSamplerIndex(state.imageIdx, DescriptorManager.getTexture(setID, state.imageIdx, shaderTexture));
+                isNewTexture |= DescriptorManager.isTexUnInitialised(setID, shaderTexture);
             }
+            else {
+                final GlTexture texture = GlTexture.getTexture(shaderTexture);
+                if (texture != null)
+                    VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
+            }
+
         }
+        return bindless ? isNewTexture ? -1 : VTextureSelector.getSamplerIndex(0) : 0;
     }
 
     public static VulkanImage getImage(int i) {
@@ -103,4 +117,12 @@ public abstract class VTextureSelector {
     public static VulkanImage getBoundTexture(int i) { return boundTextures[i]; }
 
     public static VulkanImage getWhiteTexture() { return whiteTexture; }
+
+    public static void setSamplerIndex(int imageIdx, int texture) {
+        DescriptorIndices[imageIdx] = texture;
+    }
+
+    public static int getSamplerIndex(int i) {
+        return DescriptorIndices[i];
+    }
 }

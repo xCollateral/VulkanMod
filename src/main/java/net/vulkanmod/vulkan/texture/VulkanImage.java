@@ -246,6 +246,9 @@ public class VulkanImage {
     }
 
     public void updateTextureSampler(int maxLod, byte flags) {
+
+        if(mipLevels>1) flags |= USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT; //Don't disable mipmaps if mipLevels > 1
+
         this.sampler = SamplerManager.getTextureSampler((byte) maxLod, flags);
     }
 

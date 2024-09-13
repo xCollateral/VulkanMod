@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.device;
 
-import org.lwjgl.PointerBuffer;
+import net.vulkanmod.Initializer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import oshi.SystemInfo;
@@ -15,12 +15,11 @@ import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
-import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
+import static org.lwjgl.vulkan.VK11.*;
 
 public class Device {
     final VkPhysicalDevice physicalDevice;
-    final VkPhysicalDeviceProperties properties;
+    final VkPhysicalDeviceProperties2 properties;
 
     private final int vendorId;
     public final String vendorIdString;
@@ -28,44 +27,71 @@ public class Device {
     public final String driverVersion;
     public final String vkVersion;
 
-    public final VkPhysicalDeviceFeatures2 availableFeatures;
-    public final VkPhysicalDeviceVulkan11Features availableFeatures11;
 
-//    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
-//    public final boolean vulkan13Support;
-
-    private boolean drawIndirectSupported;
-
+    private final boolean drawIndirectSupported, hasIndexedDescriptors, hasSamplerAnisotropy, hasInlineUniforms, hasLogicOp, hasWideLines, hasRuntimeArray;
+    private final boolean hasBindless;
     public Device(VkPhysicalDevice device) {
-        this.physicalDevice = device;
 
-        properties = VkPhysicalDeviceProperties.malloc();
-        vkGetPhysicalDeviceProperties(physicalDevice, properties);
+        //Using memory stack to avoid the off-heap becoming cluttered w/ unused DeviceProperties
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            this.physicalDevice = device;
 
-        this.vendorId = properties.vendorID();
-        this.vendorIdString = decodeVendor(properties.vendorID());
-        this.deviceName = properties.deviceNameString();
-        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
-        this.vkVersion = decDefVersion(getVkVer());
+            VkPhysicalDeviceSubgroupProperties subgroupProperties = VkPhysicalDeviceSubgroupProperties.malloc(stack).sType$Default();
+            VkPhysicalDeviceVulkan12Properties vk12Properties = VkPhysicalDeviceVulkan12Properties.malloc(stack).sType$Default();
 
-        this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
-        this.availableFeatures.sType$Default();
+            properties = VkPhysicalDeviceProperties2.calloc().sType$Default().pNext(subgroupProperties).pNext(vk12Properties);
+            VK11.vkGetPhysicalDeviceProperties2(physicalDevice, properties);
 
-        this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
-        this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+            this.vendorId = properties.properties().vendorID();
+            this.vendorIdString = decodeVendor(properties.properties().vendorID());
+            this.deviceName = properties.properties().deviceNameString();
+            this.driverVersion = decodeDvrVersion(properties.properties().driverVersion(), properties.properties().vendorID());
+            this.vkVersion = decDefVersion(getVkVer());
 
-        //Vulkan 1.3
-//        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
-//        this.availableFeatures13.sType$Default();
-//        this.availableFeatures11.pNext(this.availableFeatures13.address());
-//
-//        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
+            VkPhysicalDeviceFeatures2 availableFeatures = VkPhysicalDeviceFeatures2.calloc(stack);
+            availableFeatures.sType$Default();
 
-        vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
+            VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformBlockFeaturesEXT = VkPhysicalDeviceInlineUniformBlockFeaturesEXT.malloc(stack).sType$Default();
 
-        if (this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-            this.drawIndirectSupported = true;
+            VkPhysicalDeviceVulkan12Features availableFeatures12 = VkPhysicalDeviceVulkan12Features.malloc(stack).sType$Default();
+
+            VkPhysicalDeviceVulkan11Features availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc(stack).sType$Default();
+            availableFeatures.pNext(availableFeatures12);
+            availableFeatures.pNext(availableFeatures11);
+            availableFeatures.pNext(inlineUniformBlockFeaturesEXT);
+            vkGetPhysicalDeviceFeatures2(this.physicalDevice, availableFeatures);
+
+
+            this.drawIndirectSupported = availableFeatures.features().multiDrawIndirect() && availableFeatures11.shaderDrawParameters();
+            this.hasIndexedDescriptors = availableFeatures12.descriptorBindingVariableDescriptorCount() && availableFeatures12.descriptorBindingPartiallyBound() && availableFeatures12.shaderSampledImageArrayNonUniformIndexing();
+            this.hasRuntimeArray = availableFeatures12.runtimeDescriptorArray();
+            this.hasSamplerAnisotropy = availableFeatures.features().samplerAnisotropy();
+            this.hasInlineUniforms = inlineUniformBlockFeaturesEXT.inlineUniformBlock();
+            this.hasLogicOp = availableFeatures.features().logicOp();
+            this.hasWideLines = availableFeatures.features().wideLines();
+
+            if(!hasIndexedDescriptors) {
+                Initializer.LOGGER.error("Descriptor indexing (Bindless Rendering) not available!: Disabling Bindless mode");
+            }
+
+
+            this.hasBindless = hasIndexedDescriptors & properties.properties().limits().maxPerStageDescriptorSamplers() > 65536;
+
+
+            final int subGroupStages = subgroupProperties.supportedStages();
+            final int subGroupOps = subgroupProperties.supportedOperations();
+
+            //TODO: Specific MoltenVk drivers do not support Subgroup Ballot, which is used for texture broadcast
+            // Uniform texture broadcast: Ensures that a texture index is Dynamically Uniform (i.e. Ensures The index is constant for the entire Drawcall)
+            if((subGroupStages & VK_SHADER_STAGE_FRAGMENT_BIT)==0 ||(subGroupOps & VK_SUBGROUP_FEATURE_BALLOT_BIT)==0)
+                throw new RuntimeException("Uniform texture broadcast optimization not available!");
+
+            if(!hasInlineUniforms)
+                throw new RuntimeException("Inline Uniform Block not available!");
+
+            if(!hasRuntimeArray)
+                throw new RuntimeException("runtimeDescriptorArray not available!");
+        }
 
     }
 
@@ -146,6 +172,14 @@ public class Device {
         return drawIndirectSupported;
     }
 
+    public boolean isHasIndexedDescriptors() {
+        return hasIndexedDescriptors;
+    }
+
+    public boolean isHasRuntimeArray() {
+        return hasRuntimeArray;
+    }
+
     // Added these to allow detecting GPU vendor, to allow handling vendor specific circumstances:
     // (e.g. such as in case we encounter a vendor specific driver bug)
     public boolean isAMD() {
@@ -158,5 +192,25 @@ public class Device {
 
     public boolean isIntel() {
         return vendorId == 0x8086;
+    }
+
+    public boolean hasSamplerAnisotropy() {
+        return this.hasSamplerAnisotropy;
+    }
+
+    public boolean hasWideLines() {
+        return this.hasWideLines;
+    }
+
+    public boolean hasLogicOp() {
+        return this.hasLogicOp;
+    }
+
+    public boolean isHasInlineUniforms() {
+        return hasInlineUniforms;
+    }
+
+    public boolean hasBindless() {
+        return hasBindless;
     }
 }

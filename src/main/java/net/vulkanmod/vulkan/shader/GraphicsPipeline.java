@@ -9,11 +9,13 @@ import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.shader.descriptor.DescriptorManager;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.util.EnumSet;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -24,27 +26,32 @@ public class GraphicsPipeline extends Pipeline {
     private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
 
     private final VertexFormat vertexFormat;
+    private final EnumSet<SPIRVUtils.SpecConstant> specConstants;
 
-    private long vertShaderModule = 0;
-    private long fragShaderModule = 0;
+    private final long vertShaderModule;
+    private final long fragShaderModule;
 
-    GraphicsPipeline(Builder builder) {
-        super(builder.shaderPath);
+    GraphicsPipeline(Builder builder, boolean bindless) {
+        super(builder.shaderPath, bindless);
         this.buffers = builder.UBOs;
         this.manualUBO = builder.manualUBO;
-        this.imageDescriptors = builder.imageDescriptors;
+        this.vertImageDescriptors = builder.vertImageDescriptors;
+        this.fragImageDescriptors = builder.fragImageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
 
-        createDescriptorSetLayout();
-        createPipelineLayout();
-        createShaderModules(builder.vertShaderSPIRV, builder.fragShaderSPIRV);
+        descriptorSetLayout = this.isBindless() ? DescriptorManager.getDescriptorSetLayout() : createDescriptorSetLayout();
+        pipelineLayout = this.isBindless() ? Renderer.getLayout() : createPipelineLayout();
+
+        this.specConstants = builder.specConstants;
+        this.vertShaderModule = createShaderModule(builder.vertShaderSPIRV.bytecode());
+        this.fragShaderModule = createShaderModule(builder.fragShaderSPIRV.bytecode());
 
         if (builder.renderPass != null)
             graphicsPipelines.computeIfAbsent(PipelineState.DEFAULT,
                     this::createGraphicsPipeline);
 
-        createDescriptorSets(Renderer.getFramesNum());
+        if (!this.isBindless()) createDescriptorSets(Renderer.getFramesNum());
 
         PIPELINES.add(this);
     }
@@ -61,6 +68,16 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
 
+
+            VkSpecializationMapEntry.Buffer specEntrySet =  VkSpecializationMapEntry.malloc(specConstants.size(), stack);
+
+
+            boolean equals = !this.specConstants.isEmpty();
+            VkSpecializationInfo specInfo = equals ? VkSpecializationInfo.malloc(stack)
+                    .pMapEntries(specEntrySet)
+                    .pData(enumSpecConstants(stack, specEntrySet)) : null;
+
+
             VkPipelineShaderStageCreateInfo vertShaderStageInfo = shaderStages.get(0);
 
             vertShaderStageInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
@@ -74,6 +91,7 @@ public class GraphicsPipeline extends Pipeline {
             fragShaderStageInfo.stage(VK_SHADER_STAGE_FRAGMENT_BIT);
             fragShaderStageInfo.module(fragShaderModule);
             fragShaderStageInfo.pName(entryPoint);
+            fragShaderStageInfo.pSpecializationInfo(specInfo); //Incorrect warning: pSpecializationInfo is marked as @Nullable
 
             // ===> VERTEX STAGE <===
 
@@ -204,9 +222,22 @@ public class GraphicsPipeline extends Pipeline {
         }
     }
 
-    private void createShaderModules(SPIRVUtils.SPIRV vertSpirv, SPIRVUtils.SPIRV fragSpirv) {
-        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
-        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
+
+    private ByteBuffer enumSpecConstants(MemoryStack stack, VkSpecializationMapEntry.Buffer specEntrySet) {
+        int i = 0, offset = 0;
+        ByteBuffer byteBuffer = stack.malloc(specConstants.size()*Integer.BYTES);
+
+        for(var specDef : specConstants)
+        {
+            specEntrySet.get(i)
+                    .constantID(specDef.ordinal())
+                    .offset(offset)
+                    .size(4);
+
+            byteBuffer.putInt(i, specDef.getValue());
+            i++; offset+=4;
+        }
+        return byteBuffer;
     }
 
     private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
@@ -336,15 +367,17 @@ public class GraphicsPipeline extends Pipeline {
         vkDestroyShaderModule(DeviceManager.vkDevice, vertShaderModule, null);
         vkDestroyShaderModule(DeviceManager.vkDevice, fragShaderModule, null);
 
-        destroyDescriptorSets();
+        if (!isBindless()) destroyDescriptorSets();
 
         graphicsPipelines.forEach((state, pipeline) -> {
             vkDestroyPipeline(DeviceManager.vkDevice, pipeline, null);
         });
         graphicsPipelines.clear();
 
-        vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
-        vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+        if (!isBindless()) {
+            vkDestroyDescriptorSetLayout(DeviceManager.vkDevice, descriptorSetLayout, null);
+            vkDestroyPipelineLayout(DeviceManager.vkDevice, pipelineLayout, null);
+        }
 
         PIPELINES.remove(this);
         Renderer.getInstance().removeUsedPipeline(this);

@@ -1,5 +1,6 @@
 #version 450
-
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
 mat2 mat2_rotate_z(float radians) {
     return mat2(
         cos(radians), -sin(radians),
@@ -7,15 +8,14 @@ mat2 mat2_rotate_z(float radians) {
     );
 }
 
-layout(location = 0) in vec4 texProj0;
+layout(location = 0) in flat uint baseInstance;
+layout(location = 1) in vec4 texProj0;
 
 layout(binding = 1) uniform UniformBufferObject {
    float GameTime;
-   int EndPortalLayers;
 };
 
-layout(binding = 2) uniform sampler2D Sampler0;
-layout(binding = 3) uniform sampler2D Sampler1;
+layout(binding = 3) uniform sampler2D Sampler0[];
 
 const vec3[] COLORS = vec3[](
     vec3(0.022087, 0.098399, 0.110818),
@@ -61,9 +61,9 @@ mat4 end_portal_layer(float layer) {
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-    vec3 color = textureProj(Sampler0, texProj0).rgb * COLORS[0];
-    for (int i = 0; i < EndPortalLayers; i++) {
-        color += textureProj(Sampler1, texProj0 * end_portal_layer(float(i + 1))).rgb * COLORS[i];
+    vec3 color = textureProj(Sampler0[baseInstance], texProj0).rgb * COLORS[0];
+    for (int i = 0; i < 15; i++) {
+        color += textureProj(Sampler0[baseInstance+1], texProj0 * end_portal_layer(float(i + 1))).rgb * COLORS[i];
     }
     fragColor = vec4(color, 1.0);
 }
