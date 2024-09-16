@@ -3,14 +3,10 @@ package net.vulkanmod.vulkan.shader.parser;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 
 public class GlslConverter {
-
-    //    private Queue<Integer> stack = new ArrayDeque<>();
-    private int count;
+    
     ShaderStage shaderStage;
     private State state;
 
@@ -107,7 +103,7 @@ public class GlslConverter {
             }
 
             default -> {
-                return line;
+                return CodeParser.parseCodeLine(line);
             }
         }
 
