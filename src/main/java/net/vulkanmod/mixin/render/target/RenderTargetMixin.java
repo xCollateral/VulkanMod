@@ -34,12 +34,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Shadow @Final private float[] clearChannels;
     @Shadow @Final public boolean useDepth;
 
-    Framebuffer framebuffer;
-
     boolean needClear = false;
     boolean bound = false;
-
-    private static int boundTarget = 0;
 
     /**
      * @author
@@ -51,12 +47,13 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         if(!Renderer.isRecording())
             return;
 
-        if(!bound) {
+        // If the framebuffer is not bound postpone clear
+        GlFramebuffer glFramebuffer = GlFramebuffer.getFramebuffer(this.frameBufferId);
+        if(!bound || GlFramebuffer.getBoundFramebuffer() != glFramebuffer) {
             needClear = true;
             return;
         }
 
-//        this.bindWrite(true);
         GlStateManager._clearColor(this.clearChannels[0], this.clearChannels[1], this.clearChannels[2], this.clearChannels[3]);
         int i = 16384;
         if (this.useDepth) {
@@ -65,35 +62,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         }
 
         GlStateManager._clear(i, getError);
-//        this.unbindWrite();
         needClear = false;
     }
-
-//    /**
-//     * @author
-//     */
-//    @Overwrite
-//    public void destroyBuffers() {
-//        RenderSystem.assertOnRenderThreadOrInit();
-//        this.unbindRead();
-//        this.unbindWrite();
-//        if (this.depthBufferId > -1) {
-//            TextureUtil.releaseTextureId(this.depthBufferId);
-//            this.depthBufferId = -1;
-//        }
-//
-//        if (this.colorTextureId > -1) {
-//            TextureUtil.releaseTextureId(this.colorTextureId);
-//            this.colorTextureId = -1;
-//        }
-//
-//        if (this.frameBufferId > -1) {
-//            GlStateManager._glBindFramebuffer(36160, 0);
-//            GlStateManager._glDeleteFramebuffers(this.frameBufferId);
-//            this.frameBufferId = -1;
-//        }
-//
-//    }
 
     /**
      * @author
@@ -101,8 +71,6 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Overwrite
     public void bindRead() {
         RenderSystem.assertOnRenderThread();
-//        GlStateManager._bindTexture(this.colorTextureId);
-
         GlTexture.bindTexture(this.colorTextureId);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -124,26 +92,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
      * @author
      */
     @Overwrite
-    public void bindWrite(boolean bl) {
-        if (!RenderSystem.isOnRenderThread()) {
-            RenderSystem.recordRenderCall(() -> {
-                this._bindWrite(bl);
-            });
-        } else {
-            this._bindWrite(bl);
-        }
-
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite
     private void _bindWrite(boolean bl) {
         RenderSystem.assertOnRenderThreadOrInit();
-
-//        if(this.frameBufferId == boundTarget)
-//            return;
 
         GlFramebuffer.bindFramebuffer(GL30.GL_FRAMEBUFFER, this.frameBufferId);
         if (bl) {
@@ -151,8 +101,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         }
 
         this.bound = true;
-        boundTarget = this.frameBufferId;
-        if(needClear)
+        if (needClear)
             clear(false);
     }
 
@@ -165,12 +114,10 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
             RenderSystem.recordRenderCall(() -> {
                 GlStateManager._glBindFramebuffer(36160, 0);
                 this.bound = false;
-                boundTarget = 0;
             });
         } else {
             GlStateManager._glBindFramebuffer(36160, 0);
             this.bound = false;
-            boundTarget = 0;
         }
     }
 
@@ -179,8 +126,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
      */
     @Overwrite
     private void _blitToScreen(int width, int height, boolean disableBlend) {
-        if(needClear) {
-            //If true it means target has not been used
+        if (needClear) {
+            // If true it means target has not been used, thus we can skip blit
             return;
         }
 
