@@ -5,7 +5,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
-import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.render.vertex.QuadSorter;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class CompileResult {
     public final EnumMap<TerrainRenderType, UploadBuffer> renderedLayers = new EnumMap<>(TerrainRenderType.class);
 
     VisibilitySet visibilitySet;
-    TerrainBufferBuilder.SortState transparencyState;
+    QuadSorter.SortState transparencyState;
     CompiledSection compiledSection;
 
     CompileResult(RenderSection renderSection, boolean fullUpdate) {

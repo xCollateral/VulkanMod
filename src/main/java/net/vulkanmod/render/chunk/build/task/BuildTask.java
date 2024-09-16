@@ -134,7 +134,7 @@ public class BuildTask extends ChunkTask {
                         bufferBuilder.setBlockAttributes(blockState);
 
                         pos.set(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
-                        blockRenderer.renderBatched(blockState, blockPos, pos, bufferBuilder);
+                        blockRenderer.renderBlock(blockState, blockPos, pos, bufferBuilder);
                     }
                 }
             }
@@ -142,7 +142,8 @@ public class BuildTask extends ChunkTask {
 
         TerrainBufferBuilder translucentBufferBuilder = bufferBuilders.builder(TerrainRenderType.TRANSLUCENT);
         if (!translucentBufferBuilder.isCurrentBatchEmpty()) {
-            translucentBufferBuilder.setQuadSortOrigin(camX - (float) startBlockPos.getX(), camY - (float) startBlockPos.getY(), camZ - (float) startBlockPos.getZ());
+            translucentBufferBuilder.setupQuadSortingPoints();
+            translucentBufferBuilder.setupQuadSorting(camX - (float) startBlockPos.getX(), camY - (float) startBlockPos.getY(), camZ - (float) startBlockPos.getZ());
             compileResult.transparencyState = translucentBufferBuilder.getSortState();
         }
 
