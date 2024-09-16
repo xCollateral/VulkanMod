@@ -607,26 +607,29 @@ public class Renderer {
         }
     }
 
+    public static void setInvertedViewport(int x, int y, int width, int height) {
+        setViewport(x, y + height, width, -height);
+    }
+
     public static void setViewport(int x, int y, int width, int height) {
+        try (MemoryStack stack = stackPush()) {
+            setViewport(x, y, width, height, stack);
+        }
+    }
+
+    public static void setViewport(int x, int y, int width, int height, MemoryStack stack) {
         if (!INSTANCE.recordingCmds)
             return;
 
-        try (MemoryStack stack = stackPush()) {
-            VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
-            viewport.x(x);
-            viewport.y(height + y);
-            viewport.width(width);
-            viewport.height(-height);
-            viewport.minDepth(0.0f);
-            viewport.maxDepth(1.0f);
+        VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
+        viewport.x(x);
+        viewport.y(height + y);
+        viewport.width(width);
+        viewport.height(-height);
+        viewport.minDepth(0.0f);
+        viewport.maxDepth(1.0f);
 
-            VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
-            scissor.offset().set(0, 0);
-            scissor.extent().set(width, Math.abs(height));
-
-            vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
-            vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
-        }
+        vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
     }
 
     public static void resetViewport() {

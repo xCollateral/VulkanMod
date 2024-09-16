@@ -124,7 +124,7 @@ public class Framebuffer {
 
     public void beginRenderPass(VkCommandBuffer commandBuffer, RenderPass renderPass, MemoryStack stack) {
         if (!DYNAMIC_RENDERING) {
-            long framebufferId = framebufferIds.computeIfAbsent(renderPass, renderPass1 -> createFramebuffer(renderPass));
+            long framebufferId = this.getFramebufferId(renderPass);
             renderPass.beginRenderPass(commandBuffer, framebufferId, stack);
         } else {
             renderPass.beginDynamicRendering(commandBuffer, stack);
@@ -132,6 +132,13 @@ public class Framebuffer {
 
         Renderer.getInstance().setBoundRenderPass(renderPass);
         Renderer.getInstance().setBoundFramebuffer(this);
+
+        Renderer.setViewport(0, 0, this.width, this.height);
+        Renderer.setScissor(0, 0, this.width, this.height);
+    }
+
+    protected long getFramebufferId(RenderPass renderPass) {
+        return this.framebufferIds.computeIfAbsent(renderPass, renderPass1 -> createFramebuffer(renderPass));
     }
 
     public VkViewport.Buffer viewport(MemoryStack stack) {
