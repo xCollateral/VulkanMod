@@ -83,6 +83,7 @@ public class ShaderInstanceM implements ShaderMixed {
             pipelineBuilder.compileShaders();
             this.pipeline = pipelineBuilder.createGraphicsPipeline();
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.printf("Error on shader %s creation\n", name);
             e.printStackTrace();
             throw e;

@@ -57,6 +57,7 @@
     "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
 
+    "screen.ScreenM",
     "screen.OptionsScreenM",
 
     "texture.mip.MipmapGeneratorM",

@@ -22,7 +22,7 @@ public interface VertexConsumerM {
      * @author
      */
     @Overwrite
-    default public void putBulkData(PoseStack.Pose matrixEntry, BakedQuad quad, float[] brightness, float red, float green, float blue, int[] lights, int overlay, boolean useQuadColorData) {
+    default void putBulkData(PoseStack.Pose matrixEntry, BakedQuad quad, float[] brightness, float red, float green, float blue, float alpha, int[] lights, int overlay, boolean useQuadColorData) {
         int[] js = quad.getVertices();
         Vec3i vec3i = quad.getDirection().getNormal();
         Vector3f normal = new Vector3f(vec3i.getX(), vec3i.getY(), vec3i.getZ());
@@ -61,7 +61,7 @@ public interface VertexConsumerM {
             Vector4f vector4f = new Vector4f(x, y, z, 1.0f);
             vector4f.mul(matrix4f);
 
-            this.vertex(vector4f.x(), vector4f.y(), vector4f.z(), r, g, b, 1.0f, u, v, overlay, light, normal.x(), normal.y(), normal.z());
+            this.vertex(vector4f.x(), vector4f.y(), vector4f.z(), r, g, b, alpha, u, v, overlay, light, normal.x(), normal.y(), normal.z());
         }
 
     }

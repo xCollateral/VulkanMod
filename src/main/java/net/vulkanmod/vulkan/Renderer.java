@@ -653,6 +653,8 @@ public class Renderer {
         try (MemoryStack stack = stackPush()) {
             int framebufferHeight = INSTANCE.boundFramebuffer.getHeight();
 
+            x = Math.max(0, x);
+
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
             scissor.offset().set(x, framebufferHeight - (y + height));
             scissor.extent().set(width, height);

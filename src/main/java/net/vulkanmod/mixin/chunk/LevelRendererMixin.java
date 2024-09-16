@@ -68,9 +68,6 @@ public abstract class LevelRendererMixin {
     @Shadow
     public abstract void needsUpdate();
 
-    @Shadow
-    public abstract void renderLevel(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f);
-
     private WorldRenderer worldRenderer;
 
     @Unique
@@ -92,8 +89,10 @@ public abstract class LevelRendererMixin {
     }
 
     @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;checkPoseStack(Lcom/mojang/blaze3d/vertex/PoseStack;)V", ordinal = 1, shift = At.Shift.BEFORE))
-    private void renderBlockEntities(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
+    private void renderBlockEntities(float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci) {
         Vec3 pos = camera.getPosition();
+        PoseStack poseStack = new PoseStack();
+
         this.worldRenderer.renderBlockEntities(poseStack, pos.x(), pos.y(), pos.z(), this.destructionProgress, f);
     }
 
@@ -131,8 +130,8 @@ public abstract class LevelRendererMixin {
      * @reason
      */
     @Overwrite
-    private void renderSectionLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
-        this.worldRenderer.renderSectionLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
+    private void renderSectionLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f modelView, Matrix4f projectionMatrix) {
+        this.worldRenderer.renderSectionLayer(renderType, camX, camY, camZ, modelView, projectionMatrix);
     }
 
     /**
@@ -237,11 +236,13 @@ public abstract class LevelRendererMixin {
             target = "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;endLastBatch()V",
             shift = At.Shift.AFTER, ordinal = 0)
     )
-    private void renderEntities(PoseStack poseStack, float partialTicks, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
+    private void renderEntities(float partialTicks, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f MV, Matrix4f P, CallbackInfo ci) {
         if (!Initializer.CONFIG.entityCulling)
             return;
 
         Vec3 cameraPos = WorldRenderer.getCameraPos();
+
+        PoseStack poseStack = new PoseStack();
 
         for (var list : this.entitiesMap.values()) {
             for (var pair : list) {
