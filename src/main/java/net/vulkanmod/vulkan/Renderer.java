@@ -74,7 +74,8 @@ public class Renderer {
     }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
-    private long boundPipeline;
+    private Pipeline boundPipeline;
+    private long boundPipelineHandle;
 
     private Drawer drawer;
 
@@ -402,7 +403,8 @@ public class Renderer {
         }
 
         usedPipelines.clear();
-        boundPipeline=0;
+        boundPipeline = null;
+        boundPipelineHandle = 0;
     }
 
     void waitForSwapChain() {
@@ -504,13 +506,13 @@ public class Renderer {
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         final long handle = pipeline.getHandle(currentState);
 
-        if (boundPipeline == handle) {
+        if (boundPipelineHandle == handle) {
             return;
         }
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
-        boundPipeline = handle;
-
+        boundPipelineHandle = handle;
+        boundPipeline = pipeline;
         addUsedPipeline(pipeline);
     }
 
@@ -532,6 +534,10 @@ public class Renderer {
             nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
         }
 
+    }
+
+    public Pipeline getBoundPipeline() {
+        return boundPipeline;
     }
 
     public static void setDepthBias(float units, float factor) {
