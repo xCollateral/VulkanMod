@@ -25,51 +25,40 @@ public class ModelPartM {
 
     @Shadow @Final private List<ModelPart.Cube> cubes;
 
+    Vector3f temp = new Vector3f();
+
     /**
      * @author
      * @reason
      */
     @Overwrite
-    protected void compile(PoseStack.Pose pose, VertexConsumer vertexConsumer, int i, int j, float r, float g, float b, float a) {
+    private void compile(PoseStack.Pose pose, VertexConsumer vertexConsumer, int i, int j, int color) {
         Matrix4f matrix4f = pose.pose();
         Matrix3f matrix3f = pose.normal();
         ExtendedVertexBuilder vertexBuilder = (ExtendedVertexBuilder)vertexConsumer;
 
-        int packedColor = ColorUtil.RGBA.pack(r, g, b, a);
+        color = ColorUtil.RGBA.fromArgb32(color);
 
         for (ModelPart.Cube cube : this.cubes) {
             ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
             CubeModel cubeModel = cubeMixed.getCubeModel();
 
             ModelPart.Polygon[] polygons = cubeModel.getPolygons();
-//            int var12 = polygons.length;
 
             cubeModel.transformVertices(matrix4f);
 
             for (ModelPart.Polygon polygon : polygons) {
-                Vector3f vector3f = matrix3f.transform(new Vector3f(polygon.normal));
-//                float l = vector3f.x();
-//                float m = vector3f.y();
-//                float n = vector3f.z();
-                int packedNormal = VertexUtil.packNormal(vector3f.x(), vector3f.y(), vector3f.z());
+                matrix3f.transform(this.temp.set(polygon.normal));
+                this.temp.normalize();
+
+                int packedNormal = VertexUtil.packNormal(temp.x(), temp.y(), temp.z());
 
                 ModelPart.Vertex[] vertices = polygon.vertices;
-//                int var20 = vertices.length;
 
                 for (ModelPart.Vertex vertex : vertices) {
-//                    float o = vertex.pos.x() / 16.0F;
-//                    float p = vertex.pos.y() / 16.0F;
-//                    float q = vertex.pos.z() / 16.0F;
-//
-//                    float o = vertex.pos.x();
-//                    float p = vertex.pos.y();
-//                    float q = vertex.pos.z();
-//                    Vector4f vector4f = matrix4f.transform(new Vector4f(o, p, q, 1.0F));
-//                    vertexConsumer.vertex(vector4f.x(), vector4f.y(), vector4f.z(), r, g, b, a, vertex.u, vertex.v, j, i, l, m, n);
 
                     Vector3f pos = vertex.pos;
-//                    vertexConsumer.vertex(pos.x(), pos.y(), pos.z(), r, g, b, a, vertex.u, vertex.v, j, i, l, m, n);
-                    vertexBuilder.vertex(pos.x(), pos.y(), pos.z(), packedColor, vertex.u, vertex.v, j, i, packedNormal);
+                    vertexBuilder.vertex(pos.x(), pos.y(), pos.z(), color, vertex.u, vertex.v, j, i, packedNormal);
                 }
             }
         }

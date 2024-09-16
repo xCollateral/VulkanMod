@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormatElement;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.interfaces.VertexFormatMixed;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,12 +17,23 @@ import java.util.List;
 
 @Mixin(VertexFormat.class)
 public class VertexFormatMixin implements VertexFormatMixed {
-    @Shadow private IntList offsets;
+
+    private int[] offsets;
 
     private ObjectArrayList<VertexFormatElement> fastList;
 
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void injectList(List<VertexFormatElement> list, List<String> list2, IntList intList, int i, CallbackInfo ci) {
+        ObjectArrayList<VertexFormatElement> fList = new ObjectArrayList<>();
+        fList.addAll(list);
+
+        this.fastList = fList;
+
+        this.offsets = intList.toIntArray();
+    }
+
     public int getOffset(int i) {
-        return offsets.getInt(i);
+        return this.offsets[i];
     }
 
     public VertexFormatElement getElement(int i) {
@@ -30,14 +42,6 @@ public class VertexFormatMixin implements VertexFormatMixed {
 
     public List<VertexFormatElement> getFastList() {
         return this.fastList;
-    }
-
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void injectList(ImmutableMap<String, VertexFormatElement> immutableMap, CallbackInfo ci) {
-        ObjectArrayList<VertexFormatElement> list = new ObjectArrayList<>();
-        list.addAll(immutableMap.values());
-
-        this.fastList = list;
     }
 
 }

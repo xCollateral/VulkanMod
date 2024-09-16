@@ -1,6 +1,5 @@
 package net.vulkanmod.render.vertex;
 
-import com.mojang.blaze3d.platform.MemoryTracker;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulkanmod.Initializer;
@@ -16,8 +15,9 @@ import java.nio.ByteBuffer;
 
 public class TerrainBufferBuilder {
     private static final Logger LOGGER = Initializer.LOGGER;
+    private static final MemoryUtil.MemoryAllocator ALLOCATOR = MemoryUtil.getAllocator(false);
 
-    private ByteBuffer buffer;
+    private int capacity;
     protected long bufferPtr;
     protected int nextElementByte;
     private int vertices;
@@ -38,8 +38,8 @@ public class TerrainBufferBuilder {
     protected VertexBuilder vertexBuilder;
 
     public TerrainBufferBuilder(int size) {
-        this.buffer = MemoryTracker.create(size * 6);
-        this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
+        this.bufferPtr = ALLOCATOR.malloc(size);
+        this.capacity = size;
 
         this.format = PipelineManager.TERRAIN_VERTEX_FORMAT;
         this.vertexBuilder = PipelineManager.TERRAIN_VERTEX_FORMAT == CustomVertexFormat.COMPRESSED_TERRAIN
@@ -51,19 +51,21 @@ public class TerrainBufferBuilder {
     }
 
     private void ensureCapacity(int size) {
-        if (this.nextElementByte + size > this.buffer.capacity()) {
-            int capacity = this.buffer.capacity();
+        if (this.nextElementByte + size > this.capacity) {
+            int capacity = this.capacity;
             int newSize = (capacity + size) * 2;
-            LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", capacity, newSize);
             this.resize(newSize);
         }
     }
 
-    private void resize(int newSize) {
-        ByteBuffer byteBuffer = MemoryTracker.resize(this.buffer, newSize);
-        byteBuffer.rewind();
-        this.buffer = byteBuffer;
-        this.bufferPtr = MemoryUtil.memAddress0(this.buffer);
+    private void resize(int i) {
+        this.bufferPtr = ALLOCATOR.realloc(this.bufferPtr, i);
+        LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.capacity, i);
+        if (this.bufferPtr == 0L) {
+            throw new OutOfMemoryError("Failed to resize buffer from " + this.capacity + " bytes to " + i + " bytes");
+        } else {
+            this.capacity = i;
+        }
     }
 
     public void setQuadSortOrigin(float f, float g, float h) {
@@ -82,7 +84,6 @@ public class TerrainBufferBuilder {
     }
 
     public void restoreSortState(SortState sortState) {
-        this.buffer.rewind();
         this.vertices = sortState.vertices;
         this.nextElementByte = this.renderedBufferPointer;
         this.sortingPoints = sortState.sortingPoints;
@@ -97,7 +98,6 @@ public class TerrainBufferBuilder {
             throw new IllegalStateException("Already building!");
         } else {
             this.building = true;
-            this.buffer.rewind();
         }
     }
 
@@ -322,13 +322,13 @@ public class TerrainBufferBuilder {
         public ByteBuffer vertexBuffer() {
             int start = this.pointer + this.drawState.vertexBufferStart();
             int end = this.pointer + this.drawState.vertexBufferEnd();
-            return BufferUtil.bufferSlice(TerrainBufferBuilder.this.buffer, start, end);
+            return MemoryUtil.memByteBuffer(TerrainBufferBuilder.this.bufferPtr + start, end - start);
         }
 
         public ByteBuffer indexBuffer() {
             int start = this.pointer + this.drawState.indexBufferStart();
             int end = this.pointer + this.drawState.indexBufferEnd();
-            return BufferUtil.bufferSlice(TerrainBufferBuilder.this.buffer, start, end);
+            return MemoryUtil.memByteBuffer(TerrainBufferBuilder.this.bufferPtr + start, end - start);
         }
 
         public DrawState drawState() {

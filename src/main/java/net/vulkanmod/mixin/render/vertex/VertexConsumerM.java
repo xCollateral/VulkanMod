@@ -16,7 +16,8 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(VertexConsumer.class)
 public interface VertexConsumerM {
 
-    @Shadow void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ);
+
+    @Shadow void addVertex(float f, float g, float h, int i, float j, float k, int l, int m, float n, float o, float p);
 
     /**
      * @author
@@ -54,6 +55,8 @@ public interface VertexConsumerM {
                 b = brightness[k] * blue;
             }
 
+            int color = ColorUtil.RGBA.pack(r, g, b, alpha);
+
             int light = lights[k];
             float u = Float.intBitsToFloat(js[i + 4]);
             float v = Float.intBitsToFloat(js[i + 5]);
@@ -61,7 +64,7 @@ public interface VertexConsumerM {
             Vector4f vector4f = new Vector4f(x, y, z, 1.0f);
             vector4f.mul(matrix4f);
 
-            this.vertex(vector4f.x(), vector4f.y(), vector4f.z(), r, g, b, alpha, u, v, overlay, light, normal.x(), normal.y(), normal.z());
+            this.addVertex(vector4f.x(), vector4f.y(), vector4f.z(), color, u, v, overlay, light, normal.x(), normal.y(), normal.z());
         }
 
     }

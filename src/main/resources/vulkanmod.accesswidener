@@ -1,8 +1,5 @@
 accessWidener	v1	named
 
-accessible field com/mojang/blaze3d/vertex/BufferBuilder buffer Ljava/nio/ByteBuffer;
-accessible field com/mojang/blaze3d/vertex/BufferBuilder nextElementByte I
-
 accessible class net/minecraft/client/model/geom/ModelPart$Polygon
 accessible class net/minecraft/client/model/geom/ModelPart$Vertex
 accessible class net/minecraft/client/gui/Gui$HeartType

@@ -60,8 +60,6 @@ public abstract class VRenderSystem {
     private static final float[] depthBias = new float[2];
 
     public static void initRenderer() {
-        RenderSystem.assertInInitPhase();
-
         Vulkan.initVulkan(window);
     }
 

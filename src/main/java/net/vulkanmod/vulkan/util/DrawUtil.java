@@ -48,24 +48,20 @@ public class DrawUtil {
 //        RenderSystem.setShader(() -> shaderInstance);
 
         Tesselator tesselator = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferBuilder = tesselator.getBuilder();
+        BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferBuilder.addVertex(-1.0f, -1.0f, 0.0f).setUv(0.0F, 1.0F);
+        bufferBuilder.addVertex(1.0f, -1.0f, 0.0f).setUv(1.0F, 1.0F);
+        bufferBuilder.addVertex(1.0f, 1.0f, 0.0f).setUv(1.0F, 0.0F);
+        bufferBuilder.addVertex(-1.0f, 1.0f, 0.0f).setUv(0.0F, 0.0F);
+        var meshData = bufferBuilder.buildOrThrow();
 
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferBuilder.vertex(-1.0D, -1.0D, 0.0D).uv(0.0F, 1.0F).endVertex();
-        bufferBuilder.vertex(1.0D, -1.0D, 0.0D).uv(1.0F, 1.0F).endVertex();
-        bufferBuilder.vertex(1.0D, 1.0D, 0.0D).uv(1.0F, 0.0F).endVertex();
-        bufferBuilder.vertex(-1.0D, 1.0D, 0.0D).uv(0.0F, 0.0F).endVertex();
-        var buffer = bufferBuilder.end();
-
-        buffer.release();
-
-        BufferBuilder.DrawState parameters = buffer.drawState();
+        MeshData.DrawState parameters = meshData.drawState();
 
         Renderer renderer = Renderer.getInstance();
 
         GraphicsPipeline pipeline = ((ShaderMixed)(shaderInstance)).getPipeline();
         renderer.bindGraphicsPipeline(pipeline);
         renderer.uploadAndBindUBOs(pipeline);
-        Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
+        Renderer.getDrawer().draw(meshData.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
     }
 }

@@ -99,13 +99,13 @@ public class EffectInstanceM {
 
         try {
             String[] vshPathInfo = this.decompose(vertexShader, ':');
-            ResourceLocation vshLocation = new ResourceLocation(vshPathInfo[0], "shaders/program/" + vshPathInfo[1] + ".vsh");
+            ResourceLocation vshLocation = ResourceLocation.fromNamespaceAndPath(vshPathInfo[0], "shaders/program/" + vshPathInfo[1] + ".vsh");
             Resource resource = resourceManager.getResourceOrThrow(vshLocation);
             InputStream inputStream = resource.open();
             String vshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
             String[] fshPathInfo = this.decompose(fragShader, ':');
-            ResourceLocation fshLocation = new ResourceLocation(fshPathInfo[0], "shaders/program/" + fshPathInfo[1] + ".fsh");
+            ResourceLocation fshLocation = ResourceLocation.fromNamespaceAndPath(fshPathInfo[0], "shaders/program/" + fshPathInfo[1] + ".fsh");
             resource = resourceManager.getResourceOrThrow(fshLocation);
             inputStream = resource.open();
             String fshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
@@ -174,7 +174,6 @@ public class EffectInstanceM {
      */
     @Overwrite
     public void apply() {
-        RenderSystem.assertOnGameThread();
         this.dirty = false;
         this.blend.apply();
 
