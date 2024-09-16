@@ -24,7 +24,6 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glScissor(@NativeType("GLint") int x, @NativeType("GLint") int y, @NativeType("GLsizei") int width, @NativeType("GLsizei") int height) {
-//        Drawer.setScissor(x, y, width, height);
     }
 
     /**
@@ -91,6 +90,15 @@ public class GL11M {
     @Overwrite(remap = false)
     public static void glClearColor(@NativeType("GLfloat") float red, @NativeType("GLfloat") float green, @NativeType("GLfloat") float blue, @NativeType("GLfloat") float alpha) {
         VRenderSystem.setClearColor(red, green, blue, alpha);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glDepthMask(@NativeType("GLboolean") boolean flag) {
+        VRenderSystem.depthMask(flag);
     }
 
     /**
@@ -172,6 +180,22 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glDisable(@NativeType("GLenum") int target) {
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glFinish() {
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glHint(@NativeType("GLenum") int target, @NativeType("GLenum") int hint) {
     }
 
     /**
