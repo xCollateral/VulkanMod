@@ -125,6 +125,15 @@ public class GL11M {
      * @reason
      */
     @Overwrite(remap = false)
+    public static void glTexImage2D(@NativeType("GLenum") int target, @NativeType("GLint") int level, @NativeType("GLint") int internalformat, @NativeType("GLsizei") int width, @NativeType("GLsizei") int height, @NativeType("GLint") int border, @NativeType("GLenum") int format, @NativeType("GLenum") int type, @NativeType("void const *") long pixels) {
+        GlTexture.texImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
     public static void glTexSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, long pixels) {
         GlTexture.texSubImage2D(target, level, xOffset, yOffset, width, height, format, type, pixels);
     }
@@ -163,6 +172,15 @@ public class GL11M {
     @Overwrite(remap = false)
     public static void glTexParameterf(@NativeType("GLenum") int target, @NativeType("GLenum") int pname, @NativeType("GLfloat") float param) {
 
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static int glGetTexLevelParameteri(@NativeType("GLenum") int target, @NativeType("GLint") int level, @NativeType("GLenum") int pname) {
+        return GlTexture.getTexLevelParameter(target, level, pname);
     }
 
     /**
@@ -212,6 +230,15 @@ public class GL11M {
      * @reason
      */
     @Overwrite(remap = false)
+    public static void glDeleteTextures(@NativeType("GLuint const *") IntBuffer textures) {
+        GlTexture.glDeleteTextures(textures);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
     public static void glGetTexImage(@NativeType("GLenum") int tex, @NativeType("GLint") int level, @NativeType("GLenum") int format, @NativeType("GLenum") int type, @NativeType("void *") long pixels) {
         GlTexture.getTexImage(tex, level, format, type, pixels);
     }
@@ -240,6 +267,6 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glCopyTexSubImage2D(@NativeType("GLenum") int target, @NativeType("GLint") int level, @NativeType("GLint") int xoffset, @NativeType("GLint") int yoffset, @NativeType("GLint") int x, @NativeType("GLint") int y, @NativeType("GLsizei") int width, @NativeType("GLsizei") int height) {
-        //TODO
+        // TODO
     }
 }
