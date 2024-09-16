@@ -13,8 +13,8 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
+import net.vulkanmod.vulkan.shader.layout.Uniform;
 import net.vulkanmod.vulkan.shader.parser.GlslConverter;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
@@ -90,14 +90,17 @@ public class ShaderInstanceM implements ShaderMixed {
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShaderInstance;getOrCreate(Lnet/minecraft/server/packs/resources/ResourceProvider;Lcom/mojang/blaze3d/shaders/Program$Type;Ljava/lang/String;)Lcom/mojang/blaze3d/shaders/Program;"))
     private Program loadNames(ResourceProvider resourceProvider, Program.Type type, String name) {
+        String path;
         if (this.name.contains(String.valueOf(ResourceLocation.NAMESPACE_SEPARATOR))) {
             ResourceLocation location = ResourceLocation.tryParse(name);
-            String path = location.withPath("shaders/core/%s".formatted(location.getPath())).toString();
+            path = location.withPath("shaders/core/%s".formatted(location.getPath())).toString();
+        } else {
+            path = "shaders/core/%s".formatted(name);
+        }
 
-            switch (type) {
-                case VERTEX -> this.vsPath = path;
-                case FRAGMENT -> this.fsName = path;
-            }
+        switch (type) {
+            case VERTEX -> this.vsPath = path;
+            case FRAGMENT -> this.fsName = path;
         }
 
         return null;
@@ -165,7 +168,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
         if (this.SCREEN_SIZE != null) {
             Window window = Minecraft.getInstance().getWindow();
-            this.SCREEN_SIZE.set((float)window.getWidth(), (float)window.getHeight());
+            this.SCREEN_SIZE.set((float) window.getWidth(), (float) window.getHeight());
         }
 
         if (this.LINE_WIDTH != null) {
@@ -181,10 +184,10 @@ public class ShaderInstanceM implements ShaderMixed {
 
     private void setUniformSuppliers(UBO ubo) {
 
-        for(Uniform vUniform : ubo.getUniforms()) {
+        for (Uniform vUniform : ubo.getUniforms()) {
             com.mojang.blaze3d.shaders.Uniform uniform = this.uniformMap.get(vUniform.getName());
 
-            if(uniform == null) {
+            if (uniform == null) {
                 Initializer.LOGGER.error(String.format("Error: field %s not present in uniform map", vUniform.getName()));
                 continue;
             }
