@@ -1,21 +1,11 @@
 package net.vulkanmod.mixin.render;
 
-import com.mojang.blaze3d.pipeline.RenderCall;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexSorting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
-import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;

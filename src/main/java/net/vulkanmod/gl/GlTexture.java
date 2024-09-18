@@ -72,9 +72,7 @@ public class GlTexture {
 
     public static void activeTexture(int i) {
         activeTexture = i - GL30.GL_TEXTURE0;
-
-        if (activeTexture < 0 || activeTexture > VTextureSelector.SIZE - 1)
-            throw new IllegalArgumentException("value: " + activeTexture);
+        VTextureSelector.setActiveTexture(activeTexture);
     }
 
     public static void texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, long pixels) {
