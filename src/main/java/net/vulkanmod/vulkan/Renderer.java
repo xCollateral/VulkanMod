@@ -245,26 +245,28 @@ public class Renderer {
 
             imageIndex = pImageIndex.get(0);
 
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-            VkCommandBuffer commandBuffer = currentCmdBuffer;
-
-            vkResult = vkBeginCommandBuffer(commandBuffer, beginInfo);
-            if (vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Failed to begin recording command buffer: %s".formatted(VkResult.decode(vkResult)));
-            }
-            recordingCmds = true;
-
-            mainPass.begin(commandBuffer, stack);
-
-            vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
-
-            vkCmdSetLineWidth(commandBuffer, 1.0F);
+            this.beginRenderPass(stack);
         }
 
         p.pop();
+    }
+
+    private void beginRenderPass(MemoryStack stack) {
+        VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
+        beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+        beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        VkCommandBuffer commandBuffer = currentCmdBuffer;
+
+        int vkResult = vkBeginCommandBuffer(commandBuffer, beginInfo);
+        if (vkResult != VK_SUCCESS) {
+            throw new RuntimeException("Failed to begin recording command buffer: %s".formatted(VkResult.decode(vkResult)));
+        }
+
+        recordingCmds = true;
+        mainPass.begin(commandBuffer, stack);
+
+        resetDynamicState(commandBuffer);
     }
 
     public void endFrame() {
@@ -330,6 +332,39 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
+        }
+    }
+
+    /**
+    * Called in case draw results are needed before the of the frame
+     */
+    public void flushCmds() {
+        if (!this.recordingCmds)
+            return;
+
+        try (MemoryStack stack = stackPush()) {
+            int vkResult;
+
+            this.endRenderPass(currentCmdBuffer);
+            vkEndCommandBuffer(currentCmdBuffer);
+
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+
+            submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+
+            vkResetFences(device, inFlightFences.get(currentFrame));
+
+            Synchronization.INSTANCE.waitFences();
+
+            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+                vkResetFences(device, inFlightFences.get(currentFrame));
+                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+            }
+
+            vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+
+            this.beginRenderPass(stack);
         }
     }
 
@@ -538,6 +573,12 @@ public class Renderer {
 
     public Pipeline getBoundPipeline() {
         return boundPipeline;
+    }
+
+    private static void resetDynamicState(VkCommandBuffer commandBuffer) {
+        vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
+
+        vkCmdSetLineWidth(commandBuffer, 1.0F);
     }
 
     public static void setDepthBias(float units, float factor) {

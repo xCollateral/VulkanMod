@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Screenshot;
 import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.vulkan.Renderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -15,21 +16,17 @@ public class ScreenshotRecorderM {
      */
     @Overwrite
     public static NativeImage takeScreenshot(RenderTarget target) {
-        int i = target.width;
-        int j = target.height;
+        int width = target.width;
+        int height = target.height;
 
-        NativeImage nativeimage = new NativeImage(i, j, false);
+        NativeImage nativeimage = new NativeImage(width, height, false);
         GlTexture.bindTexture(target.getColorTextureId());
 
-        //TODO screenshot might be requested when cmds have not been submitted yet
-//        RenderPass renderPass = ((ExtendedRenderTarget)target).getRenderPass();
-//
-//        Renderer renderer = Renderer.getInstance();
-//        boolean b = renderer.getBoundRenderPass() == renderPass;
+        // Need to submit and wait cmds if screenshot was requested
+        // before the end of the frame
+        Renderer.getInstance().flushCmds();
 
         nativeimage.downloadTexture(0, true);
-
-        //nativeimage.flipY();
         return nativeimage;
     }
 }
