@@ -129,7 +129,7 @@ public class GlTexture {
         }
 
         if (src != null)
-            boundTexture.uploadSubImage(0, 0, width, height, format, src);
+            boundTexture.uploadSubImage(xOffset, yOffset, width, height, format, src);
     }
 
     private static ByteBuffer getByteBuffer(int width, int height, long pixels) {
@@ -309,8 +309,7 @@ public class GlTexture {
             src = pixels;
         }
 
-        // TODO: offset params
-        this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, src);
+        this.vulkanImage.uploadSubTextureAsync(0, width, height, xOffset, yOffset, 0, 0, 0, src);
 
         if (src != pixels) {
             MemoryUtil.memFree(src);
