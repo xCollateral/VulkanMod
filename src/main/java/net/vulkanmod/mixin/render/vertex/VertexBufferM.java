@@ -20,7 +20,7 @@ public class VertexBufferM {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void constructor(VertexBuffer.Usage usage, CallbackInfo ci) {
-        vbo = new VBO();
+        vbo = new VBO(usage);
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_glGenBuffers()I"))
