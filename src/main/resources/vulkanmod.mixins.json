@@ -47,6 +47,7 @@
     "render.RenderSystemMixin",
     "render.RenderTypeM",
     "render.ShaderInstanceM",
+    "render.clouds.LevelRendererM",
     "render.entity.EntityRendererM",
     "render.entity.LevelRendererM",
     "render.entity.model.ModelPartCubeM",
