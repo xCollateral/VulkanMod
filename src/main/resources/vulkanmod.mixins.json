@@ -27,6 +27,7 @@
     "compatibility.gl.GL15M",
     "compatibility.gl.GL30M",
 
+    "debug.crash_report.SystemReportM",
     "debug.DebugScreenOverlayM",
     "debug.GlDebugInfoM",
     "debug.KeyboardHandlerM",
