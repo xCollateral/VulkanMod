@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.texture;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -72,9 +73,13 @@ public abstract class VTextureSelector {
         for (ImageDescriptor state : imageDescriptors) {
             final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
 
-            final GlTexture texture = GlTexture.getTexture(shaderTexture);
+            GlTexture texture = GlTexture.getTexture(shaderTexture);
 
-            if (texture != null) {
+            if (texture != null && texture.getVulkanImage() != null) {
+                VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
+            }
+            else {
+                 texture = GlTexture.getTexture(MissingTextureAtlasSprite.getTexture().getId());
                 VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
             }
         }
