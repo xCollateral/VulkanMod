@@ -10,13 +10,15 @@
     "window.WindowMixin",
     "window.WindowAccessor",
 
+    "chunk.ClientPacketListenerM",
+    "chunk.ClientChunkCacheM",
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
     "chunk.LevelRendererMixin",
     "chunk.RenderBuffersM",
+    "chunk.SectionRenderDispatcherM",
+    "chunk.ViewAreaM",
     "chunk.VisibilitySetMixin",
-    "chunk.ClientPacketListenerM",
-    "chunk.ClientChunkCacheM",
 
     "compatibility.EffectInstanceM",
     "compatibility.ProgramM",
