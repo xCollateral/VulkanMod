@@ -1,40 +1,40 @@
 {
-  "vulkanmod.options.unknown": "Unknown",
+  "vulkanmod.options.unknown": "Unbekannt",
 
   "vulkanmod.options.pages.video": "Video",
-  "vulkanmod.options.pages.graphics": "Graphics",
-  "vulkanmod.options.pages.optimizations": "Optimizations",
-  "vulkanmod.options.pages.other": "Other",
+  "vulkanmod.options.pages.graphics": "Grafik",
+  "vulkanmod.options.pages.optimizations": "Optimierung",
+  "vulkanmod.options.pages.other": "Andere",
 
-  "vulkanmod.options.buttons.apply": "Apply",
-  "vulkanmod.options.buttons.kofi": "Support me",
+  "vulkanmod.options.buttons.apply": "Anwenden",
+  "vulkanmod.options.buttons.kofi": "Unterstütze Mich!",
 
-  "vulkanmod.options.advCulling": "Advanced Chunk Culling",
-  "vulkanmod.options.advCulling.aggressive": "Aggressive",
-  "vulkanmod.options.advCulling.conservative": "Conservative",
+  "vulkanmod.options.advCulling": "Fortgeschrittene Chunkversteckung",
+  "vulkanmod.options.advCulling.aggressive": "Agressiv",
+  "vulkanmod.options.advCulling.conservative": "Vorsichtig",
   "vulkanmod.options.advCulling.normal": "Normal",
-  "vulkanmod.options.advCulling.tooltip": "Use a culling algorithm that might improve performance by reducing the number of non visible chunk sections rendered.",
+  "vulkanmod.options.advCulling.tooltip": "Änder den Algorithmus, welcher Chunks versteckt, um mehr Performance zu erhalten.",
 
-  "vulkanmod.options.ao.subBlock": "ON (Sub-block)",
-  "vulkanmod.options.ao.subBlock.tooltip": "ON (Sub-block): Enables smooth lighting for non full block (experimental).",
+  "vulkanmod.options.ao.subBlock": "AN (Sub-block)",
+  "vulkanmod.options.ao.subBlock.tooltip": "An (Sub-block): Aktiviert weiche Beleuchtung für unsolide Blöcke (experimentell).",
 
-  "vulkanmod.options.deviceSelector": "Device selector",
+  "vulkanmod.options.deviceSelector": "Geräteauswahl",
   "vulkanmod.options.deviceSelector.auto": "Auto",
-  "vulkanmod.options.deviceSelector.tooltip": "Current device",
+  "vulkanmod.options.deviceSelector.tooltip": "Derzeitiges Gerät",
 
-  "vulkanmod.options.entityCulling": "Entity Culling",
-  "vulkanmod.options.entityCulling.tooltip": "Enables culling for entities on not visible sections.",
+  "vulkanmod.options.entityCulling": "Wesenversteckung",
+  "vulkanmod.options.entityCulling.tooltip": "Aktiviert das Verstecken von Wesen außerhalb des sichtbaren Bereiches.",
 
-  "vulkanmod.options.frameQueue": "Render queue size",
-  "vulkanmod.options.frameQueue.tooltip": "Higher values might help stabilize frametime but will increase input lag.",
+  "vulkanmod.options.frameQueue": "Renderwarteschlangengröße",
+  "vulkanmod.options.frameQueue.tooltip": "Bei höheren Werten können die FPS stabilisieren werden, was aber die Eingabeverzögerung erhöht.",
 
-  "vulkanmod.options.indirectDraw": "Indirect Draw",
-  "vulkanmod.options.indirectDraw.tooltip": "Reduces CPU overhead but increases GPU overhead. Enabling it might help in CPU limited systems.",
+  "vulkanmod.options.indirectDraw": "Indirektes Rendern",
+  "vulkanmod.options.indirectDraw.tooltip": "Reduziert CPU, aber erhöht GPU nutzung. Kann die Performance bei CPU-schwachen Systemen erhöhen",
 
-  "vulkanmod.options.refreshRate": "Refresh Rate",
+  "vulkanmod.options.refreshRate": "Bildwiederholfrequenz",
 
-  "vulkanmod.options.uniqueOpaqueLayer": "Unique opaque layer",
-  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Use a unique render layer for opaque terrain to improve performance.",
+  "vulkanmod.options.uniqueOpaqueLayer": "Besondere Renderschicht für undurchsichtiges Terrain",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Benutzt eine besondere Renderschicht für undurchsichtiges Terrain um die Performance zu erhöhen.",
 
-  "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen"
+  "vulkanmod.options.windowedFullscreen": "Fenstervollbild"
 }
