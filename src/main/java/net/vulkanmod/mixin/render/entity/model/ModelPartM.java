@@ -22,7 +22,7 @@ import java.util.List;
 public abstract class ModelPartM {
     @Shadow @Final private List<ModelPart.Cube> cubes;
 
-    Vector3f temp = new Vector3f();
+    Vector3f normal = new Vector3f();
 
     @Inject(method = "compile", at = @At("HEAD"), cancellable = true)
     private void injCompile(PoseStack.Pose pose, VertexConsumer vertexConsumer, int light, int overlay, int color, CallbackInfo ci) {
@@ -34,30 +34,54 @@ public abstract class ModelPartM {
     public void renderCubes(PoseStack.Pose pose, VertexConsumer vertexConsumer, int light, int overlay, int color) {
         Matrix4f matrix4f = pose.pose();
         Matrix3f matrix3f = pose.normal();
-        ExtendedVertexBuilder vertexBuilder = (ExtendedVertexBuilder)vertexConsumer;
 
-        color = ColorUtil.RGBA.fromArgb32(color);
+        ExtendedVertexBuilder vertexBuilder = ExtendedVertexBuilder.of(vertexConsumer);
 
-        for (ModelPart.Cube cube : this.cubes) {
-            ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
-            CubeModel cubeModel = cubeMixed.getCubeModel();
+        if (vertexBuilder != null && vertexBuilder.canUseFastVertex()) {
 
-            ModelPart.Polygon[] polygons = cubeModel.getPolygons();
+            for (ModelPart.Cube cube : this.cubes) {
+                ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
+                CubeModel cubeModel = cubeMixed.getCubeModel();
 
-            cubeModel.transformVertices(matrix4f);
+                ModelPart.Polygon[] polygons = cubeModel.getPolygons();
 
-            for (ModelPart.Polygon polygon : polygons) {
-                matrix3f.transform(this.temp.set(polygon.normal));
-                this.temp.normalize();
+                cubeModel.transformVertices(matrix4f);
 
-                int packedNormal = VertexUtil.packNormal(temp.x(), temp.y(), temp.z());
+                for (ModelPart.Polygon polygon : polygons) {
+                    matrix3f.transform(this.normal.set(polygon.normal));
+                    this.normal.normalize();
 
-                ModelPart.Vertex[] vertices = polygon.vertices;
+                    int packedNormal = VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
 
-                for (ModelPart.Vertex vertex : vertices) {
+                    ModelPart.Vertex[] vertices = polygon.vertices;
 
-                    Vector3f pos = vertex.pos;
-                    vertexBuilder.vertex(pos.x(), pos.y(), pos.z(), color, vertex.u, vertex.v, overlay, light, packedNormal);
+                    for (ModelPart.Vertex vertex : vertices) {
+                        Vector3f pos = vertex.pos;
+                        vertexBuilder.vertex(pos.x(), pos.y(), pos.z(), color, vertex.u, vertex.v, overlay, light, packedNormal);
+                    }
+                }
+            }
+        }
+        else {
+            for (ModelPart.Cube cube : this.cubes) {
+                ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
+                CubeModel cubeModel = cubeMixed.getCubeModel();
+
+                ModelPart.Polygon[] polygons = cubeModel.getPolygons();
+
+                cubeModel.transformVertices(matrix4f);
+
+                for (ModelPart.Polygon polygon : polygons) {
+                    matrix3f.transform(this.normal.set(polygon.normal));
+                    this.normal.normalize();
+
+                    ModelPart.Vertex[] vertices = polygon.vertices;
+
+                    for (ModelPart.Vertex vertex : vertices) {
+                        Vector3f pos = vertex.pos;
+                        vertexConsumer.addVertex(pos.x(), pos.y(), pos.z(), color, vertex.u, vertex.v, overlay, light,
+                                              normal.x(), normal.y(), normal.z());
+                    }
                 }
             }
         }
