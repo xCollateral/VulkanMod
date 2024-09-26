@@ -33,7 +33,7 @@
 
   "vulkanmod.options.refreshRate": "Bildwiederholfrequenz",
 
-  "vulkanmod.options.uniqueOpaqueLayer": "Besondere Renderschicht für undurchsichtiges Terrain",
+  "vulkanmod.options.uniqueOpaqueLayer": "Dedizierte undurchsichtige Renderebene",
   "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Benutzt eine besondere Renderschicht für undurchsichtiges Terrain um die Performance zu erhöhen.",
 
   "vulkanmod.options.windowedFullscreen": "Fenstervollbild"
