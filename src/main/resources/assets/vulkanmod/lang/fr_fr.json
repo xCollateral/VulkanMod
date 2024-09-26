@@ -1,0 +1,9 @@
+{
+    "vulkanmod.options.videoMode.tooltip" : "Ne marche qu'en mode plein écran",
+    "vulkanmod.options.windowedFullscreen" : "Mode plein écran fenêtré",
+    "vulkanmod.options.uniqueOpaqueLayer.tooltip" : "Utilise une couche de rendu pour les surfaces de terrain opaques pour améliorer les performances. Change l'apparence des blocs lointains.",
+    "vulkanmod.options.advCulling.tooltip": "Ceci permet l’utilisation d’un algorithme de rendu menant à une amélioration des performance en cessant le rendu des tronçons non-visibles.",
+    "vulkanmod.options.entityCulling.tooltip": "Ceci active la fonction qui permet de cesser le rendu des entités non-visibles, dans le but d’améliorer les performances.",
+    "vulkanmod.options.indirectDraw.tooltip": "Réduis l’utilisation du CPU mais engendre une utilisation plus intensive du GPU. Cela peut aider dans le cas des configurations limitées par le CPU. ",
+    "vulkanmod.options.frameQueue.tooltip": "Une valeur plus élevée aide à une meilleure consistance de la latence de génération d’image, au prix d’une latence matérielle plus élevée."
+}
