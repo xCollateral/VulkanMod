@@ -9,6 +9,7 @@ import net.vulkanmod.gl.GlTexture;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -405,4 +406,10 @@ public class GlStateManagerM {
         RenderSystem.assertOnRenderThread();
         GlBuffer.glDeleteBuffers(i);
     }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void _disableVertexAttribArray(int i) {}
 }
