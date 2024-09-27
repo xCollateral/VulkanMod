@@ -126,15 +126,13 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
 
     @Inject(method = "_blitToScreen", at = @At("HEAD"), cancellable = true)
     private void _blitToScreen(int width, int height, boolean disableBlend, CallbackInfo ci) {
-        if (needClear) {
-            // If true it means target has not been used, thus we can skip blit
-            return;
+        // If the target needs clear it means it has not been used, thus we can skip blit
+        if (!this.needClear) {
+            Framebuffer framebuffer = GlFramebuffer.getFramebuffer(this.frameBufferId).getFramebuffer();
+            VTextureSelector.bindTexture(0, framebuffer.getColorAttachment());
+
+            DrawUtil.blitToScreen();
         }
-
-        Framebuffer framebuffer = GlFramebuffer.getFramebuffer(this.frameBufferId).getFramebuffer();
-        VTextureSelector.bindTexture(0, framebuffer.getColorAttachment());
-
-        DrawUtil.blitToScreen();
 
         ci.cancel();
     }
