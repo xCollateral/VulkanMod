@@ -38,6 +38,7 @@ public abstract class ModelPartM {
         ExtendedVertexBuilder vertexBuilder = ExtendedVertexBuilder.of(vertexConsumer);
 
         if (vertexBuilder != null && vertexBuilder.canUseFastVertex()) {
+            color = ColorUtil.RGBA.fromArgb32(color);
 
             for (ModelPart.Cube cube : this.cubes) {
                 ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
