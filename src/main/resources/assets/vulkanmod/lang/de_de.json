@@ -1,0 +1,40 @@
+{
+  "vulkanmod.options.unknown": "Unbekannt",
+
+  "vulkanmod.options.pages.video": "Video",
+  "vulkanmod.options.pages.graphics": "Grafik",
+  "vulkanmod.options.pages.optimizations": "Optimierung",
+  "vulkanmod.options.pages.other": "Andere",
+
+  "vulkanmod.options.buttons.apply": "Anwenden",
+  "vulkanmod.options.buttons.kofi": "Unterstütze Mich!",
+
+  "vulkanmod.options.advCulling": "Fortgeschrittene Chunkversteckung",
+  "vulkanmod.options.advCulling.aggressive": "Agressiv",
+  "vulkanmod.options.advCulling.conservative": "Vorsichtig",
+  "vulkanmod.options.advCulling.normal": "Normal",
+  "vulkanmod.options.advCulling.tooltip": "Änder den Algorithmus, welcher Chunks versteckt, um mehr Performance zu erhalten.",
+
+  "vulkanmod.options.ao.subBlock": "AN (Sub-block)",
+  "vulkanmod.options.ao.subBlock.tooltip": "An (Sub-block): Aktiviert weiche Beleuchtung für unsolide Blöcke (experimentell).",
+
+  "vulkanmod.options.deviceSelector": "Geräteauswahl",
+  "vulkanmod.options.deviceSelector.auto": "Auto",
+  "vulkanmod.options.deviceSelector.tooltip": "Derzeitiges Gerät",
+
+  "vulkanmod.options.entityCulling": "Wesenversteckung",
+  "vulkanmod.options.entityCulling.tooltip": "Aktiviert das Verstecken von Wesen außerhalb des sichtbaren Bereiches.",
+
+  "vulkanmod.options.frameQueue": "Renderwarteschlangengröße",
+  "vulkanmod.options.frameQueue.tooltip": "Bei höheren Werten können die FPS stabilisieren werden, was aber die Eingabeverzögerung erhöht.",
+
+  "vulkanmod.options.indirectDraw": "Indirektes Rendern",
+  "vulkanmod.options.indirectDraw.tooltip": "Reduziert CPU, aber erhöht GPU nutzung. Kann die Performance bei CPU-schwachen Systemen erhöhen",
+
+  "vulkanmod.options.refreshRate": "Bildwiederholfrequenz",
+
+  "vulkanmod.options.uniqueOpaqueLayer": "Dedizierte undurchsichtige Renderebene",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Benutzt eine besondere Renderschicht für undurchsichtiges Terrain um die Performance zu erhöhen.",
+
+  "vulkanmod.options.windowedFullscreen": "Fenstervollbild"
+}
