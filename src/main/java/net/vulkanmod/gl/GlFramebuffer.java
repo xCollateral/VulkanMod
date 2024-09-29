@@ -25,7 +25,7 @@ public class GlFramebuffer {
         boundId = 0;
     }
 
-    static void beginRendering(GlFramebuffer glFramebuffer) {
+    public static void beginRendering(GlFramebuffer glFramebuffer) {
         Renderer.getInstance().beginRendering(glFramebuffer.renderPass, glFramebuffer.framebuffer);
 
         Framebuffer framebuffer = glFramebuffer.framebuffer;

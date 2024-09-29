@@ -2,7 +2,6 @@ package net.vulkanmod.mixin.render.target;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlTexture;
@@ -14,13 +13,11 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.DrawUtil;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryStack;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(RenderTarget.class)
 public abstract class RenderTargetMixin implements ExtendedRenderTarget {
@@ -74,6 +71,9 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Overwrite
     public void bindRead() {
         RenderSystem.assertOnRenderThread();
+
+        applyClear();
+
         GlTexture.bindTexture(this.colorTextureId);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -137,6 +137,11 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         ci.cancel();
     }
 
+    @Inject(method = "getColorTextureId", at = @At("HEAD"))
+    private void injClear(CallbackInfoReturnable<Integer> cir) {
+        applyClear();
+    }
+
     @Override
     public boolean isBound() {
         return bound;
@@ -145,5 +150,18 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Override
     public RenderPass getRenderPass() {
         return GlFramebuffer.getFramebuffer(this.frameBufferId).getRenderPass();
+    }
+
+    @Unique
+    private void applyClear() {
+        if (this.needClear) {
+            GlFramebuffer currentFramebuffer = GlFramebuffer.getBoundFramebuffer();
+
+            this._bindWrite(false);
+
+            if (currentFramebuffer != null) {
+                GlFramebuffer.beginRendering(currentFramebuffer);
+            }
+        }
     }
 }
