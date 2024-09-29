@@ -9,7 +9,9 @@ import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.client.renderer.PostPass;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.util.DrawUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -71,7 +73,8 @@ public class PostPassM {
         this.outTarget.bindWrite(false);
 
         VRenderSystem.disableCull();
-        RenderSystem.depthFunc(519);
+        VRenderSystem.depthFunc(519);
+        VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
         Renderer.setInvertedViewport(0, 0, this.outTarget.width, this.outTarget.height);
         Renderer.resetScissor();
