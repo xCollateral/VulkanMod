@@ -3,6 +3,7 @@ package net.vulkanmod.render.chunk.build;
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
@@ -16,12 +17,16 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
+import net.vulkanmod.render.chunk.cull.QuadFacing;
 import net.vulkanmod.render.model.quad.QuadUtils;
 import net.vulkanmod.render.model.quad.QuadView;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.render.vertex.TerrainBuilder;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.render.vertex.VertexUtil;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Vector3f;
@@ -43,6 +48,10 @@ public class BlockRenderer {
 
     BlockState blockState;
 
+    final boolean backFaceCulling = Initializer.CONFIG.backFaceCulling;
+
+    private TerrainRenderType renderType;
+
     public void setResources(BuilderResources resources) {
         this.resources = resources;
     }
@@ -60,10 +69,11 @@ public class BlockRenderer {
         BlockRenderer.blockColors = blockColors;
     }
 
-    public void renderBlock(BlockState blockState, BlockPos blockPos, Vector3f pos, TerrainBufferBuilder bufferBuilder) {
+    public void renderBlock(BlockState blockState, BlockPos blockPos, TerrainRenderType renderType, Vector3f pos, TerrainBuilder bufferBuilder) {
         this.pos = pos;
         this.blockPos = blockPos;
         this.blockState = blockState;
+        this.renderType = renderType;
 
         long seed = blockState.getSeed(blockPos);
 
@@ -71,7 +81,7 @@ public class BlockRenderer {
         tessellateBlock(model, bufferBuilder, seed);
     }
 
-    public void tessellateBlock(BakedModel bakedModel, TerrainBufferBuilder bufferBuilder, long seed) {
+    public void tessellateBlock(BakedModel bakedModel, TerrainBuilder bufferBuilder, long seed) {
         Vec3 offset = blockState.getOffset(resources.region, blockPos);
 
         pos.add((float) offset.x, (float) offset.y, (float) offset.z);
@@ -101,8 +111,17 @@ public class BlockRenderer {
         }
     }
 
-    private void renderModelFace(TerrainBufferBuilder bufferBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace) {
+    private void renderModelFace(TerrainBuilder terrainBuilder, List<BakedQuad> quads, LightPipeline lightPipeline, Direction cullFace) {
         QuadLightData quadLightData = resources.quadLightData;
+
+        TerrainBufferBuilder bufferBuilder;
+
+        if (cullFace != null && renderType != TerrainRenderType.TRANSLUCENT && this.backFaceCulling) {
+            bufferBuilder = terrainBuilder.getBufferBuilder(QuadFacing.from(cullFace).ordinal());
+        }
+        else {
+            bufferBuilder = terrainBuilder.getBufferBuilder(QuadFacing.NONE.ordinal());
+        }
 
         for (int i = 0; i < quads.size(); ++i) {
             BakedQuad bakedQuad = quads.get(i);

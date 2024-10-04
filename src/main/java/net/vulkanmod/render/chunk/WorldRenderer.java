@@ -338,9 +338,9 @@ public class WorldRenderer {
                     renderer.uploadAndBindUBOs(pipeline);
 
                     if (indirectDraw)
-                        drawBuffers.buildDrawBatchesIndirect(indirectBuffers[currentFrame], queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesIndirect(cameraPos, indirectBuffers[currentFrame], queue, terrainRenderType);
                     else
-                        drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
+                        drawBuffers.buildDrawBatchesDirect(cameraPos, queue, terrainRenderType);
                 }
             }
         }

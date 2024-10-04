@@ -14,6 +14,7 @@ import net.vulkanmod.render.chunk.build.task.BuildTask;
 import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.build.task.CompiledSection;
 import net.vulkanmod.render.chunk.build.task.SortTransparencyTask;
+import net.vulkanmod.render.chunk.cull.QuadFacing;
 import net.vulkanmod.render.chunk.graph.GraphDirections;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -61,8 +62,9 @@ public class RenderSection {
         this.yOffset = y;
         this.zOffset = z;
 
-        this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
-        for (int i = 0; i < this.drawParametersArray.length; ++i) {
+        final int size = TerrainRenderType.VALUES.length * QuadFacing.VALUES.length;
+        this.drawParametersArray = new DrawBuffers.DrawParameters[size];
+        for (int i = 0; i < size; ++i) {
             this.drawParametersArray[i] = new DrawBuffers.DrawParameters();
         }
     }
@@ -297,8 +299,14 @@ public class RenderSection {
         return zOffset;
     }
 
-    public DrawBuffers.DrawParameters getDrawParameters(TerrainRenderType renderType) {
-        return drawParametersArray[renderType.ordinal()];
+    public void resetDrawParameters(TerrainRenderType renderType) {
+        for (int i = 0; i < QuadFacing.COUNT; ++i) {
+            drawParametersArray[renderType.ordinal() * QuadFacing.COUNT + i].reset(this.chunkArea, renderType);
+        }
+    }
+
+    public DrawBuffers.DrawParameters getDrawParameters(TerrainRenderType renderType, int facing) {
+        return drawParametersArray[renderType.ordinal() * QuadFacing.COUNT + facing];
     }
 
     public void setChunkArea(ChunkArea chunkArea) {
@@ -385,8 +393,10 @@ public class RenderSection {
         if (this.chunkArea == null)
             return;
 
-        for (TerrainRenderType r : TerrainRenderType.VALUES) {
-            this.getDrawParameters(r).reset(this.chunkArea, r);
+        for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
+            for (QuadFacing facing : QuadFacing.VALUES) {
+                this.getDrawParameters(renderType, facing.ordinal()).reset(this.chunkArea, renderType);
+            }
         }
     }
 

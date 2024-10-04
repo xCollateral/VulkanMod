@@ -1,9 +1,12 @@
 package net.vulkanmod.render.chunk.buffer;
 
+import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.ChunkArea;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
+import net.vulkanmod.render.chunk.cull.QuadFacing;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -39,28 +42,49 @@ public class DrawBuffers {
     }
 
     public void upload(RenderSection section, UploadBuffer buffer, TerrainRenderType renderType) {
-        DrawParameters drawParameters = section.getDrawParameters(renderType);
-        int vertexOffset = drawParameters.vertexOffset;
-        int firstIndex = -1;
+        var vertexBuffers = buffer.getVertexBuffers();
 
-        if (!buffer.indexOnly) {
-            AreaBuffer.Segment segment = this.getAreaBufferOrAlloc(renderType).upload(buffer.getVertexBuffer(), vertexOffset, drawParameters);
-            vertexOffset = segment.offset / VERTEX_SIZE;
-
-            drawParameters.baseInstance = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());
-        }
-
-        if (!buffer.autoIndices) {
-            if (this.indexBuffer == null)
-                this.indexBuffer = new AreaBuffer(AreaBuffer.Usage.INDEX, 60000, INDEX_SIZE);
+        if (buffer.indexOnly) {
+            DrawParameters drawParameters = section.getDrawParameters(renderType, QuadFacing.NONE.ordinal());
 
             AreaBuffer.Segment segment = this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.firstIndex, drawParameters);
-            firstIndex = segment.offset / INDEX_SIZE;
+            drawParameters.firstIndex = segment.offset / INDEX_SIZE;
+
+            buffer.release();
+            return;
         }
 
-        drawParameters.indexCount = buffer.indexCount;
-        drawParameters.firstIndex = firstIndex;
-        drawParameters.vertexOffset = vertexOffset;
+        for (int i = 0; i < QuadFacing.COUNT; i++) {
+            DrawParameters drawParameters = section.getDrawParameters(renderType, i);
+            int vertexOffset = drawParameters.vertexOffset;
+            int firstIndex = -1;
+            int indexCount = 0;
+
+            var vertexBuffer = vertexBuffers[i];
+
+            if (vertexBuffer != null) {
+                AreaBuffer.Segment segment = this.getAreaBufferOrAlloc(renderType).upload(vertexBuffer, vertexOffset, drawParameters);
+                vertexOffset = segment.offset / VERTEX_SIZE;
+
+                drawParameters.baseInstance = encodeSectionOffset(section.xOffset(), section.yOffset(), section.zOffset());
+                indexCount = vertexBuffer.limit() / VERTEX_SIZE * 6 / 4;
+            }
+
+		if (i == QuadFacing.NONE.ordinal() && !buffer.autoIndices) {
+			if (this.indexBuffer == null) {
+                this.indexBuffer = new AreaBuffer(AreaBuffer.Usage.INDEX, 60000, INDEX_SIZE);
+            }
+
+                AreaBuffer.Segment segment = this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.firstIndex, drawParameters);
+                firstIndex = segment.offset / INDEX_SIZE;
+            }
+
+//            drawParameters.indexCount = buffer.indexCount;
+            drawParameters.firstIndex = firstIndex;
+            drawParameters.vertexOffset = vertexOffset;
+
+            drawParameters.indexCount = indexCount;
+        }
 
         buffer.release();
     }
@@ -110,11 +134,11 @@ public class DrawBuffers {
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
 
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
+    public void buildDrawBatchesIndirect(Vec3 cameraPos, IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
-            ByteBuffer byteBuffer = stack.malloc(20 * queue.size());
+            ByteBuffer byteBuffer = stack.malloc(20 * queue.size() * 7);
             long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
 
             boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
@@ -123,19 +147,28 @@ public class DrawBuffers {
             for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
 
                 final RenderSection section = iterator.next();
-                final DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
-                if (drawParameters.indexCount <= 0)
-                    continue;
+                int mask = getMask(cameraPos, section);
 
-                long ptr = bufferPtr + (drawCount * 20L);
-                MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-                MemoryUtil.memPutInt(ptr + 4, 1);
-                MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex);
-                MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
-                MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
+                for (int i = 0; i < QuadFacing.COUNT; i++) {
 
-                drawCount++;
+                    if((mask & 1 << i) == 0)
+                        continue;
+
+                    final DrawParameters drawParameters = section.getDrawParameters(terrainRenderType, i);
+
+                    if (drawParameters.indexCount <= 0)
+                        continue;
+
+                    long ptr = bufferPtr + (drawCount * 20L);
+                    MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
+                    MemoryUtil.memPutInt(ptr + 4, 1);
+                    MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex);
+                    MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
+                    MemoryUtil.memPutInt(ptr + 16, drawParameters.baseInstance);
+
+                    drawCount++;
+                }
             }
 
             if (drawCount == 0) return;
@@ -149,20 +182,48 @@ public class DrawBuffers {
 
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, TerrainRenderType renderType) {
+    public void buildDrawBatchesDirect(Vec3 cameraPos, StaticQueue<RenderSection> queue, TerrainRenderType renderType) {
         boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
         for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
             final RenderSection section = iterator.next();
-            final DrawParameters drawParameters = section.getDrawParameters(renderType);
 
-            if (drawParameters.indexCount <= 0)
-                continue;
+            int mask = getMask(cameraPos, section);
 
-            final int firstIndex = drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex;
-            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+            for (int i = 0; i < QuadFacing.COUNT; i++) {
+
+                if((mask & 1 << i) == 0)
+                    continue;
+
+                final DrawParameters drawParameters = section.getDrawParameters(renderType, i);
+
+                if (drawParameters.indexCount <= 0)
+                    continue;
+
+                final int firstIndex = drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex;
+                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
+            }
+
         }
+    }
+
+    private int getMask(Vec3 camera, RenderSection section) {
+        final int secX = section.xOffset;
+        final int secY = section.yOffset;
+        final int secZ = section.zOffset;
+
+        int mask = 1 << QuadFacing.NONE.ordinal();
+
+        mask |= camera.x - secX >= 0 ? 1 << QuadFacing.X_POS.ordinal() : 0;
+        mask |= camera.y - secY >= 0 ? 1 << QuadFacing.Y_POS.ordinal() : 0;
+        mask |= camera.z - secZ >= 0 ? 1 << QuadFacing.Z_POS.ordinal() : 0;
+        mask |= camera.x - (secX + 16) < 0 ? 1 << QuadFacing.X_NEG.ordinal() : 0;
+        mask |= camera.y - (secY + 16) < 0 ? 1 << QuadFacing.Y_NEG.ordinal() : 0;
+        mask |= camera.z - (secZ + 16) < 0 ? 1 << QuadFacing.Z_NEG.ordinal() : 0;
+
+        return mask;
+//        return 0xFF;
     }
 
     public void bindBuffers(VkCommandBuffer commandBuffer, Pipeline pipeline, TerrainRenderType terrainRenderType, double camX, double camY, double camZ) {
@@ -173,7 +234,8 @@ public class DrawBuffers {
             updateChunkAreaOrigin(commandBuffer, pipeline, camX, camY, camZ, stack);
         }
 
-        if (terrainRenderType == TerrainRenderType.TRANSLUCENT) {
+        // TODO index buffer
+        if (terrainRenderType == TerrainRenderType.TRANSLUCENT && this.indexBuffer != null) {
             vkCmdBindIndexBuffer(commandBuffer, this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 

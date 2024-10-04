@@ -111,6 +111,9 @@ public class ProfilerOverlay {
         list.add(String.format("FPS: %d Frametime: %.3f", fps, frametime));
         list.add("");
 
+        list.add(String.format("CPU fence wait time: %.3f", lastResults.getPartialResults().get(1).value));
+        list.add("");
+
         for (Profiler.Result result : lastResults.getPartialResults()) {
             list.add(String.format("%s: %.3f", result.name, result.value));
         }

@@ -20,11 +20,13 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
+import net.vulkanmod.render.chunk.cull.QuadFacing;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.model.quad.ModelQuad;
 import net.vulkanmod.render.model.quad.ModelQuadFlags;
 import net.vulkanmod.render.model.quad.QuadUtils;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.render.vertex.TerrainBuilder;
 import net.vulkanmod.render.vertex.VertexUtil;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Vector3f;
@@ -44,7 +46,7 @@ public class LiquidRenderer {
         this.resources = resources;
     }
 
-    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
+    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBuilder vertexConsumer) {
         tessellate(blockState, fluidState, blockPos, vertexConsumer);
     }
 
@@ -85,7 +87,7 @@ public class LiquidRenderer {
         return blockAndTintGetter.getBlockState(mBlockPos);
     }
 
-    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder vertexConsumer) {
+    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBuilder vertexConsumer) {
         BlockAndTintGetter region = this.resources.region;
 
         final FluidRenderHandler handler = getFluidRenderHandler(fluidState);
@@ -423,12 +425,13 @@ public class LiquidRenderer {
         return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
     }
 
-    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip) {
+    private void putQuad(ModelQuad quad, TerrainBuilder builder, float xOffset, float yOffset, float zOffset, boolean flip) {
         QuadLightData quadLightData = resources.quadLightData;
 
         // Rotate triangles if needed to fix AO anisotropy
         int k = QuadUtils.getIterationStartIdx(quadLightData.br);
 
+        TerrainBufferBuilder bufferBuilder = builder.getBufferBuilder(QuadFacing.NONE.ordinal());
         bufferBuilder.ensureCapacity();
 
         int i;

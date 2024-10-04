@@ -7,7 +7,7 @@ import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.vertex.QuadSorter;
-import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.render.vertex.TerrainBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 public class SortTransparencyTask extends ChunkTask {
@@ -35,21 +35,23 @@ public class SortTransparencyTask extends ChunkTask {
         CompiledSection compiledSection = this.section.getCompiledSection();
         QuadSorter.SortState transparencyState = compiledSection.transparencyState;
 
-        TerrainBufferBuilder bufferBuilder = builderPack.builder(TerrainRenderType.TRANSLUCENT);
+        TerrainBuilder bufferBuilder = builderPack.builder(TerrainRenderType.TRANSLUCENT);
         bufferBuilder.begin();
         bufferBuilder.restoreSortState(transparencyState);
 
         bufferBuilder.setupQuadSorting(x - (float) this.section.xOffset(), y - (float) this.section.yOffset(), z - (float) this.section.zOffset());
-        TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilder.end();
+        TerrainBuilder.DrawState drawState = bufferBuilder.endDrawing();
 
         CompileResult compileResult = new CompileResult(this.section, false);
-        UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
+        UploadBuffer uploadBuffer = new UploadBuffer(bufferBuilder, drawState);
         compileResult.renderedLayers.put(TerrainRenderType.TRANSLUCENT, uploadBuffer);
-        renderedBuffer.release();
+
+        bufferBuilder.reset();
 
         if (this.cancelled.get()) {
             return Result.CANCELLED;
         }
+
         taskDispatcher.scheduleSectionUpdate(compileResult);
         return Result.SUCCESSFUL;
     }

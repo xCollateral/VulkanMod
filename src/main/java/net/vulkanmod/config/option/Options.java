@@ -256,6 +256,12 @@ public abstract class Options {
                                 },
                                 () -> config.uniqueOpaqueLayer)
                                 .setTooltip(Component.translatable("vulkanmod.options.uniqueOpaqueLayer.tooltip")),
+                        new SwitchOption(Component.translatable("Back face culling"),
+                                value -> {
+                                    config.backFaceCulling = value;
+                                    Minecraft.getInstance().levelRenderer.allChanged();
+                                },
+                                () -> config.backFaceCulling),
                         new SwitchOption(Component.translatable("vulkanmod.options.indirectDraw"),
                                 value -> config.indirectDraw = value,
                                 () -> config.indirectDraw)
