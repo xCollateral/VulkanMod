@@ -22,7 +22,7 @@ import java.util.List;
 
 public class VOptionScreen extends Screen {
     public final static int RED = ColorUtil.ARGB.pack(0.3f, 0.0f, 0.0f, 0.8f);
-    final ResourceLocation ICON = new ResourceLocation("vulkanmod", "vlogo_transparent.png");
+    final ResourceLocation ICON = ResourceLocation.fromNamespaceAndPath("vulkanmod", "vlogo_transparent.png");
 
     private final Screen parent;
 
@@ -227,23 +227,21 @@ public class VOptionScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int i, int j, float f) {
-        if (this.minecraft.level != null) {
-            this.renderTransparentBackground(guiGraphics);
-        } else {
-            this.renderDirtBackground(guiGraphics);
-            RenderSystem.enableBlend();
-            GuiRenderer.fillGradient(0, 0, this.width, this.height,
-                    ColorUtil.ARGB.pack(0.0f, 0.0f, 0.0f, 0.2f), ColorUtil.ARGB.pack(0.0f, 0.0f, 0.0f, 0.3f));
+        if (this.minecraft.level == null) {
+            this.renderPanorama(guiGraphics, f);
         }
+
+        this.renderBlurredBackground(f);
+        this.renderMenuBackground(guiGraphics);
 
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
+        this.renderBackground(guiGraphics, 0, 0, delta);
+
         GuiRenderer.guiGraphics = guiGraphics;
         GuiRenderer.setPoseStack(guiGraphics.pose());
-
-        this.renderBackground(guiGraphics, 0, 0, delta);
 
         RenderSystem.enableBlend();
 

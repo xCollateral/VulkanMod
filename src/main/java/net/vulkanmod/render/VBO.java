@@ -1,7 +1,7 @@
 package net.vulkanmod.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -14,6 +14,7 @@ import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.joml.Matrix4f;
 
@@ -32,34 +33,31 @@ public class VBO {
 
     public VBO() {}
 
-    public void upload(BufferBuilder.RenderedBuffer buffer) {
-        BufferBuilder.DrawState parameters = buffer.drawState();
+    public void upload(MeshData meshData) {
+        MeshData.DrawState parameters = meshData.drawState();
 
         this.indexCount = parameters.indexCount();
         this.vertexCount = parameters.vertexCount();
         this.mode = parameters.mode();
 
-        this.configureVertexFormat(parameters, buffer.vertexBuffer());
-        this.configureIndexBuffer(parameters, buffer.indexBuffer());
+        this.uploadVertexBuffer(parameters, meshData.vertexBuffer());
+        this.uploadIndexBuffer(meshData.indexBuffer());
 
-        buffer.release();
-
+        meshData.close();
     }
 
-    private void configureVertexFormat(BufferBuilder.DrawState parameters, ByteBuffer data) {
-        if (!parameters.indexOnly()) {
-
+    private void uploadVertexBuffer(MeshData.DrawState parameters, ByteBuffer data) {
+        if (data != null) {
             if (this.vertexBuffer != null)
                 this.vertexBuffer.freeBuffer();
 
             this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
             this.vertexBuffer.copyToVertexBuffer(parameters.format().getVertexSize(), parameters.vertexCount(), data);
-
         }
     }
 
-    private void configureIndexBuffer(BufferBuilder.DrawState parameters, ByteBuffer data) {
-        if (parameters.sequentialIndex()) {
+    public void uploadIndexBuffer(ByteBuffer data) {
+        if (data == null) {
 
             AutoIndexBuffer autoIndexBuffer;
             switch (this.mode) {
@@ -140,10 +138,14 @@ public class VBO {
         }
     }
 
-    public void drawChunkLayer() {
+    public void draw() {
         if (this.indexCount != 0) {
-
             RenderSystem.assertOnRenderThread();
+
+            Renderer renderer = Renderer.getInstance();
+            Pipeline pipeline = renderer.getBoundPipeline();
+            renderer.uploadAndBindUBOs(pipeline);
+
             Renderer.getDrawer().drawIndexed(this.vertexBuffer, this.indexBuffer, this.indexCount);
         }
     }

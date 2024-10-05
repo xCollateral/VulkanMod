@@ -20,6 +20,8 @@ public abstract class GuiRenderer {
     public static Font font;
     public static GuiGraphics guiGraphics;
     public static PoseStack pose;
+
+    public static BufferBuilder bufferBuilder;
     public static boolean batching = false;
 
     public static void setPoseStack(PoseStack poseStack) {
@@ -57,14 +59,18 @@ public abstract class GuiRenderer {
         float g = (float) FastColor.ARGB32.green(color) / 255.0F;
         float b = (float) FastColor.ARGB32.blue(color) / 255.0F;
 
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        if (!batching) bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferBuilder.vertex(matrix4f, x0, y0, z).color(r, g, b, a).endVertex();
-        bufferBuilder.vertex(matrix4f, x0, y1, z).color(r, g, b, a).endVertex();
-        bufferBuilder.vertex(matrix4f, x1, y1, z).color(r, g, b, a).endVertex();
-        bufferBuilder.vertex(matrix4f, x1, y0, z).color(r, g, b, a).endVertex();
-        if (!batching) Tesselator.getInstance().end();
+
+        if (!batching)
+            bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+
+        bufferBuilder.addVertex(matrix4f, x0, y0, z).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix4f, x0, y1, z).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix4f, x1, y1, z).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix4f, x1, y0, z).setColor(r, g, b, a);
+
+        if (!batching)
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
     }
 
     public static void fillGradient(float x0, float y0, float x1, float y1, int color1, int color2) {
@@ -83,14 +89,18 @@ public abstract class GuiRenderer {
 
         Matrix4f matrix4f = pose.last().pose();
 
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        if (!batching) bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferBuilder.vertex(matrix4f, x0, y0, z).color(r1, g1, b1, a1).endVertex();
-        bufferBuilder.vertex(matrix4f, x0, y1, z).color(r2, g2, b2, a2).endVertex();
-        bufferBuilder.vertex(matrix4f, x1, y1, z).color(r2, g2, b2, a2).endVertex();
-        bufferBuilder.vertex(matrix4f, x1, y0, z).color(r1, g1, b1, a1).endVertex();
-        if (!batching) Tesselator.getInstance().end();
+
+        if (!batching)
+            bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+
+        bufferBuilder.addVertex(matrix4f, x0, y0, z).setColor(r1, g1, b1, a1);
+        bufferBuilder.addVertex(matrix4f, x0, y1, z).setColor(r2, g2, b2, a2);
+        bufferBuilder.addVertex(matrix4f, x1, y1, z).setColor(r2, g2, b2, a2);
+        bufferBuilder.addVertex(matrix4f, x1, y0, z).setColor(r1, g1, b1, a1);
+
+        if (!batching)
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
     }
 
     public static void renderBoxBorder(float x0, float y0, float width, float height, float borderWidth, int color) {
@@ -138,15 +148,12 @@ public abstract class GuiRenderer {
     }
 
     public static void beginBatch(VertexFormat.Mode mode, VertexFormat format) {
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-        bufferbuilder.begin(mode, format);
+        bufferBuilder = Tesselator.getInstance().begin(mode, format);
         batching = true;
     }
 
     public static void endBatch() {
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-        BufferBuilder.RenderedBuffer builtBuffer = bufferbuilder.end();
-        BufferUploader.drawWithShader(builtBuffer);
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
         batching = false;
     }
 }

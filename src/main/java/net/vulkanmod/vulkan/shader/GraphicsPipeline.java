@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.shader;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
@@ -10,22 +9,24 @@ import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.EnumSet;
+import java.util.List;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class GraphicsPipeline extends Pipeline {
-
     private final Object2LongMap<PipelineState> graphicsPipelines = new Object2LongOpenHashMap<>();
 
     private final VertexFormat vertexFormat;
     private final EnumSet<SPIRVUtils.SpecConstant> specConstants;
+    private final VertexInputDescription vertexInputDescription;
 
     private final long vertShaderModule;
     private final long fragShaderModule;
@@ -37,6 +38,8 @@ public class GraphicsPipeline extends Pipeline {
         this.imageDescriptors = builder.imageDescriptors;
         this.pushConstants = builder.pushConstants;
         this.vertexFormat = builder.vertexFormat;
+
+        this.vertexInputDescription = new VertexInputDescription(this.vertexFormat);
 
         createDescriptorSetLayout();
         createPipelineLayout();
@@ -59,9 +62,7 @@ public class GraphicsPipeline extends Pipeline {
     }
 
     private long createGraphicsPipeline(PipelineState state) {
-
         try (MemoryStack stack = stackPush()) {
-
             ByteBuffer entryPoint = stack.UTF8("main");
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.calloc(2, stack);
@@ -95,8 +96,8 @@ public class GraphicsPipeline extends Pipeline {
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo = VkPipelineVertexInputStateCreateInfo.calloc(stack);
             vertexInputInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-            vertexInputInfo.pVertexBindingDescriptions(getBindingDescription(vertexFormat));
-            vertexInputInfo.pVertexAttributeDescriptions(getAttributeDescriptions(vertexFormat));
+            vertexInputInfo.pVertexBindingDescriptions(vertexInputDescription.bindingDescriptions);
+            vertexInputInfo.pVertexAttributeDescriptions(vertexInputDescription.attributeDescriptions);
 
             // ===> ASSEMBLY STAGE <===
 
@@ -162,7 +163,8 @@ public class GraphicsPipeline extends Pipeline {
                 colorBlendAttachment.srcAlphaBlendFactor(PipelineState.BlendState.getSrcAlphaFactor(state.blendState_i));
                 colorBlendAttachment.dstAlphaBlendFactor(PipelineState.BlendState.getDstAlphaFactor(state.blendState_i));
                 colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
-            } else {
+            }
+            else {
                 colorBlendAttachment.blendEnable(false);
             }
 
@@ -201,7 +203,8 @@ public class GraphicsPipeline extends Pipeline {
             if (!Vulkan.DYNAMIC_RENDERING) {
                 pipelineInfo.renderPass(state.renderPass.getId());
                 pipelineInfo.subpass(0);
-            } else {
+            }
+            else {
                 //dyn-rendering
                 VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
                 renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
@@ -238,132 +241,11 @@ public class GraphicsPipeline extends Pipeline {
         return byteBuffer;
     }
 
-    private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
-
-        VkVertexInputBindingDescription.Buffer bindingDescription =
-                VkVertexInputBindingDescription.calloc(1);
-
-        bindingDescription.binding(0);
-        bindingDescription.stride(vertexFormat.getVertexSize());
-        bindingDescription.inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
-
-        return bindingDescription;
-    }
-
-    private static VkVertexInputAttributeDescription.Buffer getAttributeDescriptions(VertexFormat vertexFormat) {
-
-        ImmutableList<VertexFormatElement> elements = vertexFormat.getElements();
-
-        int size = elements.size();
-        if (elements.stream().anyMatch(vertexFormatElement -> vertexFormatElement.getUsage() == VertexFormatElement.Usage.PADDING)) {
-            size--;
-        }
-
-        VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                VkVertexInputAttributeDescription.calloc(size, stackGet());
-
-        int offset = 0;
-
-        for (int i = 0; i < size; ++i) {
-            VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
-            posDescription.binding(0);
-            posDescription.location(i);
-
-            VertexFormatElement formatElement = elements.get(i);
-            VertexFormatElement.Usage usage = formatElement.getUsage();
-            VertexFormatElement.Type type = formatElement.getType();
-            int elementCount = formatElement.getCount();
-
-            switch (usage) {
-                case POSITION:
-                    if (type == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 12;
-                    } else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    } else if (type == VertexFormatElement.Type.BYTE) {
-                        posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    }
-
-                    break;
-
-                case COLOR:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
-                    posDescription.offset(offset);
-
-//                offset += 16;
-                    offset += 4;
-                    break;
-
-                case UV:
-                    if (type == VertexFormatElement.Type.FLOAT) {
-                        posDescription.format(VK_FORMAT_R32G32_SFLOAT);
-                        posDescription.offset(offset);
-
-                        offset += 8;
-                    } else if (type == VertexFormatElement.Type.SHORT) {
-                        posDescription.format(VK_FORMAT_R16G16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    } else if (type == VertexFormatElement.Type.USHORT) {
-                        posDescription.format(VK_FORMAT_R16G16_UINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                    }
-                    break;
-
-                case NORMAL:
-                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
-                    posDescription.offset(offset);
-
-                    offset += 4;
-                    break;
-
-                case PADDING:
-                    //Do nothing as padding format (VK_FORMAT_R8) is not supported everywhere
-                    break;
-
-                case GENERIC:
-                    if (type == VertexFormatElement.Type.SHORT && elementCount == 1) {
-                        posDescription.format(VK_FORMAT_R16_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 2;
-                        break;
-                    } else if (type == VertexFormatElement.Type.INT && elementCount == 1) {
-                        posDescription.format(VK_FORMAT_R32_SINT);
-                        posDescription.offset(offset);
-
-                        offset += 4;
-                        break;
-                    } else {
-                        throw new RuntimeException(String.format("Unknown format: %s", usage));
-                    }
-
-
-                default:
-                    throw new RuntimeException(String.format("Unknown format: %s", usage));
-            }
-
-            posDescription.offset(((VertexFormatMixed) (vertexFormat)).getOffset(i));
-        }
-
-        return attributeDescriptions.rewind();
-    }
-
     public void cleanUp() {
         vkDestroyShaderModule(DeviceManager.vkDevice, vertShaderModule, null);
         vkDestroyShaderModule(DeviceManager.vkDevice, fragShaderModule, null);
+
+        vertexInputDescription.cleanUp();
 
         destroyDescriptorSets();
 
@@ -377,5 +259,138 @@ public class GraphicsPipeline extends Pipeline {
 
         PIPELINES.remove(this);
         Renderer.getInstance().removeUsedPipeline(this);
+    }
+
+    static class VertexInputDescription {
+        final VkVertexInputAttributeDescription.Buffer attributeDescriptions;
+        final VkVertexInputBindingDescription.Buffer bindingDescriptions;
+
+        VertexInputDescription(VertexFormat vertexFormat) {
+            this.bindingDescriptions = getBindingDescription(vertexFormat);
+            this.attributeDescriptions = getAttributeDescriptions(vertexFormat);
+        }
+
+        void cleanUp() {
+            MemoryUtil.memFree(this.bindingDescriptions);
+            MemoryUtil.memFree(this.attributeDescriptions);
+        }
+    }
+
+    private static VkVertexInputBindingDescription.Buffer getBindingDescription(VertexFormat vertexFormat) {
+        VkVertexInputBindingDescription.Buffer bindingDescription = VkVertexInputBindingDescription.calloc(1);
+
+        bindingDescription.binding(0);
+        bindingDescription.stride(vertexFormat.getVertexSize());
+        bindingDescription.inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
+
+        return bindingDescription;
+    }
+
+    private static VkVertexInputAttributeDescription.Buffer getAttributeDescriptions(VertexFormat vertexFormat) {
+        List<VertexFormatElement> elements = vertexFormat.getElements();
+
+        int size = elements.size();
+
+        VkVertexInputAttributeDescription.Buffer attributeDescriptions = VkVertexInputAttributeDescription.calloc(size);
+
+        int offset = 0;
+
+        for (int i = 0; i < size; ++i) {
+            VkVertexInputAttributeDescription posDescription = attributeDescriptions.get(i);
+            posDescription.binding(0);
+            posDescription.location(i);
+
+            VertexFormatElement formatElement = elements.get(i);
+            VertexFormatElement.Usage usage = formatElement.usage();
+            VertexFormatElement.Type type = formatElement.type();
+            int elementCount = formatElement.count();
+
+            switch (usage) {
+                case POSITION -> {
+                    switch (type) {
+                        case FLOAT -> {
+                            posDescription.format(VK_FORMAT_R32G32B32_SFLOAT);
+                            posDescription.offset(offset);
+
+                            offset += 12;
+                        }
+                        case SHORT -> {
+                            posDescription.format(VK_FORMAT_R16G16B16A16_SINT);
+                            posDescription.offset(offset);
+
+                            offset += 8;
+                        }
+                        case BYTE -> {
+                            posDescription.format(VK_FORMAT_R8G8B8A8_SINT);
+                            posDescription.offset(offset);
+
+                            offset += 4;
+                        }
+                    }
+
+                }
+
+                case COLOR -> {
+                    posDescription.format(VK_FORMAT_R8G8B8A8_UNORM);
+                    posDescription.offset(offset);
+
+                    offset += 4;
+                }
+
+                case UV -> {
+                    switch (type) {
+                        case FLOAT -> {
+                            posDescription.format(VK_FORMAT_R32G32_SFLOAT);
+                            posDescription.offset(offset);
+
+                            offset += 8;
+                        }
+                        case SHORT -> {
+                            posDescription.format(VK_FORMAT_R16G16_SINT);
+                            posDescription.offset(offset);
+
+                            offset += 4;
+                        }
+                        case USHORT -> {
+                            posDescription.format(VK_FORMAT_R16G16_UINT);
+                            posDescription.offset(offset);
+
+                            offset += 4;
+                        }
+                    }
+                }
+
+                case NORMAL -> {
+                    posDescription.format(VK_FORMAT_R8G8B8A8_SNORM);
+                    posDescription.offset(offset);
+
+                    offset += 4;
+                }
+
+                case GENERIC -> {
+                    if (type == VertexFormatElement.Type.SHORT && elementCount == 1) {
+                        posDescription.format(VK_FORMAT_R16_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 2;
+                    }
+                    else if (type == VertexFormatElement.Type.INT && elementCount == 1) {
+                        posDescription.format(VK_FORMAT_R32_SINT);
+                        posDescription.offset(offset);
+
+                        offset += 4;
+                    }
+                    else {
+                        throw new RuntimeException(String.format("Unknown format: %s", usage));
+                    }
+                }
+
+                default -> throw new RuntimeException(String.format("Unknown format: %s", usage));
+            }
+
+            posDescription.offset(((VertexFormatMixed) (vertexFormat)).getOffset(i));
+        }
+
+        return attributeDescriptions.rewind();
     }
 }

@@ -215,15 +215,10 @@ public class SwapChain extends Framebuffer {
                 false, false);
     }
 
-    public void beginRenderPass(VkCommandBuffer commandBuffer, RenderPass renderPass, MemoryStack stack) {
-        if (!DYNAMIC_RENDERING) {
-            long[] framebufferId = this.FBO_map.computeIfAbsent(renderPass.id, renderPass1 -> createFramebuffers(renderPass));
-            renderPass.beginRenderPass(commandBuffer, framebufferId[Renderer.getCurrentImage()], stack);
-        } else
-            renderPass.beginDynamicRendering(commandBuffer, stack);
-
-        Renderer.getInstance().setBoundRenderPass(renderPass);
-        Renderer.getInstance().setBoundFramebuffer(this);
+    @Override
+    protected long getFramebufferId(RenderPass renderPass) {
+        long[] framebuffers = this.FBO_map.computeIfAbsent(renderPass.id, renderPass1 -> createFramebuffers(renderPass));
+        return framebuffers[Renderer.getCurrentImage()];
     }
 
     public void cleanUp() {

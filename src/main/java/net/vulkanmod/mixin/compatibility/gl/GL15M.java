@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 @Mixin(GL15.class)
 public class GL15M {
@@ -79,5 +80,13 @@ public class GL15M {
     @Overwrite(remap = false)
     public static void glDeleteBuffers(int i) {
         GlBuffer.glDeleteBuffers(i);
+    }
+
+    /**
+     * @author
+     */
+    @Overwrite(remap = false)
+    public static void glDeleteBuffers(@NativeType("GLuint const *") IntBuffer buffers) {
+        GlBuffer.glDeleteBuffers(buffers);
     }
 }

@@ -4,13 +4,15 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.Renderer;
+import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
-import static org.lwjgl.vulkan.VK11.*;
+import static org.lwjgl.vulkan.VK11.VK_ATTACHMENT_LOAD_OP_LOAD;
+import static org.lwjgl.vulkan.VK11.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 public class GlFramebuffer {
     private static int ID_COUNTER = 1;
@@ -23,10 +25,20 @@ public class GlFramebuffer {
         boundId = 0;
     }
 
-    static void beginRendering(GlFramebuffer framebuffer) {
-        Renderer.getInstance().beginRendering(framebuffer.renderPass, framebuffer.framebuffer);
+    public static void beginRendering(GlFramebuffer glFramebuffer) {
+        Renderer.getInstance().beginRendering(glFramebuffer.renderPass, glFramebuffer.framebuffer);
 
-        boundId = framebuffer.id;
+        Framebuffer framebuffer = glFramebuffer.framebuffer;
+        int viewWidth = framebuffer.getWidth();
+        int viewHeight = framebuffer.getHeight();
+
+        Renderer.setInvertedViewport(0, 0, viewWidth, viewHeight);
+        Renderer.setScissor(0, 0, viewWidth, viewHeight);
+
+        // TODO: invert cull instead of disabling
+        VRenderSystem.disableCull();
+
+        boundId = glFramebuffer.id;
     }
 
     public static int genFramebufferId() {
@@ -41,10 +53,10 @@ public class GlFramebuffer {
         // 36160 GL_FRAMEBUFFER
         // 36161 GL_RENDERBUFFER
 
-        if(boundId == id)
+        if (boundId == id)
             return;
 
-        if(id == 0) {
+        if (id == 0) {
             Renderer.getInstance().endRenderPass();
 
             if (Renderer.isRecording()) {
@@ -57,24 +69,26 @@ public class GlFramebuffer {
             return;
         }
 
-        boundFramebuffer = map.get(id);
+        GlFramebuffer glFramebuffer = map.get(id);
 
-        if(boundFramebuffer == null)
-            throw new NullPointerException("bound framebuffer is null");
+        if (glFramebuffer == null)
+            throw new NullPointerException("No Framebuffer with ID: %d ".formatted(id));
 
-        if(boundFramebuffer.framebuffer != null) {
-            beginRendering(boundFramebuffer);
+        if (glFramebuffer.framebuffer != null) {
+            beginRendering(glFramebuffer);
         }
+
+        boundFramebuffer = glFramebuffer;
     }
 
     public static void deleteFramebuffer(int id) {
-        if(id == 0) {
+        if (id == 0) {
             return;
         }
 
         boundFramebuffer = map.remove(id);
 
-        if(boundFramebuffer == null)
+        if (boundFramebuffer == null)
             throw new NullPointerException("bound framebuffer is null");
 
         boundFramebuffer.cleanUp();
@@ -82,22 +96,13 @@ public class GlFramebuffer {
     }
 
     public static void framebufferTexture2D(int target, int attachment, int texTarget, int texture, int level) {
-//        GL30C.glFramebufferTexture2D(target, attachment, texTarget, texture, level);
-
-        // attachment
-        // 36064 attachment0
-        // 36096 depth attachment
-
-        // texTarget
-        // 3553 texture2D
-
-        if(attachment != GL30.GL_COLOR_ATTACHMENT0 && attachment != GL30.GL_DEPTH_ATTACHMENT) {
+        if (attachment != GL30.GL_COLOR_ATTACHMENT0 && attachment != GL30.GL_DEPTH_ATTACHMENT) {
             throw new UnsupportedOperationException();
         }
-        if(texTarget != GL11.GL_TEXTURE_2D) {
+        if (texTarget != GL11.GL_TEXTURE_2D) {
             throw new UnsupportedOperationException();
         }
-        if(level != 0) {
+        if (level != 0) {
             throw new UnsupportedOperationException();
         }
 
@@ -142,18 +147,16 @@ public class GlFramebuffer {
     void setAttachmentTexture(int attachment, int texture) {
         GlTexture glTexture = GlTexture.getTexture(texture);
 
-        if(glTexture == null)
+        if (glTexture == null)
             throw new NullPointerException(String.format("Texture %d is null", texture));
 
-        if(glTexture.vulkanImage == null)
+        if (glTexture.vulkanImage == null)
             return;
 
         switch (attachment) {
-            case(GL30.GL_COLOR_ATTACHMENT0) ->
-                    this.setColorAttachment(glTexture);
+            case (GL30.GL_COLOR_ATTACHMENT0) -> this.setColorAttachment(glTexture);
 
-            case(GL30.GL_DEPTH_ATTACHMENT) ->
-                    this.setDepthAttachment(glTexture);
+            case (GL30.GL_DEPTH_ATTACHMENT) -> this.setDepthAttachment(glTexture);
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }
@@ -162,18 +165,16 @@ public class GlFramebuffer {
     void setAttachmentRenderbuffer(int attachment, int texture) {
         GlRenderbuffer renderbuffer = GlRenderbuffer.getRenderbuffer(texture);
 
-        if(renderbuffer == null)
+        if (renderbuffer == null)
             throw new NullPointerException(String.format("Texture %d is null", texture));
 
-        if(renderbuffer.vulkanImage == null)
+        if (renderbuffer.vulkanImage == null)
             return;
 
         switch (attachment) {
-            case(GL30.GL_COLOR_ATTACHMENT0) ->
-                    this.setColorAttachment(renderbuffer);
+            case (GL30.GL_COLOR_ATTACHMENT0) -> this.setColorAttachment(renderbuffer);
 
-            case(GL30.GL_DEPTH_ATTACHMENT) ->
-                    this.setDepthAttachment(renderbuffer);
+            case (GL30.GL_DEPTH_ATTACHMENT) -> this.setDepthAttachment(renderbuffer);
 
             default -> throw new IllegalStateException("Unexpected value: " + attachment);
         }
@@ -202,18 +203,16 @@ public class GlFramebuffer {
     }
 
     void createAndBind() {
-        //Cannot create without color attachment
-        if(this.colorAttachment == null)
+        // Cannot create without color attachment
+        if (this.colorAttachment == null)
             return;
 
-        if(this.framebuffer != null) {
+        if (this.framebuffer != null) {
             this.cleanUp();
         }
 
         boolean hasDepthImage = this.depthAttachment != null;
         VulkanImage depthImage = this.depthAttachment;
-//        hasDepthImage = false;
-//        VulkanImage depthImage = null;
 
         this.framebuffer = Framebuffer.builder(this.colorAttachment, depthImage).build();
         RenderPass.Builder builder = RenderPass.builder(this.framebuffer);
@@ -222,7 +221,7 @@ public class GlFramebuffer {
                 .setLoadOp(VK_ATTACHMENT_LOAD_OP_LOAD)
                 .setFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        if(hasDepthImage)
+        if (hasDepthImage)
             builder.getDepthAttachmentInfo().setOps(VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_LOAD_OP_LOAD);
 
         this.renderPass = builder.build();

@@ -12,15 +12,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class EntityOutlineGeneratorM implements ExtendedVertexBuilder {
 
     private ExtendedVertexBuilder extDelegate;
+    private boolean canUseFastVertex = false;
 
-    @Inject(method = "<init>", at = @At("RETURN"))
+    @Inject(method = "<init>*", at = @At("RETURN"))
     private void getExtBuilder(VertexConsumer vertexConsumer, int i, int j, int k, int l, CallbackInfo ci) {
-        this.extDelegate = (ExtendedVertexBuilder) vertexConsumer;
+        if (vertexConsumer instanceof ExtendedVertexBuilder) {
+            this.extDelegate = (ExtendedVertexBuilder) vertexConsumer;
+            this.canUseFastVertex = true;
+        }
+    }
+
+    @Override
+    public boolean canUseFastVertex() {
+        return this.canUseFastVertex;
     }
 
     @Override
     public void vertex(float x, float y, float z, int packedColor, float u, float v, int overlay, int light, int packedNormal) {
         this.extDelegate.vertex(x, y, z, packedColor, u, v, overlay, light, packedNormal);
-//        this.delegate.vertex((double)f, (double)g, (double)h).color(this.defaultR, this.defaultG, this.defaultB, this.defaultA).uv(m, n);
     }
 }

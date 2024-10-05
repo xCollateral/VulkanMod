@@ -49,10 +49,8 @@ public abstract class DeviceManager {
             DeviceManager.pickPhysicalDevice();
             DeviceManager.createLogicalDevice();
         } catch (Exception e) {
-            logUnsupportedExtensions();
-
-            e.printStackTrace();
-            throw new RuntimeException();
+            Initializer.LOGGER.info(getAvailableDevicesInfo());
+            throw new RuntimeException(e);
         }
     }
 
@@ -319,29 +317,34 @@ public abstract class DeviceManager {
         throw new RuntimeException("Failed to find supported format");
     }
 
-    static void logUnsupportedExtensions() {
+    public static String getAvailableDevicesInfo() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n");
 
-        if (availableDevices == null)
-            return;
+        if (availableDevices == null) {
+            stringBuilder.append("\tDevice Manager not initialized");
+            return stringBuilder.toString();
+        }
 
         if (availableDevices.isEmpty()) {
-            stringBuilder.append("No available device found");
+            stringBuilder.append("\tNo available device found");
         }
 
         for (Device device : availableDevices) {
-            stringBuilder.append("Device: %s\n".formatted(device.deviceName));
+            stringBuilder.append("\tDevice: %s\n".formatted(device.deviceName));
 
-            var unsupported = device.getUnsupportedExtensions(Vulkan.REQUIRED_EXTENSION);
-            if (unsupported.isEmpty()) {
+            stringBuilder.append("\t\tVulkan Version: %s\n".formatted(device.vkVersion));
+
+            stringBuilder.append("\t\t");
+            var unsupportedExtensions = device.getUnsupportedExtensions(Vulkan.REQUIRED_EXTENSION);
+            if (unsupportedExtensions.isEmpty()) {
                 stringBuilder.append("All required extensions are supported\n");
             } else {
-                stringBuilder.append("Unsupported extension: %s\n".formatted(unsupported));
+                stringBuilder.append("Unsupported extension: %s\n".formatted(unsupportedExtensions));
             }
         }
 
-        Initializer.LOGGER.info(stringBuilder.toString());
+        return stringBuilder.toString();
     }
 
     public static void destroy() {
