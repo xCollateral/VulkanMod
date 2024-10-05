@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.shader;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
@@ -22,8 +23,10 @@ import java.nio.file.Paths;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memASCII;
 import static org.lwjgl.util.shaderc.Shaderc.*;
+import static org.lwjgl.util.shaderc.Shaderc.shaderc_compile_options_set_optimization_level;
 
 public class SPIRVUtils {
+    private static final boolean use4ByteAlignFormat = Vulkan.getDevice().isAMD();
     private static final boolean DEBUG = false;
     private static final boolean OPTIMIZATIONS = true;
 
@@ -55,6 +58,9 @@ public class SPIRVUtils {
         if(options == NULL) {
             throw new RuntimeException("Failed to create compiler options");
         }
+        //Use the optimal most performant vertex format based on architecture: 4 byte alignment if on AMD GCN, otherwise defaults to 2 Bytes (including Nvidia)
+        if(use4ByteAlignFormat)
+            shaderc_compile_options_add_macro_definition(options, "GCN_FIX", null);
 
         if(OPTIMIZATIONS)
             shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
