@@ -11,7 +11,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceProvider;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -70,14 +70,13 @@ public class EffectInstanceM {
                     shift = At.Shift.AFTER),
             locals = LocalCapture.CAPTURE_FAILHARD
     )
-    private void inj(ResourceManager resourceManager, String string, CallbackInfo ci,
-                     ResourceLocation resourceLocation, Resource resource, Reader reader, JsonObject jsonObject, String string2, String string3) {
-        createShaders(resourceManager, string2, string3);
+    private void inj(ResourceProvider resourceProvider, String string, CallbackInfo ci, ResourceLocation resourceLocation, Resource resource, Reader reader, JsonObject jsonObject, String string2, String string3) {
+        createShaders(resourceProvider, string2, string3);
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/EffectInstance;getOrCreate(Lnet/minecraft/server/packs/resources/ResourceManager;Lcom/mojang/blaze3d/shaders/Program$Type;Ljava/lang/String;)Lcom/mojang/blaze3d/shaders/EffectProgram;"))
-    private EffectProgram redirectShader(ResourceManager resourceManager, Program.Type type, String string) {
+            target = "Lnet/minecraft/client/renderer/EffectInstance;getOrCreate(Lnet/minecraft/server/packs/resources/ResourceProvider;Lcom/mojang/blaze3d/shaders/Program$Type;Ljava/lang/String;)Lcom/mojang/blaze3d/shaders/EffectProgram;"))
+    private EffectProgram redirectShader(ResourceProvider resourceProvider, Program.Type type, String string) {
         return null;
     }
 
@@ -96,17 +95,17 @@ public class EffectInstanceM {
 //        ProgramManager.releaseProgram(this);
     }
 
-    private void createShaders(ResourceManager resourceManager, String vertexShader, String fragShader) {
+    private void createShaders(ResourceProvider resourceManager, String vertexShader, String fragShader) {
 
         try {
             String[] vshPathInfo = this.decompose(vertexShader, ':');
-            ResourceLocation vshLocation = new ResourceLocation(vshPathInfo[0], "shaders/program/" + vshPathInfo[1] + ".vsh");
+            ResourceLocation vshLocation = ResourceLocation.fromNamespaceAndPath(vshPathInfo[0], "shaders/program/" + vshPathInfo[1] + ".vsh");
             Resource resource = resourceManager.getResourceOrThrow(vshLocation);
             InputStream inputStream = resource.open();
             String vshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 
             String[] fshPathInfo = this.decompose(fragShader, ':');
-            ResourceLocation fshLocation = new ResourceLocation(fshPathInfo[0], "shaders/program/" + fshPathInfo[1] + ".fsh");
+            ResourceLocation fshLocation = ResourceLocation.fromNamespaceAndPath(fshPathInfo[0], "shaders/program/" + fshPathInfo[1] + ".fsh");
             resource = resourceManager.getResourceOrThrow(fshLocation);
             inputStream = resource.open();
             String fshSrc = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
@@ -175,7 +174,6 @@ public class EffectInstanceM {
      */
     @Overwrite
     public void apply() {
-        RenderSystem.assertOnGameThread();
         this.dirty = false;
         this.blend.apply();
 

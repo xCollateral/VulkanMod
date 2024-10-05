@@ -12,6 +12,7 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -49,6 +50,12 @@ public class GlTexture {
             VTextureSelector.bindTexture(activeTexture, vulkanImage);
     }
 
+    public static void glDeleteTextures(IntBuffer intBuffer) {
+        for (int i = intBuffer.position(); i < intBuffer.limit(); i++) {
+            glDeleteTextures(intBuffer.get(i));
+        }
+    }
+
     public static void glDeleteTextures(int i) {
         GlTexture glTexture = map.remove(i);
         VulkanImage image = glTexture != null ? glTexture.vulkanImage : null;
@@ -65,44 +72,92 @@ public class GlTexture {
 
     public static void activeTexture(int i) {
         activeTexture = i - GL30.GL_TEXTURE0;
+        VTextureSelector.setActiveTexture(activeTexture);
+    }
 
-        if (activeTexture < 0 || activeTexture > VTextureSelector.SIZE - 1)
-            throw new IllegalArgumentException("value: " + activeTexture);
+    public static void texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, long pixels) {
+        if (checkParams(level, width, height))
+            return;
+
+        boundTexture.allocateIfNeeded(width, height, internalFormat, type);
+        VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage);
+
+        texSubImage2D(target, level, 0, 0, width, height, format, type, pixels);
     }
 
     public static void texImage2D(int target, int level, int internalFormat, int width, int height, int border, int format, int type, @Nullable ByteBuffer pixels) {
-        if (width == 0 || height == 0)
+        if (checkParams(level, width, height))
             return;
 
-        //TODO levels
-        if (level != 0) {
-//            throw new UnsupportedOperationException();
-            return;
-        }
-
-        boundTexture.internalFormat = internalFormat;
-
-        boundTexture.allocateIfNeeded(width, height, format, type);
+        boundTexture.allocateIfNeeded(width, height, internalFormat, type);
         VTextureSelector.bindTexture(activeTexture, boundTexture.vulkanImage);
 
-        if (pixels != null)
-            boundTexture.uploadImage(pixels);
+        texSubImage2D(target, level, 0, 0, width, height, format, type, pixels);
+    }
+
+    private static boolean checkParams(int level, int width, int height) {
+        if (width == 0 || height == 0)
+            return true;
+
+        // TODO: levels
+        if (level != 0) {
+//            throw new UnsupportedOperationException();
+            return true;
+        }
+        return false;
     }
 
     public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, long pixels) {
         if (width == 0 || height == 0)
             return;
 
-        var buffer = GlBuffer.getPixelUnpackBufferBound();
+        ByteBuffer src;
 
-        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset, 0, 0, width, buffer.data);
+        GlBuffer glBuffer = GlBuffer.getPixelUnpackBufferBound();
+        if (glBuffer != null) {
+
+            glBuffer.data.position((int) pixels);
+            src = glBuffer.data;
+        } else {
+            if (pixels != 0L) {
+                src = getByteBuffer(width, height, pixels);
+            } else {
+                src = null;
+            }
+        }
+
+        if (src != null)
+            boundTexture.uploadSubImage(xOffset, yOffset, width, height, format, src);
     }
 
-    public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height, int format, int type, @Nullable ByteBuffer pixels) {
+    private static ByteBuffer getByteBuffer(int width, int height, long pixels) {
+        ByteBuffer src;
+        // TODO: hardcoded format size
+        int formatSize = 4;
+        src = MemoryUtil.memByteBuffer(pixels, width * height * formatSize);
+        return src;
+    }
+
+    public static void texSubImage2D(int target, int level, int xOffset, int yOffset, int width , int height, int format, int type, @Nullable ByteBuffer pixels) {
         if (width == 0 || height == 0)
             return;
 
-        VTextureSelector.uploadSubTexture(level, width, height, xOffset, yOffset, 0, 0, width, pixels);
+        ByteBuffer src;
+
+        GlBuffer glBuffer = GlBuffer.getPixelUnpackBufferBound();
+        if (glBuffer != null) {
+            if (pixels != null) {
+                throw new IllegalStateException("Trying to use pixel buffer when there is a Pixel Unpack Buffer bound.");
+            }
+
+            glBuffer.data.position(0);
+            src = glBuffer.data;
+        } else {
+            src = pixels;
+        }
+
+        if (src != null)
+            boundTexture.uploadSubImage(xOffset, yOffset, width, height, format, src);
     }
 
     public static void texParameteri(int target, int pName, int param) {
@@ -146,12 +201,25 @@ public class GlTexture {
         if (target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException("target != GL_TEXTURE_2D not supported");
 
-        boundTexture.generateMipmaps();
+        // TODO: crashing
+//        boundTexture.generateMipmaps();
     }
 
     public static void getTexImage(int tex, int level, int format, int type, long pixels) {
         VulkanImage image = boundTexture.vulkanImage;
-        ImageUtil.downloadTexture(image, pixels);
+
+        GlBuffer buffer = GlBuffer.getPixelPackBufferBound();
+        long ptr;
+        if (buffer != null) {
+            buffer.data.position((int) pixels);
+
+            ptr = MemoryUtil.memAddress(buffer.data);
+        } else {
+            ptr = pixels;
+        }
+
+
+        ImageUtil.downloadTexture(image, ptr);
     }
 
     public static void setVulkanImage(int id, VulkanImage vulkanImage) {
@@ -179,8 +247,9 @@ public class GlTexture {
         this.id = id;
     }
 
-    void allocateIfNeeded(int width, int height, int format, int type) {
-        int vkFormat = GlUtil.vulkanFormat(format, type);
+    void allocateIfNeeded(int width, int height, int internalFormat, int type) {
+        this.internalFormat = internalFormat;
+        int vkFormat = GlUtil.vulkanFormat(internalFormat, type);
 
         needsUpdate |= vulkanImage == null ||
                 vulkanImage.width != width || vulkanImage.height != height ||
@@ -228,17 +297,21 @@ public class GlTexture {
         vulkanImage.updateTextureSampler(maxLod, samplerFlags);
     }
 
-    private void uploadImage(ByteBuffer pixels) {
-        int width = this.vulkanImage.width;
-        int height = this.vulkanImage.height;
+    private void uploadSubImage(int xOffset, int yOffset, int width, int height, int format, ByteBuffer pixels) {
+        ByteBuffer src;
+        if (format == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
+            src = GlUtil.RGBtoRGBA_buffer(pixels);
+        } else if (format == GL30.GL_BGRA && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
+            src = GlUtil.BGRAtoRGBA_buffer(pixels);
+        } else {
+            src = pixels;
+        }
 
-        if (internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
-            ByteBuffer RGBA_buffer = GlUtil.RGBtoRGBA_buffer(pixels);
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
-            MemoryUtil.memFree(RGBA_buffer);
-        } else
-            this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, pixels);
+        this.vulkanImage.uploadSubTextureAsync(0, width, height, xOffset, yOffset, 0, 0, 0, src);
 
+        if (src != pixels) {
+            MemoryUtil.memFree(src);
+        }
     }
 
     void generateMipmaps() {

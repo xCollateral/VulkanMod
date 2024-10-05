@@ -38,8 +38,4 @@ public class ThreadBuilderPack {
         this.builders.values().forEach(TerrainBufferBuilder::clear);
     }
 
-    public void discardAll() {
-        this.builders.values().forEach(TerrainBufferBuilder::discard);
-    }
-
 }

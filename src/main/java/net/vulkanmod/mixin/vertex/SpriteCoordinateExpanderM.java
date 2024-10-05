@@ -7,6 +7,7 @@ import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -14,15 +15,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 //TODO move
 @Mixin(SpriteCoordinateExpander.class)
 public class SpriteCoordinateExpanderM implements ExtendedVertexBuilder {
-
-    @Shadow @Final private VertexConsumer delegate;
-
     @Shadow @Final private TextureAtlasSprite sprite;
+
+    @Unique
     private ExtendedVertexBuilder extDelegate;
+    @Unique
+    private boolean canUseFastVertex = false;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void getExtBuilder(VertexConsumer vertexConsumer, TextureAtlasSprite textureAtlasSprite, CallbackInfo ci) {
-        this.extDelegate = (ExtendedVertexBuilder) vertexConsumer;
+        if (vertexConsumer instanceof ExtendedVertexBuilder) {
+            this.extDelegate = (ExtendedVertexBuilder) vertexConsumer;
+            this.canUseFastVertex = true;
+        }
+    }
+
+    @Override
+    public boolean canUseFastVertex() {
+        return this.canUseFastVertex;
     }
 
     @Override

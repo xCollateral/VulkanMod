@@ -9,7 +9,9 @@ import net.minecraft.client.renderer.EffectInstance;
 import net.minecraft.client.renderer.PostPass;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.util.DrawUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -71,20 +73,20 @@ public class PostPassM {
         this.outTarget.bindWrite(false);
 
         VRenderSystem.disableCull();
-        RenderSystem.depthFunc(519);
+        VRenderSystem.depthFunc(519);
+        VRenderSystem.setPrimitiveTopologyGL(GL11.GL_TRIANGLES);
 
-        Renderer.setViewport(0, this.outTarget.height, this.outTarget.width, -this.outTarget.height);
+        Renderer.setInvertedViewport(0, 0, this.outTarget.width, this.outTarget.height);
         Renderer.resetScissor();
 
         this.effect.apply();
 
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
-        bufferBuilder.vertex(0.0, 0.0, 500.0).endVertex();
-        bufferBuilder.vertex(g, 0.0, 500.0).endVertex();
-        bufferBuilder.vertex(g, h, 500.0).endVertex();
-        bufferBuilder.vertex(0.0, h, 500.0).endVertex();
-        BufferUploader.draw(bufferBuilder.end());
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+        bufferBuilder.addVertex(0.0f, 0.0f, 500.0f);
+        bufferBuilder.addVertex(g, 0.0f, 500.0f);
+        bufferBuilder.addVertex(g, h, 500.0f);
+        bufferBuilder.addVertex(0.0f, h, 500.0f);
+        BufferUploader.draw(bufferBuilder.buildOrThrow());
         RenderSystem.depthFunc(515);
 
         this.effect.clear();

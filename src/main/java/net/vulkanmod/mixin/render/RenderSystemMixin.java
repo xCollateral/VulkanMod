@@ -1,23 +1,14 @@
 package net.vulkanmod.mixin.render;
 
-import com.mojang.blaze3d.pipeline.RenderCall;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexSorting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.ResourceLocation;
 import net.vulkanmod.gl.GlTexture;
-import net.vulkanmod.interfaces.VAbstractTextureI;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
-import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,36 +26,19 @@ public abstract class RenderSystemMixin {
 
     @Shadow private static Matrix4f projectionMatrix;
     @Shadow private static Matrix4f savedProjectionMatrix;
-    @Shadow @Final private static PoseStack modelViewStack;
+    @Shadow @Final private static Matrix4fStack modelViewStack;
     @Shadow private static Matrix4f modelViewMatrix;
     @Shadow private static Matrix4f textureMatrix;
     @Shadow @Final private static int[] shaderTextures;
     @Shadow @Final private static float[] shaderColor;
     @Shadow @Final private static Vector3f[] shaderLightDirections;
 
-    @Shadow
-    public static void assertOnGameThreadOrInit() {
-    }
-
     @Shadow @Final private static float[] shaderFogColor;
 
     @Shadow private static @Nullable Thread renderThread;
 
-    /**
-     * @author
-     */
-    @Overwrite(remap = false)
-    public static void _setShaderTexture(int i, int id) {
-        if (i >= 0 && i < VTextureSelector.SIZE) {
-            GlTexture glTexture = GlTexture.getTexture(id);
-            VulkanImage vulkanImage = glTexture != null ? glTexture.getVulkanImage() : null;
-
-            if(vulkanImage == null)
-                return;
-
-            VTextureSelector.bindTexture(i, vulkanImage);
-        }
-
+    @Shadow
+    public static void assertOnRenderThread() {
     }
 
     /**
@@ -88,7 +62,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void enableColorLogicOp() {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.enableColorLogicOp();
     }
 
@@ -97,7 +71,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void disableColorLogicOp() {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.disableColorLogicOp();
     }
 
@@ -106,7 +80,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite
     public static void logicOp(GlStateManager.LogicOp op) {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.logicOp(op);
     }
 
@@ -151,7 +125,6 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void clearColor(float r, float g, float b, float a) {
-        assertOnGameThreadOrInit();
         VRenderSystem.setClearColor(r, g, b, a);
     }
 
@@ -196,7 +169,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void disableDepthTest() {
-        assertOnGameThread();
+        assertOnRenderThread();
         //GlStateManager._disableDepthTest();
         VRenderSystem.disableDepthTest();
     }
@@ -206,7 +179,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void enableDepthTest() {
-        assertOnGameThreadOrInit();
+        assertOnRenderThreadOrInit();
         VRenderSystem.enableDepthTest();
     }
 
@@ -215,7 +188,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void depthFunc(int i) {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.depthFunc(i);
     }
 
@@ -224,7 +197,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void depthMask(boolean b) {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.depthMask(b);
     }
 
@@ -298,7 +271,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void enableCull() {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.enableCull();
     }
 
@@ -307,7 +280,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void disableCull() {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.disableCull();
     }
 
@@ -316,7 +289,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void polygonMode(final int i, final int j) {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.setPolygonModeGL(i);
     }
 
@@ -325,7 +298,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void enablePolygonOffset() {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.enablePolygonOffset();
     }
 
@@ -334,7 +307,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void disablePolygonOffset() {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.disablePolygonOffset();
     }
 
@@ -343,7 +316,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void polygonOffset(float p_69864_, float p_69865_) {
-        assertOnGameThread();
+        assertOnRenderThread();
         VRenderSystem.polygonOffset(p_69864_, p_69865_);
     }
 
@@ -351,17 +324,17 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    public static void _setShaderLights(Vector3f p_157174_, Vector3f p_157175_) {
-        shaderLightDirections[0] = p_157174_;
-        shaderLightDirections[1] = p_157175_;
+    public static void setShaderLights(Vector3f dir0, Vector3f dir1) {
+        shaderLightDirections[0] = dir0;
+        shaderLightDirections[1] = dir1;
 
-        VRenderSystem.lightDirection0.buffer.putFloat(0, p_157174_.x());
-        VRenderSystem.lightDirection0.buffer.putFloat(4, p_157174_.y());
-        VRenderSystem.lightDirection0.buffer.putFloat(8, p_157174_.z());
+        VRenderSystem.lightDirection0.buffer.putFloat(0, dir0.x());
+        VRenderSystem.lightDirection0.buffer.putFloat(4, dir0.y());
+        VRenderSystem.lightDirection0.buffer.putFloat(8, dir0.z());
 
-        VRenderSystem.lightDirection1.buffer.putFloat(0, p_157175_.x());
-        VRenderSystem.lightDirection1.buffer.putFloat(4, p_157175_.y());
-        VRenderSystem.lightDirection1.buffer.putFloat(8, p_157175_.z());
+        VRenderSystem.lightDirection1.buffer.putFloat(0, dir1.x());
+        VRenderSystem.lightDirection1.buffer.putFloat(4, dir1.y());
+        VRenderSystem.lightDirection1.buffer.putFloat(8, dir1.z());
     }
 
     /**
@@ -381,7 +354,7 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    private static void _setShaderFogColor(float f, float g, float h, float i) {
+    public static void setShaderFogColor(float f, float g, float h, float i) {
         shaderFogColor[0] = f;
         shaderFogColor[1] = g;
         shaderFogColor[2] = h;
@@ -447,7 +420,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void applyModelViewMatrix() {
-        Matrix4f matrix4f = new Matrix4f(modelViewStack.last().pose());
+        Matrix4f matrix4f = new Matrix4f(modelViewStack);
         if (!isOnRenderThread()) {
             recordRenderCall(() -> {
                 modelViewMatrix = matrix4f;

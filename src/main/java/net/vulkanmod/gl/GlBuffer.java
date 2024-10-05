@@ -1,11 +1,11 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 // TODO: This class is only used to emulate a CPU buffer for texture copying purposes
 //  any other use is not supported
@@ -15,6 +15,7 @@ public class GlBuffer {
     private static int boundId = 0;
     private static GlBuffer boundBuffer;
 
+    private static GlBuffer pixelPackBufferBound;
     private static GlBuffer pixelUnpackBufferBound;
 
     public static int glGenBuffers() {
@@ -26,42 +27,60 @@ public class GlBuffer {
 
     public static void glBindBuffer(int target, int buffer) {
         boundId = buffer;
-        boundBuffer = map.get(buffer);
+        GlBuffer glBuffer = map.get(buffer);
 
-        if (buffer <= 0)
-            return;
-
-        if (boundBuffer == null)
+        if (buffer > 0 && glBuffer == null)
             throw new NullPointerException("bound texture is null");
 
-        checkTarget(target);
+        if (glBuffer != null) {
+            glBuffer.target = target;
+        }
 
-        boundBuffer.target = target;
+        switch (target) {
+            case GL32.GL_PIXEL_PACK_BUFFER -> pixelPackBufferBound = glBuffer;
+            case GL32.GL_PIXEL_UNPACK_BUFFER -> pixelUnpackBufferBound = glBuffer;
+            default -> throw new IllegalStateException("Unexpected value: " + target);
+        }
     }
 
     public static void glBufferData(int target, ByteBuffer byteBuffer, int usage) {
         checkTarget(target);
 
+        // TODO
+
         pixelUnpackBufferBound = boundBuffer;
     }
 
     public static void glBufferData(int target, long size, int usage) {
-        checkTarget(target);
+        GlBuffer buffer = switch (target) {
+            case GL32.GL_PIXEL_PACK_BUFFER -> pixelPackBufferBound;
+            case GL32.GL_PIXEL_UNPACK_BUFFER -> pixelUnpackBufferBound;
+            default -> throw new IllegalStateException("Unexpected value: " + target);
+        };
 
-        pixelUnpackBufferBound = boundBuffer;
-
-        boundBuffer.allocate((int) size);
+        buffer.allocate((int) size);
     }
 
-    @Nullable
     public static ByteBuffer glMapBuffer(int target, int access) {
-        checkTarget(target);
+        GlBuffer buffer = switch (target) {
+            case GL32.GL_PIXEL_PACK_BUFFER -> pixelPackBufferBound;
+            case GL32.GL_PIXEL_UNPACK_BUFFER -> pixelUnpackBufferBound;
+            default -> throw new IllegalStateException("Unexpected value: " + target);
+        };
 
-        return boundBuffer.data;
+        ByteBuffer mappedBuffer = buffer.data;
+        mappedBuffer.position(0);
+        return mappedBuffer;
     }
 
     public static boolean glUnmapBuffer(int i) {
         return true;
+    }
+
+    public static void glDeleteBuffers(IntBuffer intBuffer) {
+        for (int i = intBuffer.position(); i < intBuffer.limit(); i++) {
+            glDeleteBuffers(intBuffer.get(i));
+        }
     }
 
     public static void glDeleteBuffers(int id) {
@@ -75,8 +94,12 @@ public class GlBuffer {
         return pixelUnpackBufferBound;
     }
 
+    public static GlBuffer getPixelPackBufferBound() {
+        return pixelPackBufferBound;
+    }
+
     private static void checkTarget(int target) {
-        if (target != GL32.GL_PIXEL_UNPACK_BUFFER)
+        if (target != GL32.GL_PIXEL_UNPACK_BUFFER && target != GL32.GL_PIXEL_PACK_BUFFER)
             throw new IllegalArgumentException("target %d not supported".formatted(target));
     }
 

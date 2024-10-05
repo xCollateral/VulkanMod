@@ -1,48 +1,17 @@
 plugins {
-	id 'fabric-loom' version '1.5-SNAPSHOT'
+	id 'fabric-loom' version '1.6.11'
 	id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
-
-archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
-project.ext.lwjglVersion = "3.3.2"
-project.ext.jomlVersion = "1.10.4"
-project.ext.winNatives = "natives-windows"
-project.ext.linuxNatives = "natives-linux"
-project.ext.macosNatives = "natives-macos"
-project.ext.macosArmNatives = "natives-macos-arm64"
-
-dependencies {
-	include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
-
-	include(implementation("org.lwjgl:lwjgl-vma:$lwjglVersion"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$winNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$linuxNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vma:$lwjglVersion:$macosArmNatives"))
-
-	include(implementation("org.lwjgl:lwjgl-shaderc:$lwjglVersion"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$winNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$linuxNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-shaderc:$lwjglVersion:$macosArmNatives"))
-
-	//MoltenVK
-	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
-	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArmNatives"))
+base {
+	archivesName = project.archives_base_name
 }
 
-repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+loom {
+	accessWidenerPath = file("src/main/resources/vulkanmod.accesswidener")
 }
 
 dependencies {
@@ -67,6 +36,32 @@ dependencies {
 	includeModule("fabric-rendering-v1")
 }
 
+project.ext.lwjglVersion = "3.3.3"
+project.ext.jomlVersion = "1.10.4"
+project.ext.winNatives = "natives-windows"
+project.ext.linuxNatives = "natives-linux"
+project.ext.macosNatives = "natives-macos"
+project.ext.macosArmNatives = "natives-macos-arm64"
+
+dependencies {
+	include(implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion"))
+
+	ext.includeNatives = { name ->
+		include(implementation("$name:$lwjglVersion"))
+		include(runtimeOnly("$name:$lwjglVersion:$winNatives"))
+		include(runtimeOnly("$name:$lwjglVersion:$linuxNatives"))
+		include(runtimeOnly("$name:$lwjglVersion:$macosNatives"))
+		include(runtimeOnly("$name:$lwjglVersion:$macosArmNatives"))
+	}
+
+	includeNatives("org.lwjgl:lwjgl-vma")
+	includeNatives("org.lwjgl:lwjgl-shaderc")
+
+	//MoltenVK
+	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
+	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArmNatives"))
+}
+
 processResources {
 	inputs.property "version", project.version
 
@@ -76,11 +71,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
-}
-
-loom {
-	accessWidenerPath = file("src/main/resources/vulkanmod.accesswidener")
+	it.options.release = 21
 }
 
 java {
@@ -88,18 +79,22 @@ java {
 	// if it is present.
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
 	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
+		rename { "${it}_${project.base.archivesName.get()}"}
 	}
 }
 
 // configure the maven publication
 publishing {
 	publications {
-		mavenJava(MavenPublication) {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
 			from components.java
 		}
 	}

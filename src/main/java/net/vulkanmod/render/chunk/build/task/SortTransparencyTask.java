@@ -6,6 +6,7 @@ import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
+import net.vulkanmod.render.vertex.QuadSorter;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
@@ -32,14 +33,13 @@ public class SortTransparencyTask extends ChunkTask {
         float z = (float) vec3.z;
 
         CompiledSection compiledSection = this.section.getCompiledSection();
-        TerrainBufferBuilder.SortState transparencyState = compiledSection.transparencyState;
+        QuadSorter.SortState transparencyState = compiledSection.transparencyState;
 
         TerrainBufferBuilder bufferBuilder = builderPack.builder(TerrainRenderType.TRANSLUCENT);
         bufferBuilder.begin();
         bufferBuilder.restoreSortState(transparencyState);
 
-        bufferBuilder.setQuadSortOrigin(x - (float) this.section.xOffset(), y - (float) this.section.yOffset(), z - (float) this.section.zOffset());
-        compiledSection.transparencyState = bufferBuilder.getSortState();
+        bufferBuilder.setupQuadSorting(x - (float) this.section.xOffset(), y - (float) this.section.yOffset(), z - (float) this.section.zOffset());
         TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilder.end();
 
         CompileResult compileResult = new CompileResult(this.section, false);

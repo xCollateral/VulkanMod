@@ -74,7 +74,8 @@ public class Renderer {
     }
 
     private final Set<Pipeline> usedPipelines = new ObjectOpenHashSet<>();
-    private long boundPipeline;
+    private Pipeline boundPipeline;
+    private long boundPipelineHandle;
 
     private Drawer drawer;
 
@@ -244,26 +245,28 @@ public class Renderer {
 
             imageIndex = pImageIndex.get(0);
 
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-            VkCommandBuffer commandBuffer = currentCmdBuffer;
-
-            vkResult = vkBeginCommandBuffer(commandBuffer, beginInfo);
-            if (vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Failed to begin recording command buffer: %s".formatted(VkResult.decode(vkResult)));
-            }
-            recordingCmds = true;
-
-            mainPass.begin(commandBuffer, stack);
-
-            vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
-
-            vkCmdSetLineWidth(commandBuffer, 1.0F);
+            this.beginRenderPass(stack);
         }
 
         p.pop();
+    }
+
+    private void beginRenderPass(MemoryStack stack) {
+        VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
+        beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+        beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        VkCommandBuffer commandBuffer = currentCmdBuffer;
+
+        int vkResult = vkBeginCommandBuffer(commandBuffer, beginInfo);
+        if (vkResult != VK_SUCCESS) {
+            throw new RuntimeException("Failed to begin recording command buffer: %s".formatted(VkResult.decode(vkResult)));
+        }
+
+        recordingCmds = true;
+        mainPass.begin(commandBuffer, stack);
+
+        resetDynamicState(commandBuffer);
     }
 
     public void endFrame() {
@@ -329,6 +332,39 @@ public class Renderer {
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
+        }
+    }
+
+    /**
+    * Called in case draw results are needed before the of the frame
+     */
+    public void flushCmds() {
+        if (!this.recordingCmds)
+            return;
+
+        try (MemoryStack stack = stackPush()) {
+            int vkResult;
+
+            this.endRenderPass(currentCmdBuffer);
+            vkEndCommandBuffer(currentCmdBuffer);
+
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+
+            submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
+
+            vkResetFences(device, inFlightFences.get(currentFrame));
+
+            Synchronization.INSTANCE.waitFences();
+
+            if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
+                vkResetFences(device, inFlightFences.get(currentFrame));
+                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
+            }
+
+            vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
+
+            this.beginRenderPass(stack);
         }
     }
 
@@ -402,7 +438,8 @@ public class Renderer {
         }
 
         usedPipelines.clear();
-        boundPipeline=0;
+        boundPipeline = null;
+        boundPipelineHandle = 0;
     }
 
     void waitForSwapChain() {
@@ -504,13 +541,13 @@ public class Renderer {
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
         final long handle = pipeline.getHandle(currentState);
 
-        if (boundPipeline == handle) {
+        if (boundPipelineHandle == handle) {
             return;
         }
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
-        boundPipeline = handle;
-
+        boundPipelineHandle = handle;
+        boundPipeline = pipeline;
         addUsedPipeline(pipeline);
     }
 
@@ -532,6 +569,16 @@ public class Renderer {
             nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
         }
 
+    }
+
+    public Pipeline getBoundPipeline() {
+        return boundPipeline;
+    }
+
+    private static void resetDynamicState(VkCommandBuffer commandBuffer) {
+        vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
+
+        vkCmdSetLineWidth(commandBuffer, 1.0F);
     }
 
     public static void setDepthBias(float units, float factor) {
@@ -607,26 +654,29 @@ public class Renderer {
         }
     }
 
+    public static void setInvertedViewport(int x, int y, int width, int height) {
+        setViewport(x, y + height, width, -height);
+    }
+
     public static void setViewport(int x, int y, int width, int height) {
+        try (MemoryStack stack = stackPush()) {
+            setViewport(x, y, width, height, stack);
+        }
+    }
+
+    public static void setViewport(int x, int y, int width, int height, MemoryStack stack) {
         if (!INSTANCE.recordingCmds)
             return;
 
-        try (MemoryStack stack = stackPush()) {
-            VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
-            viewport.x(x);
-            viewport.y(height + y);
-            viewport.width(width);
-            viewport.height(-height);
-            viewport.minDepth(0.0f);
-            viewport.maxDepth(1.0f);
+        VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
+        viewport.x(x);
+        viewport.y(height + y);
+        viewport.width(width);
+        viewport.height(-height);
+        viewport.minDepth(0.0f);
+        viewport.maxDepth(1.0f);
 
-            VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
-            scissor.offset().set(0, 0);
-            scissor.extent().set(width, Math.abs(height));
-
-            vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
-            vkCmdSetScissor(INSTANCE.currentCmdBuffer, 0, scissor);
-        }
+        vkCmdSetViewport(INSTANCE.currentCmdBuffer, 0, viewport);
     }
 
     public static void resetViewport() {
@@ -652,6 +702,8 @@ public class Renderer {
 
         try (MemoryStack stack = stackPush()) {
             int framebufferHeight = INSTANCE.boundFramebuffer.getHeight();
+
+            x = Math.max(0, x);
 
             VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
             scissor.offset().set(x, framebufferHeight - (y + height));

@@ -1,5 +1,6 @@
 package net.vulkanmod.mixin.profiling;
 
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,14 +20,13 @@ public class GuiMixin {
     @Shadow @Final private DebugScreenOverlay debugOverlay;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void createProfilerOverlay(Minecraft minecraft, ItemRenderer itemRenderer, CallbackInfo ci) {
+    private void createProfilerOverlay(Minecraft minecraft, CallbackInfo ci) {
         ProfilerOverlay.createInstance(minecraft);
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/Gui;renderEffects(Lnet/minecraft/client/gui/GuiGraphics;)V", shift = At.Shift.AFTER))
-    private void renderProfilerOverlay(GuiGraphics guiGraphics, float f, CallbackInfo ci) {
+    @Inject(method = "render", at = @At(value = "RETURN"))
+    private void renderProfilerOverlay(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         if(ProfilerOverlay.shouldRender && !this.debugOverlay.showDebugScreen())
-            ProfilerOverlay.INSTANCE.render(guiGraphics.pose());
+            ProfilerOverlay.INSTANCE.render(guiGraphics);
     }
 }

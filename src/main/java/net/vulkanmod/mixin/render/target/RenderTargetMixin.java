@@ -2,7 +2,6 @@ package net.vulkanmod.mixin.render.target;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.gl.GlFramebuffer;
 import net.vulkanmod.gl.GlTexture;
@@ -14,10 +13,11 @@ import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.DrawUtil;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryStack;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(RenderTarget.class)
 public abstract class RenderTargetMixin implements ExtendedRenderTarget {
@@ -34,12 +34,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Shadow @Final private float[] clearChannels;
     @Shadow @Final public boolean useDepth;
 
-    Framebuffer framebuffer;
-
     boolean needClear = false;
     boolean bound = false;
-
-    private static int boundTarget = 0;
 
     /**
      * @author
@@ -51,12 +47,13 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         if(!Renderer.isRecording())
             return;
 
-        if(!bound) {
+        // If the framebuffer is not bound postpone clear
+        GlFramebuffer glFramebuffer = GlFramebuffer.getFramebuffer(this.frameBufferId);
+        if(!bound || GlFramebuffer.getBoundFramebuffer() != glFramebuffer) {
             needClear = true;
             return;
         }
 
-//        this.bindWrite(true);
         GlStateManager._clearColor(this.clearChannels[0], this.clearChannels[1], this.clearChannels[2], this.clearChannels[3]);
         int i = 16384;
         if (this.useDepth) {
@@ -65,35 +62,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         }
 
         GlStateManager._clear(i, getError);
-//        this.unbindWrite();
         needClear = false;
     }
-
-//    /**
-//     * @author
-//     */
-//    @Overwrite
-//    public void destroyBuffers() {
-//        RenderSystem.assertOnRenderThreadOrInit();
-//        this.unbindRead();
-//        this.unbindWrite();
-//        if (this.depthBufferId > -1) {
-//            TextureUtil.releaseTextureId(this.depthBufferId);
-//            this.depthBufferId = -1;
-//        }
-//
-//        if (this.colorTextureId > -1) {
-//            TextureUtil.releaseTextureId(this.colorTextureId);
-//            this.colorTextureId = -1;
-//        }
-//
-//        if (this.frameBufferId > -1) {
-//            GlStateManager._glBindFramebuffer(36160, 0);
-//            GlStateManager._glDeleteFramebuffers(this.frameBufferId);
-//            this.frameBufferId = -1;
-//        }
-//
-//    }
 
     /**
      * @author
@@ -101,7 +71,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Overwrite
     public void bindRead() {
         RenderSystem.assertOnRenderThread();
-//        GlStateManager._bindTexture(this.colorTextureId);
+
+        applyClear();
 
         GlTexture.bindTexture(this.colorTextureId);
 
@@ -124,26 +95,8 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
      * @author
      */
     @Overwrite
-    public void bindWrite(boolean bl) {
-        if (!RenderSystem.isOnRenderThread()) {
-            RenderSystem.recordRenderCall(() -> {
-                this._bindWrite(bl);
-            });
-        } else {
-            this._bindWrite(bl);
-        }
-
-    }
-
-    /**
-     * @author
-     */
-    @Overwrite
     private void _bindWrite(boolean bl) {
         RenderSystem.assertOnRenderThreadOrInit();
-
-//        if(this.frameBufferId == boundTarget)
-//            return;
 
         GlFramebuffer.bindFramebuffer(GL30.GL_FRAMEBUFFER, this.frameBufferId);
         if (bl) {
@@ -151,8 +104,7 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
         }
 
         this.bound = true;
-        boundTarget = this.frameBufferId;
-        if(needClear)
+        if (needClear)
             clear(false);
     }
 
@@ -165,29 +117,29 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
             RenderSystem.recordRenderCall(() -> {
                 GlStateManager._glBindFramebuffer(36160, 0);
                 this.bound = false;
-                boundTarget = 0;
             });
         } else {
             GlStateManager._glBindFramebuffer(36160, 0);
             this.bound = false;
-            boundTarget = 0;
         }
     }
 
-    /**
-     * @author
-     */
-    @Overwrite
-    private void _blitToScreen(int width, int height, boolean disableBlend) {
-        if(needClear) {
-            //If true it means target has not been used
-            return;
+    @Inject(method = "_blitToScreen", at = @At("HEAD"), cancellable = true)
+    private void _blitToScreen(int width, int height, boolean disableBlend, CallbackInfo ci) {
+        // If the target needs clear it means it has not been used, thus we can skip blit
+        if (!this.needClear) {
+            Framebuffer framebuffer = GlFramebuffer.getFramebuffer(this.frameBufferId).getFramebuffer();
+            VTextureSelector.bindTexture(0, framebuffer.getColorAttachment());
+
+            DrawUtil.blitToScreen();
         }
 
-        Framebuffer framebuffer = GlFramebuffer.getFramebuffer(this.frameBufferId).getFramebuffer();
-        VTextureSelector.bindTexture(0, framebuffer.getColorAttachment());
+        ci.cancel();
+    }
 
-        DrawUtil.blitToScreen();
+    @Inject(method = "getColorTextureId", at = @At("HEAD"))
+    private void injClear(CallbackInfoReturnable<Integer> cir) {
+        applyClear();
     }
 
     @Override
@@ -198,5 +150,18 @@ public abstract class RenderTargetMixin implements ExtendedRenderTarget {
     @Override
     public RenderPass getRenderPass() {
         return GlFramebuffer.getFramebuffer(this.frameBufferId).getRenderPass();
+    }
+
+    @Unique
+    private void applyClear() {
+        if (this.needClear) {
+            GlFramebuffer currentFramebuffer = GlFramebuffer.getBoundFramebuffer();
+
+            this._bindWrite(false);
+
+            if (currentFramebuffer != null) {
+                GlFramebuffer.beginRendering(currentFramebuffer);
+            }
+        }
     }
 }
