@@ -42,6 +42,8 @@ public enum Queue {
 
     public VkQueue queue() { return this.queue; }
 
+    public int familyIndex() { return familyIndex; }
+
     public void cleanUp() {
         if(commandPool != null)
             commandPool.cleanUp();
@@ -140,7 +142,7 @@ public enum Queue {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
     }
 
-    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int size_t, int srcAccess, int dstAccess, int srcStage, int dstStage) {
+    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, long size_t, int srcAccess, int dstAccess, int srcStage, int dstStage) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferMemoryBarrier.Buffer memBarrier = VkBufferMemoryBarrier.calloc(1, stack)

@@ -73,8 +73,6 @@ public class WorldRenderer {
     private SectionGraph sectionGraph;
     private boolean graphNeedsUpdate;
 
-    private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-
     private final TaskDispatcher taskDispatcher;
 
     private double xTransparentOld;
@@ -249,9 +247,6 @@ public class WorldRenderer {
             }
 
             this.taskDispatcher.clearBatchQueue();
-            synchronized (this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
 
             this.sectionGrid = new SectionGrid(this.level, this.renderDistance);
             this.sectionGraph = new SectionGraph(this.level, this.sectionGrid, this.taskDispatcher);

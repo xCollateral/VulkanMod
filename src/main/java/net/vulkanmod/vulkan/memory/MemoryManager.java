@@ -6,6 +6,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.buffer.AreaBuffer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import net.vulkanmod.vulkan.util.Pair;
 import net.vulkanmod.vulkan.util.VkResult;
@@ -166,8 +167,7 @@ public class MemoryManager {
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
 //            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT);
-            // TODO hardcoded queue family indices
-            imageInfo.pQueueFamilyIndices(stack.ints(0, 1));
+            imageInfo.pQueueFamilyIndices(stack.ints(Queue.GraphicsQueue.familyIndex()));
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
             allocationInfo.requiredFlags(memProperties);
