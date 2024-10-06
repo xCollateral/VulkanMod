@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDevice;
@@ -31,13 +32,13 @@ public class Synchronization {
 
     public synchronized void addFence(long fence) {
         if (idx == ALLOCATION_SIZE)
-            waitFences();
+            waitFences(false);
 
         fences.put(idx, fence);
         idx++;
     }
 
-    public synchronized void waitFences() {
+    public synchronized void waitFences(boolean allowReset) {
         if (idx == 0)
             return;
 
@@ -47,8 +48,13 @@ public class Synchronization {
 
         vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
 
-        this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
-        this.commandBuffers.clear();
+        if (allowReset) {
+            this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
+            this.commandBuffers.clear();
+
+            Queue.GraphicsQueue.resetPool();
+            Queue.TransferQueue.resetPool();
+        }
 
         fences.limit(ALLOCATION_SIZE);
         idx = 0;
