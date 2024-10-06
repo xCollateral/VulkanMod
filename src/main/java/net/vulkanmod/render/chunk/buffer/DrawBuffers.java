@@ -23,7 +23,6 @@ import static org.lwjgl.vulkan.VK10.*;
 public class DrawBuffers {
     private static final int VERTEX_SIZE = PipelineManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    private final int index;
     private final Vector3i origin;
     private final int minHeight;
 
@@ -32,14 +31,13 @@ public class DrawBuffers {
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
-    public DrawBuffers(int index, Vector3i origin, int minHeight) {
-        this.index = index;
+    public DrawBuffers(Vector3i origin, int minHeight) {
         this.origin = origin;
         this.minHeight = minHeight;
     }
 
     public void upload(RenderSection section, UploadBuffer buffer, TerrainRenderType renderType) {
-        DrawParameters drawParameters = section.getDrawParameters(renderType);
+        DrawParameters drawParameters = section.getDrawParametersChecked(renderType);
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = -1;
 
@@ -110,7 +108,7 @@ public class DrawBuffers {
         vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, byteBuffer);
     }
 
-    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<RenderSection> queue, TerrainRenderType terrainRenderType) {
+    public void buildDrawBatchesIndirect(IndirectBuffer indirectBuffer, StaticQueue<DrawParameters> queue, TerrainRenderType terrainRenderType) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
@@ -122,11 +120,7 @@ public class DrawBuffers {
             int drawCount = 0;
             for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
 
-                final RenderSection section = iterator.next();
-                final DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
-
-                if (drawParameters.indexCount <= 0)
-                    continue;
+                final DrawParameters drawParameters = iterator.next();
 
                 long ptr = bufferPtr + (drawCount * 20L);
                 MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
@@ -149,16 +143,12 @@ public class DrawBuffers {
 
     }
 
-    public void buildDrawBatchesDirect(StaticQueue<RenderSection> queue, TerrainRenderType renderType) {
+    public void buildDrawBatchesDirect(StaticQueue<DrawParameters> queue, TerrainRenderType renderType) {
         boolean isTranslucent = renderType == TerrainRenderType.TRANSLUCENT;
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
 
         for (var iterator = queue.iterator(isTranslucent); iterator.hasNext(); ) {
-            final RenderSection section = iterator.next();
-            final DrawParameters drawParameters = section.getDrawParameters(renderType);
-
-            if (drawParameters.indexCount <= 0)
-                continue;
+            final DrawParameters drawParameters = iterator.next();
 
             final int firstIndex = drawParameters.firstIndex == -1 ? 0 : drawParameters.firstIndex;
             vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, firstIndex, drawParameters.vertexOffset, drawParameters.baseInstance);
@@ -210,8 +200,6 @@ public class DrawBuffers {
         int firstIndex = -1;
         int vertexOffset = -1;
         int baseInstance;
-
-        public DrawParameters() {}
 
         public void reset(ChunkArea chunkArea, TerrainRenderType r) {
             AreaBuffer areaBuffer = chunkArea.getDrawBuffers().getAreaBuffer(r);
