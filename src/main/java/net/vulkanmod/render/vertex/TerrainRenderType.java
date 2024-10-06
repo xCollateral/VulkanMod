@@ -12,20 +12,11 @@ public enum TerrainRenderType {
     CUTOUT(0.1f),
     TRANSLUCENT(0.0f),
     TRIPWIRE(0.1f);
-
-    public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
+    //Changed to EnumSet, in case it generates better ASM than a standard array (e.g. Compile time length guarantees)
+    public static final EnumSet<TerrainRenderType> VALUES = EnumSet.allOf(TerrainRenderType.class);
 
     public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
     public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, CUTOUT, TRANSLUCENT);
-
-    static {
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT);
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
-        SEMI_COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-
-        COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
-        COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-    }
 
     public final float alphaCutout;
 
