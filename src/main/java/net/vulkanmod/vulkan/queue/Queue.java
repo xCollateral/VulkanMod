@@ -233,5 +233,10 @@ public enum Queue {
         nvkCmdUpdateBuffer(commandBuffer.getHandle(), id, baseOffset, sizeT, bufferPtr);
 
     }
+
+    public void resetPool() {
+        if (this.commandPool != null)
+            this.commandPool.resetAll();
+    }
 }
 

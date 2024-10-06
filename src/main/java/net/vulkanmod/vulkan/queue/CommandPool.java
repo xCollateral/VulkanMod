@@ -26,7 +26,7 @@ public class CommandPool {
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
             poolInfo.queueFamilyIndex(queueFamilyIndex);
-            poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+            //Not using VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT enables additional driver and/or optimization benefits apparently
 
             LongBuffer pCommandPool = stack.mallocLong(1);
 
@@ -112,6 +112,15 @@ public class CommandPool {
         }
         vkResetCommandPool(Vulkan.getVkDevice(), id, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
         vkDestroyCommandPool(Vulkan.getVkDevice(), id, null);
+    }
+
+    //Implicitly reset all CommandBuffers from this pool
+    public void resetAll() {
+        vkResetCommandPool(Vulkan.getVkDevice(), id, 0);
+    }
+
+    public void trim() {
+        VK11.vkTrimCommandPool(Vulkan.getVkDevice(), id, 0);
     }
 
     public class CommandBuffer {

@@ -108,7 +108,7 @@ public class UploadManager {
     public void syncUploads() {
         submitUploads();
 
-        Synchronization.INSTANCE.waitFences();
+        Synchronization.INSTANCE.waitFences(false);
     }
 
     private void beginCommands() {
