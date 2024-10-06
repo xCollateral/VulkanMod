@@ -56,7 +56,7 @@ public abstract class VTextureSelector {
     public static int getTextureIdx(String name) {
         return switch (name) {
             case "Sampler0", "DiffuseSampler" -> 0;
-            case "Sampler1" -> 1;
+            case "Sampler1", "SamplerProj" -> 1;
             case "Sampler2" -> 2;
             case "Sampler3" -> 3;
             case "Sampler4" -> 4;
