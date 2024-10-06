@@ -14,6 +14,7 @@ import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.EnumMap;
 import java.util.Queue;
 
 public class TaskDispatcher {
@@ -166,7 +167,7 @@ public class TaskDispatcher {
                 if(uploadBuffer != null) {
                     drawBuffers.upload(section, uploadBuffer, renderType);
                 } else {
-                    section.getDrawParameters(renderType).reset(renderArea, renderType);
+                    section.removeDrawParameter(renderType);
                 }
             }
 
