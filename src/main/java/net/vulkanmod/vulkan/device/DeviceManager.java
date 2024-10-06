@@ -273,8 +273,9 @@ public abstract class DeviceManager {
     // Use the optimal most performant depth format for the specific GPU
     // Nvidia performs best with 24 bit depth, while AMD is most performant with 32-bit float
     public static int findDepthFormat(boolean use24BitsDepthFormat) {
+        //Nvidia strongly recommends using packed depth formats: https://developer.nvidia.com/blog/vulkan-dos-donts/#h.806djmttkmkk
         int[] formats = use24BitsDepthFormat ? new int[]
-                {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT}
+                {VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT}
                 : new int[]{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT};
 
         return findSupportedFormat(
