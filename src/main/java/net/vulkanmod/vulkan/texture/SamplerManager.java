@@ -21,19 +21,18 @@ public abstract class SamplerManager {
 
     static final Short2LongMap SAMPLERS = new Short2LongOpenHashMap();
 
-    public static long getTextureSampler(byte maxLod, byte flags) {
-        short key = (short) (flags | (maxLod << 8));
-        long sampler = SAMPLERS.getOrDefault(key, 0L);
+    public static long getTextureSampler(byte flags) {
+        long sampler = SAMPLERS.getOrDefault(flags, 0L);
 
         if (sampler == 0L) {
-            sampler = createTextureSampler(maxLod, flags);
-            SAMPLERS.put(key, sampler);
+            sampler = createTextureSampler(flags);
+            SAMPLERS.put(flags, sampler);
         }
 
         return sampler;
     }
 
-    private static long createTextureSampler(byte maxLod, byte flags) {
+    private static long createTextureSampler(byte flags) {
         Validate.isTrue(
                 (flags & (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)) != (REDUCTION_MIN_BIT | REDUCTION_MAX_BIT)
         );
@@ -78,7 +77,7 @@ public abstract class SamplerManager {
                 } else {
                     samplerInfo.mipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST);
                 }
-                samplerInfo.maxLod(maxLod);
+                samplerInfo.maxLod(VK_LOD_CLAMP_NONE);
                 samplerInfo.minLod(0.0F);
                 samplerInfo.mipLodBias(MIP_BIAS);
             }
