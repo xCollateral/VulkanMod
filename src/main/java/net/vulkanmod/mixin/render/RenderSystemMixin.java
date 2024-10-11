@@ -29,13 +29,16 @@ public abstract class RenderSystemMixin {
     @Shadow @Final private static Matrix4fStack modelViewStack;
     @Shadow private static Matrix4f modelViewMatrix;
     @Shadow private static Matrix4f textureMatrix;
+
     @Shadow @Final private static int[] shaderTextures;
     @Shadow @Final private static float[] shaderColor;
     @Shadow @Final private static Vector3f[] shaderLightDirections;
-
     @Shadow @Final private static float[] shaderFogColor;
 
     @Shadow private static @Nullable Thread renderThread;
+
+    @Shadow public static VertexSorting vertexSorting;
+    @Shadow private static VertexSorting savedVertexSorting;
 
     @Shadow
     public static void assertOnRenderThread() {
@@ -372,12 +375,14 @@ public abstract class RenderSystemMixin {
         if (!isOnRenderThread()) {
             recordRenderCall(() -> {
                 RenderSystemMixin.projectionMatrix = matrix4f;
+                RenderSystem.vertexSorting = vertexSorting;
 
                 VRenderSystem.applyProjectionMatrix(matrix4f);
                 VRenderSystem.calculateMVP();
             });
         } else {
             RenderSystemMixin.projectionMatrix = matrix4f;
+            RenderSystem.vertexSorting = vertexSorting;
 
             VRenderSystem.applyProjectionMatrix(matrix4f);
             VRenderSystem.calculateMVP();
@@ -443,6 +448,7 @@ public abstract class RenderSystemMixin {
     @Overwrite(remap = false)
     private static void _restoreProjectionMatrix() {
         projectionMatrix = savedProjectionMatrix;
+        vertexSorting = savedVertexSorting;
 
         VRenderSystem.applyProjectionMatrix(projectionMatrix);
         VRenderSystem.calculateMVP();
