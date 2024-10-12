@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk.build;
 
+import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,7 +25,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 
-public class RenderRegion implements BlockAndTintGetter {
+public class RenderRegion implements BlockAndTintGetter, RenderAttachedBlockView {
     public static final int WIDTH = 3;
     public static final int SIZE = WIDTH * WIDTH * WIDTH;
 
