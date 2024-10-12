@@ -1,10 +1,12 @@
 package net.vulkanmod;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.loader.api.FabricLoader;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Platform;
 import net.vulkanmod.config.video.VideoModeManager;
+import net.vulkanmod.render.chunk.build.frapi.VulkanModRenderer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,6 +37,8 @@ public class Initializer implements ClientModInitializer {
 				.resolve("vulkanmod_settings.json");
 
 		CONFIG = loadConfig(configPath);
+
+		RendererAccess.INSTANCE.registerRenderer(VulkanModRenderer.INSTANCE);
 	}
 
 	private static Config loadConfig(Path path) {

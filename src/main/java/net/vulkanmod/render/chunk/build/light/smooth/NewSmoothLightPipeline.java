@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.vulkanmod.render.chunk.util.SimpleDirection;
-import net.vulkanmod.render.model.quad.QuadView;
+import net.vulkanmod.render.model.quad.ModelQuadView;
 import net.vulkanmod.render.chunk.build.light.data.LightDataAccess;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
@@ -42,7 +42,7 @@ public class NewSmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(QuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFaceO, boolean shade) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFaceO, boolean shade) {
         this.updateCachedData(pos.asLong());
 
         int flags = quad.getFlags();
@@ -85,7 +85,7 @@ public class NewSmoothLightPipeline implements LightPipeline {
      * Calculates the light data for a grid-aligned quad that does not cover the entire block volume's face.
      * Flags: IS_ALIGNED, IS_PARTIAL
      */
-    private void applyAlignedPartialFace(AoNeighborInfo neighborInfo, QuadView quad, BlockPos pos, SimpleDirection dir, QuadLightData out) {
+    private void applyAlignedPartialFace(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, SimpleDirection dir, QuadLightData out) {
         // TODO stair lighting is inconsistent
         // A solution might be an interpolation grid
 //        this.self.calculatePartialAlignedFace(this.lightCache, pos, dir);
@@ -104,13 +104,13 @@ public class NewSmoothLightPipeline implements LightPipeline {
     }
 
     /**
-     * This method is the same as {@link #applyNonParallelFace(AoNeighborInfo, QuadView, BlockPos, SimpleDirection,
+     * This method is the same as {@link #applyNonParallelFace(AoNeighborInfo, ModelQuadView, BlockPos, SimpleDirection,
      * QuadLightData)} but with the check for a depth of approximately 0 removed. If the quad is parallel but not
      * aligned, all of its vertices will have the same depth and this depth must be approximately greater than 0,
      * meaning the check for 0 will always return false.
      * Flags: !IS_ALIGNED, IS_PARALLEL
      */
-    private void applyParallelFace(AoNeighborInfo neighborInfo, QuadView quad, BlockPos pos, SimpleDirection dir, QuadLightData out) {
+    private void applyParallelFace(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, SimpleDirection dir, QuadLightData out) {
         this.self.calculateSelfOcclusion(this.lightCache, pos, dir);
 
         for (int i = 0; i < 4; i++) {
@@ -139,7 +139,7 @@ public class NewSmoothLightPipeline implements LightPipeline {
     /**
      * Flags: !IS_ALIGNED, !IS_PARALLEL
      */
-    private void applyNonParallelFace(AoNeighborInfo neighborInfo, QuadView quad, BlockPos pos, SimpleDirection dir, QuadLightData out) {
+    private void applyNonParallelFace(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, SimpleDirection dir, QuadLightData out) {
         for (int i = 0; i < 4; i++) {
             // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
             float cx = clamp(quad.getX(i));

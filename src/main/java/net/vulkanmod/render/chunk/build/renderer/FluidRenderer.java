@@ -1,12 +1,12 @@
-package net.vulkanmod.render.chunk.build;
+package net.vulkanmod.render.chunk.build.renderer;
 
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
@@ -26,12 +26,12 @@ import net.vulkanmod.render.model.quad.ModelQuad;
 import net.vulkanmod.render.model.quad.ModelQuadFlags;
 import net.vulkanmod.render.model.quad.QuadUtils;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
-import net.vulkanmod.render.vertex.TerrainBuilder;
-import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.render.vertex.format.I32_SNorm;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Vector3f;
 
-public class LiquidRenderer {
+public class FluidRenderer {
     private static final float MAX_FLUID_HEIGHT = 0.8888889F;
 
     private final BlockPos.MutableBlockPos mBlockPos = new BlockPos.MutableBlockPos();
@@ -40,14 +40,34 @@ public class LiquidRenderer {
 
     BuilderResources resources;
 
+    private final LightPipeline smoothLightPipeline;
+    private final LightPipeline flatLightPipeline;
+
     private final int[] quadColors = new int[4];
+
+    public FluidRenderer(LightPipeline flatLightPipeline, LightPipeline smoothLightPipeline) {
+        this.smoothLightPipeline = smoothLightPipeline;
+        this.flatLightPipeline = flatLightPipeline;
+    }
 
     public void setResources(BuilderResources resources) {
         this.resources = resources;
     }
 
-    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBuilder vertexConsumer) {
-        tessellate(blockState, fluidState, blockPos, vertexConsumer);
+    public void renderLiquid(BlockState blockState, FluidState fluidState, BlockPos blockPos) {
+        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getType());
+
+        TerrainRenderType renderType = TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState));
+        renderType = TerrainRenderType.getRemapped(renderType);
+        TerrainBufferBuilder bufferBuilder = this.resources.builderPack.builder(renderType).getBufferBuilder(QuadFacing.UNDEFINED.ordinal());
+
+        if (handler != null) {
+            handler.renderFluid(blockPos, this.resources.getRegion(), bufferBuilder, blockState, fluidState);
+        }
+
+        if (DefaultFluidRenderers.has(handler)) {
+            tessellate(blockState, fluidState, blockPos, bufferBuilder);
+        }
     }
 
     private boolean isFaceOccludedByState(BlockGetter blockGetter, float h, Direction direction, BlockPos blockPos, BlockState blockState) {
@@ -87,8 +107,8 @@ public class LiquidRenderer {
         return blockAndTintGetter.getBlockState(mBlockPos);
     }
 
-    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBuilder vertexConsumer) {
-        BlockAndTintGetter region = this.resources.region;
+    public void tessellate(BlockState blockState, FluidState fluidState, BlockPos blockPos, TerrainBufferBuilder bufferBuilder) {
+        BlockAndTintGetter region = this.resources.getRegion();
 
         final FluidRenderHandler handler = getFluidRenderHandler(fluidState);
         int color = handler.getFluidColor(region, blockPos, fluidState);
@@ -104,7 +124,7 @@ public class LiquidRenderer {
         final int posZ = blockPos.getZ();
 
         boolean useAO = blockState.getLightEmission() == 0 && Minecraft.useAmbientOcclusion();
-        LightPipeline lightPipeline = useAO ? this.resources.smoothLightPipeline : this.resources.flatLightPipeline;
+        LightPipeline lightPipeline = useAO ? this.smoothLightPipeline : this.flatLightPipeline;
 
         BlockState downState = getAdjBlockState(region, posX, posY, posZ, Direction.DOWN);
         BlockState upState = getAdjBlockState(region, posX, posY, posZ, Direction.UP);
@@ -216,10 +236,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.UP);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, bufferBuilder, x0, y0, z0, false);
 
             if (fluidState.shouldRenderBackwardUpFace(region, blockPos.above())) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
+                putQuad(modelQuad, bufferBuilder, x0, y0, z0, true);
             }
 
         }
@@ -242,8 +262,7 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, Direction.DOWN);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
-
+            putQuad(modelQuad, bufferBuilder, x0, y0, z0, false);
         }
 
         modelQuad.setFlags(ModelQuadFlags.IS_PARALLEL | ModelQuadFlags.IS_ALIGNED);
@@ -349,10 +368,10 @@ public class LiquidRenderer {
             updateQuad(this.modelQuad, blockPos, lightPipeline, direction);
             updateColor(r, g, b, brightness);
 
-            putQuad(modelQuad, vertexConsumer, x0, y0, z0, false);
+            putQuad(modelQuad, bufferBuilder, x0, y0, z0, false);
 
             if (!isOverlay) {
-                putQuad(modelQuad, vertexConsumer, x0, y0, z0, true);
+                putQuad(modelQuad, bufferBuilder, x0, y0, z0, true);
             }
 
         }
@@ -422,16 +441,15 @@ public class LiquidRenderer {
                 .cross(quad.getX(3), quad.getY(3), quad.getZ(3));
         normal.normalize();
 
-        return VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
+        return I32_SNorm.packNormal(normal.x(), normal.y(), normal.z());
     }
 
-    private void putQuad(ModelQuad quad, TerrainBuilder builder, float xOffset, float yOffset, float zOffset, boolean flip) {
+    private void putQuad(ModelQuad quad, TerrainBufferBuilder bufferBuilder, float xOffset, float yOffset, float zOffset, boolean flip) {
         QuadLightData quadLightData = resources.quadLightData;
 
         // Rotate triangles if needed to fix AO anisotropy
         int k = QuadUtils.getIterationStartIdx(quadLightData.br);
 
-        TerrainBufferBuilder bufferBuilder = builder.getBufferBuilder(QuadFacing.NONE.ordinal());
         bufferBuilder.ensureCapacity();
 
         int i;
@@ -458,11 +476,8 @@ public class LiquidRenderer {
         quad.setV(i, v);
     }
 
-    private void updateQuad(ModelQuad quad, BlockPos blockPos,
-                            LightPipeline lightPipeline, Direction dir) {
-
+    private void updateQuad(ModelQuad quad, BlockPos blockPos, LightPipeline lightPipeline, Direction dir) {
         lightPipeline.calculate(quad, blockPos, resources.quadLightData, null, dir, false);
-
     }
 
     private void updateColor(float r, float g, float b, float brightness) {

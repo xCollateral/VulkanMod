@@ -3,7 +3,9 @@ package net.vulkanmod.mixin.render.block;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
-import net.vulkanmod.render.model.quad.QuadView;
+import net.vulkanmod.render.chunk.build.frapi.helper.NormalHelper;
+import net.vulkanmod.render.chunk.cull.QuadFacing;
+import net.vulkanmod.render.model.quad.ModelQuadView;
 import net.vulkanmod.render.model.quad.ModelQuadFlags;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,16 +17,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import static net.vulkanmod.render.model.quad.ModelQuad.VERTEX_SIZE;
 
 @Mixin(BakedQuad.class)
-public class BakedQuadM implements QuadView {
+public class BakedQuadM implements ModelQuadView {
 
     @Shadow @Final protected int[] vertices;
     @Shadow @Final protected Direction direction;
     @Shadow @Final protected int tintIndex;
+
     private int flags;
+    private int normal;
+    private QuadFacing facing;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void onInit(int[] vertices, int tintIndex, Direction direction, TextureAtlasSprite textureAtlasSprite, boolean shade, CallbackInfo ci) {
-        this.flags = ModelQuadFlags.getQuadFlags(vertices, direction);
+    private void onInit(int[] vertices, int tintIndex, Direction face, TextureAtlasSprite textureAtlasSprite, boolean shade, CallbackInfo ci) {
+        this.flags = ModelQuadFlags.getQuadFlags(this, face);
+
+        if (face != null) {
+            this.facing = QuadFacing.fromDirection(face);
+            this.normal = NormalHelper.packedNormalFromDirection(face);
+        } else {
+            int packedNormal = NormalHelper.computePackedNormal(this);
+            this.facing = QuadFacing.fromNormal(packedNormal);
+            this.normal = packedNormal;
+        }
     }
 
     @Override
@@ -68,8 +82,23 @@ public class BakedQuadM implements QuadView {
     }
 
     @Override
+    public Direction lightFace() {
+        return this.direction;
+    }
+
+    @Override
     public Direction getFacingDirection() {
         return this.direction;
+    }
+
+    @Override
+    public QuadFacing getQuadFacing() {
+        return this.facing;
+    }
+
+    @Override
+    public int getNormal() {
+        return this.normal;
     }
 
     @Override

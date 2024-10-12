@@ -12,6 +12,8 @@ public class ChunkAreaManager {
     public static final int WIDTH = 8;
     public static final int HEIGHT = 8;
 
+    public static final int AREA_SIZE = WIDTH * WIDTH * HEIGHT;
+
     public static final int AREA_SH_XZ = Util.flooredLog(WIDTH);
     public static final int AREA_SH_Y = Util.flooredLog(HEIGHT);
 

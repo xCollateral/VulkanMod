@@ -1,17 +1,14 @@
-package net.vulkanmod.render.chunk.build;
+package net.vulkanmod.render.chunk.build.color;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.render.chunk.build.biome.BoxBlur;
 
 import java.util.Arrays;
-import java.util.function.BiFunction;
 
 public class TintCache {
     private static final int SECTION_WIDTH = 16;
@@ -78,15 +75,10 @@ public class TintCache {
         BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
         int absY = (secY << 4) + y;
 
-        Biome tB = level.getBiome(blockPos.set(minX, absY, minZ)).value();
-        boolean mixed = false;
         for (int absZ = minZ; absZ < maxZ ; absZ++) {
             for (int absX = minX; absX < maxX ; absX++) {
                 blockPos.set(absX, absY, absZ);
                 Biome biome = level.getBiome(blockPos).value();
-
-                if (biome != tB)
-                    mixed = true;
 
                 final int idx = (absX - minX) + (absZ - minZ) * totalWidth;
                 layer.grass[idx] = biome.getGrassColor(absX, absZ);
@@ -95,13 +87,27 @@ public class TintCache {
             }
         }
 
-        if(mixed && blendRadius > 0) {
-            BoxBlur.blur(layer.grass, temp, SECTION_WIDTH, blendRadius);
-            BoxBlur.blur(layer.foliage, temp, SECTION_WIDTH, blendRadius);
-            BoxBlur.blur(layer.water, temp, SECTION_WIDTH, blendRadius);
+        if (blendRadius > 0) {
+            this.applyBlur(layer.grass);
+            this.applyBlur(layer.foliage);
+            this.applyBlur(layer.water);
         }
 
         layer.invalidated = false;
+    }
+
+    private void applyBlur(int[] buffer) {
+        int value = buffer[0];
+        boolean needsBlur = false;
+        for (int i = 1; i < buffer.length; ++i) {
+            if (value != buffer[i]) {
+                needsBlur = true;
+                break;
+            }
+        }
+
+        if (needsBlur)
+            BoxBlur.blur(buffer, temp, SECTION_WIDTH, blendRadius);
     }
 
     static class Layer {
@@ -123,11 +129,11 @@ public class TintCache {
         }
 
         public int[] getValues(ColorResolver colorResolver) {
-            if(colorResolver == BiomeColors.GRASS_COLOR_RESOLVER)
+            if (colorResolver == BiomeColors.GRASS_COLOR_RESOLVER)
                 return grass;
-            else if(colorResolver == BiomeColors.FOLIAGE_COLOR_RESOLVER)
+            else if (colorResolver == BiomeColors.FOLIAGE_COLOR_RESOLVER)
                 return foliage;
-            else if(colorResolver == BiomeColors.WATER_COLOR_RESOLVER)
+            else if (colorResolver == BiomeColors.WATER_COLOR_RESOLVER)
                 return water;
 
             throw new IllegalArgumentException("Unexpected resolver: " + colorResolver.toString());

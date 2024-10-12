@@ -4,7 +4,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.vulkanmod.render.chunk.util.SimpleDirection;
-import net.vulkanmod.render.model.quad.QuadView;
+import net.vulkanmod.render.model.quad.ModelQuadView;
 import net.vulkanmod.render.chunk.build.light.data.LightDataAccess;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
@@ -29,7 +29,7 @@ public class FlatLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(QuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
         int lightmap;
 
         // To match vanilla behavior, use the cull face if it exists/is available

@@ -2,7 +2,6 @@ package net.vulkanmod.render.chunk.build.task;
 
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.build.RenderRegion;
-import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 
 import java.util.concurrent.atomic.AtomicBoolean;

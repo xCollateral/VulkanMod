@@ -99,7 +99,7 @@ public class TerrainBuilder {
     }
 
     public void setupQuadSortingPoints() {
-        TerrainBufferBuilder bufferBuilder = bufferBuilders[QuadFacing.NONE.ordinal()];
+        TerrainBufferBuilder bufferBuilder = bufferBuilders[QuadFacing.UNDEFINED.ordinal()];
         long bufferPtr = bufferBuilder.getPtr();
         int vertexCount = bufferBuilder.getVertices();
 
@@ -114,11 +114,9 @@ public class TerrainBuilder {
         int vertexCount = this.quadSorter.getVertexCount();
 
         int indexCount = vertexCount / 4 * 6;
-//        int vertexBufferSize = !this.indexOnly ? vertexCount * this.format.getVertexSize() : 0;
 
         VertexFormat.IndexType indexType = VertexFormat.IndexType.least(indexCount);
         boolean sequentialIndexing;
-//        int size;
 
         // TODO sorting
         if (this.needsSorting) {
@@ -128,27 +126,15 @@ public class TerrainBuilder {
             this.quadSorter.putSortedQuadIndices(this, indexType);
 
             sequentialIndexing = false;
-//            this.nextElementByte += indexBufferSize;
-//            size = vertexBufferSize + indexBufferSize;
         } else {
             sequentialIndexing = true;
-//            size = vertexBufferSize;
         }
 
-//        this.indexBuffer.limit(this.indexCount * indexType.bytes);
-
-//        int ptr = this.renderedBufferPointer;
-//        this.renderedBufferPointer += size;
-//        ++this.renderedBufferCount;
-
         return new DrawState(this.format.getVertexSize(), indexCount, indexType, this.indexOnly, sequentialIndexing);
-//        return new RenderedBuffer(ptr, drawState);
     }
 
     // TODO hardcoded index type size
     public ByteBuffer getIndexBuffer() {
-        TerrainBufferBuilder bufferBuilder = this.bufferBuilders[QuadFacing.NONE.ordinal()];
-//        int indexCount = bufferBuilder.getVertices() * 6 / 4;
         int indexCount = this.quadSorter.getVertexCount() * 6 / 4;
 
         return MemoryUtil.memByteBuffer(this.indexBufferPtr, indexCount * 2);
@@ -162,7 +148,6 @@ public class TerrainBuilder {
 
     public void reset() {
         this.building = false;
-//        this.quadSorter.reset();
 
         this.indexOnly = false;
         this.needsSorting = false;
@@ -176,22 +161,8 @@ public class TerrainBuilder {
         }
     }
 
-//    public void vertex(float x, float y, float z, int color, float u, float v, int light, int packedNormal) {
-//        final long ptr = this.bufferPtr + this.nextElementByte;
-//        this.vertexBuilder.vertex(ptr, x, y, z, color, u, v, light, packedNormal);
-//        this.endVertex();
-//    }
-
     public void setBlockAttributes(BlockState blockState) {
     }
-
-//    public long getPtr() {
-//        return this.bufferPtr + this.nextElementByte;
-//    }
-//
-//    public int getVertexCount() {
-//        return vertexCount;
-//    }
 
     public record DrawState(int vertexSize, int indexCount, VertexFormat.IndexType indexType,
                             boolean indexOnly, boolean sequentialIndex) {

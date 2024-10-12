@@ -2,8 +2,6 @@ package net.vulkanmod.render.model.quad;
 
 import net.minecraft.core.Direction;
 
-import static net.vulkanmod.render.model.quad.ModelQuad.VERTEX_SIZE;
-
 public class ModelQuadFlags {
     /**
      * Indicates that the quad does not fully cover the given face for the model.
@@ -25,7 +23,7 @@ public class ModelQuadFlags {
         return (flags & mask) != 0;
     }
 
-    public static int getQuadFlags(int[] vertices, Direction face) {
+    public static int getQuadFlags(ModelQuadView quad, Direction face) {
         float minX = 32.0F;
         float minY = 32.0F;
         float minZ = 32.0F;
@@ -35,9 +33,9 @@ public class ModelQuadFlags {
         float maxZ = -32.0F;
 
         for (int i = 0; i < 4; ++i) {
-            float x = Float.intBitsToFloat(vertices[i * VERTEX_SIZE]);
-            float y = Float.intBitsToFloat(vertices[i * VERTEX_SIZE + 1]);
-            float z = Float.intBitsToFloat(vertices[i * VERTEX_SIZE + 2]);
+            float x = quad.getX(i);
+            float y = quad.getY(i);
+            float z = quad.getZ(i);
 
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);

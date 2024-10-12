@@ -23,7 +23,6 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	// Needed in order to load mod namespace
 	ext.includeModule = { name ->
 		var module = fabricApi.module(name, project.fabric_version)
 		modImplementation(module)
@@ -32,8 +31,9 @@ dependencies {
 
 	includeModule("fabric-api-base")
 	includeModule("fabric-resource-loader-v0")
-	includeModule("fabric-rendering-fluids-v1")
 	includeModule("fabric-rendering-v1")
+	includeModule("fabric-renderer-api-v1")
+	includeModule("fabric-rendering-fluids-v1")
 }
 
 project.ext.lwjglVersion = "3.3.3"

@@ -2,7 +2,7 @@ package net.vulkanmod.render.chunk.build.light;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.vulkanmod.render.model.quad.QuadView;
+import net.vulkanmod.render.model.quad.ModelQuadView;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 
 /**
@@ -19,5 +19,5 @@ public interface LightPipeline {
      * @param lightFace The light face of the quad
      * @param shade True if the block is shaded by ambient occlusion
      */
-    void calculate(QuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade);
+    void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade);
 }

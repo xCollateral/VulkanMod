@@ -1,8 +1,9 @@
 package net.vulkanmod.render.model.quad;
 
 import net.minecraft.core.Direction;
+import net.vulkanmod.render.chunk.cull.QuadFacing;
 
-public interface QuadView {
+public interface ModelQuadView {
 
     int getFlags();
 
@@ -21,6 +22,12 @@ public interface QuadView {
     int getColorIndex();
 
     Direction getFacingDirection();
+
+    Direction lightFace();
+
+    QuadFacing getQuadFacing();
+
+    int getNormal();
 
     default boolean isTinted() {
         return this.getColorIndex() != -1;

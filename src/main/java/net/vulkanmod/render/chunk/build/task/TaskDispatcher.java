@@ -1,4 +1,4 @@
-package net.vulkanmod.render.chunk.build;
+package net.vulkanmod.render.chunk.build.task;
 
 import com.google.common.collect.Queues;
 import net.vulkanmod.render.chunk.ChunkArea;
@@ -6,8 +6,7 @@ import net.vulkanmod.render.chunk.ChunkAreaManager;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
-import net.vulkanmod.render.chunk.build.task.ChunkTask;
-import net.vulkanmod.render.chunk.build.task.CompileResult;
+import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.build.thread.ThreadBuilderPack;
 import net.vulkanmod.render.chunk.build.thread.BuilderResources;
 import net.vulkanmod.render.vertex.TerrainRenderType;

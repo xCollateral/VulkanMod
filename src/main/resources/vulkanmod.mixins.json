@@ -47,11 +47,17 @@
     "render.RenderSystemMixin",
     "render.RenderTypeM",
     "render.ShaderInstanceM",
+    "render.block.BakedQuadM",
     "render.clouds.LevelRendererM",
     "render.entity.EntityRendererM",
     "render.entity.LevelRendererM",
     "render.entity.model.ModelPartCubeM",
     "render.entity.model.ModelPartM",
+    "render.frapi.fluid.FluidRenderingImplMixin",
+    "render.frapi.BakedModelM",
+    "render.frapi.ItemRendererAccessor",
+    "render.frapi.ItemRendererMixin",
+    "render.frapi.ModelBlockRendererM",
     "render.particle.SingleQuadParticleM",
     "render.target.MainTargetMixin",
     "render.target.RenderTargetMixin",
@@ -88,8 +94,6 @@
 
     "compatibility.PostChainM",
     "compatibility.PostPassM",
-
-    "render.block.BakedQuadM",
 
     "voxel.VoxelShapeMixin"
   ],

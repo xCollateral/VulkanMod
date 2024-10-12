@@ -6,7 +6,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
 import net.vulkanmod.interfaces.ModelPartCubeMixed;
 import net.vulkanmod.render.model.CubeModel;
-import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.render.vertex.format.I32_SNorm;
 import net.vulkanmod.vulkan.util.ColorUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -52,7 +52,7 @@ public abstract class ModelPartM {
                     matrix3f.transform(this.normal.set(polygon.normal));
                     this.normal.normalize();
 
-                    int packedNormal = VertexUtil.packNormal(normal.x(), normal.y(), normal.z());
+                    int packedNormal = I32_SNorm.packNormal(normal.x(), normal.y(), normal.z());
 
                     ModelPart.Vertex[] vertices = polygon.vertices;
 

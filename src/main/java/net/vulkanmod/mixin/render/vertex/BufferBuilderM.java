@@ -2,7 +2,7 @@ package net.vulkanmod.mixin.render.vertex;
 
 import com.mojang.blaze3d.vertex.*;
 import net.vulkanmod.interfaces.ExtendedVertexBuilder;
-import net.vulkanmod.render.vertex.VertexUtil;
+import net.vulkanmod.render.vertex.format.I32_SNorm;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -143,7 +143,7 @@ public abstract class BufferBuilderM
 
             MemoryUtil.memPutInt(ptr + i, light);
 
-            int temp = VertexUtil.packNormal(normalX, normalY, normalZ);
+            int temp = I32_SNorm.packNormal(normalX, normalY, normalZ);
             MemoryUtil.memPutInt(ptr + i + 4, temp);
         } else {
             VertexConsumer.super.addVertex(x, y, z, color, u, v, overlay, light, normalX, normalY, normalZ);

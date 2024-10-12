@@ -1,6 +1,6 @@
-package net.vulkanmod.render.chunk.build.biome;
+package net.vulkanmod.render.chunk.build.color;
 
-public class BoxBlur {
+public abstract class BoxBlur {
 
     public static void blur(int[] buffer, int[] temp, int width, int filterRadius) {
         horizontalBlur(buffer, temp, 0, width, filterRadius);
