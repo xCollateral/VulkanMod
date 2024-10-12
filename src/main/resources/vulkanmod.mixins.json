@@ -15,7 +15,7 @@
     "chunk.DirectionMixin",
     "chunk.FrustumMixin",
     "chunk.LevelRendererMixin",
-    "chunk.RenderBuffersM",
+    "chunk.SectionBufferBuilderPoolM",
     "chunk.SectionRenderDispatcherM",
     "chunk.ViewAreaM",
     "chunk.VisibilitySetMixin",
