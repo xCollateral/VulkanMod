@@ -2,20 +2,22 @@ package net.vulkanmod.render.chunk;
 
 import net.minecraft.util.Mth;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
+import net.vulkanmod.render.chunk.frustum.FrustumOctree;
+import net.vulkanmod.render.chunk.frustum.VFrustum;
 import net.vulkanmod.render.chunk.util.CircularIntList;
 import net.vulkanmod.render.chunk.util.Util;
 import org.joml.Vector3i;
 
 public class ChunkAreaManager {
-    static final int WIDTH = 8;
-    static final int HEIGHT = 8;
+    public static final int WIDTH = 8;
+    public static final int HEIGHT = 8;
 
-    static final int AREA_SH_XZ = Util.flooredLog(WIDTH);
-    static final int AREA_SH_Y = Util.flooredLog(HEIGHT);
+    public static final int AREA_SH_XZ = Util.flooredLog(WIDTH);
+    public static final int AREA_SH_Y = Util.flooredLog(HEIGHT);
 
-    static final int SEC_SH = 4;
-    static final int BLOCK_TO_AREA_SH_XZ = AREA_SH_XZ + SEC_SH;
-    static final int BLOCK_TO_AREA_SH_Y = AREA_SH_Y + SEC_SH;
+    public static final int SEC_SH = 4;
+    public static final int BLOCK_TO_AREA_SH_XZ = AREA_SH_XZ + SEC_SH;
+    public static final int BLOCK_TO_AREA_SH_Y = AREA_SH_Y + SEC_SH;
 
     public final int size;
     final int sectionGridWidth;
@@ -45,12 +47,12 @@ public class ChunkAreaManager {
         this.size = xzSize * ySize * xzSize;
         this.chunkAreasArr = new ChunkArea[size];
 
-        for (int j = 0; j < this.xzSize; ++j) {
-            for (int k = 0; k < this.ySize; ++k) {
-                for (int l = 0; l < this.xzSize; ++l) {
-                    int i1 = this.getAreaIndex(j, k, l);
-                    Vector3i vector3i = new Vector3i(j << BLOCK_TO_AREA_SH_XZ, k << BLOCK_TO_AREA_SH_Y, l << BLOCK_TO_AREA_SH_XZ);
-                    this.chunkAreasArr[i1] = new ChunkArea(i1, vector3i, minHeight);
+        for (int z = 0; z < this.xzSize; ++z) {
+            for (int y = 0; y < this.ySize; ++y) {
+                for (int x = 0; x < this.xzSize; ++x) {
+                    int idx = this.getAreaIndex(x, y, z);
+                    Vector3i origin = new Vector3i(x << BLOCK_TO_AREA_SH_XZ, y << BLOCK_TO_AREA_SH_Y, z << BLOCK_TO_AREA_SH_XZ);
+                    this.chunkAreasArr[idx] = new ChunkArea(idx, origin, minHeight);
                 }
             }
         }
@@ -175,11 +177,12 @@ public class ChunkAreaManager {
         return chunkArea;
     }
 
-    public void updateFrustumVisibility(VFrustum frustum) {
+    public ChunkArea getChunkArea(int idx) {
+        return idx >= 0 && idx < chunkAreasArr.length ? this.chunkAreasArr[idx] : null;
+    }
 
-        for (ChunkArea chunkArea : this.chunkAreasArr) {
-            chunkArea.updateFrustum(frustum);
-        }
+    public void updateFrustumVisibility(VFrustum frustum) {
+        FrustumOctree.updateFrustumVisibility(frustum, this.chunkAreasArr);
     }
 
     public void resetQueues() {

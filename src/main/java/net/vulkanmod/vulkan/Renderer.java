@@ -9,7 +9,7 @@ import net.vulkanmod.mixin.window.WindowAccessor;
 import net.vulkanmod.render.PipelineManager;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.chunk.buffer.UploadManager;
-import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.Framebuffer;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
@@ -23,6 +23,7 @@ import net.vulkanmod.vulkan.shader.Uniforms;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
+import net.vulkanmod.vulkan.util.VkResult;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -44,7 +45,6 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Renderer {
-    public static boolean recomp;
     private static Renderer INSTANCE;
 
     private static VkDevice device;
@@ -143,8 +143,9 @@ public class Renderer {
 
             PointerBuffer pCommandBuffers = stack.mallocPointer(framesNum);
 
-            if (vkAllocateCommandBuffers(device, allocInfo, pCommandBuffers) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to allocate command buffers");
+            int vkResult = vkAllocateCommandBuffers(device, allocInfo, pCommandBuffers);
+            if (vkResult != VK_SUCCESS) {
+                throw new RuntimeException("Failed to allocate command buffers: %s".formatted(VkResult.decode(vkResult)));
             }
 
             for (int i = 0; i < framesNum; i++) {
@@ -177,7 +178,7 @@ public class Renderer {
                         || vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS
                         || vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
 
-                    throw new RuntimeException("Failed to create synchronization objects for the frame " + i);
+                    throw new RuntimeException("Failed to create synchronization objects for the frame: " + i);
                 }
 
                 imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
@@ -190,7 +191,7 @@ public class Renderer {
     }
 
     public void beginFrame() {
-        Profiler2 p = Profiler2.getMainProfiler();
+        Profiler p = Profiler.getMainProfiler();
         p.pop();
         p.push("Frame_fence");
 
@@ -223,7 +224,6 @@ public class Renderer {
 
         currentCmdBuffer = commandBuffers.get(currentFrame);
         vkResetCommandBuffer(currentCmdBuffer, 0);
-        recordingCmds = true;
 
         try (MemoryStack stack = stackPush()) {
 
@@ -232,13 +232,14 @@ public class Renderer {
             int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
-            if (vkResult == VK_SUBOPTIMAL_KHR) {
+            if (vkResult == VK_SUBOPTIMAL_KHR || vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainUpdate) {
                 swapChainUpdate = true;
-            } else if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || swapChainUpdate) {
-                swapChainUpdate = true;
+                skipRendering = true;
+                beginFrame();
+
                 return;
             } else if (vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image: " + vkResult);
+                throw new RuntimeException("Cannot acquire next swap chain image: %s".formatted(VkResult.decode(vkResult)));
             }
 
             imageIndex = pImageIndex.get(0);
@@ -249,10 +250,11 @@ public class Renderer {
 
             VkCommandBuffer commandBuffer = currentCmdBuffer;
 
-            int err = vkBeginCommandBuffer(commandBuffer, beginInfo);
-            if (err != VK_SUCCESS) {
-                throw new RuntimeException("Failed to begin recording command buffer:" + err);
+            vkResult = vkBeginCommandBuffer(commandBuffer, beginInfo);
+            if (vkResult != VK_SUCCESS) {
+                throw new RuntimeException("Failed to begin recording command buffer: %s".formatted(VkResult.decode(vkResult)));
             }
+            recordingCmds = true;
 
             mainPass.begin(commandBuffer, stack);
 
@@ -268,7 +270,7 @@ public class Renderer {
         if (skipRendering || !recordingCmds)
             return;
 
-        Profiler2 p = Profiler2.getMainProfiler();
+        Profiler p = Profiler.getMainProfiler();
         p.push("End_rendering");
 
         mainPass.end(currentCmdBuffer);
@@ -285,7 +287,6 @@ public class Renderer {
             return;
 
         try (MemoryStack stack = stackPush()) {
-
             int vkResult;
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
@@ -299,13 +300,13 @@ public class Renderer {
 
             submitInfo.pCommandBuffers(stack.pointers(currentCmdBuffer));
 
-            vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, inFlightFences.get(currentFrame));
 
             Synchronization.INSTANCE.waitFences();
 
             if ((vkResult = vkQueueSubmit(DeviceManager.getGraphicsQueue().queue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, stack.longs(inFlightFences.get(currentFrame)));
-                throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
+                vkResetFences(device, inFlightFences.get(currentFrame));
+                throw new RuntimeException("Failed to submit draw command buffer: %s".formatted(VkResult.decode(vkResult)));
             }
 
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
@@ -324,7 +325,7 @@ public class Renderer {
                 swapChainUpdate = true;
                 return;
             } else if (vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Failed to present swap chain image");
+                throw new RuntimeException("Failed to present rendered frame: %s".formatted(VkResult.decode(vkResult)));
             }
 
             currentFrame = (currentFrame + 1) % framesNum;
@@ -367,7 +368,7 @@ public class Renderer {
     }
 
     public void preInitFrame() {
-        Profiler2 p = Profiler2.getMainProfiler();
+        Profiler p = Profiler.getMainProfiler();
         p.pop();
         p.round();
         p.push("Frame_ops");
@@ -385,7 +386,6 @@ public class Renderer {
 
         WorldRenderer.getInstance().uploadSections();
         UploadManager.INSTANCE.submitUploads();
-        UploadManager.INSTANCE.waitUploads();
     }
 
     public void addUsedPipeline(Pipeline pipeline) {
@@ -421,6 +421,7 @@ public class Renderer {
         }
     }
 
+    @SuppressWarnings("UnreachableCode")
     private void recreateSwapChain() {
         Synchronization.INSTANCE.waitFences();
         Vulkan.waitIdle();
@@ -437,7 +438,6 @@ public class Renderer {
 
         if (framesNum != newFramesNum) {
             UploadManager.INSTANCE.submitUploads();
-            UploadManager.INSTANCE.waitUploads();
 
             framesNum = newFramesNum;
             MemoryManager.createInstance(newFramesNum);
@@ -559,7 +559,7 @@ public class Renderer {
             colorValue.color().float32(VRenderSystem.clearColor);
 
             VkClearValue depthValue = VkClearValue.calloc(stack);
-            depthValue.depthStencil().set(VRenderSystem.clearDepth, 0); //Use fast depth clears if possible
+            depthValue.depthStencil().set(VRenderSystem.clearDepthValue, 0); //Use fast depth clears if possible
 
             int attachmentsCount = v == (GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT) ? 2 : 1;
             final VkClearAttachment.Buffer pAttachments = VkClearAttachment.malloc(attachmentsCount, stack);

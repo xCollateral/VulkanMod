@@ -38,16 +38,14 @@ public class Synchronization {
     }
 
     public synchronized void waitFences() {
-
-        if (idx == 0) return;
+        if (idx == 0)
+            return;
 
         VkDevice device = Vulkan.getVkDevice();
 
         fences.limit(idx);
 
-        for (int i = 0; i < idx; i++) {
-            vkWaitForFences(device, fences.get(i), true, VUtil.UINT64_MAX);
-        }
+        vkWaitForFences(device, fences, true, VUtil.UINT64_MAX);
 
         this.commandBuffers.forEach(CommandPool.CommandBuffer::reset);
         this.commandBuffers.clear();

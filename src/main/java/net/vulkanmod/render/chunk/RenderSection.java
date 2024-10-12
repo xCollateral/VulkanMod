@@ -40,15 +40,16 @@ public class RenderSection {
 
     private boolean dirty = true;
     private boolean playerChanged;
-
     private boolean completelyEmpty = true;
+    private boolean containsBlockEntities = false;
+
     public long visibility;
 
     public int xOffset, yOffset, zOffset;
 
     private final DrawBuffers.DrawParameters[] drawParametersArray;
 
-    //Graph-info
+    // Graph-info
     public byte mainDir;
     public byte directions;
     public byte sourceDirs;
@@ -234,10 +235,8 @@ public class RenderSection {
     }
 
     // TODO: sync rebuild
-//    public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
-//        ChunkTask.BuildTask chunkCompileTask = this.createCompileTask(renderRegionCache);
-//        chunkCompileTask.doTask(dispatcher.fixedBuffers);
-//    }
+    public void rebuildChunkSync(TaskDispatcher dispatcher, RenderRegionBuilder renderRegionCache) {
+    }
 
     public BuildTask createCompileTask(RenderRegionBuilder renderRegionCache) {
         boolean flag = this.cancelTasks();
@@ -328,6 +327,10 @@ public class RenderSection {
         this.completelyEmpty = b;
     }
 
+    public void setContainsBlockEntities(boolean b) {
+        this.containsBlockEntities = b;
+    }
+
     public byte getDirections() {
         return directions;
     }
@@ -340,8 +343,8 @@ public class RenderSection {
         return this.completelyEmpty;
     }
 
-    public boolean hasXYNeighbours() {
-        return true; //checks if chunks exist in level
+    public boolean containsBlockEntities() {
+        return this.containsBlockEntities;
     }
 
     public void updateGlobalBlockEntities(Collection<BlockEntity> fullSet) {

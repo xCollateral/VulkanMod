@@ -48,6 +48,7 @@ public class Uniform {
     public static Uniform createField(Info info) {
         return switch (info.type) {
             case "mat4", "vec3", "vec4", "vec2" -> new Uniform(info);
+            case "mat3" -> new Mat3(info);
             case "float" -> new Vec1f(info);
             case "int" -> new Vec1i(info);
             default -> throw new RuntimeException("not admitted type: " + info.type);

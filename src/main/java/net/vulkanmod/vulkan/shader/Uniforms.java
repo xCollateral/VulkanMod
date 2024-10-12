@@ -35,6 +35,7 @@ public class Uniforms {
         vec1f_uniformMap.put("FogEnd", RenderSystem::getShaderFogEnd);
         vec1f_uniformMap.put("LineWidth", RenderSystem::getShaderLineWidth);
         vec1f_uniformMap.put("GameTime", RenderSystem::getShaderGameTime);
+        vec1f_uniformMap.put("GlintAlpha", RenderSystem::getShaderGlintAlpha);
         vec1f_uniformMap.put("AlphaCutout", () -> VRenderSystem.alphaCutout);
 
         //Vec2

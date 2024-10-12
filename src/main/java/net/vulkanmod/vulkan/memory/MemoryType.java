@@ -1,21 +1,26 @@
 package net.vulkanmod.vulkan.memory;
 
+import org.lwjgl.vulkan.VkMemoryHeap;
+import org.lwjgl.vulkan.VkMemoryType;
+
 import java.nio.ByteBuffer;
 
 public abstract class MemoryType {
-    protected Type type;
+    final Type type;
+    public final VkMemoryType vkMemoryType;
+    public final VkMemoryHeap vkMemoryHeap;
+
+    MemoryType(Type type, VkMemoryType vkMemoryType, VkMemoryHeap vkMemoryHeap) {
+        this.type = type;
+        this.vkMemoryType = vkMemoryType;
+        this.vkMemoryHeap = vkMemoryHeap;
+    }
 
     abstract void createBuffer(Buffer buffer, int size);
+
     abstract void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
 
-
-//    abstract void copyToBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
     abstract void copyFromBuffer(Buffer buffer, long bufferSize, ByteBuffer byteBuffer);
-
-    /**
-     * Replace data from byte 0
-     */
-    abstract void uploadBuffer(Buffer buffer, ByteBuffer byteBuffer);
 
     abstract boolean mappable();
 

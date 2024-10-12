@@ -11,30 +11,30 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
-import net.vulkanmod.render.chunk.RenderSection;
-import net.vulkanmod.render.chunk.SectionGrid;
-import net.vulkanmod.render.chunk.VFrustum;
-import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.chunk.*;
 import net.vulkanmod.render.chunk.build.RenderRegionBuilder;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
+import net.vulkanmod.render.chunk.frustum.VFrustum;
 import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
-import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.render.profiling.Profiler;
 import org.joml.FrustumIntersection;
 
 import java.util.List;
 
 public class SectionGraph {
     Minecraft minecraft;
-    private Level level;
+    private final Level level;
 
-    private SectionGrid sectionGrid;
+    private final SectionGrid sectionGrid;
+    private final ChunkAreaManager chunkAreaManager;
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>();
     private AreaSetQueue chunkAreaQueue;
     private short lastFrame = 0;
 
-    private ResettableQueue<RenderSection> rebuildQueue = new ResettableQueue<>();
+    private final ResettableQueue<RenderSection> blockEntitiesSections = new ResettableQueue<>();
+    private final ResettableQueue<RenderSection> rebuildQueue = new ResettableQueue<>();
 
     private VFrustum frustum;
 
@@ -45,6 +45,7 @@ public class SectionGraph {
     public SectionGraph(Level level, SectionGrid sectionGrid, TaskDispatcher taskDispatcher) {
         this.level = level;
         this.sectionGrid = sectionGrid;
+        this.chunkAreaManager = sectionGrid.getChunkAreaManager();
         this.taskDispatcher = taskDispatcher;
 
         this.chunkAreaQueue = new AreaSetQueue(sectionGrid.getChunkAreaManager().size);
@@ -53,7 +54,7 @@ public class SectionGraph {
     }
 
     public void update(Camera camera, Frustum frustum, boolean spectator) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
+        Profiler profiler = Profiler.getMainProfiler();
 
         BlockPos blockpos = camera.getBlockPosition();
 
@@ -154,6 +155,7 @@ public class SectionGraph {
         this.chunkAreaQueue.clear();
         this.sectionGrid.getChunkAreaManager().resetQueues();
         this.sectionQueue.clear();
+        this.blockEntitiesSections.clear();
         this.rebuildQueue.clear();
     }
 
@@ -173,6 +175,11 @@ public class SectionGraph {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
+            }
+
+            if (renderSection.containsBlockEntities()) {
+                this.blockEntitiesSections.ensureCapacity(1);
+                this.blockEntitiesSections.add(renderSection);
             }
 
             if (renderSection.isDirty()) {
@@ -201,9 +208,8 @@ public class SectionGraph {
         if (frustumRes > FrustumIntersection.INTERSECT) {
             return true;
         } else if (frustumRes == FrustumIntersection.INTERSECT) {
-            if (!frustum.testFrustum(renderSection.xOffset, renderSection.yOffset, renderSection.zOffset,
-                    renderSection.xOffset + 16, renderSection.yOffset + 16, renderSection.zOffset + 16))
-                return true;
+            return !frustum.testFrustum(renderSection.xOffset, renderSection.yOffset, renderSection.zOffset,
+                    renderSection.xOffset + 16, renderSection.yOffset + 16, renderSection.zOffset + 16);
         }
         return false;
     }
@@ -244,7 +250,8 @@ public class SectionGraph {
         while (this.sectionQueue.hasNext()) {
             RenderSection renderSection = this.sectionQueue.poll();
 
-            if (notInFrustum(renderSection)) continue;
+            if (notInFrustum(renderSection))
+                continue;
 
             if (!renderSection.isCompletelyEmpty()) {
                 renderSection.getChunkArea().sectionQueue.add(renderSection);
@@ -292,6 +299,10 @@ public class SectionGraph {
 
     public ResettableQueue<RenderSection> getSectionQueue() {
         return this.sectionQueue;
+    }
+
+    public ResettableQueue<RenderSection> getBlockEntitiesSections() {
+        return this.blockEntitiesSections;
     }
 
     public short getLastFrame() {

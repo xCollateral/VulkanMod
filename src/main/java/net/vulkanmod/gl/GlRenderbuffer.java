@@ -1,8 +1,8 @@
 package net.vulkanmod.gl;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.ImageUtil;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.opengl.GL11;
@@ -30,14 +30,14 @@ public class GlRenderbuffer {
         boundId = id;
         bound = map.get(id);
 
-        if(id <= 0)
+        if (id <= 0)
             return;
 
-        if(bound == null)
+        if (bound == null)
             throw new NullPointerException("bound texture is null");
 
         VulkanImage vulkanImage = bound.vulkanImage;
-        if(vulkanImage != null)
+        if (vulkanImage != null)
             VTextureSelector.bindTexture(vulkanImage);
     }
 
@@ -50,7 +50,7 @@ public class GlRenderbuffer {
     }
 
     public static void renderbufferStorage(int target, int internalFormat, int width, int height) {
-        if(width == 0 || height == 0)
+        if (width == 0 || height == 0)
             return;
 
         bound.internalFormat = internalFormat;
@@ -59,7 +59,7 @@ public class GlRenderbuffer {
     }
 
     public static void texParameteri(int target, int pName, int param) {
-        if(target != GL11.GL_TEXTURE_2D)
+        if (target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException();
 
         switch (pName) {
@@ -71,14 +71,15 @@ public class GlRenderbuffer {
             case GL11.GL_TEXTURE_MAG_FILTER -> bound.setMagFilter(param);
             case GL11.GL_TEXTURE_MIN_FILTER -> bound.setMinFilter(param);
 
-            default -> {}
+            default -> {
+            }
         }
 
         //TODO
     }
 
     public static int getTexLevelParameter(int target, int level, int pName) {
-        if(bound == null || target == GL11.GL_TEXTURE_2D)
+        if (bound == null || target == GL11.GL_TEXTURE_2D)
             return -1;
 
         return switch (pName) {
@@ -91,7 +92,7 @@ public class GlRenderbuffer {
     }
 
     public static void generateMipmap(int target) {
-        if(target != GL11.GL_TEXTURE_2D)
+        if (target != GL11.GL_TEXTURE_2D)
             throw new UnsupportedOperationException();
 
         bound.generateMipmaps();
@@ -127,7 +128,7 @@ public class GlRenderbuffer {
                 vulkanImage.width != width || vulkanImage.height != height ||
                 vkFormat != vulkanImage.format;
 
-        if(needsUpdate) {
+        if (needsUpdate) {
             allocateImage(width, height, vkFormat);
             updateSampler();
 
@@ -136,10 +137,10 @@ public class GlRenderbuffer {
     }
 
     void allocateImage(int width, int height, int vkFormat) {
-        if(this.vulkanImage != null)
+        if (this.vulkanImage != null)
             this.vulkanImage.free();
 
-        if(VulkanImage.isDepthFormat(vkFormat))
+        if (VulkanImage.isDepthFormat(vkFormat))
             this.vulkanImage = VulkanImage.createDepthImage(vkFormat,
                     width, height,
                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -155,11 +156,18 @@ public class GlRenderbuffer {
     }
 
     void updateSampler() {
-        if(vulkanImage == null)
+        if (vulkanImage == null)
             return;
 
         byte samplerFlags = magFilter == GL11.GL_LINEAR ? SamplerManager.LINEAR_FILTERING_BIT : 0;
-        samplerFlags |= minFilter == GL11.GL_LINEAR_MIPMAP_LINEAR ? SamplerManager.USE_MIPMAPS_BIT : 0;
+
+        samplerFlags |= switch (minFilter) {
+            case GL11.GL_LINEAR_MIPMAP_LINEAR ->
+                    SamplerManager.USE_MIPMAPS_BIT | SamplerManager.MIPMAP_LINEAR_FILTERING_BIT;
+            case GL11.GL_NEAREST_MIPMAP_NEAREST -> SamplerManager.USE_MIPMAPS_BIT;
+            default -> 0;
+        };
+
         vulkanImage.updateTextureSampler(maxLod, samplerFlags);
     }
 
@@ -167,7 +175,7 @@ public class GlRenderbuffer {
         int width = this.vulkanImage.width;
         int height = this.vulkanImage.height;
 
-        if(internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
+        if (internalFormat == GL11.GL_RGB && vulkanImage.format == VK_FORMAT_R8G8B8A8_UNORM) {
             ByteBuffer RGBA_buffer = GlUtil.RGBtoRGBA_buffer(pixels);
             this.vulkanImage.uploadSubTextureAsync(0, width, height, 0, 0, 0, 0, 0, RGBA_buffer);
             MemoryUtil.memFree(RGBA_buffer);
@@ -182,20 +190,20 @@ public class GlRenderbuffer {
     }
 
     void setMaxLevel(int l) {
-        if(l < 0)
+        if (l < 0)
             throw new IllegalStateException("max level cannot be < 0.");
 
-        if(maxLevel != l) {
+        if (maxLevel != l) {
             maxLevel = l;
             needsUpdate = true;
         }
     }
 
     void setMaxLod(int l) {
-        if(l < 0)
+        if (l < 0)
             throw new IllegalStateException("max level cannot be < 0.");
 
-        if(maxLod != l) {
+        if (maxLod != l) {
             maxLod = l;
             updateSampler();
         }
@@ -203,8 +211,8 @@ public class GlRenderbuffer {
 
     void setMagFilter(int v) {
         switch (v) {
-            case GL11.GL_LINEAR, GL11.GL_NEAREST
-                    -> {}
+            case GL11.GL_LINEAR, GL11.GL_NEAREST -> {
+            }
 
             default -> throw new IllegalArgumentException("illegal mag filter value: " + v);
         }
@@ -216,14 +224,14 @@ public class GlRenderbuffer {
     void setMinFilter(int v) {
         switch (v) {
             case GL11.GL_LINEAR, GL11.GL_NEAREST,
-                    GL11.GL_LINEAR_MIPMAP_LINEAR, GL11.GL_NEAREST_MIPMAP_LINEAR,
-                    GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST
-                    -> {}
+                 GL11.GL_LINEAR_MIPMAP_LINEAR, GL11.GL_NEAREST_MIPMAP_LINEAR,
+                 GL11.GL_LINEAR_MIPMAP_NEAREST, GL11.GL_NEAREST_MIPMAP_NEAREST -> {
+            }
 
             default -> throw new IllegalArgumentException("illegal min filter value: " + v);
         }
 
-        this.magFilter = v;
+        this.minFilter = v;
         updateSampler();
     }
 

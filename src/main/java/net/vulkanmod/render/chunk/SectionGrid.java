@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.vulkanmod.render.chunk.frustum.VFrustum;
 import net.vulkanmod.render.chunk.graph.GraphDirections;
 import net.vulkanmod.render.chunk.util.CircularIntList;
 import org.jetbrains.annotations.Nullable;
@@ -246,8 +247,14 @@ public class SectionGrid {
     }
 
     private void setChunkArea(RenderSection section, int x, int y, int z) {
-        ChunkArea chunkArea = this.chunkAreaManager.getChunkArea(section, x, y, z);
+        ChunkArea oldArea = section.getChunkArea();
 
+        if (oldArea != null) {
+            oldArea.removeSection();
+        }
+
+        ChunkArea chunkArea = this.chunkAreaManager.getChunkArea(section, x, y, z);
+        chunkArea.addSection();
         section.setChunkArea(chunkArea);
     }
 

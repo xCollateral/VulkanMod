@@ -7,6 +7,7 @@ layout(binding = 1) uniform UBO{
     vec4 ColorModulator;
     float FogStart;
     float FogEnd;
+    float GlintAlpha;
 };
 
 layout(location = 0) in float vertexDistance;
@@ -19,6 +20,6 @@ void main() {
     if (color.a < 0.1) {
         discard;
     }
-    float fade = linear_fog_fade(vertexDistance, FogStart, FogEnd);
+    float fade = linear_fog_fade(vertexDistance, FogStart, FogEnd) * GlintAlpha;
     fragColor = vec4(color.rgb * fade, color.a);
 }

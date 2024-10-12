@@ -90,7 +90,7 @@ public class GL11M {
      */
     @Overwrite(remap = false)
     public static void glClearColor(@NativeType("GLfloat") float red, @NativeType("GLfloat") float green, @NativeType("GLfloat") float blue, @NativeType("GLfloat") float alpha) {
-        VRenderSystem.clearColor(red, green, blue, alpha);
+        VRenderSystem.setClearColor(red, green, blue, alpha);
     }
 
     /**

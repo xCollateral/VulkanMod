@@ -14,6 +14,7 @@ import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
@@ -126,6 +127,7 @@ public class VBO {
 
             Renderer renderer = Renderer.getInstance();
             renderer.bindGraphicsPipeline(pipeline);
+            VTextureSelector.bindShaderTextures(pipeline);
             renderer.uploadAndBindUBOs(pipeline);
 
             if (this.indexBuffer != null)

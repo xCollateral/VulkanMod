@@ -16,8 +16,6 @@ public class Drawer {
     private static final int INITIAL_VB_SIZE = 2000000;
     private static final int INITIAL_UB_SIZE = 200000;
 
-    private static final int MAX_QUAD_VERTICES_UINT16 = 65536 * 2 / 3;
-
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
     private static final long pBuffers = MemoryUtil.memAddress0(buffers);
@@ -26,6 +24,7 @@ public class Drawer {
     private int framesNum;
     private VertexBuffer[] vertexBuffers;
     private final AutoIndexBuffer quadsIndexBuffer;
+    private final AutoIndexBuffer quadsIntIndexBuffer;
     private final AutoIndexBuffer linesIndexBuffer;
     private final AutoIndexBuffer debugLineStripIndexBuffer;
     private final AutoIndexBuffer triangleFanIndexBuffer;
@@ -36,7 +35,8 @@ public class Drawer {
 
     public Drawer() {
         // Index buffers
-        this.quadsIndexBuffer = new AutoIndexBuffer(MAX_QUAD_VERTICES_UINT16, AutoIndexBuffer.DrawType.QUADS);
+        this.quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.QUAD_U16_MAX_VERTEX_COUNT, AutoIndexBuffer.DrawType.QUADS);
+        this.quadsIntIndexBuffer = new AutoIndexBuffer(100000, AutoIndexBuffer.DrawType.QUADS);
         this.linesIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.LINES);
         this.debugLineStripIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.DEBUG_LINE_STRIP);
         this.triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
@@ -81,8 +81,10 @@ public class Drawer {
 
         switch (mode) {
             case QUADS -> {
-                autoIndexBuffer = this.quadsIndexBuffer;
                 indexCount = vertexCount * 3 / 2;
+
+                autoIndexBuffer = indexCount > AutoIndexBuffer.U16_MAX_INDEX_COUNT
+                        ? this.quadsIntIndexBuffer : this.quadsIndexBuffer;
             }
             case LINES -> {
                 autoIndexBuffer = this.linesIndexBuffer;
@@ -124,7 +126,7 @@ public class Drawer {
         VUtil.UNSAFE.putLong(pOffsets, vertexBuffer.getOffset());
         nvkCmdBindVertexBuffers(commandBuffer, 0, 1, pBuffers, pOffsets);
 
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+        bindIndexBuffer(commandBuffer, indexBuffer);
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 
@@ -139,7 +141,7 @@ public class Drawer {
     }
 
     public void bindIndexBuffer(VkCommandBuffer commandBuffer, IndexBuffer indexBuffer) {
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), indexBuffer.indexType.type);
     }
 
     public void cleanUpResources() {

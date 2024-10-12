@@ -236,7 +236,7 @@ public class VulkanImage {
     public void updateTextureSampler(boolean blur, boolean clamp, boolean mipmaps) {
         byte flags = blur ? LINEAR_FILTERING_BIT : 0;
         flags |= clamp ? CLAMP_BIT : 0;
-        flags |= mipmaps ? USE_MIPMAPS_BIT : 0;
+        flags |= (byte) (mipmaps ? USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT : 0);
 
         this.updateTextureSampler(flags);
     }
@@ -303,7 +303,7 @@ public class VulkanImage {
                 destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> {
-                dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
                 destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             }
             case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL -> {
@@ -448,7 +448,7 @@ public class VulkanImage {
             this.mipLevels = (byte) n;
 
             if (n > 1)
-                this.samplerFlags |= USE_MIPMAPS_BIT;
+                this.samplerFlags |= USE_MIPMAPS_BIT | MIPMAP_LINEAR_FILTERING_BIT;
 
             return this;
         }

@@ -65,7 +65,6 @@
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",
     "texture.MFontTexture",
-    "texture.MLightTexture",
     "texture.MOverlayTexture",
     "texture.MPlayerSkinTexture",
     "texture.MSimpleTexture",

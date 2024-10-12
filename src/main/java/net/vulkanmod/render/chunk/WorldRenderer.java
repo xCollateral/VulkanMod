@@ -33,7 +33,6 @@ import net.vulkanmod.render.chunk.build.task.ChunkTask;
 import net.vulkanmod.render.chunk.graph.SectionGraph;
 import net.vulkanmod.render.profiling.BuildTimeProfiler;
 import net.vulkanmod.render.profiling.Profiler;
-import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Renderer;
 import net.vulkanmod.vulkan.VRenderSystem;
@@ -42,6 +41,7 @@ import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.GraphicsPipeline;
+import net.vulkanmod.vulkan.texture.VTextureSelector;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
@@ -139,7 +139,7 @@ public class WorldRenderer {
     }
 
     public void setupRenderer(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
+        Profiler profiler = Profiler.getMainProfiler();
         profiler.push("Setup_Renderer");
 
         benchCallback();
@@ -157,18 +157,12 @@ public class WorldRenderer {
         int sectionY = SectionPos.posToSectionCoord(cameraY);
         int sectionZ = SectionPos.posToSectionCoord(cameraZ);
 
-        Profiler p2 = Profiler.getProfiler("camera");
         profiler.push("reposition");
-
         if (this.lastCameraSectionX != sectionX || this.lastCameraSectionY != sectionY || this.lastCameraSectionZ != sectionZ) {
-
-            p2.start();
             this.lastCameraSectionX = sectionX;
             this.lastCameraSectionY = sectionY;
             this.lastCameraSectionZ = sectionZ;
             this.sectionGrid.repositionCamera(cameraX, cameraZ);
-            p2.pushMilestone("end-reposition");
-            p2.round();
         }
         profiler.pop();
 
@@ -214,11 +208,17 @@ public class WorldRenderer {
     public void uploadSections() {
         this.minecraft.getProfiler().push("upload");
 
-        Profiler2 profiler = Profiler2.getMainProfiler();
+        Profiler profiler = Profiler.getMainProfiler();
         profiler.push("Uploads");
 
-        if (this.taskDispatcher.updateSections())
-            this.graphNeedsUpdate = true;
+        try {
+            if (this.taskDispatcher.updateSections())
+                this.graphNeedsUpdate = true;
+        } catch (Exception e) {
+            Initializer.LOGGER.error(e.getMessage());
+            allChanged();
+        }
+
         profiler.pop();
 
         this.minecraft.getProfiler().pop();
@@ -316,6 +316,8 @@ public class WorldRenderer {
         GraphicsPipeline pipeline = PipelineManager.getTerrainShader(terrainRenderType);
         renderer.bindGraphicsPipeline(pipeline);
 
+        VTextureSelector.bindShaderTextures(pipeline);
+
         IndexBuffer indexBuffer = Renderer.getDrawer().getQuadsIndexBuffer().getIndexBuffer();
         Renderer.getDrawer().bindIndexBuffer(Renderer.getCommandBuffer(), indexBuffer);
 
@@ -388,13 +390,13 @@ public class WorldRenderer {
 
     public void renderBlockEntities(PoseStack poseStack, double camX, double camY, double camZ,
                                     Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress, float gameTime) {
-        Profiler2 profiler = Profiler2.getMainProfiler();
+        Profiler profiler = Profiler.getMainProfiler();
         profiler.pop();
-        profiler.push("block-entities");
+        profiler.push("Block-entities");
 
         MultiBufferSource bufferSource = this.renderBuffers.bufferSource();
 
-        for (RenderSection renderSection : this.sectionGraph.getSectionQueue()) {
+        for (RenderSection renderSection : this.sectionGraph.getBlockEntitiesSections()) {
             List<BlockEntity> list = renderSection.getCompiledSection().getBlockEntities();
             if (!list.isEmpty()) {
                 for (BlockEntity blockEntity : list) {

@@ -2,9 +2,8 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.shader.PipelineState;
@@ -21,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 public abstract class VRenderSystem {
+    private static final float DEFAULT_DEPTH_VALUE = 1.0f;
+
     private static long window;
 
     public static boolean depthTest = true;
@@ -37,7 +38,7 @@ public abstract class VRenderSystem {
     public static boolean logicOp = false;
     public static int logicOpFun = 0;
 
-    public static final float clearDepth = 1.0f;
+    public static float clearDepthValue = DEFAULT_DEPTH_VALUE;
     public static FloatBuffer clearColor = MemoryUtil.memCallocFloat(4);
 
     public static MappedBuffer modelViewMatrix = new MappedBuffer(16 * 4);
@@ -153,12 +154,16 @@ public abstract class VRenderSystem {
         return shaderFogColor;
     }
 
-    public static void clearColor(float f1, float f2, float f3, float f4) {
+    public static void setClearColor(float f1, float f2, float f3, float f4) {
         ColorUtil.setRGBA_Buffer(clearColor, f1, f2, f3, f4);
     }
 
-    public static void clear(int v) {
-        Renderer.clearAttachments(v);
+    public static void clear(int mask) {
+        Renderer.clearAttachments(mask);
+    }
+
+    public static void clearDepth(double depth) {
+        clearDepthValue = (float) depth;
     }
 
     // Pipeline state
