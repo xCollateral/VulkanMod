@@ -19,17 +19,21 @@ public class IndexBuffer extends Buffer {
         this.createBuffer(size);
     }
 
-    public void copyBuffer(ByteBuffer buffer) {
-        int size = buffer.remaining();
+    public void copyBuffer(ByteBuffer byteBuffer) {
+        int size = byteBuffer.remaining();
 
         if(size > this.bufferSize - this.usedBytes) {
-            throw new RuntimeException("Trying to write buffer beyond max size.");
+            resizeBuffer((this.bufferSize + size) * 2);
         }
-        else {
-            this.type.copyToBuffer(this, size, buffer);
-            offset = usedBytes;
-            usedBytes += size;
-        }
+
+        this.type.copyToBuffer(this, size, byteBuffer);
+        offset = usedBytes;
+        usedBytes += size;
+    }
+
+    private void resizeBuffer(int newSize) {
+        MemoryManager.getInstance().addToFreeable(this);
+        this.createBuffer(newSize);
     }
 
     public enum IndexType {

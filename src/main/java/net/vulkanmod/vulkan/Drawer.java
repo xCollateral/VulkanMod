@@ -13,7 +13,8 @@ import java.util.Arrays;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
-    private static final int INITIAL_VB_SIZE = 2000000;
+    private static final int INITIAL_VB_SIZE = 4000000;
+    private static final int INITIAL_IB_SIZE = 1000000;
     private static final int INITIAL_UB_SIZE = 200000;
 
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
@@ -67,7 +68,7 @@ public class Drawer {
             );
         }
         this.indexBuffers = new IndexBuffer[framesNum];
-        Arrays.setAll(this.indexBuffers, i -> new IndexBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
+        Arrays.setAll(this.indexBuffers, i -> new IndexBuffer(INITIAL_IB_SIZE, MemoryTypes.HOST_MEM));
 
         if (this.uniformBuffers != null) {
             Arrays.stream(this.uniformBuffers).iterator().forEachRemaining(
