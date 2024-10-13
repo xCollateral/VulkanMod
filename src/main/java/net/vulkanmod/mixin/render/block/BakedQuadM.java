@@ -31,14 +31,9 @@ public class BakedQuadM implements ModelQuadView {
     private void onInit(int[] vertices, int tintIndex, Direction face, TextureAtlasSprite textureAtlasSprite, boolean shade, CallbackInfo ci) {
         this.flags = ModelQuadFlags.getQuadFlags(this, face);
 
-        if (face != null) {
-            this.facing = QuadFacing.fromDirection(face);
-            this.normal = NormalHelper.packedNormalFromDirection(face);
-        } else {
-            int packedNormal = NormalHelper.computePackedNormal(this);
-            this.facing = QuadFacing.fromNormal(packedNormal);
-            this.normal = packedNormal;
-        }
+        int packedNormal = NormalHelper.computePackedNormal(this);
+        this.normal = packedNormal;
+        this.facing = QuadFacing.fromNormal(packedNormal);
     }
 
     @Override

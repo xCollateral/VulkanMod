@@ -73,7 +73,7 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
 		isGeometryInvalid = false;
 		nominalFace = lightFace();
 		NormalHelper.unpackNormal(packedFaceNormal(), faceNormal);
-		facing = QuadFacing.fromDirection(lightFace());
+		facing = QuadFacing.fromNormal(faceNormal);
 	}
 
 	protected void computeGeometry() {
@@ -90,7 +90,7 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
 			// depends on light face
 			data[baseIndex + HEADER_BITS] = EncodingFormat.geometryFlags(data[baseIndex + HEADER_BITS], ModelQuadFlags.getQuadFlags(this, lightFace));
 
-			facing = QuadFacing.fromDirection(lightFace);
+			facing = QuadFacing.fromNormal(faceNormal);
 		}
 	}
 

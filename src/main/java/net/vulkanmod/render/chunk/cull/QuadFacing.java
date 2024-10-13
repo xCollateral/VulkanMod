@@ -3,6 +3,7 @@ package net.vulkanmod.render.chunk.cull;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.vulkanmod.render.vertex.format.I32_SNorm;
+import org.joml.Vector3f;
 
 public enum QuadFacing {
     X_POS,
@@ -32,6 +33,14 @@ public enum QuadFacing {
         final float y = I32_SNorm.unpackY(packedNormal);
         final float z = I32_SNorm.unpackZ(packedNormal);
 
+        return fromNormal(x, y, z);
+    }
+
+    public static QuadFacing fromNormal(Vector3f normal) {
+        return fromNormal(normal.x(), normal.y(), normal.z());
+    }
+
+    public static QuadFacing fromNormal(float x, float y, float z) {
         final float absX = Math.abs(x);
         final float absY = Math.abs(y);
         final float absZ = Math.abs(z);

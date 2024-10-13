@@ -4,6 +4,9 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import net.vulkanmod.render.chunk.cull.QuadFacing;
 
+/**
+ * Only used by FluidRenderer
+ */
 public class ModelQuad implements ModelQuadView {
     public static final int VERTEX_SIZE = 8;
 
