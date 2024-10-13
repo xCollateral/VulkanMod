@@ -35,6 +35,7 @@ dependencies {
 	includeModule("fabric-renderer-api-v1")
 	includeModule("fabric-rendering-fluids-v1")
 	includeModule("fabric-rendering-data-attachment-v1")
+	includeModule("fabric-block-view-api-v2")
 }
 
 project.ext.lwjglVersion = "3.3.3"
