@@ -200,6 +200,7 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
 		ModelQuadView quadView = (ModelQuadView) quad;
 		int normal = quadView.getNormal();
 		data[baseIndex + HEADER_FACE_NORMAL] = normal;
+		NormalHelper.unpackNormalTo(normal, faceNormal);
 
 		Direction lightFace = quadView.lightFace();
 		data[baseIndex + HEADER_BITS] = EncodingFormat.lightFace(data[baseIndex + HEADER_BITS], lightFace);

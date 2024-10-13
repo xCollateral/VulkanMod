@@ -188,4 +188,8 @@ public abstract class NormalHelper {
 
 		return I32_SNorm.packNormal(normal.getX(), normal.getY(), normal.getZ());
 	}
+
+	public static void unpackNormalTo(int packedNormal, Vector3f normal) {
+		normal.set(I32_SNorm.unpackX(packedNormal), I32_SNorm.unpackY(packedNormal), I32_SNorm.unpackZ(packedNormal));
+	}
 }
