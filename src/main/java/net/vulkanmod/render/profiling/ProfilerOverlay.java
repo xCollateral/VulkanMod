@@ -90,7 +90,7 @@ public class ProfilerOverlay {
             if (!Strings.isNullOrEmpty(line)) {
                 int yPosition = xOffset + lineHeight * i;
                 GuiRenderer.drawString(
-                        this.font, Component.literal(line),
+                        Component.literal(line),
                         xOffset, yPosition,
                         textColor, false);
             }
