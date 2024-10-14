@@ -23,6 +23,8 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.function.Consumer;
 
@@ -47,21 +49,6 @@ public abstract class RenderSystemMixin {
     @Shadow @Final private static float[] shaderFogColor;
 
     @Shadow private static @Nullable Thread renderThread;
-
-    /**
-     * @author
-     */
-    @Overwrite
-    public static void _setShaderTexture(int i, ResourceLocation location) {
-        if (i >= 0 && i < shaderTextures.length) {
-            TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-            AbstractTexture abstractTexture = textureManager.getTexture(location);
-            VTextureSelector.bindTexture(i, ((VAbstractTextureI)abstractTexture).getVulkanImage());
-
-            //shaderTextures[i] = abstractTexture.getId();
-        }
-
-    }
 
     /**
      * @author
@@ -176,14 +163,8 @@ public abstract class RenderSystemMixin {
         VRenderSystem.clearDepth(d);
     }
 
-    /**
-     * @author
-     */
-    @Overwrite(remap = false)
-    public static void flipFrame(long window) {
-        org.lwjgl.glfw.GLFW.glfwPollEvents();
-        RenderSystem.replayQueue();
-        Tesselator.getInstance().getBuilder().clear();
+    @Redirect(method = "flipFrame", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSwapBuffers(J)V"), remap = false)
+    private static void removeSwapBuffers(long window) {
     }
 
     /**

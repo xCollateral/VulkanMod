@@ -27,6 +27,6 @@ public class GuiMixin {
             target = "Lnet/minecraft/client/gui/Gui;renderEffects(Lnet/minecraft/client/gui/GuiGraphics;)V", shift = At.Shift.AFTER))
     private void renderProfilerOverlay(GuiGraphics guiGraphics, float f, CallbackInfo ci) {
         if(ProfilerOverlay.shouldRender && !this.debugOverlay.showDebugScreen())
-            ProfilerOverlay.INSTANCE.render(guiGraphics.pose());
+            ProfilerOverlay.INSTANCE.render(guiGraphics);
     }
 }

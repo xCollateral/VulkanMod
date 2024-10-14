@@ -231,6 +231,7 @@ public class VOptionScreen extends Screen {
             this.renderTransparentBackground(guiGraphics);
         } else {
             this.renderDirtBackground(guiGraphics);
+            RenderSystem.enableBlend();
             GuiRenderer.fillGradient(0, 0, this.width, this.height,
                     ColorUtil.ARGB.pack(0.0f, 0.0f, 0.0f, 0.2f), ColorUtil.ARGB.pack(0.0f, 0.0f, 0.0f, 0.3f));
         }

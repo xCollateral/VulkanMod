@@ -1,11 +1,15 @@
 package net.vulkanmod.vulkan.texture;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
 
 import java.nio.ByteBuffer;
 
 public abstract class VTextureSelector {
-    public static final int SIZE = 8;
+    public static final int SIZE = 12;
 
     private static final VulkanImage[] boundTextures = new VulkanImage[SIZE];
 
@@ -20,8 +24,8 @@ public abstract class VTextureSelector {
     }
 
     public static void bindTexture(int i, VulkanImage texture) {
-        if(i < 0 || i > 7) {
-            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", i));
+        if(i < 0 || i >= SIZE) {
+            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, %d]", i, SIZE - 1));
             return;
         }
 
@@ -31,7 +35,7 @@ public abstract class VTextureSelector {
 
     public static void bindImage(int i, VulkanImage texture, int level) {
         if(i < 0 || i > 7) {
-            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, 7]", i));
+            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, %d]", i, SIZE - 1));
             return;
         }
 
@@ -62,6 +66,20 @@ public abstract class VTextureSelector {
         };
     }
 
+    public static void bindShaderTextures(Pipeline pipeline) {
+        var imageDescriptors = pipeline.getImageDescriptors();
+
+        for (ImageDescriptor state : imageDescriptors) {
+            final int shaderTexture = RenderSystem.getShaderTexture(state.imageIdx);
+
+            final GlTexture texture = GlTexture.getTexture(shaderTexture);
+
+            if (texture != null) {
+                VTextureSelector.bindTexture(state.imageIdx, texture.getVulkanImage());
+            }
+        }
+    }
+
     public static VulkanImage getImage(int i) {
         return boundTextures[i];
     }
@@ -75,8 +93,8 @@ public abstract class VTextureSelector {
     }
 
     public static void setActiveTexture(int activeTexture) {
-        if(activeTexture < 0 || activeTexture > 7) {
-            throw new IllegalStateException(String.format("On Texture binding: index %d out of range [0, 7]", activeTexture));
+        if(activeTexture < 0 || activeTexture >= SIZE) {
+            Initializer.LOGGER.error(String.format("On Texture binding: index %d out of range [0, %d]", activeTexture, SIZE - 1));
         }
 
         VTextureSelector.activeTexture = activeTexture;

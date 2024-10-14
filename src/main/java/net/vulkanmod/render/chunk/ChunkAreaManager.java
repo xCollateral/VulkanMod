@@ -177,6 +177,10 @@ public class ChunkAreaManager {
         return chunkArea;
     }
 
+    public ChunkArea getChunkArea(int idx) {
+        return idx >= 0 && idx < chunkAreasArr.length ? this.chunkAreasArr[idx] : null;
+    }
+
     public void updateFrustumVisibility(VFrustum frustum) {
         FrustumOctree.updateFrustumVisibility(frustum, this.chunkAreasArr);
     }

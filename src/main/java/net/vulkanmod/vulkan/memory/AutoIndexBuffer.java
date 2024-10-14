@@ -9,7 +9,7 @@ import java.nio.ShortBuffer;
 
 public class AutoIndexBuffer {
     public static final int U16_MAX_INDEX_COUNT = 65536;
-    public static final int QUAD_U16_MAX_VERTEX_COUNT = U16_MAX_INDEX_COUNT * 2 / 3;
+    public static final int QUAD_U16_MAX_VERTEX_COUNT = U16_MAX_INDEX_COUNT * 3 / 2;
 
     int vertexCount;
     DrawType drawType;
@@ -29,7 +29,7 @@ public class AutoIndexBuffer {
 
         switch (this.drawType) {
             case QUADS -> {
-                if (vertexCount < QUAD_U16_MAX_VERTEX_COUNT)
+                if (vertexCount <= QUAD_U16_MAX_VERTEX_COUNT)
                     buffer = genQuadIndices(vertexCount);
                 else {
                     indexType = IndexBuffer.IndexType.INT;

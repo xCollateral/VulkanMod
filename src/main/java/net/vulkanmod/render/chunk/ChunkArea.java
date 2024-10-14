@@ -11,9 +11,9 @@ import java.util.Arrays;
 
 public class ChunkArea {
     public final int index;
-    final byte[] frustumBuffer = new byte[64];
-
     final Vector3i position;
+    final byte[] frustumBuffer = new byte[64];
+    int sectionsContained = 0;
 
     DrawBuffers drawBuffers;
 
@@ -132,6 +132,18 @@ public class ChunkArea {
 
     public Vector3i getPosition() {
         return this.position;
+    }
+
+    public void addSection() {
+        this.sectionsContained++;
+    }
+
+    public void removeSection() {
+        this.sectionsContained--;
+
+        if (this.sectionsContained == 0) {
+            this.releaseBuffers();
+        }
     }
 
     public void releaseBuffers() {
