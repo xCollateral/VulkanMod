@@ -20,6 +20,7 @@ public class GlTexture {
     private static int ID_COUNTER = 1;
     private static final Int2ReferenceOpenHashMap<GlTexture> map = new Int2ReferenceOpenHashMap<>();
     private static int boundTextureId = 0;
+    private static GlTexture defaultTexture;
     private static GlTexture boundTexture;
     private static int activeTexture = 0;
 
@@ -35,11 +36,26 @@ public class GlTexture {
         return id;
     }
 
+    // Default texture can vary depending on graphic drivers,
+    // but it's usually a square that is either white or black
+    private static GlTexture getDefaultTexture() {
+        if (GlTexture.defaultTexture != null)
+            return GlTexture.defaultTexture;
+        GlTexture defaultTexture = new GlTexture(0);
+        defaultTexture.vulkanImage = VulkanImage.createWhiteTexture();
+        GlTexture.defaultTexture = defaultTexture;
+        return defaultTexture;
+    }
+
     public static void bindTexture(int id) {
         boundTextureId = id;
-        boundTexture = map.get(id);
+        if (id == 0) {
+            boundTexture = getDefaultTexture();
+        } else {
+            boundTexture = map.get(id);
+        }
 
-        if (id <= 0)
+        if (id < 0)
             return;
 
         if (boundTexture == null)
