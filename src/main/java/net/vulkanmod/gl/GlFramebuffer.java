@@ -32,7 +32,6 @@ public class GlFramebuffer {
         int viewWidth = framebuffer.getWidth();
         int viewHeight = framebuffer.getHeight();
 
-        Renderer.setInvertedViewport(0, 0, viewWidth, viewHeight);
         Renderer.setScissor(0, 0, viewWidth, viewHeight);
 
         // TODO: invert cull instead of disabling

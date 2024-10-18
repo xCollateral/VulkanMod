@@ -4,10 +4,12 @@ import net.minecraft.core.BlockPos;
 import net.vulkanmod.render.chunk.buffer.DrawBuffers;
 import net.vulkanmod.render.chunk.frustum.VFrustum;
 import net.vulkanmod.render.chunk.util.StaticQueue;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
 import java.util.Arrays;
+import java.util.EnumMap;
 
 public class ChunkArea {
     public final int index;
@@ -18,12 +20,13 @@ public class ChunkArea {
     DrawBuffers drawBuffers;
 
     //Help JIT optimisations by hardcoding the queue size to the max possible ChunkArea limit
-    public final StaticQueue<RenderSection> sectionQueue = new StaticQueue<>(512);
+    public final EnumMap<TerrainRenderType, StaticQueue<DrawBuffers.DrawParameters>> sectionQueue = new EnumMap<>(TerrainRenderType.class);
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
         this.index = i;
         this.position = origin;
-        this.drawBuffers = new DrawBuffers(i, origin, minHeight);
+        this.drawBuffers = new DrawBuffers(origin, minHeight);
+        TerrainRenderType.VALUES.forEach(terrainRenderType -> this.sectionQueue.put(terrainRenderType, new StaticQueue<>(512)));
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -123,7 +126,7 @@ public class ChunkArea {
     }
 
     public void resetQueue() {
-        this.sectionQueue.clear();
+        this.sectionQueue.values().forEach(StaticQueue::clear);
     }
 
     public void setPosition(int x, int y, int z) {
