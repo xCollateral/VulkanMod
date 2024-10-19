@@ -52,8 +52,8 @@ public class VUtil {
         buffer.rewind();
     }
 
-    public static void memcpy(ByteBuffer buffer, short[] indices, long offset) {
-        buffer.position((int) offset);
+    public static void memcpy(ByteBuffer buffer, short[] indices, int offset) {
+        buffer.position(offset);
 
         for(short index : indices) {
             buffer.putShort(index);
@@ -71,15 +71,15 @@ public class VUtil {
         MemoryUtil.memCopy(MemoryUtil.memAddress0(src), dstPtr, src.capacity());
     }
 
-    public static void memcpy(ByteBuffer src, ByteBuffer dst, long offset) {
-        dst.position((int)offset);
+    public static void memcpy(ByteBuffer src, ByteBuffer dst, int offset) {
+        dst.position(offset);
 
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
     }
 
-    public static void memcpy(ByteBuffer src, ByteBuffer dst, int size, long offset) {
-        dst.position((int)offset);
+    public static void memcpy(ByteBuffer src, ByteBuffer dst, int size, int offset) {
+        dst.position(offset);
         src.limit(size);
 
         MemoryUtil.memCopy(src, dst);
@@ -104,8 +104,8 @@ public class VUtil {
         floatBuffer.position(0);
     }
 
-    public static void memcpy(ByteBuffer buffer, FloatBuffer floatBuffer, long offset) {
-        buffer.position((int) offset);
+    public static void memcpy(ByteBuffer buffer, FloatBuffer floatBuffer, int offset) {
+        buffer.position(offset);
         while(floatBuffer.hasRemaining()) {
             float f = floatBuffer.get();
             buffer.putFloat(f);

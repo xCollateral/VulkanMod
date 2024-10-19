@@ -28,7 +28,7 @@ public abstract class ImageUtil {
             region.imageSubresource().baseArrayLayer(0);
             region.imageSubresource().layerCount(1);
             region.imageOffset().set(xOffset, yOffset, 0);
-            region.imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
+            region.imageExtent().set(width, height, 1);
 
             vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
         }
@@ -40,7 +40,7 @@ public abstract class ImageUtil {
             CommandPool.CommandBuffer commandBuffer = DeviceManager.getGraphicsQueue().beginCommands();
             image.transitionImageLayout(stack, commandBuffer.getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-            long imageSize = (long) image.width * image.height * image.formatSize;
+            int imageSize = image.width * image.height * image.formatSize;
 
             LongBuffer pStagingBuffer = stack.mallocLong(1);
             PointerBuffer pStagingAllocation = stack.pointers(0L);
@@ -57,7 +57,7 @@ public abstract class ImageUtil {
             vkWaitForFences(DeviceManager.vkDevice, fence, true, VUtil.UINT64_MAX);
 
             MemoryManager.MapAndCopy(pStagingAllocation.get(0),
-                    (data) -> VUtil.memcpy(data.getByteBuffer(0, (int) imageSize), ptr)
+                    (data) -> VUtil.memcpy(data.getByteBuffer(0, imageSize), ptr)
             );
 
             MemoryManager.freeBuffer(pStagingBuffer.get(0), pStagingAllocation.get(0));
@@ -122,16 +122,16 @@ public abstract class ImageUtil {
                 prevLevel = level - 1;
 
                 VkImageBlit.Buffer blit = VkImageBlit.calloc(1, stack);
-                blit.srcOffsets(0, VkOffset3D.calloc(stack).set(0, 0, 0));
-                blit.srcOffsets(1, VkOffset3D.calloc(stack).set(image.width >> prevLevel, image.height >> prevLevel, 1));
+                blit.srcOffsets(0).set(0, 0, 0);
+                blit.srcOffsets(1).set(image.width >> prevLevel, image.height >> prevLevel, 1);
                 blit.srcSubresource()
                         .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                         .mipLevel(prevLevel)
                         .baseArrayLayer(0)
                         .layerCount(1);
 
-                blit.dstOffsets(0, VkOffset3D.calloc(stack).set(0, 0, 0));
-                blit.dstOffsets(1, VkOffset3D.calloc(stack).set(image.width >> level, image.height >> level, 1));
+                blit.dstOffsets(0).set(0, 0, 0);
+                blit.dstOffsets(1).set(image.width >> level, image.height >> level, 1);
                 blit.dstSubresource()
                         .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                         .mipLevel(level)

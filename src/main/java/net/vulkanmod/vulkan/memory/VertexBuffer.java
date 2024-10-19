@@ -16,8 +16,8 @@ public class VertexBuffer extends Buffer {
 
     }
 
-    public void copyToVertexBuffer(long vertexSize, long vertexCount, ByteBuffer byteBuffer) {
-        int bufferSize = (int) (vertexSize * vertexCount);
+    public void copyToVertexBuffer(int vertexSize, int vertexCount, ByteBuffer byteBuffer) {
+        int bufferSize = vertexSize * vertexCount;
 //        long bufferSize = byteBuffer.limit();
 
         if(bufferSize > this.bufferSize - this.usedBytes) {

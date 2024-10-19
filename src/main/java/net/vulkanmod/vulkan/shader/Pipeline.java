@@ -107,7 +107,7 @@ public abstract class Pipeline {
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
-                samplerLayoutBinding.pImmutableSamplers(imageDescriptor.getStages()==VK_SHADER_STAGE_VERTEX_BIT ? immutableSampler : null);
+                samplerLayoutBinding.pImmutableSamplers(imageDescriptor.getStages() == VK_SHADER_STAGE_VERTEX_BIT ? immutableSampler : null);
                 samplerLayoutBinding.stageFlags(imageDescriptor.getStages());
             }
 
@@ -266,7 +266,7 @@ public abstract class Pipeline {
                 boolean useOwnUB = ubo.getUniformBuffer() != null;
                 UniformBuffer ub = useOwnUB ? ubo.getUniformBuffer() : globalUB;
 
-                int currentOffset = (int) ub.getUsedBytes();
+                int currentOffset = ub.getUsedBytes();
                 this.dynamicOffsets.put(i, currentOffset);
 
                 // TODO: non mappable memory

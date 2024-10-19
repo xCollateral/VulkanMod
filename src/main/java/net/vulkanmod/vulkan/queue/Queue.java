@@ -54,7 +54,7 @@ public enum Queue {
     }
 
 
-    public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public long copyBufferCmd(long srcBuffer, int srcOffset, long dstBuffer, long dstOffset, int size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -74,7 +74,7 @@ public enum Queue {
         }
     }
 
-    public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void uploadBufferImmediate(long srcBuffer, int srcOffset, long dstBuffer, int dstOffset, int size) {
 
         try(MemoryStack stack = stackPush()) {
             CommandPool.CommandBuffer commandBuffer = this.beginCommands();
@@ -93,7 +93,7 @@ public enum Queue {
         }
     }
 
-    public void uploadBufferCmd(VkCommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void uploadBufferCmd(VkCommandBuffer commandBuffer, long srcBuffer, int srcOffset, long dstBuffer, int dstOffset, int size) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -142,7 +142,7 @@ public enum Queue {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
     }
 
-    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, long size_t, long offset, int srcAccess, int dstAccess, int srcStage, int dstStage {
+    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, int size_t, int offset, int srcAccess, int dstAccess, int srcStage, int dstStage) {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferMemoryBarrier.Buffer memBarrier = VkBufferMemoryBarrier.calloc(1, stack)

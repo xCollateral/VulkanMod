@@ -26,8 +26,7 @@ public class DrawBuffers {
     private final Vector3i origin;
     private final int minHeight;
 
-    private boolean allocated = false;
-    AreaBuffer indexBuffer;
+    private AreaBuffer indexBuffer;
     private final EnumMap<TerrainRenderType, AreaBuffer> vertexBuffers = new EnumMap<>(TerrainRenderType.class);
 
     //Need ugly minHeight Parameter to fix custom world heights (exceeding 384 Blocks in total)
@@ -64,7 +63,6 @@ public class DrawBuffers {
     }
 
     private AreaBuffer getAreaBufferOrAlloc(TerrainRenderType renderType) {
-        this.allocated = true;
 
         int initialSize = switch (renderType) {
             case SOLID, CUTOUT -> 100000;
@@ -170,7 +168,7 @@ public class DrawBuffers {
     }
 
     public void releaseBuffers() {
-        if (!this.allocated)
+        if (this.vertexBuffers.isEmpty())
             return;
 
         this.vertexBuffers.values().forEach(AreaBuffer::freeBuffer);
@@ -179,8 +177,6 @@ public class DrawBuffers {
         if (this.indexBuffer != null)
             this.indexBuffer.freeBuffer();
         this.indexBuffer = null;
-
-        this.allocated = false;
     }
 
     public boolean isAllocated() {
