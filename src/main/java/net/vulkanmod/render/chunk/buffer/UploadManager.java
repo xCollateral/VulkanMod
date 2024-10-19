@@ -6,10 +6,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkBufferMemoryBarrier;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
@@ -51,7 +48,7 @@ public class UploadManager {
             //Use BufferBarrier + granular QueueFamilyIndex
             TransferQueue.BufferBarrier(commandBuffer,
                     buffer.getId(),
-                    bufferSize,
+                    bufferSize, dstOffset,
                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -74,7 +71,7 @@ public class UploadManager {
 
         TransferQueue.BufferBarrier(commandBuffer,
                 src.getId(),
-                VK_WHOLE_SIZE,
+                VK_WHOLE_SIZE, 0,
                 VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_ACCESS_TRANSFER_READ_BIT,
                 VK_PIPELINE_STAGE_TRANSFER_BIT,

@@ -142,7 +142,7 @@ public enum Queue {
         vkCmdFillBuffer(this.getCommandBuffer().getHandle(), id, 0, bufferSize, qNaN);
     }
 
-    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, long size_t, int srcAccess, int dstAccess, int srcStage, int dstStage) {
+    public void BufferBarrier(VkCommandBuffer commandBuffer, long bufferhdle, long size_t, long offset, int srcAccess, int dstAccess, int srcStage, int dstStage {
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferMemoryBarrier.Buffer memBarrier = VkBufferMemoryBarrier.calloc(1, stack)
@@ -152,7 +152,8 @@ public enum Queue {
                     .dstQueueFamilyIndex(this.familyIndex)
                     .srcAccessMask(srcAccess)
                     .dstAccessMask(dstAccess)
-                    .size(size_t);
+                    .size(size_t)
+                    .offset(offset);
 
             vkCmdPipelineBarrier(commandBuffer,
                     srcStage, dstStage,
