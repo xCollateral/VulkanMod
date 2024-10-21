@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk.build.color;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
@@ -13,7 +14,7 @@ import java.util.Arrays;
 public class TintCache {
     private static final int SECTION_WIDTH = 16;
 
-    private final Layer[] layers = new Layer[SECTION_WIDTH];
+    private final Reference2ReferenceOpenHashMap<ColorResolver, Layer[]> layers;
 
     private int blendRadius, totalWidth;
     private int secX, secY, secZ;
@@ -24,7 +25,12 @@ public class TintCache {
     private int[] temp;
 
     public TintCache() {
-        Arrays.fill(layers, new Layer());
+        this.layers = new Reference2ReferenceOpenHashMap<>();
+
+        // Default resolvers
+        this.layers.put(BiomeColors.FOLIAGE_COLOR_RESOLVER, allocateLayers());
+        this.layers.put(BiomeColors.GRASS_COLOR_RESOLVER, allocateLayers());
+        this.layers.put(BiomeColors.WATER_COLOR_RESOLVER, allocateLayers());
     }
 
     public void init(int blendRadius, int secX, int secY, int secZ) {
@@ -35,62 +41,91 @@ public class TintCache {
         this.secY = secY;
         this.secZ = secZ;
 
-        minX = (secX << 4) - blendRadius;
-        minZ = (secZ << 4) - blendRadius;
-        maxX = (secX << 4) + 16 + blendRadius;
-        maxZ = (secZ << 4) + 16 + blendRadius;
+        this.minX = (secX << 4) - blendRadius;
+        this.minZ = (secZ << 4) - blendRadius;
+        this.maxX = (secX << 4) + 16 + blendRadius;
+        this.maxZ = (secZ << 4) + 16 + blendRadius;
 
         int size = totalWidth * totalWidth;
 
-        if(size != dataSize) {
+        if (size != this.dataSize) {
             this.dataSize = size;
-            for (Layer layer : layers) {
-                layer.allocate(size);
+
+            for (Layer[] layers : layers.values()) {
+                for (Layer layer : layers) {
+                    layer.allocate(size);
+                }
             }
-            temp = new int[size];
-        } else {
-            for (Layer layer : layers) {
-                layer.invalidate();
+
+            this.temp = new int[size];
+        }
+        else {
+            for (Layer[] layers : layers.values()) {
+                for (Layer layer : layers) {
+                    layer.invalidate();
+                }
             }
         }
     }
 
     public int getColor(BlockPos blockPos, ColorResolver colorResolver) {
         int relY = blockPos.getY() & 15;
-        Layer layer = layers[relY];
-        if(layer.invalidated)
-            calculateLayer(relY);
 
-        int[] values = layer.getValues(colorResolver);
+        if (!this.layers.containsKey(colorResolver)) {
+            addResolver(colorResolver);
+        }
+
+        Layer layer = this.layers.get(colorResolver)[relY];
+
+        if (layer.invalidated) {
+            calculateLayer(layer, colorResolver, relY);
+        }
+
+        int[] values = layer.getValues();
+
         int relX = blockPos.getX() & 15;
         int relZ = blockPos.getZ() & 15;
-        int idx = totalWidth * (relZ + blendRadius) + (relX + blendRadius);
+        int idx = this.totalWidth * (relZ + this.blendRadius) + (relX + this.blendRadius);
         return values[idx];
     }
 
-    public void calculateLayer(int y) {
+    private void addResolver(ColorResolver colorResolver) {
+        Layer[] layers1 = allocateLayers();
+
+        for (Layer layer : layers1) {
+            layer.allocate(this.dataSize);
+        }
+
+        this.layers.put(colorResolver, layers1);
+    }
+
+    private Layer[] allocateLayers() {
+        Layer[] layers = new Layer[SECTION_WIDTH];
+
+        Arrays.fill(layers, new Layer());
+        return layers;
+    }
+
+    private void calculateLayer(Layer layer, ColorResolver colorResolver, int y) {
         Level level = WorldRenderer.getLevel();
-        Layer layer = layers[y];
 
         BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
         int absY = (secY << 4) + y;
 
-        for (int absZ = minZ; absZ < maxZ ; absZ++) {
-            for (int absX = minX; absX < maxX ; absX++) {
+        int[] values = layer.values;
+
+        for (int absZ = minZ; absZ < maxZ; absZ++) {
+            for (int absX = minX; absX < maxX; absX++) {
                 blockPos.set(absX, absY, absZ);
                 Biome biome = level.getBiome(blockPos).value();
 
                 final int idx = (absX - minX) + (absZ - minZ) * totalWidth;
-                layer.grass[idx] = biome.getGrassColor(absX, absZ);
-                layer.foliage[idx] = biome.getFoliageColor();
-                layer.water[idx] = biome.getWaterColor();
+                values[idx] = colorResolver.getColor(biome, absX, absZ);
             }
         }
 
         if (blendRadius > 0) {
-            this.applyBlur(layer.grass);
-            this.applyBlur(layer.foliage);
-            this.applyBlur(layer.water);
+            this.applyBlur(values);
         }
 
         layer.invalidated = false;
@@ -112,15 +147,10 @@ public class TintCache {
 
     static class Layer {
         private boolean invalidated = true;
-
-        private int[] grass;
-        private int[] foliage;
-        private int[] water;
+        private int[] values;
 
         void allocate(int size) {
-            grass = new int[size];
-            foliage = new int[size];
-            water = new int[size];
+            this.values = new int[size];
             invalidate();
         }
 
@@ -128,15 +158,8 @@ public class TintCache {
             this.invalidated = true;
         }
 
-        public int[] getValues(ColorResolver colorResolver) {
-            if (colorResolver == BiomeColors.GRASS_COLOR_RESOLVER)
-                return grass;
-            else if (colorResolver == BiomeColors.FOLIAGE_COLOR_RESOLVER)
-                return foliage;
-            else if (colorResolver == BiomeColors.WATER_COLOR_RESOLVER)
-                return water;
-
-            throw new IllegalArgumentException("Unexpected resolver: " + colorResolver.toString());
+        public int[] getValues() {
+            return this.values;
         }
     }
 }

@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.fabric.api.renderer.v1.model.ModelHelper;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.color.block.BlockColor;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.util.RandomSource;
@@ -15,6 +16,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.vulkanmod.interfaces.color.BlockColorsExtended;
+import net.vulkanmod.render.chunk.build.color.BlockColorRegistry;
 import net.vulkanmod.render.chunk.build.light.LightPipeline;
 import net.vulkanmod.render.chunk.build.light.data.QuadLightData;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +43,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 	protected static final RenderMaterial STANDARD_MATERIAL = RENDERER.materialFinder().shadeMode(ShadeMode.VANILLA).find();
 	protected static final RenderMaterial NO_AO_MATERIAL = RENDERER.materialFinder().shadeMode(ShadeMode.VANILLA).ambientOcclusion(TriState.FALSE).find();
 
-	protected final BlockColors blockColors;
+	protected final BlockColorRegistry blockColorRegistry;
 
 	private final MutableQuadViewImpl editorQuad = new MutableQuadViewImpl() {
 		{
@@ -88,7 +91,8 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 	protected AbstractBlockRenderContext() {
 		this.occlusionCache.defaultReturnValue((byte) 127);
 
-		this.blockColors = Minecraft.getInstance().getBlockColors();
+		BlockColors blockColors = Minecraft.getInstance().getBlockColors();
+		this.blockColorRegistry = BlockColorsExtended.from(blockColors).getColorResolverMap();
 	}
 
 	protected void setupLightPipelines(LightPipeline flatLightPipeline, LightPipeline smoothLightPipeline) {
@@ -226,7 +230,10 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 	}
 
 	private int getBlockColor(BlockAndTintGetter region, int colorIndex) {
-		return 0xFF000000 | blockColors.getColor(blockState, region, blockPos, colorIndex);
+		BlockColor blockColor = this.blockColorRegistry.getBlockColor(this.blockState.getBlock());
+
+		int color = blockColor != null ? blockColor.getColor(blockState, region, blockPos, colorIndex) : -1;
+		return 0xFF000000 | color;
 	}
 
 	protected void shadeQuad(MutableQuadViewImpl quad, LightPipeline lightPipeline, boolean emissive, boolean vanillaShade) {

@@ -49,6 +49,7 @@
     "render.ShaderInstanceM",
     "render.block.BakedQuadM",
     "render.clouds.LevelRendererM",
+    "render.color.BlockColorsM",
     "render.entity.EntityRendererM",
     "render.entity.LevelRendererM",
     "render.entity.model.ModelPartCubeM",
