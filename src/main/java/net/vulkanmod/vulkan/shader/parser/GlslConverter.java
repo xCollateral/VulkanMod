@@ -20,44 +20,10 @@ public class GlslConverter {
         this.uniformParser = new UniformParser(this);
         this.inOutParser = new InputOutputParser(this);
 
-        StringBuilder vshOut = new StringBuilder();
-        StringBuilder fshOut = new StringBuilder();
-
-        this.setShaderStage(ShaderStage.Vertex);
-
-        String[] lines = vertShader.split("\n");
-
-        var iterator = Arrays.stream(lines).iterator();
-
-        while (iterator.hasNext()) {
-            String line = iterator.next();
-
-            String parsedLine = this.parseLine(line);
-            if (parsedLine != null) {
-                vshOut.append(parsedLine);
-                vshOut.append("\n");
-            }
-
-        }
-
+        StringBuilder vshOut = this.processShaderFile(ShaderStage.Vertex, vertShader);
         vshOut.insert(0, this.inOutParser.createInOutCode());
 
-        this.setShaderStage(ShaderStage.Fragment);
-
-        lines = fragShader.split("\n");
-
-        iterator = Arrays.stream(lines).iterator();
-
-        while (iterator.hasNext()) {
-            String line = iterator.next();
-
-            String parsedLine = this.parseLine(line);
-            if (parsedLine != null) {
-                fshOut.append(parsedLine);
-                fshOut.append("\n");
-            }
-        }
-
+        StringBuilder fshOut = this.processShaderFile(ShaderStage.Fragment, fragShader);
         fshOut.insert(0, this.inOutParser.createInOutCode());
 
         String uniformBlock = this.uniformParser.createUniformsCode();
@@ -78,8 +44,81 @@ public class GlslConverter {
 
     }
 
-    private String parseLine(String line) {
+    private StringBuilder processShaderFile(ShaderStage stage, String shader) {
+        this.setShaderStage(stage);
 
+        String[] lines = shader.split("\n");
+        var out = new StringBuilder();
+
+        var iterator = Arrays.stream(lines).iterator();
+
+        while (iterator.hasNext()) {
+            String line = iterator.next();
+
+            int semicolons = charOccurences(line, ';');
+
+            if (semicolons > 1) {
+                var lines2 = line.splitWithDelimiters(";", 0);
+
+                int matchingFor = 0;
+                for (int i = 0; i < lines2.length;) {
+                    StringBuilder line2 = new StringBuilder(lines2[i]);
+                    i++;
+
+                    matchingFor += charOccurences(line2.toString(), '(');
+                    matchingFor -= charOccurences(line2.toString(), ')');
+
+                    while (matchingFor > 0) {
+                        String next = lines2[i];
+                        i++;
+
+                        matchingFor += charOccurences(next, '(');
+                        matchingFor -= charOccurences(next, ')');
+
+                        line2.append(next);
+                    }
+
+                    if (i < lines2.length) {
+                        line2.append(lines2[i]);
+                        i++;
+                    }
+
+
+                    if (matchingFor == 0) {
+                        String parsedLine = this.parseLine(line2.toString());
+                        if (parsedLine != null) {
+                            out.append(parsedLine);
+                            out.append("\n");
+                        }
+                    }
+
+                }
+            }
+            else {
+                String parsedLine = this.parseLine(line);
+                if (parsedLine != null) {
+                    out.append(parsedLine);
+                    out.append("\n");
+                }
+            }
+
+        }
+
+        return out;
+    }
+
+    private int charOccurences(String s, char c) {
+        int count = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == c) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private String parseLine(String line) {
         StringTokenizer tokenizer = new StringTokenizer(line);
 
         // empty line
