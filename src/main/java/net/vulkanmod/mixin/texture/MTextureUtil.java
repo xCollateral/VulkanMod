@@ -47,6 +47,7 @@ public class MTextureUtil {
 
             image = new VulkanImage.Builder(width, height)
                     .setMipLevels(mipLevels + 1)
+                    .setFormat(internalGlFormat)
                     .setLinearFiltering(false)
                     .setClamp(false)
                     .createVulkanImage();
