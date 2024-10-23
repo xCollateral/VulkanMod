@@ -291,9 +291,9 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    public static void polygonMode(final int i, final int j) {
+    public static void polygonMode(final int face, final int mode) {
         assertOnRenderThread();
-        VRenderSystem.setPolygonModeGL(i);
+        VRenderSystem.setPolygonModeGL(mode);
     }
 
     /**
