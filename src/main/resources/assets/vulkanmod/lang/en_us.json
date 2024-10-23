@@ -1,43 +1,30 @@
 {
-  "vulkanmod.options.unknown": "Unknown",
-
-  "vulkanmod.options.pages.video": "Video",
-  "vulkanmod.options.pages.graphics": "Graphics",
-  "vulkanmod.options.pages.optimizations": "Optimizations",
-  "vulkanmod.options.pages.other": "Other",
-
-  "vulkanmod.options.buttons.apply": "Apply",
-  "vulkanmod.options.buttons.kofi": "Support me",
-
   "vulkanmod.options.advCulling": "Advanced Chunk Culling",
   "vulkanmod.options.advCulling.aggressive": "Aggressive",
   "vulkanmod.options.advCulling.conservative": "Conservative",
   "vulkanmod.options.advCulling.normal": "Normal",
-  "vulkanmod.options.advCulling.tooltip": "Use a culling algorithm that might improve performance by reducing the number of non visible chunk sections rendered.",
-
+  "vulkanmod.options.advCulling.tooltip": "Use a culling algorithm that might improve performance by reducing the number of non-visible chunk sections rendered.",
   "vulkanmod.options.ao.subBlock": "ON (Sub-block)",
-  "vulkanmod.options.ao.subBlock.tooltip": "ON (Sub-block): Enables smooth lighting for non full block (experimental).",
-
-  "vulkanmod.options.deviceSelector": "Device selector",
-  "vulkanmod.options.deviceSelector.auto": "Auto",
-  "vulkanmod.options.deviceSelector.tooltip": "Current device",
-
-  "vulkanmod.options.entityCulling": "Entity Culling",
-  "vulkanmod.options.entityCulling.tooltip": "Enables culling for entities on not visible sections.",
-
-  "vulkanmod.options.frameQueue": "Render queue size",
-  "vulkanmod.options.frameQueue.tooltip": "Higher values might help stabilize frametime but will increase input lag.",
-
+  "vulkanmod.options.ao.subBlock.tooltip": "ON (Sub-block): Enables smooth lighting for non-full blocks (experimental).",
   "vulkanmod.options.backfaceCulling": "Backface Culling",
-  "vulkanmod.options.backfaceCulling.tooltip": "Culls not visible block faces on the CPU improving GPU performance. To prevent increased CPU overhead enable Indirect Draw.",
-
+  "vulkanmod.options.buttons.apply": "Apply",
+  "vulkanmod.options.buttons.kofi": "Support me",
+  "vulkanmod.options.buttons.undo": "Undo",
+  "vulkanmod.options.deviceSelector": "Device Selector",
+  "vulkanmod.options.deviceSelector.tooltip": "Current device",
+  "vulkanmod.options.entityCulling": "Entity Culling",
+  "vulkanmod.options.entityCulling.tooltip": "Enables culling for entities in non-visible sections.",
+  "vulkanmod.options.frameQueue": "Render Queue Size",
+  "vulkanmod.options.frameQueue.tooltip": "Higher values might help stabilize frame time but will increase input lag.",
   "vulkanmod.options.indirectDraw": "Indirect Draw",
-  "vulkanmod.options.indirectDraw.tooltip": "Reduces CPU overhead but might increases GPU overhead.",
-
-  "vulkanmod.options.refreshRate": "Refresh Rate",
-
-  "vulkanmod.options.uniqueOpaqueLayer": "Unique opaque layer",
+  "vulkanmod.options.indirectDraw.tooltip": "Reduces CPU overhead but might increase GPU overhead.",
+  "vulkanmod.options.pages.graphics": "Graphics",
+  "vulkanmod.options.pages.optimizations": "Optimizations",
+  "vulkanmod.options.pages.other": "Other",
+  "vulkanmod.options.pages.video": "Video",
+  "vulkanmod.options.searchFieldEmpty": "Search...",
+  "vulkanmod.options.uniqueOpaqueLayer": "Unique Opaque Layer",
   "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Use a unique render layer for opaque terrain to improve performance.",
-
+  "vulkanmod.options.unknown": "Unknown",
   "vulkanmod.options.windowedFullscreen": "Windowed Fullscreen"
 }

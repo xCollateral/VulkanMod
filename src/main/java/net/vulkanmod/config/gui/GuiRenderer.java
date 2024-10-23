@@ -1,8 +1,8 @@
 package net.vulkanmod.config.gui;
 
-import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,42 +10,17 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 
-import java.util.List;
-
 public abstract class GuiRenderer {
-
-    public static Minecraft minecraft;
-    public static Font font;
+    public static Minecraft minecraft = Minecraft.getInstance();
+    public static Font font = minecraft.font;
     public static GuiGraphics guiGraphics;
     public static PoseStack pose;
 
     public static BufferBuilder bufferBuilder;
     public static boolean batching = false;
-
-    public static void setPoseStack(PoseStack poseStack) {
-        pose = poseStack;
-    }
-
-    public static void disableScissor() {
-        RenderSystem.disableScissor();
-    }
-
-    public static void enableScissor(int x, int y, int width, int height) {
-        Window window = Minecraft.getInstance().getWindow();
-        int wHeight = window.getHeight();
-        double scale = window.getGuiScale();
-        int xScaled = (int) (x * scale);
-        int yScaled = (int) (wHeight - (y + height) * scale);
-        int widthScaled = (int) (width * scale);
-        int heightScaled = (int) (height * scale);
-        RenderSystem.enableScissor(xScaled, yScaled, Math.max(0, widthScaled), Math.max(0, heightScaled));
-    }
-
-    public static void fillBox(float x0, float y0, float width, float height, int color) {
-        fill(x0, y0, x0 + width, y0 + height, 0, color);
-    }
 
     public static void fill(float x0, float y0, float x1, float y1, int color) {
         fill(x0, y0, x1, y1, 0, color);
@@ -103,48 +78,88 @@ public abstract class GuiRenderer {
             BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
     }
 
-    public static void renderBoxBorder(float x0, float y0, float width, float height, float borderWidth, int color) {
-        renderBorder(x0, y0, x0 + width, y0 + height, borderWidth, color);
-    }
-
     public static void renderBorder(float x0, float y0, float x1, float y1, float width, int color) {
-        GuiRenderer.fill(x0, y0, x1, y0 + width, color);
-        GuiRenderer.fill(x0, y1 - width, x1, y1, color);
-
-        GuiRenderer.fill(x0, y0 + width, x0 + width, y1 - width, color);
-        GuiRenderer.fill(x1 - width, y0 + width, x1, y1 - width, color);
+        renderBorder(x0, y0, x1, y1, 0, width, color);
     }
 
-    public static void drawString(Font font, Component component, int x, int y, int color) {
-        drawString(font, component.getVisualOrderText(), x, y, color);
+    public static void renderBorder(float x0, float y0, float x1, float y1, float z, float width, int color) {
+        GuiRenderer.fill(x0, y0, x1, y0 + width, z, color);
+        GuiRenderer.fill(x0, y1 - width, x1, y1, z, color);
+
+        GuiRenderer.fill(x0, y0 + width, x0 + width, y1 - width, z, color);
+        GuiRenderer.fill(x1 - width, y0 + width, x1, y1 - width, z, color);
     }
 
-    public static void drawString(Font font, FormattedCharSequence formattedCharSequence, int x, int y, int color) {
-        guiGraphics.drawString(font, formattedCharSequence, x, y, color);
+    public static void drawString(Component component, int x, int y, int color) {
+        drawString(component, x, y, color, true);
     }
 
-    public static void drawString(Font font, Component component, int x, int y, int color, boolean shadow) {
-        drawString(font, component.getVisualOrderText(), x, y, color, shadow);
+    public static void drawString(FormattedCharSequence formattedCharSequence, int x, int y, int color) {
+        drawString(formattedCharSequence, x, y, color, true);
     }
 
-    public static void drawString(Font font, FormattedCharSequence formattedCharSequence, int x, int y, int color, boolean shadow) {
-        guiGraphics.drawString(font, formattedCharSequence, x, y, color, shadow);
+    public static void drawString(Component component, int x, int y, int color, boolean shadow) {
+        drawString(component, x, y, 0, color, shadow);
     }
 
-    public static void drawCenteredString(Font font, Component component, int x, int y, int color) {
-        FormattedCharSequence formattedCharSequence = component.getVisualOrderText();
-        guiGraphics.drawString(font, formattedCharSequence, x - font.width(formattedCharSequence) / 2, y, color);
+    public static void drawString(FormattedCharSequence formattedCharSequence, int x, int y, int color, boolean shadow) {
+        drawString(formattedCharSequence, x, y, 0, color, shadow);
     }
 
-    public static int getMaxTextWidth(Font font, List<FormattedCharSequence> list) {
-        int maxWidth = 0;
-        for (var text : list) {
-            int width = font.width(text);
-            if (width > maxWidth) {
-                maxWidth = width;
-            }
+    public static void drawString(Component component, int x, int y, int z, int color) {
+        drawString(component, x, y, z, color, true);
+    }
+
+    public static void drawString(FormattedCharSequence formattedCharSequence, int x, int y, int z, int color) {
+        drawString(formattedCharSequence, x, y, z, color, true);
+    }
+
+    public static void drawString(Component component, int x, int y, int z, int color, boolean shadow) {
+        drawString(component.getVisualOrderText(), x, y, z, color, shadow);
+    }
+
+    public static void drawString(FormattedCharSequence formattedCharSequence, int x, int y, int z, int color, boolean shadow) {
+        if (z == 0) {
+            guiGraphics.drawString(font, formattedCharSequence, x, y, color, shadow);
+            return;
         }
-        return maxWidth;
+
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0, 0, z);
+
+        guiGraphics.drawString(font, formattedCharSequence, x, y, color, shadow);
+
+        guiGraphics.pose().popPose();
+    }
+
+    public static void drawCenteredString(Component component, int x, int y, int color) {
+        drawCenteredString(component.getVisualOrderText(), x, y, color);
+    }
+
+    public static void drawCenteredString(FormattedCharSequence formattedCharSequence, int x, int y, int color) {
+        drawString(formattedCharSequence, x - font.width(formattedCharSequence) / 2, y, color);
+    }
+
+    public static void drawScrollingString(Component component, int x, int y, int maxWidth, int color) {
+        drawScrollingString(component.getVisualOrderText(), x, y, maxWidth, color);
+    }
+
+    public static void drawScrollingString(FormattedCharSequence formattedCharSequence, int x, int y, int maxWidth, int color) {
+        int textWidth = font.width(formattedCharSequence);
+        if (textWidth <= maxWidth) {
+            drawCenteredString(formattedCharSequence, x, y, color);
+        } else {
+            int x0 = x - maxWidth / 2, x1 = x + maxWidth / 2;
+            int scrollAmount = textWidth - maxWidth;
+            double currentTimeInSeconds = (double) Util.getMillis() / 1000.0;
+            double scrollSpeed = Math.max(scrollAmount * 0.5, 3.0);
+            double scrollingOffset = Math.sin((Math.PI / 2) * Math.cos((Math.PI * 2) * currentTimeInSeconds / scrollSpeed)) / 2.0 + 0.5;
+            double horizontalScroll = Mth.lerp(scrollingOffset, 0.0, scrollAmount);
+
+            guiGraphics.enableScissor(x0 - 1, 0, x1, minecraft.getWindow().getScreenHeight());
+            drawString(formattedCharSequence, (int) (x0 - horizontalScroll), y, color);
+            guiGraphics.disableScissor();
+        }
     }
 
     public static void beginBatch(VertexFormat.Mode mode, VertexFormat format) {
