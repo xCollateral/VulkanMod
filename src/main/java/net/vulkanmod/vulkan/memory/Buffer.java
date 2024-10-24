@@ -37,9 +37,9 @@ public abstract class Buffer {
 
     public long getAllocation() { return allocation; }
 
-    public long getUsedBytes() { return usedBytes; }
+    public int getUsedBytes() { return usedBytes; }
 
-    public long getOffset() { return offset; }
+    public int getOffset() { return offset; }
 
     public long getId() { return id; }
 

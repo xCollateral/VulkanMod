@@ -3,19 +3,15 @@ package net.vulkanmod.render.chunk.buffer;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkBufferMemoryBarrier;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkMemoryBarrier;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class UploadManager {
@@ -25,16 +21,15 @@ public class UploadManager {
         INSTANCE = new UploadManager();
     }
 
-    Queue queue = DeviceManager.getTransferQueue();
-    CommandPool.CommandBuffer commandBuffer;
+    private CommandPool.CommandBuffer commandBuffer;
 
-    LongOpenHashSet dstBuffers = new LongOpenHashSet();
+    private final LongOpenHashSet dstBuffers = new LongOpenHashSet();
 
     public void submitUploads() {
         if (this.commandBuffer == null)
             return;
 
-        this.queue.submitCommands(this.commandBuffer);
+        TransferQueue.submitCommands(this.commandBuffer);
 
         Synchronization.INSTANCE.addCommandBuffer(this.commandBuffer);
 
@@ -42,28 +37,23 @@ public class UploadManager {
         this.dstBuffers.clear();
     }
 
-    public void recordUpload(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void recordUpload(Buffer buffer, int dstOffset, int bufferSize, ByteBuffer src) {
         beginCommands();
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
-        stagingBuffer.copyBuffer((int) bufferSize, src);
+        stagingBuffer.copyBuffer(bufferSize, src);
 
         if (!this.dstBuffers.add(buffer.getId())) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-                barrier.sType$Default();
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-
-                vkCmdPipelineBarrier(commandBuffer,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        0,
-                        barrier,
-                        null,
-                        null);
-            }
+            //Use BufferBarrier + granular QueueFamilyIndex
+            TransferQueue.BufferBarrier(commandBuffer,
+                    buffer.getId(),
+                    bufferSize, dstOffset,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT);
 
             this.dstBuffers.clear();
         }
@@ -80,25 +70,13 @@ public class UploadManager {
 
         VkCommandBuffer commandBuffer = this.commandBuffer.getHandle();
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.calloc(1, stack);
-            barrier.sType$Default();
-
-            VkBufferMemoryBarrier.Buffer bufferMemoryBarriers = VkBufferMemoryBarrier.calloc(1, stack);
-            VkBufferMemoryBarrier bufferMemoryBarrier = bufferMemoryBarriers.get(0);
-            bufferMemoryBarrier.sType$Default();
-            bufferMemoryBarrier.buffer(src.getId());
-            bufferMemoryBarrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-            bufferMemoryBarrier.dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
-            bufferMemoryBarrier.size(VK_WHOLE_SIZE);
-
-            vkCmdPipelineBarrier(commandBuffer,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0,
-                    barrier,
-                    bufferMemoryBarriers,
-                    null);
-        }
+        TransferQueue.BufferBarrier(commandBuffer,
+                src.getId(),
+                -1, 0,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_ACCESS_TRANSFER_READ_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT);
 
         this.dstBuffers.add(dst.getId());
 
@@ -113,7 +91,7 @@ public class UploadManager {
 
     private void beginCommands() {
         if (this.commandBuffer == null)
-            this.commandBuffer = queue.beginCommands();
+            this.commandBuffer = TransferQueue.beginCommands();
     }
 
 }

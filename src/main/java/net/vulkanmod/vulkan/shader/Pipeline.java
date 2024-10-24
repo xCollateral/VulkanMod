@@ -18,6 +18,7 @@ import net.vulkanmod.vulkan.shader.descriptor.ManualUBO;
 import net.vulkanmod.vulkan.shader.descriptor.UBO;
 import net.vulkanmod.vulkan.shader.layout.AlignedStruct;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
+import net.vulkanmod.vulkan.texture.SamplerManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
@@ -31,13 +32,9 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
-import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShader;
-import static net.vulkanmod.vulkan.shader.SPIRVUtils.compileShaderAbsoluteFile;
+import static net.vulkanmod.vulkan.shader.SPIRVUtils.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -104,12 +101,13 @@ public abstract class Pipeline {
                 uboLayoutBinding.stageFlags(ubo.getStages());
             }
 
+            final LongBuffer immutableSampler = stack.longs(SamplerManager.getTextureSampler((byte) 0)); //vertex stage samplers always use nearest Sampling
             for (ImageDescriptor imageDescriptor : this.imageDescriptors) {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
-                samplerLayoutBinding.pImmutableSamplers(null);
+                samplerLayoutBinding.pImmutableSamplers(imageDescriptor.getStages() == VK_SHADER_STAGE_VERTEX_BIT ? immutableSampler : null);
                 samplerLayoutBinding.stageFlags(imageDescriptor.getStages());
             }
 
@@ -268,7 +266,7 @@ public abstract class Pipeline {
                 boolean useOwnUB = ubo.getUniformBuffer() != null;
                 UniformBuffer ub = useOwnUB ? ubo.getUniformBuffer() : globalUB;
 
-                int currentOffset = (int) ub.getUsedBytes();
+                int currentOffset = ub.getUsedBytes();
                 this.dynamicOffsets.put(i, currentOffset);
 
                 // TODO: non mappable memory
@@ -482,6 +480,8 @@ public abstract class Pipeline {
 
     public static class Builder {
 
+        final EnumSet<SpecConstant> specConstants = EnumSet.noneOf(SpecConstant.class);
+
         public static GraphicsPipeline createGraphicsPipeline(VertexFormat format, String path) {
             Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
             pipelineBuilder.parseBindingsJSON();
@@ -564,6 +564,7 @@ public abstract class Pipeline {
             JsonArray jsonManualUbos = GsonHelper.getAsJsonArray(jsonObject, "ManualUBOs", null);
             JsonArray jsonSamplers = GsonHelper.getAsJsonArray(jsonObject, "samplers", null);
             JsonArray jsonPushConstants = GsonHelper.getAsJsonArray(jsonObject, "PushConstants", null);
+            JsonArray jsonSpecConstants = GsonHelper.getAsJsonArray(jsonObject, "SpecConstants", null);
 
             if (jsonUbos != null) {
                 for (JsonElement jsonelement : jsonUbos) {
@@ -584,6 +585,24 @@ public abstract class Pipeline {
             if (jsonPushConstants != null) {
                 this.parsePushConstantNode(jsonPushConstants);
             }
+            if(jsonSpecConstants != null) {
+                this.parseSpecConstantNode(jsonSpecConstants);
+            }
+        }
+
+        private void parseSpecConstantNode(JsonArray jsonSpecConstants) {
+//            AlignedStruct.Builder builder = new AlignedStruct.Builder();
+
+            for(JsonElement jsonelement : jsonSpecConstants) {
+                JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "SC");
+
+                String name = GsonHelper.getAsString(jsonobject2, "name");
+//                String type2 = GsonHelper.getAsString(jsonobject2, "type");
+
+
+                this.specConstants.add(SpecConstant.valueOf(name));
+            }
+
         }
 
         private void parseUboNode(JsonElement jsonelement) {
@@ -653,7 +672,7 @@ public abstract class Pipeline {
             return switch (s) {
                 case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
                 case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+                case "all" -> VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; //VK_SHADER_STAGE_ALL_GRAPHICS includes tessellation/geometry stages, which are unused
                 case "compute" -> VK_SHADER_STAGE_COMPUTE_BIT;
 
                 default -> throw new RuntimeException("cannot identify type..");

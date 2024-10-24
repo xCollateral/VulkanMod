@@ -23,14 +23,13 @@ import org.joml.FrustumIntersection;
 import java.util.List;
 
 public class SectionGraph {
-    Minecraft minecraft;
+    private final Minecraft minecraft;
     private final Level level;
 
     private final SectionGrid sectionGrid;
-    private final ChunkAreaManager chunkAreaManager;
     private final TaskDispatcher taskDispatcher;
     private final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>();
-    private AreaSetQueue chunkAreaQueue;
+    private final AreaSetQueue chunkAreaQueue;
     private short lastFrame = 0;
 
     private final ResettableQueue<RenderSection> blockEntitiesSections = new ResettableQueue<>();
@@ -45,7 +44,6 @@ public class SectionGraph {
     public SectionGraph(Level level, SectionGrid sectionGrid, TaskDispatcher taskDispatcher) {
         this.level = level;
         this.sectionGrid = sectionGrid;
-        this.chunkAreaManager = sectionGrid.getChunkAreaManager();
         this.taskDispatcher = taskDispatcher;
 
         this.chunkAreaQueue = new AreaSetQueue(sectionGrid.getChunkAreaManager().size);
@@ -172,7 +170,7 @@ public class SectionGraph {
                 continue;
 
             if (!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
+                renderSection.updateDrawParameters();
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -254,7 +252,7 @@ public class SectionGraph {
                 continue;
 
             if (!renderSection.isCompletelyEmpty()) {
-                renderSection.getChunkArea().sectionQueue.add(renderSection);
+                renderSection.updateDrawParameters();
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
