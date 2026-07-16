@@ -156,6 +156,14 @@ public class VkGlRenderbuffer {
     }
 
     void updateSampler() {
+        // A renderbuffer is a render target, not a sampled resource, so it may
+        // legitimately have no sampler filter set (minFilter == 0, the unset
+        // default). Treat that as "no sampler needed" and skip the sampler
+        // build instead of falling through to the "Unexpected min filter value"
+        // throw below. See issue #674 (Xaero's custom depth renderbuffer FBO).
+        if (minFilter == 0)
+            return;
+
         if (vulkanImage == null)
             return;
 
