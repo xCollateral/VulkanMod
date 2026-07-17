@@ -12,6 +12,7 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
@@ -37,6 +38,7 @@ public abstract class DeviceManager {
     public static VkPhysicalDeviceMemoryProperties memoryProperties;
 
     public static SurfaceProperties surfaceProperties;
+    public static boolean fullScreenExclusiveControl = false;
 
     static GraphicsQueue graphicsQueue;
     static PresentQueue presentQueue;
@@ -209,7 +211,21 @@ public abstract class DeviceManager {
 //                deviceVulkan13Features.pNext(deviceVulkan11Features.address());
             }
 
-            createInfo.ppEnabledExtensionNames(asPointerBuffer(Vulkan.REQUIRED_EXTENSION));
+            fullScreenExclusiveControl = false;
+            List<String> enabledExtensions = new ArrayList<>(Vulkan.REQUIRED_EXTENSION);
+            if (Vulkan.surfaceCapabilities2Supported) {
+                Set<String> availableExtensions = getAvailableExtension(stack, physicalDevice).stream()
+                        .map(VkExtensionProperties::extensionNameString)
+                        .collect(toSet());
+
+                if (availableExtensions.contains(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME)) {
+                    enabledExtensions.add(EXTFullScreenExclusive.VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME);
+                    fullScreenExclusiveControl = true;
+                    Initializer.LOGGER.info("VK_EXT_full_screen_exclusive enabled: opting out of full screen exclusive control");
+                }
+            }
+
+            createInfo.ppEnabledExtensionNames(asPointerBuffer(enabledExtensions));
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 

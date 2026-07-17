@@ -137,6 +137,7 @@ public class Vulkan {
     private static final StagingBuffers stagingBuffers = new StagingBuffers();
 
     public static boolean use24BitsDepthFormat = true;
+    public static boolean surfaceCapabilities2Supported = false;
     private static int DEFAULT_DEPTH_FORMAT = 0;
 
     public static void initVulkan(long window) {
@@ -203,6 +204,7 @@ public class Vulkan {
         }
 
         try (MemoryStack stack = stackPush()) {
+            checkSurfaceCapabilities2Support(stack);
 
             // Use calloc to initialize the structs with 0s. Otherwise, the program can crash due to random values
 
@@ -357,18 +359,48 @@ public class Vulkan {
         }
     }
 
+    private static void checkSurfaceCapabilities2Support(MemoryStack stack) {
+        if (org.lwjgl.system.Platform.get() != org.lwjgl.system.Platform.WINDOWS) {
+            return;
+        }
+
+        IntBuffer propertyCount = stack.ints(0);
+        vkEnumerateInstanceExtensionProperties((String) null, propertyCount, null);
+
+        if (propertyCount.get(0) == 0) {
+            return;
+        }
+
+        VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(propertyCount.get(0), stack);
+        vkEnumerateInstanceExtensionProperties((String) null, propertyCount, availableExtensions);
+
+        Set<String> availableExtensionNames = availableExtensions.stream()
+                                                                 .map(VkExtensionProperties::extensionNameString)
+                                                                 .collect(toSet());
+
+        if (availableExtensionNames.contains(KHRGetSurfaceCapabilities2.VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME)) {
+            surfaceCapabilities2Supported = true;
+        }
+    }
+
     private static PointerBuffer getRequiredInstanceExtensions() {
 
         PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
 
-        if (ENABLE_VALIDATION_LAYERS) {
+        int extraCount = (ENABLE_VALIDATION_LAYERS ? 1 : 0) + (surfaceCapabilities2Supported ? 1 : 0);
+        if (extraCount > 0) {
 
             MemoryStack stack = stackGet();
 
-            PointerBuffer extensions = stack.mallocPointer(glfwExtensions.capacity() + 1);
+            PointerBuffer extensions = stack.mallocPointer(glfwExtensions.capacity() + extraCount);
 
             extensions.put(glfwExtensions);
-            extensions.put(stack.UTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+            if (ENABLE_VALIDATION_LAYERS) {
+                extensions.put(stack.UTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+            }
+            if (surfaceCapabilities2Supported) {
+                extensions.put(stack.UTF8(KHRGetSurfaceCapabilities2.VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME));
+            }
 
             // Rewind the buffer before returning it to reset its position back to 0
             return extensions.rewind();
