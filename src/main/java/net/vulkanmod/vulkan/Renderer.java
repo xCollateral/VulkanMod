@@ -632,6 +632,14 @@ public class Renderer {
     }
 
     public void bindGraphicsPipeline(GraphicsPipeline pipeline) {
+        // No active render pass, e.g. the GUI still renders while the window is
+        // occluded or the title bar is being dragged. Binding here would build a
+        // PipelineState with a null render pass and NPE in
+        // GraphicsPipeline.createGraphicsPipeline at state.renderPass.getId().
+        // There is nothing to record into without a pass, so skip the bind.
+        if (boundRenderPass == null)
+            return;
+
         VkCommandBuffer commandBuffer = currentCmdBuffer;
 
         PipelineState currentState = PipelineState.getCurrentPipelineState(boundRenderPass);
