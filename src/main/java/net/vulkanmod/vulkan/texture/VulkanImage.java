@@ -229,7 +229,10 @@ public class VulkanImage {
                                       int unpackSkipRows, int unpackSkipPixels, int unpackRowLength,
                                       long srcPtr)
     {
-        long uploadSize = (long) (unpackRowLength * height - unpackSkipPixels) * this.formatSize;
+        // In GL a row length of 0 means rows are tightly packed, i.e. the row stride is the region width
+        final int rowLength = unpackRowLength != 0 ? unpackRowLength : width;
+
+        long uploadSize = (long) (rowLength * (height - 1) + width) * this.formatSize;
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
 
@@ -240,7 +243,7 @@ public class VulkanImage {
             stagingBuffer.scheduleFree();
         }
 
-        srcPtr += ((long) unpackRowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize;
+        srcPtr += ((long) rowLength * unpackSkipRows + unpackSkipPixels) * this.formatSize;
 
         stagingBuffer.align(this.formatSize);
         stagingBuffer.copyBuffer((int) uploadSize, srcPtr);
@@ -255,7 +258,7 @@ public class VulkanImage {
 
             ImageUtil.copyBufferToImageCmd(stack, commandBuffer, bufferId, this.id,
                                            arrayLayer, mipLevel, width, height, xOffset, yOffset,
-                                           srcOffset, unpackRowLength, height);
+                                           srcOffset, rowLength, height);
 
             ImageUtil.imageTransferMemoryBarrier(stack, commandBuffer, this, mipLevel);
         }
