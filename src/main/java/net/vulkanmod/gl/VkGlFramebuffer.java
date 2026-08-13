@@ -90,13 +90,17 @@ public class VkGlFramebuffer {
             return;
         }
 
-        boundFramebuffer = map.remove(id);
+        VkGlFramebuffer glFramebuffer = map.remove(id);
 
-        if (boundFramebuffer == null)
-            throw new NullPointerException("bound framebuffer is null");
-
-        boundFramebuffer.cleanUp(true);
-        boundFramebuffer = null;
+        if (glFramebuffer != null) {
+            if (boundFramebuffer == glFramebuffer) {
+                boundFramebuffer = null;
+            }
+            if (readFramebuffer == glFramebuffer) {
+                readFramebuffer = null;
+            }
+            glFramebuffer.cleanUp(true);
+        }
     }
 
     public static void framebufferTexture2D(int target, int attachment, int texTarget, int texture, int level) {

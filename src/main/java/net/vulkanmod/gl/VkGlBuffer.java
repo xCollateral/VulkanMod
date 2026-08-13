@@ -41,7 +41,7 @@ public class VkGlBuffer {
             case GL32.GL_PIXEL_PACK_BUFFER -> pixelPackBufferBound = glBuffer;
             case GL32.GL_PIXEL_UNPACK_BUFFER -> pixelUnpackBufferBound = glBuffer;
             case GL32.GL_ARRAY_BUFFER -> arrayBufferBound = glBuffer;
-            default -> throw new IllegalStateException("Unexpected value: " + target);
+            default -> {}
         }
     }
 

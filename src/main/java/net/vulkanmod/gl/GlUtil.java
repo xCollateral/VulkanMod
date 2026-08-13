@@ -53,7 +53,7 @@ public abstract class GlUtil {
         for (int i = 0; i < outSize ; i += 4) {
             int color = MemoryUtil.memGetInt(srcPtr + i);
 
-            color = (color << 24) & 0xFF000000 | (color >> 8) & 0xFFFFFF;
+            color = (color & 0xFF00FF00) | ((color & 0x00FF0000) >>> 16) | ((color & 0x000000FF) << 16);
 
             MemoryUtil.memPutInt(ptr + i, color);
         }

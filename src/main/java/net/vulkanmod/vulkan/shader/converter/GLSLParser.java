@@ -146,7 +146,7 @@ public class GLSLParser {
             throw new IllegalStateException("First glsl line must contain #version");
         }
 
-        advanceToken();
+        advanceToken(true);
 
         if (!currentToken.value.startsWith("version")) {
             throw new IllegalStateException("First glsl line must contain #version");

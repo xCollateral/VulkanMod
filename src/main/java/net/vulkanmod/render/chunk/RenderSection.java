@@ -298,8 +298,7 @@ public class RenderSection {
             AreaBuffer areaBuffer = drawBuffers.getAreaBuffer(renderType);
             int vertexOffset = DrawParametersBuffer.getVertexOffset(ptr);
             if (areaBuffer != null && vertexOffset != -1) {
-                int segmentOffset = vertexOffset * drawBuffers.vertexSize;
-                areaBuffer.setSegmentFree(segmentOffset);
+                areaBuffer.freeSegment(vertexOffset);
             }
 
             DrawParametersBuffer.resetParameters(ptr);
