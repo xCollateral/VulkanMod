@@ -50,9 +50,9 @@ public class VOptionScreen extends Screen {
 
     private VTextInputWidget searchField;
 
-    private final List<VAbstractWidget> iconWidgets = Lists.newArrayList();
+    private VPageList pageList;
+
     private final List<VButtonWidget> pageButtons = Lists.newArrayList();
-    private final List<VButtonWidget> buttons = Lists.newArrayList();
 
 
     public VOptionScreen(Component title, Screen parent) {
@@ -210,9 +210,7 @@ public class VOptionScreen extends Screen {
     }
 
     private void buildPage() {
-        this.buttons.clear();
         this.pageButtons.clear();
-        this.iconWidgets.clear();
 
         String savedInput = this.searchField != null ? this.searchField.getInput() : "";
         boolean savedFocused = this.searchField != null && this.searchField.focused;
@@ -220,33 +218,12 @@ public class VOptionScreen extends Screen {
 
         this.clearWidgets();
 
-        int x = MARGIN;
-        int y = 4;
-
-        int width = VGuiConstants.PAGE_BUTTON_WIDTH;
-        int j = 0;
-        for (var modEntry : this.modSettingsEntries) {
-            ModIconWidget iconWidget = new ModIconWidget(modEntry.modName, modEntry.getIcon(), x, y, width, 28);
-            this.iconWidgets.add(iconWidget);
-            this.addWidget(iconWidget);
-            y += 28;
-
-            var pages = modEntry.getPages();
-            for (OptionPage page : pages) {
-                final int finalIdx = j;
-                VButtonWidget widget = new VButtonWidget(x, y, width, VGuiConstants.WIDGET_HEIGHT, Component.nullToEmpty(page.name), button -> this.setOptionList(finalIdx));
-                widget.setTextLayout(false, 12);
-                this.buttons.add(widget);
-                this.pageButtons.add(widget);
-                this.addWidget(widget);
-
-                y += VGuiConstants.WIDGET_HEIGHT;
-                j++;
-            }
-        }
+        this.pageList = new VPageList(MARGIN, 4, VGuiConstants.PAGE_BUTTON_WIDTH, this.height - MARGIN, this::setOptionList);
+        this.pageList.addAll(this.modSettingsEntries);
+        this.addWidget(this.pageList);
 
         if (!isSearchActive) {
-            this.pageButtons.get(this.currentListIdx).setSelected(true);
+            this.pageList.buttons.get(this.currentListIdx).setSelected(true);
             VOptionList currentList = this.optionPages.get(this.currentListIdx).getOptionList();
             this.addWidget(currentList);
         } else {
@@ -294,10 +271,10 @@ public class VOptionScreen extends Screen {
                 Component.translatable("vulkanmod.options.buttons.kofi"),
                 button -> Util.getPlatform().openUri("https://ko-fi.com/xcollateral"));
 
-        this.buttons.add(this.applyButton);
-        this.buttons.add(doneButton);
-        this.buttons.add(supportButton);
-        this.buttons.add(this.undoButton);
+        this.pageButtons.add(this.applyButton);
+        this.pageButtons.add(doneButton);
+        this.pageButtons.add(supportButton);
+        this.pageButtons.add(this.undoButton);
 
         this.addWidget(this.applyButton);
         this.addWidget(doneButton);
@@ -314,7 +291,7 @@ public class VOptionScreen extends Screen {
                     Component.translatable("vulkanmod.options.buttons.update_available").withStyle(ChatFormatting.UNDERLINE),
                     button -> Util.getPlatform().openUri("https://modrinth.com/mod/vulkanmod")
             );
-            this.buttons.add(updateButton);
+            this.pageButtons.add(updateButton);
             this.addWidget(updateButton);
         }
     }
@@ -365,22 +342,22 @@ public class VOptionScreen extends Screen {
         currentList.updateState(mouseX, mouseY);
         currentList.renderWidget(mouseX, mouseY);
 
-        for (var widget : iconWidgets) {
-            widget.render(mouseX, mouseY);
-        }
+        pageList.updateState(mouseX, mouseY);
+        pageList.renderWidget(mouseX, mouseY);
 
-        for (VButtonWidget button : buttons) {
+        for (VButtonWidget button : pageButtons) {
             button.updateState(mouseX, mouseY);
             button.render(mouseX, mouseY);
         }
+
         searchField.updateState(mouseX, mouseY);
         searchField.render(mouseX, mouseY);
 
         VAbstractWidget hoveredWidget = null;
 
-        for (var b : buttons) {
-            if (b.isMouseOver(mouseX, mouseY)) {
-                hoveredWidget = b;
+        for (VButtonWidget button : pageButtons) {
+            if (button.isMouseOver(mouseX, mouseY)) {
+                hoveredWidget = button;
                 break;
             }
         }
@@ -462,7 +439,7 @@ public class VOptionScreen extends Screen {
 
         this.buildPage();
 
-        this.pageButtons.get(i).setSelected(true);
+        this.pageList.buttons.get(i).setSelected(true);
     }
 
     private void undo() {
