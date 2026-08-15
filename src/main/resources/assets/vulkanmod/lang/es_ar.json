@@ -1,0 +1,48 @@
+{
+  "vulkanmod.options.unknown": "Desconocido",
+
+  "vulkanmod.options.pages.video": "Video",
+  "vulkanmod.options.pages.graphics": "Gráficos",
+  "vulkanmod.options.pages.optimizations": "Optimización",
+  "vulkanmod.options.pages.other": "Otros",
+
+  "vulkanmod.options.buttons.apply": "Aplicar",
+  "vulkanmod.options.buttons.kofi": "Apoyame",
+
+  "vulkanmod.options.advCulling": "Optimización visual de chunks no visibles",
+  "vulkanmod.options.advCulling.aggressive": "Agresivo",
+  "vulkanmod.options.advCulling.conservative": "Conservador",
+  "vulkanmod.options.advCulling.normal": "Normal",
+  "vulkanmod.options.advCulling.tooltip": "Usa un algoritmo de recorte que mejora el rendimiento al evitar renderizar secciones ocultas del terreno.",
+
+  "vulkanmod.options.ao.subBlock": "ACTIVADO (Sub-bloques)",
+  "vulkanmod.options.ao.subBlock.tooltip": "ACTIVADO (Sub-bloques): Habilita iluminación suave para bloques no completos (experimental).",
+
+  "vulkanmod.options.deviceSelector": "Selector de dispositivo",
+  "vulkanmod.options.deviceSelector.auto": "Automático",
+  "vulkanmod.options.deviceSelector.tooltip": "Dispositivo actual",
+
+  "vulkanmod.options.entityCulling": "Filtrado de entidades no visibles",
+  "vulkanmod.options.entityCulling.tooltip": "Habilita el recorte de entidades que están en zonas fuera de la vista para mejorar la performance.",
+
+  "vulkanmod.options.frameQueue": "Tamaño de cola gráfica",
+  "vulkanmod.options.frameQueue.tooltip": "Valores más altos estabilizan el tiempo de renderizado, pero pueden aumentar el retardo al usar controles.",
+
+  "vulkanmod.options.backfaceCulling": "Eliminación de caras no visibles",
+  "vulkanmod.options.backfaceCulling.tooltip": "Evita renderizar las caras ocultas de los bloques usando la CPU, lo que mejora el rendimiento gráfico. Para evitar sobrecarga en la CPU, activá el Dibujo indirecto.",
+
+  "vulkanmod.options.indirectDraw": "Dibujo indirecto",
+  "vulkanmod.options.indirectDraw.tooltip": "Reduce el consumo de CPU al delegar la tarea de dibujo, aunque puede cargar más la GPU.",
+
+  "vulkanmod.options.refreshRate": "Frecuencia de actualización",
+
+  "vulkanmod.options.uniqueOpaqueLayer": "Capa única para terreno sólido",
+  "vulkanmod.options.uniqueOpaqueLayer.tooltip": "Usa una capa exclusiva de renderizado para bloques opacos y mejora el rendimiento general del juego.",
+
+  "vulkanmod.options.windowMode": "Modo de ventana",
+  "vulkanmod.options.windowMode.windowed": "Ventana",
+  "vulkanmod.options.windowMode.windowedFullscreen": "Ventana en pantalla completa",
+
+  "vulkanmod.options.builderThreads": "Procesamiento de terreno en paralelo",
+  "vulkanmod.options.builderThreads.auto": "Automático"
+}
