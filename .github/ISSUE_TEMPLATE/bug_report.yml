@@ -3,17 +3,17 @@ description: File a bug report
 body:
   - type: markdown
     attributes:
-        value: >-
-          # PLEASE READ THE FOLLOWING POINTS BEFORE CONTINUING!
+      value: >-
+        # PLEASE READ THE FOLLOWING POINTS BEFORE CONTINUING!
 
-          ## Please only submit proper bugs or issues of VulkanMod. This is not the place for troubleshooting crashes or asking for support, if you need support asking help on our [Discord server](https://discord.com/invite/FVXg7AYR2Q) is the better option.
-          <br>
+        ## Please only submit proper bugs or issues of VulkanMod. This is not the place for troubleshooting crashes or asking for support. If you need support, asking for help on our [Discord server](https://discord.com/invite/FVXg7AYR2Q) is the better option.
+        <br>
 
-          - ### Write the report in _ENGLISH_, otherwise other people won't be able to understand what you are writing.
+        - ### Write the report in _ENGLISH_, otherwise other people won't be able to understand what you are writing.
 
-          - ### Check if the issue you are trying to report already exists in the [issue list](https://github.com/xCollateral/VulkanMod/issues).
+        - ### Check if the issue you are trying to report already exists in the [issue list](https://github.com/xCollateral/VulkanMod/issues).
 
-          - ### Check if you are using any of the incompatible mods listed in [incompatible-mods](https://github.com/xCollateral/VulkanMod/wiki/Incompatible-mods).
+        - ### Check if you are using any of the incompatible mods listed in [incompatible-mods](https://github.com/xCollateral/VulkanMod/wiki/Incompatible-mods).
 
   - type: textarea
     id: description
@@ -22,23 +22,51 @@ body:
       description: A clear and concise description of what the bug is. Attach screenshots if needed or if you feel it could be useful.
     validations:
       required: true
+
   - type: textarea
     id: steps-to-reproduce
     attributes:
       label: Steps to reproduce
       description: Make a clear description of the steps needed to reproduce the behavior.
-      placeholder: >-
+      placeholder: |-
         1. ...
         2. ...
-        ...
+        3. ...
+        4. ...
     validations:
       required: true
+
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Information
+      description: Fill out the following system information.
+      placeholder: |-
+        OS:
+        OS Version:
+        GPU:
+        GPU Driver Version:
+        CPU:
+        RAM:
+        Java Runtime Version:
+
+        Minecraft Version:
+        VulkanMod Version:
+        Fabric Loader Version:
+        Fabric API Version:
+
+        Other Installed Mods:
+    validations:
+      required: true
+
   - type: textarea
     id: logs
     attributes:
       label: Log files
-      description: Provide related logs and/or crash-reports. 
-        If you don't know where to look for it, normally you can find the latest log in the minecraft instance folder in the path `/logs/latest.log`
+      description: >-
+        Provide related logs and/or crash reports.
+        If you don't know where to look for them, normally you can find the latest log
+        in the Minecraft instance folder at `/logs/latest.log`
       placeholder: Drag and drop the files in this box.
     validations:
       required: true
