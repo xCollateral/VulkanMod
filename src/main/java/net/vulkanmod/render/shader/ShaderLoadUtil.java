@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.shaders.ShaderType;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.resources.Identifier;
 import net.vulkanmod.vulkan.shader.SpirvCompiler;
 import org.apache.commons.io.IOUtils;
@@ -12,11 +14,13 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public abstract class ShaderLoadUtil {
@@ -127,7 +131,11 @@ public abstract class ShaderLoadUtil {
             }
 
             if (stream == null) {
-                return null;
+                // Not found in VulkanMod's own jar. This RenderPipeline may belong to
+                // another mod (e.g. malilib's custom terrain pipelines used by Litematica),
+                // with its shader bundled in that mod's own jar. Resolve the Identifier's
+                // namespace to its actual owning mod and look there instead of giving up.
+                return getShaderSourceFromOwningMod(resourceLocation, shaderName, shaderExtension);
             }
 
             String source = IOUtils.toString(new BufferedReader(new InputStreamReader(stream)));
@@ -137,6 +145,43 @@ public abstract class ShaderLoadUtil {
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Fallback for {@link #getShaderSource(Identifier, ShaderType)} when a shader isn't
+     * found inside VulkanMod's own jar. Resolves {@code resourceLocation}'s namespace to its
+     * owning mod via Fabric Loader and reads the shader straight from that mod's real
+     * resource root (works the same in a dev environment or a packaged jar), mirroring the
+     * same two-tier {@code path/name.ext} -> {@code path.ext} lookup order used above.
+     */
+    private static String getShaderSourceFromOwningMod(Identifier resourceLocation, String shaderName, String shaderExtension) {
+        String namespace = resourceLocation.getNamespace();
+        String path = resourceLocation.getPath();
+
+        Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(namespace);
+
+        if (container.isEmpty()) {
+            return null;
+        }
+
+        String[] candidates = {
+            "assets/%s/shaders/%s/%s".formatted(namespace, path, shaderName),
+            "assets/%s/shaders/%s%s".formatted(namespace, path, shaderExtension)
+        };
+
+        for (String candidate : candidates) {
+            Optional<Path> found = container.get().findPath(candidate);
+
+            if (found.isPresent() && Files.isRegularFile(found.get())) {
+                try {
+                    return Files.readString(found.get(), StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        return null;
     }
 
     public static String getShaderSource(String path, ShaderType type) {
