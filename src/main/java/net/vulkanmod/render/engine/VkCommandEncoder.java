@@ -295,6 +295,14 @@ public class VkCommandEncoder implements CommandEncoder {
                     var commandBuffer = Renderer.getInstance().getTransferCb();
 
                     StagingBuffer stagingBuffer = Vulkan.getStagingBuffer();
+
+                    // Large immediate batches (e.g. many entities sharing one RenderType) can
+                    // exceed the default staging buffer; fall back to a one-shot oversized buffer.
+                    if (size > stagingBuffer.getBufferSize()) {
+                        stagingBuffer = new StagingBuffer(size);
+                        stagingBuffer.scheduleFree();
+                    }
+
                     stagingBuffer.copyBuffer(size, byteBuffer);
 
                     long srcOffset = stagingBuffer.getOffset();
