@@ -123,7 +123,19 @@ public class SwapChain extends Framebuffer {
             }
 
             createInfo.preTransform(surfaceProperties.capabilities.currentTransform());
-            createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
+
+            int supportedCompositeAlpha = surfaceProperties.capabilities.supportedCompositeAlpha();
+            if((supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) != 0) {
+                createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
+            }else if((supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) != 0){
+                // PowerVR GE8320 Vulkan drivers don't support the alpha composite opaque bit.
+                // In that case, use the inherit mode if supported.
+                createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR);
+            } else {
+                // Not sure how to handle the other cases, to be honest...
+                throw new RuntimeException("Neither opaque, nor inherited alpha compositing modes are supported.");
+            }
+
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
 
