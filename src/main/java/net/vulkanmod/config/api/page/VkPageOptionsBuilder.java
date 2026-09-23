@@ -3,12 +3,13 @@ package net.vulkanmod.config.api.page;
 import net.vulkanmod.config.api.VkModSettingsEntryBuilder;
 import net.vulkanmod.config.gui.OptionBlock;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 public class VkPageOptionsBuilder {
     private final VkModSettingsEntryBuilder parent;
-    private final Map<String, VkOptionsBuilder> optionBlockBuilders = new LinkedHashMap<>();
+    private final List<Supplier<OptionBlock>> optionBlockSuppliers = new ArrayList<>();
 
     public VkPageOptionsBuilder(VkModSettingsEntryBuilder parent) {
         this.parent = parent;
@@ -16,7 +17,7 @@ public class VkPageOptionsBuilder {
 
     public VkOptionsBuilder withOptionBlock(String name) {
         VkOptionsBuilder builder = new VkOptionsBuilder(this);
-        optionBlockBuilders.put(name, builder);
+        optionBlockSuppliers.add(() -> new OptionBlock(name, builder.build()));
         return builder;
     }
 
@@ -25,13 +26,10 @@ public class VkPageOptionsBuilder {
     }
 
     public OptionBlock[] build() {
-        final OptionBlock[] blocks = new OptionBlock[optionBlockBuilders.size()];
+        final OptionBlock[] blocks = new OptionBlock[optionBlockSuppliers.size()];
         int i = 0;
-        for (Map.Entry<String, VkOptionsBuilder> entry : optionBlockBuilders.entrySet()) {
-            blocks[i] = new OptionBlock(
-                    entry.getKey(),
-                    entry.getValue().build()
-            );
+        for (Supplier<OptionBlock> optionBlockSupplier : optionBlockSuppliers) {
+            blocks[i] = optionBlockSupplier.get();
             i++;
         }
         return blocks;
